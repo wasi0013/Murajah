@@ -123,3 +123,13 @@ Task: Add button to track memorized pages in local storage
 - A "Mark as Memorized" button appears for each page.
 - Clicking the button toggles the memorized state for the current page and updates the button text and color.
 - Memorized pages are stored in `localStorage` and persist across sessions.
+
+Task: Show progress of memorization
+
+displays the total pages memorized, percentage, and a progress bar. The dashboard updates automatically when you mark or unmark a page as memorized. 
+Only show 1/604 or similar numbers with percentage to show the progress along with the bar. This should update with local storage update
+
+Task: Add a collapsible section with two input fields and a button
+
+This section is for bulk updating pages memorized, it will contain start and end input boxes, and mark button. User should be start page is always smaller than end page by at least 1. update local storage based on this range to mark the page in range including start and end as memorized.
+Add small instruction describing this. 

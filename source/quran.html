@@ -73,6 +73,19 @@
     </div>
     <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
   </div>
+  <div id="bulkMemorizeSection" style="max-width:900px;margin:0 auto 32px auto;padding:0 24px 0 24px;">
+    <div id="bulkHeader" style="cursor:pointer;background:#e3f2fd;color:#1976d2;padding:12px 16px;border-radius:8px;font-size:1.1em;font-weight:500;user-select:none;">
+      Bulk Mark Pages as Memorized
+      <span id="bulkArrow" style="float:right;font-size:1.2em;">&#9654;</span>
+    </div>
+    <div id="bulkContent" style="display:none;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:18px 16px 12px 16px;margin-top:4px;">
+      <div style="margin-bottom:8px;color:#555;font-size:0.98em;">Enter a start and end page (1–604). Start page must be less than end page. All pages in this range will be marked as memorized. Example: 5–10 will mark pages 5, 6, 7, 8, 9, 10.</div>
+      <input type="number" id="bulkStart" min="1" max="604" placeholder="Start Page" style="width:90px;margin-right:12px;font-size:1em;">
+      <input type="number" id="bulkEnd" min="1" max="604" placeholder="End Page" style="width:90px;margin-right:12px;font-size:1em;">
+      <button id="bulkMarkBtn" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:1em;cursor:pointer;">Mark Range as Memorized</button>
+      <div id="bulkError" style="color:#d32f2f;font-size:0.98em;margin-top:8px;display:none;"></div>
+    </div>
+  </div>
   <div class="navigation">
   <button id="prevPage">Previous</button>
   <span id="pageIndicator">Page 1 / 604</span>
@@ -82,6 +95,47 @@
   <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
   </div>
   <script>
+    // Collapsible bulk memorization section logic
+    document.addEventListener('DOMContentLoaded', function() {
+      const bulkHeader = document.getElementById('bulkHeader');
+      const bulkContent = document.getElementById('bulkContent');
+      const bulkArrow = document.getElementById('bulkArrow');
+      bulkHeader.onclick = function() {
+        if (bulkContent.style.display === 'none') {
+          bulkContent.style.display = 'block';
+          bulkArrow.innerHTML = '&#9660;';
+        } else {
+          bulkContent.style.display = 'none';
+          bulkArrow.innerHTML = '&#9654;';
+        }
+      };
+      document.getElementById('bulkMarkBtn').onclick = function() {
+        const start = parseInt(document.getElementById('bulkStart').value, 10);
+        const end = parseInt(document.getElementById('bulkEnd').value, 10);
+        const errorDiv = document.getElementById('bulkError');
+        errorDiv.style.display = 'none';
+        if (isNaN(start) || isNaN(end) || start < 1 || end > TOTAL_PAGES || start >= end) {
+          errorDiv.textContent = 'Please enter valid start and end pages (start < end, both between 1 and 604).';
+          errorDiv.style.display = 'block';
+          return;
+        }
+        let changed = false;
+        for (let p = start; p <= end; p++) {
+          if (!memorizedPages.includes(p)) {
+            memorizedPages.push(p);
+            changed = true;
+          }
+        }
+        if (changed) {
+          localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+          updateDashboard();
+          updateMemorizeBtn();
+        }
+        errorDiv.textContent = `Marked pages ${start} to ${end} as memorized.`;
+        errorDiv.style.color = '#1976d2';
+        errorDiv.style.display = 'block';
+      };
+    });
     // Paths to JSON files (update as needed)
     const LAYOUT_PATH = './resources/qpc-v2-15-lines.json';
     const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
