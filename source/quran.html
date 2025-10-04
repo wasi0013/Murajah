@@ -81,6 +81,7 @@
     const TOTAL_PAGES = 604;
     let layoutData = [];
     let wordsData = {};
+    let surahNames = {};
     let currentPage = 1;
 
     async function loadJSON(path) {
@@ -91,6 +92,7 @@
     async function init() {
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
+      surahNames = await loadJSON('./resources/surah-names.json');
       renderPage(currentPage);
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
       document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
@@ -172,8 +174,8 @@
     }
 
     function getSurahName(num) {
-      // TODO: Replace with actual surah name lookup
-      return num ? num : '';
+  // Lookup surah name from surahNames JSON
+  return surahNames && surahNames[num] ? surahNames[num] : num;
     }
 
     function onWordClick(wordObj) {

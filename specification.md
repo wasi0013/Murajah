@@ -113,3 +113,7 @@ Inspect this page strucutre and complete the below steps, create a source folder
 Task: Add page jump
 
 a goto input box (1-604) and a clickable button if the user clicks it the page renders.
+
+
+Task: add surah names
+Currently, the surah name is shown as number, we need to replace it with actual surah name.
