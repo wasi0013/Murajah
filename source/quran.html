@@ -67,11 +67,21 @@
 </head>
 <body>
   <div class="quran-page" id="quranPage"></div>
+  <div class="navigation">
+  <button id="prevPage">Previous</button>
+  <span id="pageIndicator">Page 1 / 604</span>
+  <button id="nextPage">Next</button>
+  <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
+  <button id="gotoPageBtn">Go</button>
+  <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
+  </div>
+  
   <div id="dashboard" style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#e3f2fd;border-radius:8px;height:24px;width:100%;overflow:hidden;">
       <div id="progressBar" style="height:100%;background:#1976d2;width:0%;transition:width 0.5s;"></div>
     </div>
     <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
+    <div id="memorizedGrid" style="margin:18px auto 0 auto;max-width:880px;"></div>
   </div>
   <div id="bulkMemorizeSection" style="max-width:900px;margin:0 auto 32px auto;padding:0 24px 0 24px;">
     <div id="bulkHeader" style="cursor:pointer;background:#e3f2fd;color:#1976d2;padding:12px 16px;border-radius:8px;font-size:1.1em;font-weight:500;user-select:none;">
@@ -86,15 +96,34 @@
       <div id="bulkError" style="color:#d32f2f;font-size:0.98em;margin-top:8px;display:none;"></div>
     </div>
   </div>
-  <div class="navigation">
-  <button id="prevPage">Previous</button>
-  <span id="pageIndicator">Page 1 / 604</span>
-  <button id="nextPage">Next</button>
-  <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
-  <button id="gotoPageBtn">Go</button>
-  <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
-  </div>
   <script>
+    function renderMemorizedGrid() {
+      const grid = document.getElementById('memorizedGrid');
+      const cols = 22; // 604/22 ≈ 27 rows
+      const total = TOTAL_PAGES;
+      let html = '<div style="display:grid;grid-template-columns:repeat(' + cols + ', 1fr);gap:3px;">';
+      for (let i = 1; i <= total; i++) {
+        const isMemorized = memorizedPages.includes(i);
+        html += `<div class="grid-cell" data-page="${i}" title="Page ${i}" style="width:18px;height:18px;border-radius:4px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;"></div>`;
+      }
+      html += '</div>';
+      grid.innerHTML = html;
+      // Add click event listeners to each cell
+      Array.from(grid.getElementsByClassName('grid-cell')).forEach(cell => {
+        cell.onclick = function() {
+          const page = parseInt(cell.getAttribute('data-page'), 10);
+          const idx = memorizedPages.indexOf(page);
+          if (idx === -1) {
+            memorizedPages.push(page);
+          } else {
+            memorizedPages.splice(idx, 1);
+          }
+          localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+          updateDashboard();
+          updateMemorizeBtn();
+        };
+      });
+    }
     // Collapsible bulk memorization section logic
     document.addEventListener('DOMContentLoaded', function() {
       const bulkHeader = document.getElementById('bulkHeader');
@@ -185,6 +214,7 @@ let memorizedPages = [];
   const percent = total ? Math.round((memorized / total) * 100) : 0;
   document.getElementById('progressBar').style.width = percent + '%';
   document.getElementById('progressText').textContent = `${memorized} / ${total} (${percent}%)`;
+  renderMemorizedGrid();
     }
 
     async function init() {
@@ -194,8 +224,9 @@ let memorizedPages = [];
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
       surahNames = await loadJSON('./resources/surah-names.json');
-      renderPage(currentPage);
-      updateDashboard();
+  renderPage(currentPage);
+  updateDashboard();
+  renderMemorizedGrid();
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
       document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
       document.getElementById('gotoPageBtn').onclick = () => {
