@@ -68,11 +68,12 @@
 <body>
   <div class="quran-page" id="quranPage"></div>
   <div class="navigation">
-    <button id="prevPage">Previous</button>
-    <span id="pageIndicator">Page 1 / 604</span>
-    <button id="nextPage">Next</button>
-    <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
-    <button id="gotoPageBtn">Go</button>
+  <button id="prevPage">Previous</button>
+  <span id="pageIndicator">Page 1 / 604</span>
+  <button id="nextPage">Next</button>
+  <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
+  <button id="gotoPageBtn">Go</button>
+  <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
   </div>
   <script>
     // Paths to JSON files (update as needed)
@@ -83,13 +84,45 @@
     let wordsData = {};
     let surahNames = {};
     let currentPage = 1;
+let memorizedPages = [];
 
     async function loadJSON(path) {
       const res = await fetch(path);
       return res.json();
     }
 
+    function updateMemorizeBtn() {
+      const btn = document.getElementById('memorizeBtn');
+      if (memorizedPages.includes(currentPage)) {
+        btn.textContent = 'Memorized ✓';
+        btn.style.background = '#1976d2'; // Soothing blue
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
+      } else {
+        btn.textContent = 'Mark as Memorized';
+        btn.style.background = '#2196f3'; // Lighter blue for default
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
+      }
+    }
+
+    function toggleMemorized(pageNum) {
+      const idx = memorizedPages.indexOf(pageNum);
+      if (idx === -1) {
+        memorizedPages.push(pageNum);
+      } else {
+        memorizedPages.splice(idx, 1);
+      }
+      localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+      updateMemorizeBtn();
+    }
+
     async function init() {
+  // Load memorized pages from localStorage
+  const mem = localStorage.getItem('memorizedPages');
+  memorizedPages = mem ? JSON.parse(mem) : [];
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
       surahNames = await loadJSON('./resources/surah-names.json');
@@ -109,12 +142,16 @@
           document.getElementById('gotoPageBtn').click();
         }
       });
+      document.getElementById('memorizeBtn').onclick = () => {
+        toggleMemorized(currentPage);
+      };
     }
 
     function changePage(page) {
       if (page < 1 || page > TOTAL_PAGES) return;
       currentPage = page;
       renderPage(currentPage);
+  updateMemorizeBtn();
     }
 
     function renderPage(pageNum) {
@@ -163,6 +200,38 @@
       document.getElementById('pageIndicator').textContent = `Page ${pageNum} / ${TOTAL_PAGES}`;
       document.getElementById('prevPage').disabled = pageNum === 1;
       document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
+  updateMemorizeBtn();
+function updateMemorizeBtn() {
+  const btn = document.getElementById('memorizeBtn');
+  btn.style.background = '';
+  btn.style.color = '';
+  btn.style.border = '';
+  btn.style.boxShadow = '';
+  if (memorizedPages.includes(currentPage)) {
+    btn.textContent = 'Memorized ✓';
+    btn.style.background = '#1976d2'; // Soothing blue
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
+  } else {
+    btn.textContent = 'Mark as Memorized';
+    btn.style.background = '#2196f3'; // Lighter blue for default
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
+  }
+}
+
+function toggleMemorized(pageNum) {
+  const idx = memorizedPages.indexOf(pageNum);
+  if (idx === -1) {
+    memorizedPages.push(pageNum);
+  } else {
+    memorizedPages.splice(idx, 1);
+  }
+  localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+  updateMemorizeBtn();
+}
     }
 
     function getWordById(id) {
