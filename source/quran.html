@@ -67,6 +67,12 @@
 </head>
 <body>
   <div class="quran-page" id="quranPage"></div>
+  <div id="dashboard" style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <div style="background:#e3f2fd;border-radius:8px;height:24px;width:100%;overflow:hidden;">
+      <div id="progressBar" style="height:100%;background:#1976d2;width:0%;transition:width 0.5s;"></div>
+    </div>
+    <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
+  </div>
   <div class="navigation">
   <button id="prevPage">Previous</button>
   <span id="pageIndicator">Page 1 / 604</span>
@@ -119,14 +125,23 @@ let memorizedPages = [];
       updateMemorizeBtn();
     }
 
+    function updateDashboard() {
+  const total = TOTAL_PAGES;
+  const memorized = memorizedPages.length;
+  const percent = total ? Math.round((memorized / total) * 100) : 0;
+  document.getElementById('progressBar').style.width = percent + '%';
+  document.getElementById('progressText').textContent = `${memorized} / ${total} (${percent}%)`;
+    }
+
     async function init() {
-  // Load memorized pages from localStorage
-  const mem = localStorage.getItem('memorizedPages');
-  memorizedPages = mem ? JSON.parse(mem) : [];
+      // Load memorized pages from localStorage
+      const mem = localStorage.getItem('memorizedPages');
+      memorizedPages = mem ? JSON.parse(mem) : [];
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
       surahNames = await loadJSON('./resources/surah-names.json');
       renderPage(currentPage);
+      updateDashboard();
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
       document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
       document.getElementById('gotoPageBtn').onclick = () => {
@@ -231,6 +246,7 @@ function toggleMemorized(pageNum) {
   }
   localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
   updateMemorizeBtn();
+  updateDashboard();
 }
     }
 

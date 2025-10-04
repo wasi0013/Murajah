@@ -117,3 +117,9 @@ a goto input box (1-604) and a clickable button if the user clicks it the page r
 
 Task: add surah names
 Currently, the surah name is shown as number, we need to replace it with actual surah name.
+
+Task: Add button to track memorized pages in local storage
+
+- A "Mark as Memorized" button appears for each page.
+- Clicking the button toggles the memorized state for the current page and updates the button text and color.
+- Memorized pages are stored in `localStorage` and persist across sessions.
