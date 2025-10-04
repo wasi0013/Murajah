@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Murajah Quran Layout</title>
+  <style>
+    body {
+      background: #f9f9f9;
+      font-family: 'QPCV2Page', serif;
+      margin: 0;
+      padding: 0;
+    }
+    .quran-page {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 32px 24px;
+    }
+    .quran-line {
+      display: flex;
+      justify-content: center;
+      margin: 8px 0;
+      font-size: 2.2em;
+      line-height: 1.5;
+    }
+    .quran-word {
+      cursor: pointer;
+      margin: 0 2px;
+      transition: background 0.2s;
+      border-radius: 6px;
+      padding: 0 4px;
+    }
+    .quran-word:hover {
+      background: #e0f7fa;
+    }
+    .surah-name, .basmallah {
+      text-align: center;
+      font-size: 2.4em;
+      font-weight: bold;
+      margin: 16px 0 8px 0;
+      color: #2e7d32;
+    }
+    .navigation {
+      display: flex;
+      justify-content: center;
+      margin: 24px 0 0 0;
+      gap: 16px;
+    }
+    .navigation button {
+      font-size: 1.1em;
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: none;
+      background: #2e7d32;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .navigation button:disabled {
+      background: #bdbdbd;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="quran-page" id="quranPage"></div>
+  <div class="navigation">
+    <button id="prevPage">Previous</button>
+    <span id="pageIndicator">Page 1 / 604</span>
+    <button id="nextPage">Next</button>
+    <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
+    <button id="gotoPageBtn">Go</button>
+  </div>
+  <script>
+    // Paths to JSON files (update as needed)
+    const LAYOUT_PATH = './resources/qpc-v2-15-lines.json';
+    const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
+    const TOTAL_PAGES = 604;
+    let layoutData = [];
+    let wordsData = {};
+    let currentPage = 1;
+
+    async function loadJSON(path) {
+      const res = await fetch(path);
+      return res.json();
+    }
+
+    async function init() {
+      layoutData = await loadJSON(LAYOUT_PATH);
+      wordsData = await loadJSON(WORDS_PATH);
+      renderPage(currentPage);
+      document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
+      document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
+      document.getElementById('gotoPageBtn').onclick = () => {
+        const val = parseInt(document.getElementById('gotoPageInput').value, 10);
+        if (!isNaN(val) && val >= 1 && val <= TOTAL_PAGES) {
+          changePage(val);
+        } else {
+          alert('Please enter a valid page number (1-604).');
+        }
+      };
+      document.getElementById('gotoPageInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('gotoPageBtn').click();
+        }
+      });
+    }
+
+    function changePage(page) {
+      if (page < 1 || page > TOTAL_PAGES) return;
+      currentPage = page;
+      renderPage(currentPage);
+    }
+
+    function renderPage(pageNum) {
+      // Dynamically inject @font-face for the current page
+      const fontId = 'dynamicQPCFont';
+      let styleTag = document.getElementById(fontId);
+      if (styleTag) styleTag.remove();
+      styleTag = document.createElement('style');
+      styleTag.id = fontId;
+      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; src: url('./resources/QPC V2 Font.ttf/p${pageNum}.ttf') format('truetype'); font-weight: normal; font-style: normal; }`;
+      document.head.appendChild(styleTag);
+
+      const pageLines = layoutData.pages.filter(l => l.page_number === pageNum);
+      const container = document.getElementById('quranPage');
+      container.innerHTML = '';
+      pageLines.forEach(line => {
+        if (line.line_type === 'surah_name') {
+          const surahDiv = document.createElement('div');
+          surahDiv.className = 'surah-name';
+          surahDiv.textContent = `سورة ${getSurahName(line.surah_number)}`;
+          container.appendChild(surahDiv);
+        } else if (line.line_type === 'basmallah') {
+          const basmallahDiv = document.createElement('div');
+          basmallahDiv.className = 'basmallah';
+          basmallahDiv.textContent = '﷽';
+          container.appendChild(basmallahDiv);
+        } else {
+          const lineDiv = document.createElement('div');
+          lineDiv.className = 'quran-line';
+          lineDiv.style.fontFamily = 'QPCV2Page, serif';
+          if (line.first_word_id && line.last_word_id) {
+            for (let wid = line.last_word_id; wid >= line.first_word_id; wid--) {
+              const wordObj = getWordById(wid);
+              if (!wordObj) continue;
+              const wordSpan = document.createElement('span');
+              wordSpan.className = 'quran-word';
+              wordSpan.textContent = wordObj.text;
+              wordSpan.title = `Surah ${wordObj.surah}, Ayah ${wordObj.ayah}, Word ${wordObj.word}`;
+              wordSpan.onclick = () => onWordClick(wordObj);
+              lineDiv.appendChild(wordSpan);
+            }
+          }
+          container.appendChild(lineDiv);
+        }
+      });
+      document.getElementById('pageIndicator').textContent = `Page ${pageNum} / ${TOTAL_PAGES}`;
+      document.getElementById('prevPage').disabled = pageNum === 1;
+      document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
+    }
+
+    function getWordById(id) {
+      // Find word by id in wordsData
+      for (const key in wordsData) {
+        if (wordsData[key].id == id) return wordsData[key];
+      }
+      return null;
+    }
+
+    function getSurahName(num) {
+      // TODO: Replace with actual surah name lookup
+      return num ? num : '';
+    }
+
+    function onWordClick(wordObj) {
+      alert(`Word: ${wordObj.text}\nSurah: ${wordObj.surah}\nAyah: ${wordObj.ayah}\nWord #: ${wordObj.word}`);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
