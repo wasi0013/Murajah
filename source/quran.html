@@ -1,3 +1,4 @@
+  <div id="countdownOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;"><span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span></div>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -175,27 +176,42 @@
           alert('Audio recording not supported.');
           return;
         }
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-          mediaRecorder.ondataavailable = function(e) {
-            audioChunks.push(e.data);
-          };
-          mediaRecorder.onstop = function() {
-            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.onloadend = function() {
-              localStorage.setItem(getAudioKey(currentPage), reader.result);
+        // Show countdown overlay
+        const overlay = document.getElementById('countdownOverlay');
+        const text = document.getElementById('countdownText');
+        overlay.style.display = 'flex';
+        let count = 3;
+        text.textContent = count;
+        let countdownInterval = setInterval(() => {
+          count--;
+          if (count > 0) {
+            text.textContent = count;
+          } else {
+            clearInterval(countdownInterval);
+            overlay.style.display = 'none';
+            // Start recording
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+              mediaRecorder = new MediaRecorder(stream);
+              audioChunks = [];
+              mediaRecorder.ondataavailable = function(e) {
+                audioChunks.push(e.data);
+              };
+              mediaRecorder.onstop = function() {
+                audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                  localStorage.setItem(getAudioKey(currentPage), reader.result);
+                  updateAudioControls();
+                };
+                reader.readAsDataURL(audioBlob);
+              };
+              mediaRecorder.start();
               updateAudioControls();
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-          mediaRecorder.start();
-          updateAudioControls();
-        } catch (err) {
-          alert('Could not start recording: ' + err.message);
-        }
+            }).catch(err => {
+              alert('Could not start recording: ' + err.message);
+            });
+          }
+        }, 1000);
       };
       document.getElementById('stopBtn').onclick = function() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
