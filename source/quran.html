@@ -9,7 +9,6 @@
   <!-- LineAwesome Icons -->
   <link rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css"
-    integrity="sha512-+b1QwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
   <!-- LineAwesome Icons CDN -->
   <link rel="stylesheet"
@@ -847,13 +846,13 @@
     // Render audio playlist
     function renderAudioPlaylist() {
       console.debug('[Murajah] renderAudioPlaylist called');
-      console.debug('[Murajah] Checking localStorage key:', key);
       const playlistDiv = document.getElementById('playlistItems');
       playlistDiv.innerHTML = '';
       const audios = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith('audio-page-')) {
+        console.debug('[Murajah] Checking localStorage key:', key)      
+        if (key && (key.startsWith('audio-page-'))) {
           const pageNum = key.split('-').pop();
           audios.push({ key, pageNum, data: localStorage.getItem(key) });
         }
