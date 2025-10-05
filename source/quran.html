@@ -200,20 +200,26 @@
     <div id="playlistItems"></div>
   </div>
   <script>
+  // =============================
+  // Murajah Quran App JavaScript
+  // =============================
     // DEBUG: App initialization
     console.debug('[Murajah] App script loaded');
     // Audio recording and playback logic
     let mediaRecorder = null;
+  // --- Audio Recording State ---
     console.debug('[Murajah] mediaRecorder initialized:', mediaRecorder);
     let audioChunks = [];
     let currentAudioUrl = null;
     let audioBlob = null;
     let audioPlayer = new Audio();
     function getAudioKey(pageNum) {
+  // --- getAudioKey: Returns localStorage key for audio by page ---
       console.debug('[Murajah] getAudioKey called with pageNum:', pageNum);
       return `audio-page-${pageNum}`;
     }
     function updateAudioControls() {
+  // --- updateAudioControls: Enable/disable audio controls and playlist ---
       console.debug('[Murajah] updateAudioControls called for page', currentPage);
       console.debug('[Murajah] audioKey:', audioKey, 'audioData:', !!audioData, 'mediaRecorder:', mediaRecorder ? mediaRecorder.state : null);
       const recordBtn = document.getElementById('recordBtn');
@@ -255,6 +261,7 @@
       }
     }
     document.addEventListener('DOMContentLoaded', function () {
+  // --- DOMContentLoaded: Initial event bindings and setup ---
       console.debug('[Murajah] DOMContentLoaded event');
       updateAudioControls();
       document.getElementById('deleteAudioBtn').onclick = function () {
@@ -269,6 +276,7 @@
         }
       };
       document.getElementById('recordBtn').onclick = async function () {
+  // --- recordBtn.onclick: Start recording with countdown ---
         console.debug('[Murajah] recordBtn clicked');
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           console.warn('[Murajah] Audio recording not supported');
@@ -327,6 +335,7 @@
         }, 1000);
       };
       document.getElementById('stopBtn').onclick = function () {
+  // --- stopBtn.onclick: Stop recording ---
         console.debug('[Murajah] stopBtn clicked');
         console.debug('[Murajah] Stopping MediaRecorder');
         if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -336,6 +345,7 @@
         }
       };
       document.getElementById('playBtn').onclick = function () {
+  // --- playBtn.onclick: Play audio ---
         console.debug('[Murajah] playBtn clicked');
         const audioData = localStorage.getItem(getAudioKey(currentPage));
         if (audioData) {
@@ -347,6 +357,8 @@
         }
       };
       document.getElementById('pauseBtn').onclick = function () {
+  // --- pauseBtn.onclick: Pause audio ---
+  // --- deleteAudioBtn.onclick: Delete audio for current page ---
         console.debug('[Murajah] pauseBtn clicked');
         audioPlayer.pause();
         console.debug('[Murajah] Audio paused');
@@ -364,6 +376,7 @@
     });
     // Update audio controls when page changes
     function changePage(page) {
+  // --- changePage: Navigation logic ---
       console.debug('[Murajah] changePage called with', page);
       if (page < 1 || page > TOTAL_PAGES) return;
       currentPage = page;
@@ -372,6 +385,7 @@
       updateAudioControls();
     }
     function updateStatsPanel() {
+  // --- updateStatsPanel: Update stats UI ---
       console.debug('[Murajah] updateStatsPanel called');
       const memorized = memorizedPages.length;
       let finishRevision = parseInt(localStorage.getItem('finishRevisionDays') || '30', 10);
@@ -397,6 +411,7 @@
       document.getElementById('statEstimatedCompletion').textContent = `Estimated completion: ${estDate}`;
     }
     function drawJuzPieChart(juzMemorized, totalJuz) {
+  // --- drawJuzPieChart: Draw memorization pie chart ---
       console.debug('[Murajah] drawJuzPieChart called:', juzMemorized, '/', totalJuz);
       const canvas = document.getElementById('juzPieChart');
       if (!canvas) return;
@@ -436,6 +451,7 @@
     }
 
     function renderMemorizedGrid() {
+  // --- renderMemorizedGrid: Display memorized pages grid ---
       console.debug('[Murajah] renderMemorizedGrid called');
       const grid = document.getElementById('memorizedGrid');
       const total = TOTAL_PAGES;
@@ -488,6 +504,7 @@
     // Collapsible bulk memorization section logic
     document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('bulkMarkBtn').onclick = function () {
+  // --- bulkMarkBtn.onclick: Bulk mark pages as memorized ---
         console.debug('[Murajah] bulkMarkBtn clicked');
         const start = parseInt(document.getElementById('bulkStart').value, 10);
         const end = parseInt(document.getElementById('bulkEnd').value, 10);
@@ -529,12 +546,14 @@
     let memorizedPages = [];
 
     async function loadJSON(path) {
+  // --- loadJSON: Fetch JSON data ---
       console.debug('[Murajah] loadJSON called for', path);
       const res = await fetch(path);
       return res.json();
     }
 
     function updateMemorizeBtn() {
+  // --- updateMemorizeBtn: Update memorize button UI ---
       console.debug('[Murajah] updateMemorizeBtn called for page', currentPage);
       const btn = document.getElementById('memorizeBtn');
       if (memorizedPages.includes(currentPage)) {
@@ -553,6 +572,7 @@
     }
 
     function toggleMemorized(pageNum) {
+  // --- toggleMemorized: Toggle memorized state for a page ---
       console.debug('[Murajah] toggleMemorized called for page', pageNum);
       const idx = memorizedPages.indexOf(pageNum);
       if (idx === -1) {
@@ -565,6 +585,7 @@
     }
 
     function updateDashboard() {
+  // --- updateDashboard: Update dashboard UI ---
       console.debug('[Murajah] updateDashboard called');
       const total = TOTAL_PAGES;
       const memorized = memorizedPages.length;
@@ -581,11 +602,13 @@
     document.addEventListener('DOMContentLoaded', function () {
       // Persistent input logic
       document.getElementById('finishRevisionInput').onchange = function () {
+  // --- finishRevisionInput.onchange: Update revision days ---
         console.debug('[Murajah] finishRevisionInput changed:', this.value);
         localStorage.setItem('finishRevisionDays', this.value);
         updateStatsPanel();
       };
       document.getElementById('pagesPerDayInput').onchange = function () {
+  // --- pagesPerDayInput.onchange: Update pages per day ---
         console.debug('[Murajah] pagesPerDayInput changed:', this.value);
         localStorage.setItem('pagesPerDay', this.value);
         updateStatsPanel();
@@ -595,6 +618,8 @@
     // Export/Import localStorage to/from JSON file
     document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('exportBtn').onclick = function () {
+  // --- exportBtn.onclick: Export localStorage to JSON ---
+  // --- importBtn.onclick: Import localStorage from JSON ---
         console.debug('[Murajah] exportBtn clicked');
         console.debug('[Murajah] importBtn clicked');
         const data = {};
@@ -625,6 +650,7 @@
         importFile.click();
       };
       importFile.onchange = function (e) {
+  // --- importFile.onchange: Handle file input change ---
         console.debug('[Murajah] importFile changed');
         const file = e.target.files[0];
         if (!file) return;
@@ -652,6 +678,7 @@
       };
     });
     async function init() {
+  // --- init: App initialization ---
       console.debug('[Murajah] init called');
       console.debug('[Murajah] renderPage called for', currentPage);
       // Load memorized pages from localStorage
@@ -698,6 +725,7 @@
     }
 
     function renderPage(pageNum) {
+  // --- renderPage: Render Quran page ---
       console.debug('[Murajah] renderPage called for', pageNum);
       // Dynamically inject @font-face for the current page
       const fontId = 'dynamicQPCFont';
@@ -824,6 +852,7 @@
     }
 
     function getWordById(id) {
+  // --- getWordById: Lookup word by ID ---
       console.debug('[Murajah] getWordById called for id:', id);
       // Find word by id in wordsData
       for (const key in wordsData) {
@@ -833,18 +862,24 @@
     }
 
     function getSurahName(num) {
+  // --- getSurahName: Lookup surah name ---
       console.debug('[Murajah] getSurahName called for num:', num);
       // Lookup surah name from surahNames JSON
       return surahNames && surahNames[num] ? surahNames[num] : num;
     }
 
     function onWordClick(wordObj) {
+  // --- onWordClick: Word click handler ---
       console.debug('[Murajah] onWordClick called:', wordObj);
       alert(`Word: ${wordObj.text}\nSurah: ${wordObj.surah}\nAyah: ${wordObj.ayah}\nWord #: ${wordObj.word}`);
     }
 
     // Render audio playlist
     function renderAudioPlaylist() {
+  // --- renderAudioPlaylist: Render audio playlist ---
+  // =============================
+  // End of Murajah Quran App JS
+  // =============================
       console.debug('[Murajah] renderAudioPlaylist called');
       const playlistDiv = document.getElementById('playlistItems');
       playlistDiv.innerHTML = '';
