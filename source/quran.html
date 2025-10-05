@@ -192,6 +192,7 @@
     const TOTAL_PAGES = 604;
     let layoutData = [];
     let wordsData = {};
+let translations = {};
     let surahNames = {};
     let currentPage = 1;
 let memorizedPages = [];
@@ -244,7 +245,8 @@ let memorizedPages = [];
       memorizedPages = mem ? JSON.parse(mem) : [];
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
-      surahNames = await loadJSON('./resources/surah-names.json');
+  surahNames = await loadJSON('./resources/surah-names.json');
+  translations = await loadJSON('./resources/english-wbw-translation.json');
   renderPage(currentPage);
   updateDashboard();
   renderMemorizedGrid();
@@ -310,7 +312,44 @@ let memorizedPages = [];
               const wordSpan = document.createElement('span');
               wordSpan.className = 'quran-word';
               wordSpan.textContent = wordObj.text;
-              wordSpan.title = `Surah ${wordObj.surah}, Ayah ${wordObj.ayah}, Word ${wordObj.word}`;
+              // Remove browser tooltip
+              wordSpan.title = '';
+              // Custom tooltip logic
+              wordSpan.onmouseenter = function(e) {
+                let tip = document.getElementById('customTooltip');
+                if (!tip) {
+                  tip = document.createElement('div');
+                  tip.id = 'customTooltip';
+                  tip.style.position = 'fixed';
+                  tip.style.zIndex = '9999';
+                  tip.style.background = '#fff';
+                  tip.style.color = '#222';
+                  tip.style.fontSize = '1.5em';
+                  tip.style.padding = '12px 18px';
+                  tip.style.borderRadius = '10px';
+                  tip.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+                  tip.style.maxWidth = '350px';
+                  tip.style.pointerEvents = 'none';
+                  document.body.appendChild(tip);
+                }
+                const key = `${wordObj.surah}:${wordObj.ayah}:${wordObj.word}`;
+                tip.textContent = translations[key] || '(No translation)';
+                tip.style.display = 'block';
+                // Position near mouse
+                tip.style.left = (e.clientX + 18) + 'px';
+                tip.style.top = (e.clientY + 18) + 'px';
+              };
+              wordSpan.onmousemove = function(e) {
+                const tip = document.getElementById('customTooltip');
+                if (tip) {
+                  tip.style.left = (e.clientX + 18) + 'px';
+                  tip.style.top = (e.clientY + 18) + 'px';
+                }
+              };
+              wordSpan.onmouseleave = function() {
+                const tip = document.getElementById('customTooltip');
+                if (tip) tip.style.display = 'none';
+              };
               wordSpan.onclick = () => onWordClick(wordObj);
               lineDiv.appendChild(wordSpan);
             }
