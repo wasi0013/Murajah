@@ -74,6 +74,12 @@
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
   </div>
   <div class="quran-page" id="quranPage"></div>
+  <style>
+    .blurred {
+      filter: blur(15px) grayscale(0.4);
+      transition: filter 0.3s;
+    }
+  </style>
   <div class="navigation">
   <button id="prevPage">Previous</button>
   <span id="pageIndicator">Page 1 / 604</span>
@@ -176,6 +182,9 @@
           alert('Audio recording not supported.');
           return;
         }
+        // Blur Quran page
+        const quranPage = document.getElementById('quranPage');
+        quranPage.classList.add('blurred');
         // Show countdown overlay
         const overlay = document.getElementById('countdownOverlay');
         const text = document.getElementById('countdownText');
@@ -204,11 +213,14 @@
                   updateAudioControls();
                 };
                 reader.readAsDataURL(audioBlob);
+                // Unblur Quran page when recording stops
+                quranPage.classList.remove('blurred');
               };
               mediaRecorder.start();
               updateAudioControls();
             }).catch(err => {
               alert('Could not start recording: ' + err.message);
+              quranPage.classList.remove('blurred');
             });
           }
         }, 1000);
@@ -216,6 +228,8 @@
       document.getElementById('stopBtn').onclick = function() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
+          // Unblur Quran page when manually stopped
+          document.getElementById('quranPage').classList.remove('blurred');
         }
       };
       document.getElementById('playBtn').onclick = function() {
