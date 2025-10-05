@@ -83,7 +83,24 @@
     <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
     <div style="display:flex;flex-direction:row;gap:0;justify-content:center;align-items:flex-start;margin-top:18px;">
       <div id="stats" style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);display:flex;justify-content:center;align-items:center;">
-        <canvas id="juzPieChart" width="140" height="140" style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
+        <div style="width:100%;padding:8px 0 0 0;">
+          <div style="display:flex;justify-content:center;align-items:center;">
+            <canvas id="juzPieChart" width="140" height="140" style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
+          </div>
+          <div id="statsBox" style="background:#e3f2fd;border-radius:10px;padding:12px 10px 10px 10px;margin:16px 0 10px 0;box-shadow:0 2px 8px rgba(25,118,210,0.06);font-size:1.08em;">
+            <div id="statRevisePerDay"></div>
+            <div id="statMinDaysNeeded"></div>
+            <div id="statEstimatedCompletion"></div>
+          </div>
+          <div style="background:#fff;border-radius:10px;padding:10px 10px 8px 10px;box-shadow:0 2px 8px rgba(25,118,210,0.04);">
+            <label for="finishRevisionInput" style="font-size:1em;color:#1976d2;">Finish revision in (days):</label>
+            <input type="number" id="finishRevisionInput" min="1" max="999" style="width:80px;margin-left:8px;font-size:1em;">
+            <br><br>
+            <label for="pagesPerDayInput" style="font-size:1em;color:#1976d2;">Pages memorized per day:</label>
+            <input type="number" id="pagesPerDayInput" min="0.01" max="604" step="0.01" style="width:80px;margin-left:8px;font-size:1em;">
+          </div>
+        </div>
+    
       </div>
       <div id="memorizedGrid" style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);"></div>
     </div>
@@ -102,6 +119,30 @@
     </div>
   </div>
   <script>
+    function updateStatsPanel() {
+      const memorized = memorizedPages.length;
+      let finishRevision = parseInt(localStorage.getItem('finishRevisionDays') || '30', 10);
+      let pagesPerDay = parseFloat(localStorage.getItem('pagesPerDay') || '1');
+      document.getElementById('finishRevisionInput').value = finishRevision;
+      document.getElementById('pagesPerDayInput').value = pagesPerDay;
+
+      // Revise per day
+  const revisePerDay = finishRevision > 0 ? Math.ceil(memorized / finishRevision) : 0;
+  document.getElementById('statRevisePerDay').textContent = `Revise per day: ${revisePerDay}`;
+      // Min days needed
+      const minDaysNeeded = pagesPerDay > 0 ? Math.ceil((604 - memorized) / pagesPerDay) : '∞';
+      document.getElementById('statMinDaysNeeded').textContent = `Min days needed: ${minDaysNeeded}`;
+      // Estimated completion
+      let estDate = '';
+      if (pagesPerDay > 0) {
+        const now = new Date();
+        now.setDate(now.getDate() + minDaysNeeded);
+        estDate = now.toLocaleDateString();
+      } else {
+        estDate = 'N/A';
+      }
+      document.getElementById('statEstimatedCompletion').textContent = `Estimated completion: ${estDate}`;
+    }
     function drawJuzPieChart(juzMemorized, totalJuz) {
       const canvas = document.getElementById('juzPieChart');
       if (!canvas) return;
@@ -274,17 +315,29 @@ let memorizedPages = [];
     }
 
     function updateDashboard() {
-  const total = TOTAL_PAGES;
-  const memorized = memorizedPages.length;
-  const percent = total ? Math.round((memorized / total) * 100) : 0;
-  document.getElementById('progressBar').style.width = percent + '%';
-  document.getElementById('progressText').textContent = `${memorized} / ${total} (${percent}%)`;
-  // Draw Juz pie chart
-  const totalJuz = 30;
-  const juzMemorized = Math.floor(memorizedPages.length / 20);
-  drawJuzPieChart(juzMemorized, totalJuz);
-  renderMemorizedGrid();
+      const total = TOTAL_PAGES;
+      const memorized = memorizedPages.length;
+      const percent = total ? Math.round((memorized / total) * 100) : 0;
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressText').textContent = `${memorized} / ${total} (${percent}%)`;
+      // Draw Juz pie chart
+      const totalJuz = 30;
+      const juzMemorized = Math.floor(memorizedPages.length / 20);
+      drawJuzPieChart(juzMemorized, totalJuz);
+      updateStatsPanel();
+      renderMemorizedGrid();
     }
+    document.addEventListener('DOMContentLoaded', function() {
+      // Persistent input logic
+      document.getElementById('finishRevisionInput').onchange = function() {
+        localStorage.setItem('finishRevisionDays', this.value);
+        updateStatsPanel();
+      };
+      document.getElementById('pagesPerDayInput').onchange = function() {
+        localStorage.setItem('pagesPerDay', this.value);
+        updateStatsPanel();
+      };
+    });
 
     async function init() {
       // Load memorized pages from localStorage
