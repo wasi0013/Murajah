@@ -1,7 +1,14 @@
-  <div id="countdownOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;"><span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span></div>
+<div id="countdownOverlay"
+  style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;">
+  <span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span></div>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+  <!-- LineAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css" integrity="sha512-+b1QwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQwQKQw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- LineAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/line-awesome@1.3.0/dist/line-awesome/css/line-awesome.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Murajah Quran Layout</title>
@@ -14,14 +21,16 @@
       margin: 0;
       padding: 0;
     }
+
     .quran-page {
       max-width: 900px;
       margin: 40px auto;
       background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       border-radius: 12px;
       padding: 32px 24px;
     }
+
     .quran-line {
       display: flex;
       justify-content: center;
@@ -29,6 +38,7 @@
       font-size: 2.2em;
       line-height: 1.5;
     }
+
     .quran-word {
       cursor: pointer;
       margin: 0 2px;
@@ -36,22 +46,27 @@
       border-radius: 6px;
       padding: 0 4px;
     }
+
     .quran-word:hover {
       background: #e0f7fa;
     }
-    .surah-name, .basmallah {
+
+    .surah-name,
+    .basmallah {
       text-align: center;
       font-size: 2.4em;
       font-weight: bold;
       margin: 16px 0 8px 0;
       color: #2e7d32;
     }
+
     .navigation {
       display: flex;
       justify-content: center;
       margin: 24px 0 0 0;
       gap: 16px;
     }
+
     .navigation button {
       font-size: 1.1em;
       padding: 8px 18px;
@@ -62,12 +77,14 @@
       cursor: pointer;
       transition: background 0.2s;
     }
+
     .navigation button:disabled {
       background: #bdbdbd;
       cursor: not-allowed;
     }
   </style>
 </head>
+
 <body>
   <!-- Logo -->
   <div style="display:flex;justify-content:center;margin-top:32px;">
@@ -81,66 +98,94 @@
     }
   </style>
   <div class="navigation">
-  <button id="prevPage">Previous</button>
-  <span id="pageIndicator">Page 1 / 604</span>
-  <button id="nextPage">Next</button>
-  <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
-  <button id="gotoPageBtn">Go</button>
-  <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
-  <div id="audioControls" style="display:flex;align-items:center;gap:8px;margin-left:16px;">
-    <button id="recordBtn" style="background:#66bb6a;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Record Audio</button>
-    <button id="stopBtn" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Stop</button>
-    <button id="playBtn" style="background:#42a5f5;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Play</button>
-    <button id="pauseBtn" style="background:#ab47bc;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Pause</button>
+    <button id="prevPage">Previous</button>
+    <span id="pageIndicator">Page 1 / 604</span>
+    <button id="nextPage">Next</button>
+    <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #"
+      style="width: 70px; font-size: 1em; margin-left: 16px;">
+    <button id="gotoPageBtn">Go</button>
+    <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
+    <div id="audioControls" style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+      <button id="playBtn" title="Play" style="background: #24b416;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-play"></i>
+      </button>
+      <button id="pauseBtn" title="Pause" style="background:#ab47bc;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-pause"></i>
+      </button>
+      <button id="stopBtn" title="Stop" style="background:#494949;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-stop"></i>
+      </button>
+      <button id="recordBtn" title="Record" style="background:#e74141;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-microphone"></i>
+      </button>
+      
+    </div>
   </div>
-  </div>
-  
-  <div id="dashboard" style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+  <div id="dashboard"
+    style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#e3f2fd;border-radius:8px;height:24px;width:100%;overflow:hidden;">
       <div id="progressBar" style="height:100%;background:#1976d2;width:0%;transition:width 0.5s;"></div>
     </div>
     <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
     <div style="display:flex;flex-direction:row;gap:0;justify-content:center;align-items:flex-start;margin-top:18px;">
-      <div id="stats" style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);display:flex;justify-content:center;align-items:center;">
+      <div id="stats"
+        style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);display:flex;justify-content:center;align-items:center;">
         <div style="width:100%;padding:8px 0 0 0;">
-          
+
           <div style="display:flex;justify-content:center;align-items:center;">
-            <canvas id="juzPieChart" width="140" height="140" style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
+            <canvas id="juzPieChart" width="140" height="140"
+              style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
           </div>
-          <div id="statsBox" style="background:#e3f2fd;border-radius:10px;padding:12px 10px 10px 10px;margin:16px 0 10px 0;box-shadow:0 2px 8px rgba(25,118,210,0.06);font-size:1.08em;">
+          <div id="statsBox"
+            style="background:#e3f2fd;border-radius:10px;padding:12px 10px 10px 10px;margin:16px 0 10px 0;box-shadow:0 2px 8px rgba(25,118,210,0.06);font-size:1.08em;">
             <div id="statRevisePerDay"></div>
             <div id="statMinDaysNeeded"></div>
             <div id="statEstimatedCompletion"></div>
           </div>
-          <div style="background:#fff;border-radius:10px;padding:10px 10px 8px 10px;box-shadow:0 2px 8px rgba(25,118,210,0.04);">
+          <div
+            style="background:#fff;border-radius:10px;padding:10px 10px 8px 10px;box-shadow:0 2px 8px rgba(25,118,210,0.04);">
             <label for="finishRevisionInput" style="font-size:1em;color:#1976d2;">Finish revision in (days):</label>
-            <input type="number" id="finishRevisionInput" min="1" max="999" style="width:80px;margin-left:8px;font-size:1em;">
+            <input type="number" id="finishRevisionInput" min="1" max="999"
+              style="width:80px;margin-left:8px;font-size:1em;">
             <br><br>
             <label for="pagesPerDayInput" style="font-size:1em;color:#1976d2;">Pages memorized per day:</label>
-            <input type="number" id="pagesPerDayInput" min="0.01" max="604" step="0.01" style="width:80px;margin-left:8px;font-size:1em;">
+            <input type="number" id="pagesPerDayInput" min="0.01" max="604" step="0.01"
+              style="width:80px;margin-left:8px;font-size:1em;">
             <br><br>
             <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <label for="bulkStart" style="font-size:1em;color:#1976d2;">Range:</label>
-              <input type="number" id="bulkStart" min="1" max="604" placeholder="Start" style="width:80px;font-size:1em;">
+              <input type="number" id="bulkStart" min="1" max="604" placeholder="Start"
+                style="width:80px;font-size:1em;">
               <span style="font-size:1.5em;color:#1976d2;">&#8211;</span>
               <input type="number" id="bulkEnd" min="1" max="604" placeholder="End" style="width:80px;font-size:1em;">
-              <button id="bulkMarkBtn" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:1em;cursor:pointer;">Memorized</button>
+              <button id="bulkMarkBtn"
+                style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:1em;cursor:pointer;">Memorized</button>
             </div>
             <div id="bulkError" style="color:#d32f2f;font-size:0.98em;margin-top:8px;display:none;"></div>
-          
+
           </div>
           <div id="statsButtons" style="display:flex;align-items:center;gap:12px;margin-top:18px;">
-            <button id="exportBtn" style="background:#29b6f6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Backup</button>
-            <button id="importBtn" style="background:#ffa726;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Restore</button>
+            <button id="exportBtn"
+              style="background:#29b6f6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Backup</button>
+            <button id="importBtn"
+              style="background:#ffa726;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Restore</button>
             <input type="file" id="importFile" accept="application/json" style="display:none;">
           </div>
         </div>
-    
+
       </div>
-      <div id="memorizedGrid" style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);"></div>
+      <div id="memorizedGrid"
+        style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);">
+      </div>
     </div>
   </div>
-
+  <div id="audioPlaylist"
+    style="width:100%;max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    <h3 style="margin-top:0;margin-bottom:16px;font-size:1.2em;color:#1976d2;text-align:left;">Recorded Audio Playlist
+    </h3>
+    <div id="playlistItems"></div>
+  </div>
   <script>
     // Audio recording and playback logic
     let mediaRecorder = null;
@@ -158,26 +203,27 @@
       const pauseBtn = document.getElementById('pauseBtn');
       const audioKey = getAudioKey(currentPage);
       const audioData = localStorage.getItem(audioKey);
+      // Always show all buttons, but disable when not needed
       if (mediaRecorder && mediaRecorder.state === 'recording') {
-        recordBtn.style.display = 'none';
-        stopBtn.style.display = '';
-        playBtn.style.display = 'none';
-        pauseBtn.style.display = 'none';
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        playBtn.disabled = true;
+        pauseBtn.disabled = true;
       } else if (audioData) {
-        recordBtn.style.display = '';
-        stopBtn.style.display = 'none';
-        playBtn.style.display = '';
-        pauseBtn.style.display = 'none';
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
       } else {
-        recordBtn.style.display = '';
-        stopBtn.style.display = 'none';
-        playBtn.style.display = 'none';
-        pauseBtn.style.display = 'none';
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        playBtn.disabled = true;
+        pauseBtn.disabled = true;
       }
     }
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       updateAudioControls();
-      document.getElementById('recordBtn').onclick = async function() {
+      document.getElementById('recordBtn').onclick = async function () {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           alert('Audio recording not supported.');
           return;
@@ -202,13 +248,13 @@
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
               mediaRecorder = new MediaRecorder(stream);
               audioChunks = [];
-              mediaRecorder.ondataavailable = function(e) {
+              mediaRecorder.ondataavailable = function (e) {
                 audioChunks.push(e.data);
               };
-              mediaRecorder.onstop = function() {
+              mediaRecorder.onstop = function () {
                 audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 const reader = new FileReader();
-                reader.onloadend = function() {
+                reader.onloadend = function () {
                   localStorage.setItem(getAudioKey(currentPage), reader.result);
                   updateAudioControls();
                 };
@@ -225,14 +271,14 @@
           }
         }, 1000);
       };
-      document.getElementById('stopBtn').onclick = function() {
+      document.getElementById('stopBtn').onclick = function () {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
           // Unblur Quran page when manually stopped
           document.getElementById('quranPage').classList.remove('blurred');
         }
       };
-      document.getElementById('playBtn').onclick = function() {
+      document.getElementById('playBtn').onclick = function () {
         const audioData = localStorage.getItem(getAudioKey(currentPage));
         if (audioData) {
           audioPlayer.src = audioData;
@@ -241,12 +287,12 @@
           document.getElementById('pauseBtn').style.display = '';
         }
       };
-      document.getElementById('pauseBtn').onclick = function() {
+      document.getElementById('pauseBtn').onclick = function () {
         audioPlayer.pause();
         document.getElementById('playBtn').style.display = '';
         document.getElementById('pauseBtn').style.display = 'none';
       };
-      audioPlayer.onended = function() {
+      audioPlayer.onended = function () {
         updateAudioControls();
       };
     });
@@ -266,8 +312,8 @@
       document.getElementById('pagesPerDayInput').value = pagesPerDay;
 
       // Revise per day
-  const revisePerDay = finishRevision > 0 ? Math.ceil(memorized / finishRevision) : 0;
-  document.getElementById('statRevisePerDay').textContent = `Revise per day: ${revisePerDay}`;
+      const revisePerDay = finishRevision > 0 ? Math.ceil(memorized / finishRevision) : 0;
+      document.getElementById('statRevisePerDay').textContent = `Revise per day: ${revisePerDay}`;
       // Min days needed
       const minDaysNeeded = pagesPerDay > 0 ? Math.ceil((604 - memorized) / pagesPerDay) : '∞';
       document.getElementById('statMinDaysNeeded').textContent = `Min days needed: ${minDaysNeeded}`;
@@ -287,37 +333,37 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const percent = juzMemorized / totalJuz;
-    // Draw donut background
-    ctx.beginPath();
-    ctx.arc(70, 70, 65, 0, 2 * Math.PI);
-    ctx.arc(70, 70, 45, 2 * Math.PI, 0, true);
-    ctx.closePath();
-    ctx.fillStyle = '#e3f2fd';
-    ctx.fill();
+      const percent = juzMemorized / totalJuz;
+      // Draw donut background
+      ctx.beginPath();
+      ctx.arc(70, 70, 65, 0, 2 * Math.PI);
+      ctx.arc(70, 70, 45, 2 * Math.PI, 0, true);
+      ctx.closePath();
+      ctx.fillStyle = '#e3f2fd';
+      ctx.fill();
 
-    // Draw memorized arc with gradient
-    const startAngle = -Math.PI/2;
-    const endAngle = startAngle + 2 * Math.PI * percent;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(70, 70, 65, startAngle, endAngle, false);
-    ctx.arc(70, 70, 45, endAngle, startAngle, true);
-    ctx.closePath();
-    // Create gradient
-    const grad = ctx.createLinearGradient(70, 5, 70, 135);
-    grad.addColorStop(0, '#6dd5ed'); // light blue
-    grad.addColorStop(1, '#2193b0'); // deeper blue
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.restore();
+      // Draw memorized arc with gradient
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + 2 * Math.PI * percent;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(70, 70, 65, startAngle, endAngle, false);
+      ctx.arc(70, 70, 45, endAngle, startAngle, true);
+      ctx.closePath();
+      // Create gradient
+      const grad = ctx.createLinearGradient(70, 5, 70, 135);
+      grad.addColorStop(0, '#6dd5ed'); // light blue
+      grad.addColorStop(1, '#2193b0'); // deeper blue
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
 
-    // Draw center label
-    ctx.font = 'bold 1.1em sans-serif';
-    ctx.fillStyle = '#2193b0';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${juzMemorized} / ${totalJuz}`, 70, 70);
+      // Draw center label
+      ctx.font = 'bold 1.1em sans-serif';
+      ctx.fillStyle = '#2193b0';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${juzMemorized} / ${totalJuz}`, 70, 70);
     }
 
     function renderMemorizedGrid() {
@@ -354,7 +400,7 @@
       grid.innerHTML = html;
       // Add click event listeners to each cell
       Array.from(grid.getElementsByClassName('grid-cell')).forEach(cell => {
-        cell.onclick = function() {
+        cell.onclick = function () {
           const page = parseInt(cell.getAttribute('data-page'), 10);
           const idx = memorizedPages.indexOf(page);
           if (idx === -1) {
@@ -369,8 +415,8 @@
       });
     }
     // Collapsible bulk memorization section logic
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('bulkMarkBtn').onclick = function() {
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('bulkMarkBtn').onclick = function () {
         const start = parseInt(document.getElementById('bulkStart').value, 10);
         const end = parseInt(document.getElementById('bulkEnd').value, 10);
         const errorDiv = document.getElementById('bulkError');
@@ -403,10 +449,10 @@
     const TOTAL_PAGES = 604;
     let layoutData = [];
     let wordsData = {};
-let translations = {};
+    let translations = {};
     let surahNames = {};
     let currentPage = 1;
-let memorizedPages = [];
+    let memorizedPages = [];
 
     async function loadJSON(path) {
       const res = await fetch(path);
@@ -454,27 +500,27 @@ let memorizedPages = [];
       updateStatsPanel();
       renderMemorizedGrid();
     }
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Persistent input logic
-      document.getElementById('finishRevisionInput').onchange = function() {
+      document.getElementById('finishRevisionInput').onchange = function () {
         localStorage.setItem('finishRevisionDays', this.value);
         updateStatsPanel();
       };
-      document.getElementById('pagesPerDayInput').onchange = function() {
+      document.getElementById('pagesPerDayInput').onchange = function () {
         localStorage.setItem('pagesPerDay', this.value);
         updateStatsPanel();
       };
     });
 
     // Export/Import localStorage to/from JSON file
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('exportBtn').onclick = function() {
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('exportBtn').onclick = function () {
         const data = {};
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
           data[key] = localStorage.getItem(key);
         }
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -493,14 +539,14 @@ let memorizedPages = [];
       // Import logic
       const importBtn = document.getElementById('importBtn');
       const importFile = document.getElementById('importFile');
-      importBtn.onclick = function() {
+      importBtn.onclick = function () {
         importFile.click();
       };
-      importFile.onchange = function(e) {
+      importFile.onchange = function (e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(evt) {
+        reader.onload = function (evt) {
           try {
             const data = JSON.parse(evt.target.result);
             if (typeof data === 'object' && data !== null) {
@@ -524,11 +570,11 @@ let memorizedPages = [];
       memorizedPages = mem ? JSON.parse(mem) : [];
       layoutData = await loadJSON(LAYOUT_PATH);
       wordsData = await loadJSON(WORDS_PATH);
-  surahNames = await loadJSON('./resources/surah-names.json');
-  translations = await loadJSON('./resources/english-wbw-translation.json');
-  renderPage(currentPage);
-  updateDashboard();
-  renderMemorizedGrid();
+      surahNames = await loadJSON('./resources/surah-names.json');
+      translations = await loadJSON('./resources/english-wbw-translation.json');
+      renderPage(currentPage);
+      updateDashboard();
+      renderMemorizedGrid();
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
       document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
       document.getElementById('gotoPageBtn').onclick = () => {
@@ -539,7 +585,7 @@ let memorizedPages = [];
           alert('Please enter a valid page number (1-604).');
         }
       };
-      document.getElementById('gotoPageInput').addEventListener('keydown', function(e) {
+      document.getElementById('gotoPageInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
           document.getElementById('gotoPageBtn').click();
         }
@@ -553,7 +599,7 @@ let memorizedPages = [];
       if (page < 1 || page > TOTAL_PAGES) return;
       currentPage = page;
       renderPage(currentPage);
-  updateMemorizeBtn();
+      updateMemorizeBtn();
     }
 
     function renderPage(pageNum) {
@@ -594,7 +640,7 @@ let memorizedPages = [];
               // Remove browser tooltip
               wordSpan.title = '';
               // Custom tooltip logic
-              wordSpan.onmouseenter = function(e) {
+              wordSpan.onmouseenter = function (e) {
                 let tip = document.getElementById('customTooltip');
                 if (!tip) {
                   tip = document.createElement('div');
@@ -618,14 +664,14 @@ let memorizedPages = [];
                 tip.style.left = (e.clientX + 18) + 'px';
                 tip.style.top = (e.clientY + 18) + 'px';
               };
-              wordSpan.onmousemove = function(e) {
+              wordSpan.onmousemove = function (e) {
                 const tip = document.getElementById('customTooltip');
                 if (tip) {
                   tip.style.left = (e.clientX + 18) + 'px';
                   tip.style.top = (e.clientY + 18) + 'px';
                 }
               };
-              wordSpan.onmouseleave = function() {
+              wordSpan.onmouseleave = function () {
                 const tip = document.getElementById('customTooltip');
                 if (tip) tip.style.display = 'none';
               };
@@ -639,39 +685,39 @@ let memorizedPages = [];
       document.getElementById('pageIndicator').textContent = `Page ${pageNum} / ${TOTAL_PAGES}`;
       document.getElementById('prevPage').disabled = pageNum === 1;
       document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
-  updateMemorizeBtn();
-function updateMemorizeBtn() {
-  const btn = document.getElementById('memorizeBtn');
-  btn.style.background = '';
-  btn.style.color = '';
-  btn.style.border = '';
-  btn.style.boxShadow = '';
-  if (memorizedPages.includes(currentPage)) {
-    btn.textContent = 'Memorized ✓';
-    btn.style.background = '#1976d2'; // Soothing blue
-    btn.style.color = '#fff';
-    btn.style.border = 'none';
-    btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
-  } else {
-    btn.textContent = 'Mark as Memorized';
-    btn.style.background = '#2196f3'; // Lighter blue for default
-    btn.style.color = '#fff';
-    btn.style.border = 'none';
-    btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
-  }
-}
+      updateMemorizeBtn();
+      function updateMemorizeBtn() {
+        const btn = document.getElementById('memorizeBtn');
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.border = '';
+        btn.style.boxShadow = '';
+        if (memorizedPages.includes(currentPage)) {
+          btn.textContent = 'Memorized ✓';
+          btn.style.background = '#1976d2'; // Soothing blue
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
+        } else {
+          btn.textContent = 'Mark as Memorized';
+          btn.style.background = '#2196f3'; // Lighter blue for default
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
+        }
+      }
 
-function toggleMemorized(pageNum) {
-  const idx = memorizedPages.indexOf(pageNum);
-  if (idx === -1) {
-    memorizedPages.push(pageNum);
-  } else {
-    memorizedPages.splice(idx, 1);
-  }
-  localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
-  updateMemorizeBtn();
-  updateDashboard();
-}
+      function toggleMemorized(pageNum) {
+        const idx = memorizedPages.indexOf(pageNum);
+        if (idx === -1) {
+          memorizedPages.push(pageNum);
+        } else {
+          memorizedPages.splice(idx, 1);
+        }
+        localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+        updateMemorizeBtn();
+        updateDashboard();
+      }
     }
 
     function getWordById(id) {
@@ -683,19 +729,90 @@ function toggleMemorized(pageNum) {
     }
 
     function getSurahName(num) {
-  // Lookup surah name from surahNames JSON
-  return surahNames && surahNames[num] ? surahNames[num] : num;
+      // Lookup surah name from surahNames JSON
+      return surahNames && surahNames[num] ? surahNames[num] : num;
     }
 
     function onWordClick(wordObj) {
       alert(`Word: ${wordObj.text}\nSurah: ${wordObj.surah}\nAyah: ${wordObj.ayah}\nWord #: ${wordObj.word}`);
     }
 
+    // Render audio playlist
+    function renderAudioPlaylist() {
+      const playlistDiv = document.getElementById('playlistItems');
+      playlistDiv.innerHTML = '';
+      const audios = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('audio-page-')) {
+          const pageNum = key.split('-').pop();
+          audios.push({ key, pageNum, data: localStorage.getItem(key) });
+        }
+      }
+      if (audios.length === 0) {
+        playlistDiv.innerHTML = '<div style="color:#888;text-align:center;">No recordings yet.</div>';
+        return;
+      }
+      audios.sort((a, b) => Number(a.pageNum) - Number(b.pageNum));
+      audios.forEach(audio => {
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.marginBottom = '12px';
+        item.style.gap = '16px';
+        item.style.borderBottom = '1px solid #eee';
+        item.style.paddingBottom = '8px';
+        const label = document.createElement('span');
+        label.textContent = `Page ${audio.pageNum}`;
+        label.style.fontWeight = 'bold';
+        label.style.color = '#1976d2';
+        const player = document.createElement('audio');
+        player.controls = true;
+        player.src = audio.data;
+        player.style.flex = '1';
+        player.style.margin = '0 12px';
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.background = '#ec4e4e';
+        delBtn.style.color = '#fff';
+        delBtn.style.border = 'none';
+        delBtn.style.borderRadius = '6px';
+        delBtn.style.padding = '6px 14px';
+        delBtn.style.cursor = 'pointer';
+        delBtn.onclick = function () {
+          if (confirm(`Delete audio for Page ${audio.pageNum}?`)) {
+            localStorage.removeItem(audio.key);
+            renderAudioPlaylist();
+            updateAudioControls();
+          }
+        };
+        item.appendChild(label);
+        item.appendChild(player);
+        item.appendChild(delBtn);
+        playlistDiv.appendChild(item);
+      });
+    }
+
+    // Re-render playlist on page load and after audio changes
+    document.addEventListener('DOMContentLoaded', function () {
+      renderAudioPlaylist();
+    });
+    // Also call after recording/deleting audio
+    function updateAudioControls() {
+      // ...existing code...
+      renderAudioPlaylist();
+    }
+
+
     window.onload = init;
   </script>
 
-  <footer style="width:100%;text-align:center;padding:18px 0 12px 0;background:#f5f5f5;color:#888;font-size:1em;position:relative;bottom:0;left:0;">
+  <footer
+    style="width:100%;text-align:center;padding:18px 0 12px 0;background:#f5f5f5;color:#888;font-size:1em;position:relative;bottom:0;left:0;">
+
     Murajah &copy; 2025. Made with <span style="color:#e57373;">&#10084;</span> for Quran memorization.
   </footer>
 </body>
+
 </html>
