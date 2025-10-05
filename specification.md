@@ -143,3 +143,22 @@ When the user hover on a word show the word by word translation for the word. Th
 ```
 
 This is the format of the english-wbw-translation.
+
+Task: Shift grid to the right and show some stats on the left side
+
+There should be a pi chart showing the progress of Juzs memorized. Show Total number of Juz memorized (assuming ~20 memorized pages = 1 juz) in the middle of the chart.
+
+Below the pie chart there should be a box showing some more stats:
+
+Revise per day	(Calculated by the total memorized pages count divided by finish revision in field)	
+Min days needed (calculated based on how many pages memorized per day and what's left to memorize from the 604 pages)
+
+Estimated completion in (also calculated by how many pages memorized per day)
+
+Below the stats show these input fields:
+
+An input field which is editable and persisten via local storage showing `Finish revision in(days)` field
+Another persistent input field, `How many pages memorized per day?` it could be 0.4 or any float/integer number from range of 0-604
+
+On change of these fields update the stats automatically.
+
