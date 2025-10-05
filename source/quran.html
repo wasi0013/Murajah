@@ -80,6 +80,12 @@
   <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #" style="width: 70px; font-size: 1em; margin-left: 16px;">
   <button id="gotoPageBtn">Go</button>
   <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
+  <div id="audioControls" style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+    <button id="recordBtn" style="background:#66bb6a;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Record Audio</button>
+    <button id="stopBtn" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Stop</button>
+    <button id="playBtn" style="background:#42a5f5;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Play</button>
+    <button id="pauseBtn" style="background:#ab47bc;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;display:none;">Pause</button>
+  </div>
   </div>
   
   <div id="dashboard" style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
@@ -129,6 +135,99 @@
   </div>
 
   <script>
+    // Audio recording and playback logic
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let currentAudioUrl = null;
+    let audioBlob = null;
+    let audioPlayer = new Audio();
+    function getAudioKey(pageNum) {
+      return `audio-page-${pageNum}`;
+    }
+    function updateAudioControls() {
+      const recordBtn = document.getElementById('recordBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const playBtn = document.getElementById('playBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const audioKey = getAudioKey(currentPage);
+      const audioData = localStorage.getItem(audioKey);
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        recordBtn.style.display = 'none';
+        stopBtn.style.display = '';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+      } else if (audioData) {
+        recordBtn.style.display = '';
+        stopBtn.style.display = 'none';
+        playBtn.style.display = '';
+        pauseBtn.style.display = 'none';
+      } else {
+        recordBtn.style.display = '';
+        stopBtn.style.display = 'none';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      updateAudioControls();
+      document.getElementById('recordBtn').onclick = async function() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Audio recording not supported.');
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = function(e) {
+            audioChunks.push(e.data);
+          };
+          mediaRecorder.onstop = function() {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.onloadend = function() {
+              localStorage.setItem(getAudioKey(currentPage), reader.result);
+              updateAudioControls();
+            };
+            reader.readAsDataURL(audioBlob);
+          };
+          mediaRecorder.start();
+          updateAudioControls();
+        } catch (err) {
+          alert('Could not start recording: ' + err.message);
+        }
+      };
+      document.getElementById('stopBtn').onclick = function() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      };
+      document.getElementById('playBtn').onclick = function() {
+        const audioData = localStorage.getItem(getAudioKey(currentPage));
+        if (audioData) {
+          audioPlayer.src = audioData;
+          audioPlayer.play();
+          document.getElementById('playBtn').style.display = 'none';
+          document.getElementById('pauseBtn').style.display = '';
+        }
+      };
+      document.getElementById('pauseBtn').onclick = function() {
+        audioPlayer.pause();
+        document.getElementById('playBtn').style.display = '';
+        document.getElementById('pauseBtn').style.display = 'none';
+      };
+      audioPlayer.onended = function() {
+        updateAudioControls();
+      };
+    });
+    // Update audio controls when page changes
+    function changePage(page) {
+      if (page < 1 || page > TOTAL_PAGES) return;
+      currentPage = page;
+      renderPage(currentPage);
+      updateMemorizeBtn();
+      updateAudioControls();
+    }
     function updateStatsPanel() {
       const memorized = memorizedPages.length;
       let finishRevision = parseInt(localStorage.getItem('finishRevisionDays') || '30', 10);
