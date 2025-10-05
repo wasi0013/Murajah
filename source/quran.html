@@ -109,15 +109,18 @@
       <button id="playBtn" title="Play" style="background: #24b416;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-play"></i>
       </button>
-      <button id="pauseBtn" title="Pause" style="background:#ab47bc;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <button id="pauseBtn" title="Pause" style="background:#707c81;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-pause"></i>
       </button>
       <button id="stopBtn" title="Stop" style="background:#494949;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-stop"></i>
       </button>
-      <button id="recordBtn" title="Record" style="background:#e74141;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <button id="recordBtn" title="Record" style="background:#ae00ff;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-microphone"></i>
       </button>
+        <button id="deleteAudioBtn" title="Delete Audio" style="background:#ec4e4e;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <i class="la la-trash"></i>
+        </button>
       
     </div>
   </div>
@@ -201,6 +204,7 @@
       const stopBtn = document.getElementById('stopBtn');
       const playBtn = document.getElementById('playBtn');
       const pauseBtn = document.getElementById('pauseBtn');
+      const deleteBtn = document.getElementById('deleteAudioBtn');
       const audioKey = getAudioKey(currentPage);
       const audioData = localStorage.getItem(audioKey);
       // Always show all buttons, but disable when not needed
@@ -209,20 +213,34 @@
         stopBtn.disabled = false;
         playBtn.disabled = true;
         pauseBtn.disabled = true;
+        deleteBtn.style.display = 'none';
       } else if (audioData) {
         recordBtn.disabled = false;
         stopBtn.disabled = true;
         playBtn.disabled = false;
         pauseBtn.disabled = true;
+        deleteBtn.style.display = '';
       } else {
         recordBtn.disabled = false;
         stopBtn.disabled = true;
         playBtn.disabled = true;
         pauseBtn.disabled = true;
+        deleteBtn.style.display = 'none';
       }
     }
     document.addEventListener('DOMContentLoaded', function () {
       updateAudioControls();
+      document.getElementById('deleteAudioBtn').onclick = function () {
+        const audioKey = getAudioKey(currentPage);
+        if (localStorage.getItem(audioKey)) {
+          if (confirm('Delete audio for this page?')) {
+            localStorage.removeItem(audioKey);
+            updateAudioControls();
+          }
+        } else {
+          alert('No audio to delete for this page.');
+        }
+      };
       document.getElementById('recordBtn').onclick = async function () {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           alert('Audio recording not supported.');
@@ -572,12 +590,13 @@
       wordsData = await loadJSON(WORDS_PATH);
       surahNames = await loadJSON('./resources/surah-names.json');
       translations = await loadJSON('./resources/english-wbw-translation.json');
-      renderPage(currentPage);
-      updateDashboard();
-      renderMemorizedGrid();
-      document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
-      document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
-      document.getElementById('gotoPageBtn').onclick = () => {
+  renderPage(currentPage);
+  updateDashboard();
+  renderMemorizedGrid();
+  updateAudioControls();
+  document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
+  document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
+  document.getElementById('gotoPageBtn').onclick = () => {
         const val = parseInt(document.getElementById('gotoPageInput').value, 10);
         if (!isNaN(val) && val >= 1 && val <= TOTAL_PAGES) {
           changePage(val);
