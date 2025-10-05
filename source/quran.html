@@ -99,14 +99,35 @@
   <script>
     function renderMemorizedGrid() {
       const grid = document.getElementById('memorizedGrid');
-      const cols = 22; // 604/22 ≈ 27 rows
       const total = TOTAL_PAGES;
-      let html = '<div style="display:grid;grid-template-columns:repeat(' + cols + ', 1fr);gap:3px;">';
-      for (let i = 1; i <= total; i++) {
-        const isMemorized = memorizedPages.includes(i);
-        html += `<div class="grid-cell" data-page="${i}" title="Page ${i}" style="width:18px;height:18px;border-radius:4px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;"></div>`;
-      }
+      let html = '';
+      // First row: page 1 centered
+      html += '<div style="display:flex;justify-content:center;margin-bottom:4px;">';
+      const isMemorized1 = memorizedPages.includes(1);
+      html += `<div class="grid-cell" data-page="1" title="Page 1" style="width:18px;height:18px;border-radius:4px;background:${isMemorized1 ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;"></div>`;
       html += '</div>';
+
+      // Next rows: 20 cells per row
+      let page = 2;
+      for (let row = 0; row < Math.floor((total - 1) / 20); row++) {
+        html += '<div style="display:flex;justify-content:center;margin-bottom:2px;">';
+        for (let col = 0; col < 20 && page <= total; col++, page++) {
+          const isMemorized = memorizedPages.includes(page);
+          html += `<div class="grid-cell" data-page="${page}" title="Page ${page}" style="width:13px;height:13px;border-radius:2px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;margin-right:1px;"></div>`;
+        }
+        html += '</div>';
+      }
+
+      // Last row: remaining cells centered
+      if (page <= total) {
+        html += '<div style="display:flex;justify-content:center;margin-bottom:2px;">';
+        for (; page <= total; page++) {
+          const isMemorized = memorizedPages.includes(page);
+          html += `<div class="grid-cell" data-page="${page}" title="Page ${page}" style="width:13px;height:13px;border-radius:2px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;margin-right:1px;"></div>`;
+        }
+        html += '</div>';
+      }
+
       grid.innerHTML = html;
       // Add click event listeners to each cell
       Array.from(grid.getElementsByClassName('grid-cell')).forEach(cell => {
