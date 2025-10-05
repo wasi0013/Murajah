@@ -90,6 +90,7 @@
     <div style="display:flex;flex-direction:row;gap:0;justify-content:center;align-items:flex-start;margin-top:18px;">
       <div id="stats" style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);display:flex;justify-content:center;align-items:center;">
         <div style="width:100%;padding:8px 0 0 0;">
+          
           <div style="display:flex;justify-content:center;align-items:center;">
             <canvas id="juzPieChart" width="140" height="140" style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
           </div>
@@ -113,6 +114,12 @@
               <button id="bulkMarkBtn" style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:1em;cursor:pointer;">Memorized</button>
             </div>
             <div id="bulkError" style="color:#d32f2f;font-size:0.98em;margin-top:8px;display:none;"></div>
+          
+          </div>
+          <div id="statsButtons" style="display:flex;align-items:center;gap:12px;margin-top:18px;">
+            <button id="exportBtn" style="background:#29b6f6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Backup</button>
+            <button id="importBtn" style="background:#ffa726;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Restore</button>
+            <input type="file" id="importFile" accept="application/json" style="display:none;">
           </div>
         </div>
     
@@ -330,6 +337,58 @@ let memorizedPages = [];
       };
     });
 
+    // Export/Import localStorage to/from JSON file
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('exportBtn').onclick = function() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          data[key] = localStorage.getItem(key);
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // Get current date in YYYY-MM-DD format
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        a.download = `murajah-backup-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+      // Import logic
+      const importBtn = document.getElementById('importBtn');
+      const importFile = document.getElementById('importFile');
+      importBtn.onclick = function() {
+        importFile.click();
+      };
+      importFile.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (typeof data === 'object' && data !== null) {
+              for (const key in data) {
+                localStorage.setItem(key, data[key]);
+              }
+              alert('Data imported! Please reload the page to see changes.');
+            } else {
+              alert('Invalid file format.');
+            }
+          } catch (err) {
+            alert('Error importing data: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+    });
     async function init() {
       // Load memorized pages from localStorage
       const mem = localStorage.getItem('memorizedPages');
