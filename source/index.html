@@ -121,6 +121,8 @@
               style="background:#29b6f6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Backup</button>
             <button id="importBtn"
               style="background:#ffa726;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Restore</button>
+            <button id="resetBtn"
+              style="background:#e53935;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Reset</button>
             <input type="file" id="importFile" accept="application/json" style="display:none;">
           </div>
         </div>
@@ -784,7 +786,7 @@ function attachMistakeTracker(pageNum) {
         importFile.click();
       };
       importFile.onchange = function (e) {
-  // --- importFile.onchange: Handle file input change ---
+        // --- importFile.onchange: Handle file input change ---
         console.debug('[Murajah] importFile changed');
         const file = e.target.files[0];
         if (!file) return;
@@ -795,7 +797,6 @@ function attachMistakeTracker(pageNum) {
             const data = JSON.parse(evt.target.result);
             if (typeof data === 'object' && data !== null) {
               console.debug('[Murajah] Importing data to localStorage');
-              console.warn('[Murajah] Invalid file format for import');
               for (const key in data) {
                 localStorage.setItem(key, data[key]);
               }
@@ -809,6 +810,15 @@ function attachMistakeTracker(pageNum) {
           }
         };
         reader.readAsText(file);
+      };
+
+      // Reset logic
+      document.getElementById('resetBtn').onclick = function () {
+        if (confirm('Are you sure you want to reset all data? This will delete all your progress, mistakes, and audio.')) {
+          localStorage.clear();
+          alert('All data has been reset. The page will now reload.');
+          location.reload();
+        }
       };
     });
     async function init() {
