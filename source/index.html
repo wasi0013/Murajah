@@ -154,7 +154,7 @@
 let perfectRevisions = {};
 
 function getPerfectKey(pageNum) {
-  return `perfect-page-${pageNum}`;
+  return `${pageNum}`;
 }
 
 function loadPerfectRevisions() {
@@ -229,12 +229,11 @@ function renderMistakeBubbleGrid() {
   // Gather all pages with mistakes
   const pageMistakeCounts = [];
   for (const key in mistakes) {
-    if (key.startsWith('mistakes-page-')) {
-      const pageNum = Number(key.split('-').pop());
+  
+      const pageNum = Number(key);
       const count = Array.isArray(mistakes[key]) ? mistakes[key].length : 0;
       if (count > 0) {
         pageMistakeCounts.push({ pageNum, count });
-      }
     }
   }
   // Sort descending by mistake count
@@ -281,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Utility: Get mistake key for current page
 function getMistakeKey(pageNum) {
-  return `mistakes-page-${pageNum}`;
+  return `${pageNum}`;
 }
 
 // Utility: Save mistakes to localStorage
