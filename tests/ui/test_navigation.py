@@ -3,7 +3,7 @@ import time
 from tests.pages.quran_page import QuranPage
 
 def test_navigation(driver):
-    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../source/quran.html'))
+    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../source/index.html'))
     page = QuranPage(driver)
     page.load(html_path)
     time.sleep(2)

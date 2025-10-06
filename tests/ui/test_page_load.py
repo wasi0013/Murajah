@@ -2,7 +2,7 @@ import os
 from tests.pages.quran_page import QuranPage
 
 def test_page_load(driver):
-    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../source/quran.html'))
+    html_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../source/index.html'))
     page = QuranPage(driver)
     page.load(html_path)
     assert page.get_quran_page().is_displayed()

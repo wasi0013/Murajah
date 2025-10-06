@@ -38,7 +38,7 @@ Produce actionable steps for producing the Quran layout page by page:
 ---
 **Next Actionable Steps for Producing the Quran Layout Page by Page:**
 The layout that we are recreating is available here: <https://qul.tarteel.ai/resources/mushaf-layout/10>
-Inspect this page strucutre and complete the below steps, create a source folder with quran.html that renders the layout
+Inspect this page strucutre and complete the below steps, create a source folder with index.html that renders the layout
 
 1. **Load Layout and Word Data**
    1. Load `qpc-v2-15-lines.json` for page/line structure.
