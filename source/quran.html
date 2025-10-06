@@ -20,6 +20,14 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="resources/logo.png">
   <style>
+/* =============================
+   Mistake Tracker Styles
+   ============================= */
+.mistake-word {
+  border-bottom: 2px solid #e53935 !important;
+  background: #fff3f3;
+  transition: border-bottom 0.2s;
+}
     body {
       background: #f9f9f9;
       font-family: 'QPCV2Page', serif;
@@ -91,6 +99,8 @@
 </head>
 
 <body>
+  <!-- Mistake Count Indicator -->
+  <div id="mistakeCountIndicator" style="position:fixed;top:18px;left:18px;z-index:10000;font-size:1.5em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
   <!-- Logo -->
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
@@ -200,6 +210,87 @@
     <div id="playlistItems"></div>
   </div>
   <script>
+// =============================
+// Mistake Tracker Section
+// =============================
+
+// Utility: Update mistake count indicator
+function updateMistakeCountIndicator() {
+  let totalMistakes = 0;
+  Object.values(mistakes).forEach(arr => {
+    totalMistakes += Array.isArray(arr) ? arr.length : 0;
+  });
+  const indicator = document.getElementById('mistakeCountIndicator');
+  if (!indicator) return;
+  if (totalMistakes > 0) {
+    indicator.textContent = `Mistakes: ${totalMistakes}`;
+    indicator.style.display = 'block';
+    indicator.style.opacity = '0.85';
+    indicator.style.background = 'rgba(229,57,53,0.12)';
+    indicator.style.color = '#e53935';
+  } else {
+    indicator.style.display = 'none';
+  }
+}
+
+// Mistake tracker data model
+let mistakes = {};
+
+// Load mistakes from localStorage on init
+document.addEventListener('DOMContentLoaded', function () {
+  const mistakesRaw = localStorage.getItem('mistakes');
+  mistakes = mistakesRaw ? JSON.parse(mistakesRaw) : {};
+});
+
+// Utility: Get mistake key for current page
+function getMistakeKey(pageNum) {
+  return `mistakes-page-${pageNum}`;
+}
+
+// Utility: Save mistakes to localStorage
+function saveMistakes() {
+  localStorage.setItem('mistakes', JSON.stringify(mistakes));
+}
+
+// Attach mistake tracker to Quran words after page render
+function attachMistakeTracker(pageNum) {
+  const mistakeKey = getMistakeKey(pageNum);
+  const pageMistakes = mistakes[mistakeKey] || [];
+  // Find all word spans
+  const wordSpans = document.querySelectorAll('.quran-line .quran-word');
+  wordSpans.forEach(span => {
+    // Each span should have a unique word id as a data attribute
+    const wordId = span.getAttribute('data-word-id');
+    if (!wordId) return;
+    // Highlight if mistake
+    if (pageMistakes.includes(Number(wordId))) {
+      span.classList.add('mistake-word');
+    } else {
+      span.classList.remove('mistake-word');
+    }
+    // Add click handler to toggle mistake
+    span.addEventListener('click', function (e) {
+      let pageMistakes = mistakes[mistakeKey] || [];
+      const idx = pageMistakes.indexOf(Number(wordId));
+      if (idx === -1) {
+        pageMistakes.push(Number(wordId));
+        span.classList.add('mistake-word');
+        console.log('[MistakeTracker] Mistake highlighted:', wordId, 'on page', pageNum);
+      } else {
+        pageMistakes.splice(idx, 1);
+        span.classList.remove('mistake-word');
+        console.log('[MistakeTracker] Mistake removed:', wordId, 'on page', pageNum);
+      }
+      mistakes[mistakeKey] = pageMistakes;
+      saveMistakes();
+      updateMistakeCountIndicator();
+    });
+  });
+  updateMistakeCountIndicator();
+}
+// =============================
+// End Mistake Tracker Section
+// =============================
   // =============================
   // Murajah Quran App JavaScript
   // =============================
@@ -766,6 +857,7 @@
               wordSpan.textContent = wordObj.text;
               // Remove browser tooltip
               wordSpan.title = '';
+              wordSpan.setAttribute('data-word-id', wordObj.id); // For mistake tracker
               // Custom tooltip logic
               wordSpan.onmouseenter = function (e) {
                 console.debug('[Murajah] Word mouseenter:', wordObj);
@@ -805,14 +897,14 @@
                 const tip = document.getElementById('customTooltip');
                 if (tip) tip.style.display = 'none';
               };
-              wordSpan.onclick = () => onWordClick(wordObj);
-              console.debug('[Murajah] Word clicked:', wordObj);
               lineDiv.appendChild(wordSpan);
             }
           }
           container.appendChild(lineDiv);
         }
       });
+      // Mistake tracker: attach after all words rendered
+      attachMistakeTracker(pageNum);
       document.getElementById('pageIndicator').textContent = `Page ${pageNum} / ${TOTAL_PAGES}`;
       document.getElementById('prevPage').disabled = pageNum === 1;
       document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
