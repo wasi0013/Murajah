@@ -322,16 +322,16 @@ function attachMistakeTracker(pageNum) {
   const deleteBtn = document.getElementById('deleteAudioBtn');
       deleteBtn.removeAttribute('style');
       if (mediaRecorder && mediaRecorder.state === 'recording') {
-        recordBtn.disabled = true;
-        stopBtn.disabled = false;
-        playBtn.disabled = true;
-        pauseBtn.disabled = true;
+        recordBtn.style.display = 'none';
+        stopBtn.style.display = 'flex';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
         deleteBtn.style.display = 'none';
       } else if (audioData) {
-        recordBtn.disabled = false;
-        stopBtn.disabled = true;
-        playBtn.disabled = false;
-        pauseBtn.disabled = true;
+        recordBtn.style.display = 'none';
+        stopBtn.style.display = 'flex';
+        playBtn.style.display = 'flex';
+        pauseBtn.style.display = 'flex';
         // Show delete button with correct style
         deleteBtn.style.display = 'flex';
         deleteBtn.style.background = '#ec4e4e';
@@ -344,10 +344,10 @@ function attachMistakeTracker(pageNum) {
         deleteBtn.style.alignItems = 'center';
         deleteBtn.style.justifyContent = 'center';
       } else {
-        recordBtn.disabled = false;
-        stopBtn.disabled = true;
-        playBtn.disabled = true;
-        pauseBtn.disabled = true;
+        recordBtn.style.display = 'flex';
+        stopBtn.style.display = 'none';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
         deleteBtn.style.display = 'none';
       }
     }
