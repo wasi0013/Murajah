@@ -311,15 +311,15 @@ function attachMistakeTracker(pageNum) {
     }
     function updateAudioControls() {
   // --- updateAudioControls: Enable/disable audio controls and playlist ---
-      console.debug('[Murajah] updateAudioControls called for page', currentPage);
-      console.debug('[Murajah] audioKey:', audioKey, 'audioData:', !!audioData, 'mediaRecorder:', mediaRecorder ? mediaRecorder.state : null);
-      const recordBtn = document.getElementById('recordBtn');
-      const stopBtn = document.getElementById('stopBtn');
-      const playBtn = document.getElementById('playBtn');
-      const pauseBtn = document.getElementById('pauseBtn');
-      const deleteBtn = document.getElementById('deleteAudioBtn');
-      const audioKey = getAudioKey(currentPage);
-      const audioData = localStorage.getItem(audioKey);
+  const audioKey = getAudioKey(currentPage);
+  const audioData = localStorage.getItem(audioKey);
+  console.debug('[Murajah] updateAudioControls called for page', currentPage);
+  console.debug('[Murajah] audioKey:', audioKey, 'audioData:', !!audioData, 'mediaRecorder:', mediaRecorder ? mediaRecorder.state : null);
+  const recordBtn = document.getElementById('recordBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const playBtn = document.getElementById('playBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const deleteBtn = document.getElementById('deleteAudioBtn');
       deleteBtn.removeAttribute('style');
       if (mediaRecorder && mediaRecorder.state === 'recording') {
         recordBtn.disabled = true;
