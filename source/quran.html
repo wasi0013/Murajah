@@ -31,6 +31,9 @@
   </div>
   <div class="quran-page" id="quranPage"></div>
   <div class="navigation">
+    <button id="randomMemorizedBtn" title="Pick Random Memorized Page" style="background:#ffd600;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <i class="la la-random"></i>
+    </button>
     <button id="prevPage">Previous</button>
     <span id="pageIndicator">Page 1 / 604</span>
     <button id="nextPage">Next</button>
@@ -703,6 +706,17 @@ function attachMistakeTracker(pageNum) {
       updateAudioControls();
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
       console.debug('[Murajah] prevPage button set');
+      document.getElementById('randomMemorizedBtn').onclick = function () {
+        if (!Array.isArray(memorizedPages) || memorizedPages.length === 0) {
+          alert('No memorized pages found.');
+          return;
+        }
+        // Pick a random page from memorizedPages
+        const randomIdx = Math.floor(Math.random() * memorizedPages.length);
+        const randomPage = memorizedPages[randomIdx];
+        changePage(randomPage);
+        // Optionally, show a toast or highlight
+      };
       document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
       console.debug('[Murajah] nextPage button set');
       document.getElementById('gotoPageBtn').onclick = () => {
