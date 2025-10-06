@@ -19,83 +19,7 @@
   <title>Murajah</title>
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="resources/logo.png">
-  <style>
-/* =============================
-   Mistake Tracker Styles
-   ============================= */
-.mistake-word {
-  border-bottom: 2px solid #e53935 !important;
-  background: #fff3f3;
-  transition: border-bottom 0.2s;
-}
-    body {
-      background: #f9f9f9;
-      font-family: 'QPCV2Page', serif;
-      margin: 0;
-      padding: 0;
-    }
-
-    .quran-page {
-      max-width: 900px;
-      margin: 40px auto;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border-radius: 12px;
-      padding: 32px 24px;
-    }
-
-    .quran-line {
-      display: flex;
-      justify-content: center;
-      margin: 8px 0;
-      font-size: 2.2em;
-      line-height: 1.5;
-    }
-
-    .quran-word {
-      cursor: pointer;
-      margin: 0 2px;
-      transition: background 0.2s;
-      border-radius: 6px;
-      padding: 0 4px;
-    }
-
-    .quran-word:hover {
-      background: #e0f7fa;
-    }
-
-    .surah-name,
-    .basmallah {
-      text-align: center;
-      font-size: 2.4em;
-      font-weight: bold;
-      margin: 16px 0 8px 0;
-      color: #2e7d32;
-    }
-
-    .navigation {
-      display: flex;
-      justify-content: center;
-      margin: 24px 0 0 0;
-      gap: 16px;
-    }
-
-    .navigation button {
-      font-size: 1.1em;
-      padding: 8px 18px;
-      border-radius: 6px;
-      border: none;
-      background: #2e7d32;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .navigation button:disabled {
-      background: #bdbdbd;
-      cursor: not-allowed;
-    }
-  </style>
+  <link rel="stylesheet" href="resources/css/style.css">
 </head>
 
 <body>
@@ -106,12 +30,6 @@
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
   </div>
   <div class="quran-page" id="quranPage"></div>
-  <style>
-    .blurred {
-      filter: blur(15px) grayscale(0.4);
-      transition: filter 0.3s;
-    }
-  </style>
   <div class="navigation">
     <button id="prevPage">Previous</button>
     <span id="pageIndicator">Page 1 / 604</span>
