@@ -301,7 +301,7 @@ function attachMistakeTracker(pageNum) {
   // --- Audio Recording State ---
     console.debug('[Murajah] mediaRecorder initialized:', mediaRecorder);
     let audioChunks = [];
-    let currentAudioUrl = null;
+  // ...existing code...
     let audioBlob = null;
     let audioPlayer = new Audio();
     function getAudioKey(pageNum) {
@@ -1038,11 +1038,7 @@ function attachMistakeTracker(pageNum) {
     document.addEventListener('DOMContentLoaded', function () {
       renderAudioPlaylist();
     });
-    // Also call after recording/deleting audio
-    function updateAudioControls() {
-      // ...existing code...
-      renderAudioPlaylist();
-    }
+    
 
 
     window.onload = init;
