@@ -351,7 +351,7 @@ function attachMistakeTracker(pageNum) {
     function getAudioKey(pageNum) {
   // --- getAudioKey: Returns localStorage key for audio by page ---
       console.debug('[Murajah] getAudioKey called with pageNum:', pageNum);
-      return `audio-page-${pageNum}`;
+      return `aud-${pageNum}`;
     }
     function updateAudioControls() {
   // --- updateAudioControls: Enable/disable audio controls and playlist ---
@@ -1043,7 +1043,7 @@ function attachMistakeTracker(pageNum) {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         console.debug('[Murajah] Checking localStorage key:', key)      
-        if (key && (key.startsWith('audio-page-'))) {
+        if (key && (key.startsWith('aud-'))) {
           const pageNum = key.split('-').pop();
           audios.push({ key, pageNum, data: localStorage.getItem(key) });
         }
