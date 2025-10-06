@@ -800,7 +800,8 @@ function attachMistakeTracker(pageNum) {
               for (const key in data) {
                 localStorage.setItem(key, data[key]);
               }
-              alert('Data imported! Please reload the page to see changes.');
+              alert('Data imported!');
+              location.reload();
             } else {
               alert('Invalid file format.');
             }
