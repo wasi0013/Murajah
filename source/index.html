@@ -23,8 +23,10 @@
 </head>
 
 <body>
+  <!-- Hifz Status Indicator -->
+  <div id="hifzStatusIndicator" style="position:fixed;top:18px;left:18px;z-index:10001;font-size:1em;font-weight:bold;padding:7px 16px;border-radius:8px;display:none;pointer-events:none;transition:opacity 0.2s;"></div>
   <!-- Mistake Count Indicator -->
-  <div id="mistakeCountIndicator" style="position:fixed;top:18px;left:18px;z-index:10000;font-size:1.5em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
+  <div id="mistakeCountIndicator" style="position:fixed;top:70px;left:18px;z-index:10000;font-size:1em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
   <!-- Logo -->
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
@@ -146,6 +148,48 @@
     <div id="playlistItems"></div>
   </div>
   <script>
+
+// Hifz Status Indicator Logic
+function updateHifzStatusIndicator() {
+  const indicator = document.getElementById('hifzStatusIndicator');
+  if (!indicator) return;
+  const score = getPerfectCount(currentPage);
+  let label = '';
+  let bg = '';
+  let color = '';
+  if (score > 90) {
+    label = 'Firm';
+    bg = '#111';
+    color = '#fff';
+  } else if (score >= 80) {
+    label = 'Solid';
+    bg = '#43a047';
+    color = '#fff';
+  } else if (score >= 60) {
+    label = 'Great';
+    bg = '#1976d2';
+    color = '#fff';
+  } else if (score >= 50) {
+    label = 'Good';
+    bg = '#64b5f6';
+    color = '#222';
+  } else if (score >= 33) {
+    label = 'Beginner';
+    bg = '#bbdefb';
+    color = '#222';
+  } else {
+    label = 'Noob';
+    bg = '#ff9800';
+    color = '#fff';
+  }
+  indicator.textContent = `${label}`;
+  indicator.style.background = bg;
+  indicator.style.color = color;
+  indicator.style.display = 'block';
+  indicator.style.opacity = '0.92';
+}
+
+
 // =============================
 // Mistake Tracker Section
 // =============================
@@ -193,10 +237,12 @@ function updatePerfectRevisionCounter() {
 document.addEventListener('DOMContentLoaded', function () {
   loadPerfectRevisions();
   updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
   document.getElementById('perfectRevisionBtn').onclick = function () {
     const count = getPerfectCount(currentPage) + 1;
     setPerfectCount(currentPage, count);
     updatePerfectRevisionCounter();
+    updateHifzStatusIndicator();
   };
 });
 
@@ -331,6 +377,7 @@ function attachMistakeTracker(pageNum) {
   });
   updateMistakeCountIndicator();
   updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
 }
 // =============================
 // End Mistake Tracker Section
@@ -514,10 +561,12 @@ function attachMistakeTracker(pageNum) {
   // --- changePage: Navigation logic ---
       console.debug('[Murajah] changePage called with', page);
       if (page < 1 || page > TOTAL_PAGES) return;
-      currentPage = page;
-      renderPage(currentPage);
-      updateMemorizeBtn();
-      updateAudioControls();
+  currentPage = page;
+  renderPage(currentPage);
+  updateMemorizeBtn();
+  updateAudioControls();
+  updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
     }
     function updateStatsPanel() {
   // --- updateStatsPanel: Update stats UI ---
