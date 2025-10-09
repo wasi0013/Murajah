@@ -147,9 +147,44 @@
     </h3>
     <div id="playlistItems"></div>
   </div>
+  
+  
   <script>
+/**
+ * Murajah - Quran Memorization App
+ * Main JavaScript Module
+ */
 
-// Hifz Status Indicator Logic
+// =================================
+// 1. Constants and Global Variables
+// =================================
+
+// Paths and configuration constants
+const LAYOUT_PATH = './resources/qpc-v2-15-lines.json';
+const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
+const TOTAL_PAGES = 604;
+
+// App state variables
+let currentPage = 1;
+let layoutData = [];
+let wordsData = {};
+let translations = {};
+let surahNames = {};
+let memorizedPages = [];
+
+// Audio state variables
+let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
+let audioPlayer = new Audio();
+
+// Progress tracking state
+let perfectRevisions = {};
+let mistakes = {};
+
+// =================================
+// Function Declarations
+// ================================
 function updateHifzStatusIndicator() {
   const indicator = document.getElementById('hifzStatusIndicator');
   if (!indicator) return;
@@ -194,8 +229,6 @@ function updateHifzStatusIndicator() {
 // Mistake Tracker Section
 // =============================
 
-// Perfect Revision Tracker
-let perfectRevisions = {};
 
 function getPerfectKey(pageNum) {
   return `${pageNum}`;
@@ -265,8 +298,6 @@ function updateMistakeCountIndicator() {
   }
 }
 
-// Mistake tracker data model
-let mistakes = {};
 
 // =============================
 // Mistake Bubble Grid Section
@@ -387,14 +418,8 @@ function attachMistakeTracker(pageNum) {
   // =============================
     // DEBUG: App initialization
     console.debug('[Murajah] App script loaded');
-    // Audio recording and playback logic
-    let mediaRecorder = null;
-  // --- Audio Recording State ---
+   // --- Audio Recording State ---
     console.debug('[Murajah] mediaRecorder initialized:', mediaRecorder);
-    let audioChunks = [];
-  // ...existing code...
-    let audioBlob = null;
-    let audioPlayer = new Audio();
     function getAudioKey(pageNum) {
   // --- getAudioKey: Returns localStorage key for audio by page ---
       console.debug('[Murajah] getAudioKey called with pageNum:', pageNum);
@@ -718,17 +743,7 @@ function attachMistakeTracker(pageNum) {
         errorDiv.style.display = 'block';
       };
     });
-    // Paths to JSON files (update as needed)
-    const LAYOUT_PATH = './resources/qpc-v2-15-lines.json';
-    const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
-    const TOTAL_PAGES = 604;
-    let layoutData = [];
-    let wordsData = {};
-    let translations = {};
-    let surahNames = {};
-    let currentPage = 1;
-    let memorizedPages = [];
-
+    
     async function loadJSON(path) {
   // --- loadJSON: Fetch JSON data ---
       console.debug('[Murajah] loadJSON called for', path);
