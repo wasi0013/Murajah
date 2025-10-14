@@ -41,6 +41,9 @@
       <button id="randomMemorizedBtn" title="Pick Random Memorized Page" style="background:#00ffaa;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-random"></i>
       </button>
+      <button id="tajweedBtn" title="Toggle Tajweed" style="background:#202020;color:#f1f1f1;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-sun"></i>
+      </button>
       <div id="perfectRevisionCounter" style="position:absolute;left:-38px;top:50%;transform:translateY(-50%);background:rgba(255,215,0,0.92);color:#222;padding:2px 10px;border-radius:12px;font-size:1em;font-weight:bold;box-shadow:0 2px 8px rgba(255,215,0,0.12);pointer-events:none;z-index:2;display:none;"></div>
       
     </div>
@@ -166,7 +169,17 @@ const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
 const TOTAL_PAGES = 604;
 
 // App state variables
-let currentPage = 1;
+let url = new URL(window.location.href)
+let c = url.searchParams.get("page");
+let currentPage = parseInt(c || '1', 10);
+currentPage = Number.isInteger(currentPage)? currentPage: 1
+currentPage = (currentPage < 1 || currentPage > 604)? 1: currentPage
+
+url.searchParams.set('page', currentPage)
+console.log(url)
+window.history.replaceState({}, '', url.toString())
+
+  
 let layoutData = [];
 let wordsData = {};
 let translations = {};
@@ -588,6 +601,10 @@ function attachMistakeTracker(pageNum) {
       console.debug('[Murajah] changePage called with', page);
       if (page < 1 || page > TOTAL_PAGES) return;
   currentPage = page;
+  let url = new URL(window.location.href);  
+  url.searchParams.set('page', page)
+  window.history.replaceState({}, '', url.toString())
+
   renderPage(currentPage);
   updateMemorizeBtn();
   updateAudioControls();
@@ -935,11 +952,26 @@ function attachMistakeTracker(pageNum) {
         console.debug('[Murajah] memorizeBtn clicked');
         toggleMemorized(currentPage);
       };
+      document.getElementById('tajweedBtn').onclick = () => {
+        console.debug('[Murajah] tajweedBtn clicked');
+        let t = parseInt(localStorage.getItem('t') || '1', 10)
+        if (t == 1){
+          localStorage.setItem('t', '0')
+        }
+        else {
+          localStorage.setItem('t', '1')
+        }
+      };
     }
 
     function changePage(page) {
       if (page < 1 || page > TOTAL_PAGES) return;
       currentPage = page;
+      let url = new URL(window.location.href)
+      url.searchParams.set('page', page);
+      window.history.replaceState({}, '', url.toString())
+
+  
       renderPage(currentPage);
       updateMemorizeBtn();
     }
@@ -953,7 +985,12 @@ function attachMistakeTracker(pageNum) {
       if (styleTag) styleTag.remove();
       styleTag = document.createElement('style');
       styleTag.id = fontId;
-      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; src: url('./resources/tajweed/p${pageNum}.woff2') format('truetype'); font-weight: normal; font-style: normal; }`;
+      let tajweed = parseInt(localStorage.getItem("t")|| '1', 10)
+      let src = `src: url('./resources/font/p${pageNum}.woff2') format('woff2')`
+      if (tajweed == 1){
+        src = `src: url('./resources/tajweed/p${pageNum}.woff2') format('woff2')`
+      }
+      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;
       document.head.appendChild(styleTag);
 
       const pageLines = layoutData.pages.filter(l => l.page_number === pageNum);
