@@ -697,8 +697,8 @@ function attachMistakeTracker(pageNum) {
       // Add click event listeners to each cell
       Array.from(grid.getElementsByClassName('grid-cell')).forEach(cell => {
         cell.onclick = function () {
-          console.debug('[Murajah] Memorized grid cell clicked:', page);
           const page = parseInt(cell.getAttribute('data-page'), 10);
+          console.debug('[Murajah] Memorized grid cell clicked:', page);
           const idx = memorizedPages.indexOf(page);
           if (idx === -1) {
             memorizedPages.push(page);
