@@ -5,6 +5,8 @@
   transition: border-bottom 0.2s;
 }
 
+@font-face { font-family: 'Surah'; src: url('./resources/surah_names.woff2') format('truetype'); font-weight: normal; font-style: normal; }
+
 body {
   background: #f9f9f9;
   font-family: 'QPCV2Page', serif;
@@ -41,13 +43,17 @@ body {
   background: #e0f7fa;
 }
 
+
+
 .surah-name,
 .basmallah {
   text-align: center;
   font-size: 2.4em;
   font-weight: bold;
   margin: 16px 0 8px 0;
-  color: #2e7d32;
+  color: #4400ff;
+  font-family: 'Surah', serif;
+
 }
 
 .navigation {

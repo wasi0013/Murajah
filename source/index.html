@@ -20,6 +20,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="resources/logo.png">
   <link rel="stylesheet" href="resources/css/style.css">
+  
 </head>
 
 <body>
@@ -31,7 +32,7 @@
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
   </div>
-  <div class="quran-page" id="quranPage"></div>
+  <div class="quran-page" id="quranPage" style="background-color: #f8ebd5"></div>
   <div class="navigation">
     <div style="position:relative;display:flex;align-items:center;">
       <button id="perfectRevisionBtn" title="Perfect Revision (no mistakes)" style="background:#ffd600;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:12px;position:relative;">
@@ -952,7 +953,7 @@ function attachMistakeTracker(pageNum) {
       if (styleTag) styleTag.remove();
       styleTag = document.createElement('style');
       styleTag.id = fontId;
-      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; src: url('./resources/QPC V2 Font.ttf/p${pageNum}.ttf') format('truetype'); font-weight: normal; font-style: normal; }`;
+      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; src: url('./resources/tajweed/p${pageNum}.woff2') format('truetype'); font-weight: normal; font-style: normal; }`;
       document.head.appendChild(styleTag);
 
       const pageLines = layoutData.pages.filter(l => l.page_number === pageNum);
