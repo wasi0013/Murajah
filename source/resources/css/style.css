@@ -29,10 +29,9 @@ body {
   display: flex;
   justify-content: center;
   margin: 8px 0;
-  font-size: calc(1.8em + 1vw);
+  font-size: calc(1.8em + 0.1vw);
   line-height: 1.5;
-  flex-wrap: wrap;
-}
+ }
 
 .quran-word {
   cursor: pointer;
