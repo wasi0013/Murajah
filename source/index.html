@@ -32,6 +32,7 @@
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
   </div>
+  <div id="currentSurah" style="text-align:right;margin:24px auto;max-width:900px;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
   <div class="quran-page" id="quranPage" style="background-color: #f8ebd5"></div>
   <div class="navigation">
     <div style="position:relative;display:flex;align-items:center;">
@@ -979,6 +980,14 @@ function attachMistakeTracker(pageNum) {
     function renderPage(pageNum) {
   // --- renderPage: Render Quran page ---
       console.debug('[Murajah] renderPage called for', pageNum);
+      
+      // Update current surah display
+      const currentSurahDiv = document.getElementById('currentSurah');
+      const surahLine = layoutData.pages.slice().sort((a, b) => b.page_number - a.page_number).find(l => l.page_number <= pageNum && l.line_type === 'surah_name');
+      if (surahLine) {
+        currentSurahDiv.textContent = getSurahName(surahLine.surah_number);
+      }
+      
       // Dynamically inject @font-face for the current page
       const fontId = 'dynamicQPCFont';
       let styleTag = document.getElementById(fontId);
