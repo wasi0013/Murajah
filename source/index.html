@@ -27,7 +27,7 @@
   <!-- Hifz Status Indicator -->
   <div id="hifzStatusIndicator" style="position:fixed;top:18px;left:18px;z-index:10001;font-size:1em;font-weight:bold;padding:7px 16px;border-radius:8px;display:none;pointer-events:none;transition:opacity 0.2s;"></div>
   <!-- Mistake Count Indicator -->
-  <div id="mistakeCountIndicator" style="position:fixed;top:70px;left:18px;z-index:10000;font-size:1em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
+  <div id="mistakeCountIndicator" style="position:fixed;top:80px;left:18px;z-index:10000;font-size:1em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
   <!-- Logo -->
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
@@ -81,7 +81,7 @@
   </div>
 
   <div id="dashboard"
-    style="max-width:900px;margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    style="max-width:900px;width:calc(100% - 32px);margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#e3f2fd;border-radius:8px;height:24px;width:100%;overflow:hidden;">
       <div id="progressBar" style="height:100%;background:#1976d2;width:0%;transition:width 0.5s;"></div>
     </div>
@@ -142,12 +142,12 @@
   </div>
   <!-- Mistake Bubble Grid Section -->
   <div id="mistakeBubbleGrid"
-    style="width:100%;max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(229,57,53,0.08);">
+    style="width:calc(100% - 32px);max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(229,57,53,0.08);">
     <h3 style="margin-top:0;margin-bottom:16px;font-size:1.2em;color:#e53935;text-align:left;">Pages with Mistakes</h3>
     <div id="mistakeBubbleGridInner"></div>
   </div>
   <div id="audioPlaylist"
-    style="width:100%;max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    style="width:calc(100% - 32px);max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
     <h3 style="margin-top:0;margin-bottom:16px;font-size:1.2em;color:#1976d2;text-align:left;">Recorded Audio Playlist
     </h3>
     <div id="playlistItems"></div>
@@ -296,14 +296,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Utility: Update mistake count indicator
 function updateMistakeCountIndicator() {
-  let totalMistakes = 0;
-  Object.values(mistakes).forEach(arr => {
-    totalMistakes += Array.isArray(arr) ? arr.length : 0;
-  });
+  const mistakeKey = getMistakeKey(currentPage);
+  const pageMistakes = mistakes[mistakeKey] || [];
+  const mistakeCount = Array.isArray(pageMistakes) ? pageMistakes.length : 0;
+  
   const indicator = document.getElementById('mistakeCountIndicator');
   if (!indicator) return;
-  if (totalMistakes > 0) {
-    indicator.textContent = `Mistakes: ${totalMistakes}`;
+  
+  if (mistakeCount > 0) {
+    indicator.textContent = `Mistakes: ${mistakeCount}`;
     indicator.style.display = 'block';
     indicator.style.opacity = '0.85';
     indicator.style.background = 'rgba(229,57,53,0.12)';

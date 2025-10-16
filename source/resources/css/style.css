@@ -12,23 +12,26 @@ body {
   font-family: 'QPCV2Page', serif;
   margin: 0;
   padding: 0;
+  min-width: 320px;
 }
 
 .quran-page {
   max-width: 900px;
-  margin: 40px auto;
+  width: calc(100% - 32px);
+  margin: 20px auto;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border-radius: 12px;
-  padding: 32px 24px;
+  padding: 24px 16px;
 }
 
 .quran-line {
   display: flex;
   justify-content: center;
   margin: 8px 0;
-  font-size: 2.2em;
+  font-size: calc(1.8em + 1vw);
   line-height: 1.5;
+  flex-wrap: wrap;
 }
 
 .quran-word {
@@ -61,6 +64,8 @@ body {
   justify-content: center;
   margin: 24px 0 0 0;
   gap: 16px;
+  flex-wrap: wrap;
+  padding: 0 16px;
 }
 
 .navigation button {
@@ -72,6 +77,102 @@ body {
   color: #fff;
   cursor: pointer;
   transition: background 0.2s;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .navigation {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .navigation > div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .navigation button,
+  .navigation input {
+    width: 100%;
+    max-width: 300px;
+    margin: 0;
+  }
+
+  #audioControls {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  #audioControls button {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .surah-name,
+  .basmallah {
+    font-size: 2em;
+  }
+
+  #dashboard {
+    padding: 12px !important;
+  }
+
+  #dashboard > div {
+    flex-direction: column !important;
+    align-items: center;
+  }
+
+  #juzPieChart {
+    margin-bottom: 16px;
+  }
+
+  #statsPanel {
+    width: 100% !important;
+  }
+
+  #memorizedGrid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 0;
+  }
+
+  .grid-cell {
+    min-width: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quran-page {
+    padding: 16px 8px;
+    margin: 12px auto;
+  }
+
+  .quran-line {
+    font-size: calc(1.5em + 1vw);
+  }
+
+  .surah-name,
+  .basmallah {
+    font-size: 1.8em;
+  }
+}
+
+/* Tablet optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .quran-page {
+    width: calc(100% - 48px);
+    padding: 24px;
+  }
+
+  .quran-line {
+    font-size: calc(1.6em + 1vw);
+  }
 }
 
 .navigation button:disabled {
