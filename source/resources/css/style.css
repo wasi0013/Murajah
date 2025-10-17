@@ -1,11 +1,100 @@
 /* Mistake Tracker Styles */
+@keyframes pulse-text {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.revision-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #4a148c;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  z-index: 10002;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+.revision-banner #revisionMessage {
+  display: inline-block;
+  animation: pulse-text 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.revision-banner.hidden {
+  transform: translateY(-100%);
+}
+
+#pageInfo {
+  position: relative;
+  z-index: 1;
+}
+
+#statusIndicators {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#hifzStatusIndicator, #mistakeCountIndicator {
+  animation: fade-in 0.3s ease-out;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #eee;
+}
+
+#hifzStatusIndicator:hover, #mistakeCountIndicator:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.revision-banner button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  color: #4a148c;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.revision-banner .close-btn {
+  background: transparent;
+  color: white;
+  padding: 4px;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .mistake-word {
   border-bottom: 2px solid #e53935 !important;
   background: #fff3f3;
   transition: border-bottom 0.2s;
 }
 
-@font-face { font-family: 'Surah'; src: url('./resources/surah_names.woff2') format('woff2'); font-weight: normal; font-style: normal; }
+@font-face { font-family: 'Surah'; src: url('/resources/surah_names.woff2') format('woff2'); font-weight: normal; font-style: normal; }
 
 body {
   background: #f9f9f9;

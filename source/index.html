@@ -24,10 +24,35 @@
 </head>
 
 <body>
-  <!-- Hifz Status Indicator -->
-  <div id="hifzStatusIndicator" style="position:fixed;top:18px;left:18px;z-index:10001;font-size:1em;font-weight:bold;padding:7px 16px;border-radius:8px;display:none;pointer-events:none;transition:opacity 0.2s;"></div>
-  <!-- Mistake Count Indicator -->
-  <div id="mistakeCountIndicator" style="position:fixed;top:80px;left:18px;z-index:10000;font-size:1em;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(229,57,53,0.12);color:#e53935;box-shadow:0 2px 8px rgba(229,57,53,0.08);display:none;pointer-events:none;transition:opacity 0.2s;"></div>
+  <!-- Daily Revision Banner -->
+  <div id="revisionBanner" class="revision-banner hidden">
+    <span id="revisionMessage"></span>
+    <button id="revisionDoneBtn">Mark Today's Revision Done</button>
+    <button class="close-btn"><i class="la la-times"></i></button>
+  </div>
+  
+  <!-- Status Indicators Container -->
+  <div id="pageInfo" style="display:flex;justify-content:space-between;align-items:center;margin:24px auto;max-width:900px;">
+    <div id="statusIndicators" style="display:flex;align-items:center;gap:16px;">
+      <!-- Hifz Status Indicator -->
+      <div id="hifzStatusIndicator" style="display:none;transition:all 0.2s ease-in-out;position:relative;">
+        <div style="font-size:0.85em;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:2px;">Status</div>
+        <div style="font-size:1.2em;font-weight:600;color:#2196f3;display:flex;align-items:center;gap:6px;">
+          <i class="la la-bookmark" style="font-size:1.1em;"></i>
+          <span class="status-text"></span>
+        </div>
+      </div>
+      <!-- Mistake Count Indicator -->
+      <div id="mistakeCountIndicator" style="display:none;transition:all 0.2s ease-in-out;position:relative;">
+        <div style="font-size:0.85em;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:2px;">Accuracy</div>
+        <div style="font-size:1.2em;font-weight:600;color:#4caf50;display:flex;align-items:center;gap:6px;">
+          <i class="la la-check-circle" style="font-size:1.1em;"></i>
+          <span class="mistakes-text"></span>
+        </div>
+      </div>
+    </div>
+    <div id="currentSurah" style="text-align:right;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
+  </div>
   <!-- Logo -->
   <div style="display:flex;justify-content:center;margin-top:32px;">
     <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
@@ -1218,7 +1243,120 @@ function attachMistakeTracker(pageNum) {
     
 
 
-    window.onload = init;
+    // Initialize main app
+    window.onload = () => {
+      init();
+      RevisionTracker.init();
+    };
+
+    // Daily Revision Tracking
+    const RevisionTracker = {
+      settings: {
+        revisionsPerDay: 12,
+        daysToComplete: 10
+      },
+
+      storageKeys: {
+        currentBatch: 'rb', // revision batch
+        lastRevisionDate: 'rd', // revision date
+        settings: 'rs' // revision settings
+      },
+
+      init() {
+        // Load settings from localStorage
+        const [daysToComplete, revisionsPerDay] = (localStorage.getItem('c') || '10,12').split(',').map(Number);
+        this.settings.daysToComplete = daysToComplete;
+        this.settings.revisionsPerDay = revisionsPerDay;
+
+        // Setup event listeners
+        document.querySelector('#revisionBanner .close-btn').addEventListener('click', () => {
+          document.getElementById('revisionBanner').classList.add('hidden');
+        });
+
+        document.getElementById('revisionDoneBtn').addEventListener('click', () => {
+          this.markTodayComplete();
+        });
+
+        // Check revision status on load
+        this.checkRevisionStatus();
+      },
+
+      getMemorizedPages() {
+        const pagesStr = localStorage.getItem('p');
+        if (!pagesStr) return [];
+        return pagesStr.split(',').map(Number).sort((a, b) => a - b);
+      },
+
+      splitIntoGroups(pages) {
+        const groups = [];
+        const pagesPerGroup = Math.ceil(pages.length / this.settings.daysToComplete);
+        
+        for (let i = 0; i < pages.length; i += pagesPerGroup) {
+          groups.push(pages.slice(i, i + pagesPerGroup));
+        }
+        
+        return groups;
+      },
+
+      getCurrentBatch() {
+        return parseInt(localStorage.getItem(this.storageKeys.currentBatch) || '0');
+      },
+
+      checkRevisionStatus() {
+        const today = new Date().toDateString();
+        const lastRevision = localStorage.getItem(this.storageKeys.lastRevisionDate);
+        
+        if (lastRevision === today) {
+          // Already completed today's revision
+          return;
+        }
+
+        const memorizedPages = this.getMemorizedPages();
+        if (memorizedPages.length === 0) return;
+
+        const groups = this.splitIntoGroups(memorizedPages);
+        const currentBatch = this.getCurrentBatch();
+        
+        if (currentBatch >= groups.length) {
+          // Reset to first batch when complete
+          localStorage.setItem(this.storageKeys.currentBatch, '0');
+          this.showBanner(groups[0]);
+        } else {
+          this.showBanner(groups[currentBatch]);
+        }
+      },
+
+      showBanner(pages) {
+        const banner = document.getElementById('revisionBanner');
+        const message = document.getElementById('revisionMessage');
+        
+        const start = pages[0];
+        const end = pages[pages.length - 1];
+        message.textContent = `Today's revision: Pages ${start} to ${end} (${pages.length} pages)`;
+        
+        banner.classList.remove('hidden');
+      },
+
+      markTodayComplete() {
+        const today = new Date().toDateString();
+        localStorage.setItem(this.storageKeys.lastRevisionDate, today);
+        
+        const currentBatch = this.getCurrentBatch();
+        localStorage.setItem(this.storageKeys.currentBatch, (currentBatch + 1).toString());
+        
+        document.getElementById('revisionBanner').classList.add('hidden');
+      },
+
+      updateSettings(revisionsPerDay, daysToComplete) {
+        this.settings.revisionsPerDay = revisionsPerDay;
+        this.settings.daysToComplete = daysToComplete;
+        localStorage.setItem('c', `${daysToComplete},${revisionsPerDay}`);
+        
+        // Reset progress when settings change
+        localStorage.removeItem(this.storageKeys.currentBatch);
+        this.checkRevisionStatus();
+      }
+    };
   </script>
 
   <footer
