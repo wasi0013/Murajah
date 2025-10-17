@@ -344,8 +344,8 @@ function renderMistakeBubbleGrid() {
   const darken = Math.min(count, 10) * 0.04; // less darkening per mistake
   const color = `rgb(${baseColor.map(c => Math.round(c * (1 - darken))).join(',')},0.5)`;
     html += `<div class=\"mistake-bubble\" data-page=\"${pageNum}\" title=\"Page ${pageNum}: ${count} mistake${count>1?'s':''}\"`
-      + ` style=\"position:relative;width:38px;height:38px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.1em;cursor:pointer;box-shadow:0 2px 8px rgba(229,57,53,0.12);transition:background 0.2s;\">`
-  + `<span style='position:absolute;top:-6px;right:-6px;background:rgba(229,57,53,0.92);color:#fff;padding:2px 6px;border-radius:8px;font-size:0.85em;font-weight:bold;box-shadow:0 2px 8px rgba(229,57,53,0.12);pointer-events:none;z-index:2;'>${count}</span>`
+      + ` style=\"position:relative;width:50px;height:50px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.1em;cursor:pointer;box-shadow:0 2px 8px rgba(229,57,53,0.12);transition:background 0.2s;\">`
+  + `<span style='position:absolute;top:-18px;right:-6px;background:rgba(229,57,53,0.92);color:#fff;padding:0px 15px;border-radius:50%;font-size:0.75em;font-weight:bold;box-shadow:0 2px 8px rgba(229,57,53,0.12);pointer-events:none;z-index:2;'>${count}</span>`
       + `${pageNum}</div>`;
   });
   html += '</div>';
@@ -1047,6 +1047,7 @@ function attachMistakeTracker(pageNum) {
                   tip.style.color = '#222';
                   tip.style.fontSize = '1.5em';
                   tip.style.padding = '12px 18px';
+                  tip.style.wordSpacing = '0.2em';
                   tip.style.borderRadius = '10px';
                   tip.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
                   tip.style.maxWidth = '350px';
