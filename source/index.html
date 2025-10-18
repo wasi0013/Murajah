@@ -1,7 +1,3 @@
-<div id="countdownOverlay"
-  style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;">
-  <span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span>
-</div>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -18,12 +14,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Murajah</title>
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="resources/logo.png">
+  <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
   <link rel="stylesheet" href="resources/css/style.css">
   
 </head>
 
 <body>
+  <div id="countdownOverlay"
+  style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;">
+  <span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span>
+</div>
+    <!-- Logo -->
+  <div style="display:flex;justify-content:center;margin-top:32px;">
+    <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
+  </div>
+
   <!-- Daily Revision Banner -->
   <div id="revisionBanner" class="revision-banner hidden">
     <span id="revisionMessage"></span>
@@ -53,10 +58,6 @@
     </div>
     <div id="currentSurah" style="text-align:right;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
   </div>
-  <!-- Logo -->
-  <div style="display:flex;justify-content:center;margin-top:32px;">
-    <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
-  </div>
   <div id="currentSurah" style="text-align:right;margin:24px auto;max-width:900px;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
   <div class="quran-page" id="quranPage" style="background-color: #f8ebd5"></div>
   <div class="navigation">
@@ -67,15 +68,15 @@
       <button id="randomMemorizedBtn" title="Pick Random Memorized Page" style="background:#00ffaa;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <i class="la la-random"></i>
       </button>
-      <button id="tajweedBtn" title="Toggle Tajweed" style="background:#202020;color:#f1f1f1;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-        <i class="la la-sun"></i>
+      <button id="tajweedBtn" title="Toggle Tajweed" style="margin-left:10px; background:#ffbb00;color:#f1f1f1;border:none;border-radius:6px;padding:8px 18px 10px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-palette"></i>
       </button>
       <div id="perfectRevisionCounter" style="position:absolute;left:-38px;top:50%;transform:translateY(-50%);background:rgba(255,215,0,0.92);color:#222;padding:2px 10px;border-radius:12px;font-size:1em;font-weight:bold;box-shadow:0 2px 8px rgba(255,215,0,0.12);pointer-events:none;z-index:2;display:none;"></div>
       
     </div>
-    <button id="prevPage">Previous</button>
-    <span id="pageIndicator">Page 1 / 604</span>
-    <button id="nextPage">Next</button>
+    <button id="prevPage">&lt;</button>
+    <span id="pageIndicator">(1/604)</span>
+    <button id="nextPage">&gt;</button>
     <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #"
       style="width: 70px; font-size: 1em; margin-left: 16px;">
     <button id="gotoPageBtn">Go</button>
@@ -1107,7 +1108,7 @@ function attachMistakeTracker(pageNum) {
       });
       // Mistake tracker: attach after all words rendered
       attachMistakeTracker(pageNum);
-      document.getElementById('pageIndicator').textContent = `Page ${pageNum} / ${TOTAL_PAGES}`;
+      document.getElementById('pageIndicator').textContent = `${pageNum} / ${TOTAL_PAGES}`;
       document.getElementById('prevPage').disabled = pageNum === 1;
       document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
       updateMemorizeBtn();
