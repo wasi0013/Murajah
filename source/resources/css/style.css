@@ -257,9 +257,14 @@ body {
     max-width: 300px;
   }
 
+  .quran-line {
+    font-size: calc(0.8em + 1vw);
+  }
+
+
   .surah-name,
   .basmallah {
-    font-size: 2em;
+    font-size: 1em;
   }
 
   #dashboard {
@@ -297,12 +302,12 @@ body {
   }
 
   .quran-line {
-    font-size: calc(1.5em + 1vw);
+    font-size: calc(0.6em + 1vw);
   }
 
   .surah-name,
   .basmallah {
-    font-size: 1.8em;
+    font-size: 0.6em;
   }
 }
 
@@ -314,7 +319,7 @@ body {
   }
 
   .quran-line {
-    font-size: calc(1.6em + 1vw);
+    font-size: calc(0.8em + 1vw);
   }
 }
 
