@@ -1006,9 +1006,11 @@ function attachMistakeTracker(pageNum) {
         let t = parseInt(localStorage.getItem('t') || '1', 10)
         if (t == 1){
           localStorage.setItem('t', '0')
+          location.reload()
         }
         else {
           localStorage.setItem('t', '1')
+          location.reload()
         }
       };
     }
