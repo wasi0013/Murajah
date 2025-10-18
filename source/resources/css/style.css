@@ -12,7 +12,7 @@
   right: 0;
   background: #4a148c;
   color: white;
-  padding: 12px;
+  padding: 5px;
   text-align: center;
   z-index: 10002;
   display: flex;
@@ -174,7 +174,7 @@ body {
   display: flex;
   justify-content: center;
   margin: 8px 0;
-  font-size: calc(1.8em + 0.1vw);
+  font-size: calc(1.65em + 0.1vw);
   line-height: 1.5;
  }
 
