@@ -59,6 +59,14 @@
     <div id="currentSurah" style="text-align:right;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
   </div>
   <div id="currentSurah" style="text-align:right;margin:24px auto;max-width:900px;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
+  <!-- Overlay Navigation Arrows -->
+  <button id="prevPageOverlay" class="page-nav-overlay prev" title="Previous Page">
+    <i class="la la-chevron-left"></i>
+  </button>
+  <button id="nextPageOverlay" class="page-nav-overlay next" title="Next Page">
+    <i class="la la-chevron-right"></i>
+  </button>
+
   <div class="quran-page" id="quranPage" style="background-color: #f8ebd5"></div>
   <div class="navigation">
     <div style="position:relative;display:flex;align-items:center;">
@@ -946,8 +954,19 @@ function attachMistakeTracker(pageNum) {
       updateDashboard();
       renderMemorizedGrid();
       updateAudioControls();
+      // Set up both sets of navigation buttons
       document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
-      console.debug('[Murajah] prevPage button set');
+      document.getElementById('prevPageOverlay').onclick = () => changePage(currentPage - 1);
+      console.debug('[Murajah] prevPage buttons set');
+
+      document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
+      document.getElementById('nextPageOverlay').onclick = () => changePage(currentPage + 1);
+      console.debug('[Murajah] nextPage buttons set');
+
+      // Update overlay button states when page changes
+      document.getElementById('prevPageOverlay').disabled = currentPage === 1;
+      document.getElementById('nextPageOverlay').disabled = currentPage === TOTAL_PAGES;
+
       document.getElementById('randomMemorizedBtn').onclick = function () {
         if (!Array.isArray(memorizedPages) || memorizedPages.length === 0) {
           alert('No memorized pages found.');
@@ -1109,8 +1128,11 @@ function attachMistakeTracker(pageNum) {
       // Mistake tracker: attach after all words rendered
       attachMistakeTracker(pageNum);
       document.getElementById('pageIndicator').textContent = `${pageNum} / ${TOTAL_PAGES}`;
+      // Update both sets of navigation buttons
       document.getElementById('prevPage').disabled = pageNum === 1;
       document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
+      document.getElementById('prevPageOverlay').disabled = pageNum === 1;
+      document.getElementById('nextPageOverlay').disabled = pageNum === TOTAL_PAGES;
       updateMemorizeBtn();
       function updateMemorizeBtn() {
         const btn = document.getElementById('memorizeBtn');
@@ -1243,6 +1265,24 @@ function attachMistakeTracker(pageNum) {
     });
     
 
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      // Only respond if we're not in an input field or textarea
+      if (e.target.tagName.toLowerCase() !== 'input' && e.target.tagName.toLowerCase() !== 'textarea') {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault(); // Prevent default scroll
+          if (currentPage > 1) {
+            changePage(currentPage - 1);
+          }
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault(); // Prevent default scroll
+          if (currentPage < TOTAL_PAGES) {
+            changePage(currentPage + 1);
+          }
+        }
+      }
+    });
 
     // Initialize main app
     window.onload = () => {
