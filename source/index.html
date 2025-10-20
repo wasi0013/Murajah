@@ -42,8 +42,7 @@
     <div id="statusIndicators" style="display:flex;align-items:center;gap:16px;">
       <!-- Hifz Status Indicator -->
       <div id="hifzStatusIndicator" style="display:none;transition:all 0.2s ease-in-out;position:relative;">
-        <div style="font-size:0.85em;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:2px;">Status</div>
-        <div style="font-size:1.2em;font-weight:600;color:#2196f3;display:flex;align-items:center;gap:6px;">
+        <div style="font-size:1.2em;font-weight:60;display:flex;align-items:center;gap:6px;">
           <i class="la la-bookmark" style="font-size:1.1em;"></i>
           <span class="status-text"></span>
         </div>
@@ -69,7 +68,7 @@
     <i class="la la-chevron-right"></i>
   </button>
 
-  <div class="quran-page" id="quranPage" style="background-color: #f8ebd5"></div>
+  <div class="quran-page" id="quranPage" style="background-color: #fff9ee"></div>
   <div class="navigation">
     <div style="position:relative;display:flex;align-items:center;">
       <button id="perfectRevisionBtn" title="Perfect Revision (no mistakes)" style="background:#ffd600;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:12px;position:relative;">
@@ -236,40 +235,75 @@ let mistakes = {};
 // =================================
 // Function Declarations
 // ================================
+
+/**
+ * Gets the appropriate colors and label based on memorization score
+ * @param {number} score - The memorization score (0-100)
+ * @returns {Object} Object containing background color, text color, and label
+ */
+function getScoreColors(score) {
+  if (score > 90) {
+    return {
+      label: 'Firm',
+      bg: '#111',
+      color: '#fff',
+      icon: 'la-star'
+    };
+  } else if (score >= 80) {
+    return {
+      label: 'Strong',
+      bg: '#1b5e20',
+      color: '#fff',
+      icon: 'la-check-circle'
+    };
+  } else if (score >= 60) {
+    return {
+      label: 'Good',
+      bg: '#0277bd',
+      color: '#fff',
+      icon: 'la-thumbs-up'
+    };
+  } else if (score >= 40) {
+    return {
+      label: 'Fair',
+      bg: '#ff8f00',
+      color: '#fff',
+      icon: 'la-exclamation-circle'
+    };
+  } else if (score > 0) {
+    return {
+      label: 'Weak',
+      bg: '#c62828',
+      color: '#fff',
+      icon: 'la-exclamation-triangle'
+    };
+  } else {
+    return {
+      label: 'New',
+      bg: '#757575',
+      color: '#fff',
+      icon: 'la-bookmark'
+    };
+  }
+}
+
 function updateHifzStatusIndicator() {
   const indicator = document.getElementById('hifzStatusIndicator');
   if (!indicator) return;
+  
   const score = getPerfectCount(currentPage);
-  let label = '';
-  let bg = '';
-  let color = '';
-  if (score > 90) {
-    label = 'Firm';
-    bg = '#111';
-    color = '#fff';
-  } else if (score >= 80) {
-    label = 'Solid';
-    bg = '#43a047';
-    color = '#fff';
-  } else if (score >= 60) {
-    label = 'Great';
-    bg = '#1976d2';
-    color = '#fff';
-  } else if (score >= 50) {
-    label = 'Good';
-    bg = '#64b5f6';
-    color = '#222';
-  } else if (score >= 33) {
-    label = 'Beginner';
-    bg = '#bbdefb';
-    color = '#222';
-  } else {
-    label = 'Noob';
-    bg = '#ff9800';
-    color = '#fff';
+  const { label, bg, color, icon } = getScoreColors(score);
+  
+  indicator.style.display = 'block';
+  const statusText = indicator.querySelector('.status-text');
+  const iconElem = indicator.querySelector('.la');
+  
+  if (statusText) statusText.textContent = label;
+  if (iconElem) {
+    iconElem.className = `la ${icon}`;
   }
-  indicator.textContent = `${label}`;
-  indicator.style.background = bg;
+  
+  indicator.style.backgroundColor = bg;
   indicator.style.color = color;
   indicator.style.display = 'block';
   indicator.style.opacity = '0.92';
