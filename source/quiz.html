@@ -111,9 +111,32 @@
 
                 <!-- Translation Match -->
                 <div v-if="currentTab === 'translation-match'" class="space-y-6">
-                    <div>
-                        <h2 class="text-lg font-semibold">Translation Match</h2>
-                        <p class="text-gray-600">Match verses with their translations.</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-semibold">Translation Match</h2>
+                            <p class="text-gray-600">Match verses with their translations.</p>
+                        </div>
+                        
+                        <!-- Score Display -->
+                        <div class="text-right">
+                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                                <div class="mb-2">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-2xl font-bold text-primary">
+                                        {{ sessionScore }}/{{ sessionAttempts }}
+                                        <span class="text-sm text-gray-500">
+                                            ({{ sessionAttempts ? Math.round((sessionScore/sessionAttempts) * 100) : 0 }}%)
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="streak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                        {{ streak }} 🔥
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Quiz Container -->
@@ -426,6 +449,9 @@
                 const currentVerse = ref(null)
                 const translationOptions = ref([])
                 const answerRevealed = ref(false)
+                const sessionScore = ref(0)
+                const sessionAttempts = ref(0)
+                const streak = ref(0)
 
                 // Load quiz data
                 const loadQuizData = async () => {
@@ -464,6 +490,13 @@
                 // Generate new question
                 const generateNewQuestion = async () => {
                     if (!selectedSurahs.value.length) return;
+                    
+                    // Reset scores if this is a new session (no current verse)
+                    if (!currentVerse.value) {
+                        sessionScore.value = 0;
+                        sessionAttempts.value = 0;
+                        streak.value = 0;
+                    }
                     
                     isLoading.value = true;
                     answerRevealed.value = false;
@@ -520,12 +553,22 @@
                     answerRevealed.value = true;
                     const isCorrect = translationOptions.value[index].isCorrect;
                     
+                    // Update session score
+                    sessionAttempts.value++;
+                    if (isCorrect) {
+                        sessionScore.value++;
+                        streak.value++;
+                    } else {
+                        streak.value = 0;
+                    }
+                    
                     // Save score
                     try {
                         await QuizDB.saveScore('translation-match', isCorrect ? 1 : 0, {
                             surah: currentVerse.value.chapter,
                             verse: currentVerse.value.verse,
-                            selectedAnswer: translationOptions.value[index].text
+                            selectedAnswer: translationOptions.value[index].text,
+                            streak: streak.value
                         });
                     } catch (err) {
                         console.error('Error saving score:', err);
@@ -534,7 +577,7 @@
                     // Auto-generate new question after delay
                     setTimeout(() => {
                         generateNewQuestion();
-                    }, 2000);
+                    }, 5000);
                 };
 
                 // Load surahs data
@@ -679,6 +722,9 @@
                     currentVerse,
                     translationOptions,
                     answerRevealed,
+                    sessionScore,
+                    sessionAttempts,
+                    streak,
                     toggleDarkMode,
                     changeTab,
                     toggleSurah,
