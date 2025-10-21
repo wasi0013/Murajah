@@ -168,20 +168,34 @@
 
                         <!-- Translation Options -->
                         <div class="grid gap-4">
-                            <button v-for="(option, index) in translationOptions" 
-                                :key="index"
-                                @click="checkAnswer(index)"
-                                :disabled="answerRevealed"
-                                :class="[
-                                    'p-4 rounded-lg text-left transition-colors border-2',
-                                    answerRevealed 
-                                        ? (option.isCorrect 
-                                            ? 'bg-green-100 border-green-500 dark:bg-green-900' 
-                                            : 'bg-red-50 border-red-200 dark:bg-red-900 opacity-60')
-                                        : 'bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary'
-                                ]">
-                                <p class="text-lg">{{ option.text }}</p>
-                            </button>
+                            <template v-if="!answerRevealed">
+                                <!-- Before answer selection -->
+                                <button v-for="(option, index) in translationOptions" 
+                                    :key="index"
+                                    @click="checkAnswer(index)"
+                                    class="p-4 rounded-lg text-left transition-colors border-2 bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary">
+                                    <p class="text-lg">{{ option.text }}</p>
+                                </button>
+                            </template>
+                            <template v-else>
+                                <!-- After answer selection -->
+                                <div v-if="selectedWrongAnswer !== null" class="p-4 rounded-lg text-left border-2 bg-red-50 border-red-500 dark:bg-red-900/30">
+                                    <p class="text-lg text-red-600 dark:text-red-400">
+                                        {{ translationOptions[selectedWrongAnswer].text }}
+                                    </p>
+                                    <p class="text-sm text-red-500 dark:text-red-400 mt-2">
+                                        ❌ Incorrect Answer
+                                    </p>
+                                </div>
+                                <div class="p-6 rounded-lg text-left border-2 bg-green-50 border-green-500 dark:bg-green-900/30">
+                                    <p class="text-2xl font-medium text-green-700 dark:text-green-400">
+                                        {{ translationOptions.find(opt => opt.isCorrect).text }}
+                                    </p>
+                                    <p class="text-sm text-green-600 dark:text-green-500 mt-2">
+                                        ✅ Correct Answer
+                                    </p>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -449,6 +463,7 @@
                 const currentVerse = ref(null)
                 const translationOptions = ref([])
                 const answerRevealed = ref(false)
+                const selectedWrongAnswer = ref(null)
                 const sessionScore = ref(0)
                 const sessionAttempts = ref(0)
                 const streak = ref(0)
@@ -500,6 +515,7 @@
                     
                     isLoading.value = true;
                     answerRevealed.value = false;
+                    selectedWrongAnswer.value = null;
                     
                     try {
                         // Select random surah from selected ones
@@ -553,6 +569,10 @@
                     answerRevealed.value = true;
                     const isCorrect = translationOptions.value[index].isCorrect;
                     
+                    if (!isCorrect) {
+                        selectedWrongAnswer.value = index;
+                    }
+                    
                     // Update session score
                     sessionAttempts.value++;
                     if (isCorrect) {
@@ -577,7 +597,7 @@
                     // Auto-generate new question after delay
                     setTimeout(() => {
                         generateNewQuestion();
-                    }, 5000);
+                    }, 3000);
                 };
 
                 // Load surahs data
@@ -722,6 +742,7 @@
                     currentVerse,
                     translationOptions,
                     answerRevealed,
+                    selectedWrongAnswer,
                     sessionScore,
                     sessionAttempts,
                     streak,
