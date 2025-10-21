@@ -411,12 +411,28 @@
                 </div>
 
                 <!-- Memorization Button -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-wrap">
                   <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-colors">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
                     <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Mark as Memorized' }}</span>
                   </button>
                   <span v-if="isCurrentPageMemorized" class="text-green-600 dark:text-green-400 text-sm font-medium">✓ Memorized</span>
+
+                  <!-- Perfect Revision Button -->
+                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors">
+                    <i class="fas fa-star"></i>
+                    <span>Perfect Revision</span>
+                    <span v-if="currentPagePerfectCount > 0" class="ml-1 font-bold">({{ currentPagePerfectCount }})</span>
+                  </button>
+
+                  <!-- Hifz Status Indicator -->
+                  <div v-if="currentPageHifzStatus" class="flex items-center gap-2 px-4 py-3 rounded-lg text-white transition-all" :style="{ backgroundColor: currentPageHifzStatus.bg }">
+                    <i :class="'la ' + currentPageHifzStatus.icon"></i>
+                    <div class="text-left">
+                      <div class="text-xs opacity-75">Status</div>
+                      <div class="font-bold">{{ currentPageHifzStatus.label }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -585,6 +601,11 @@
             lastUpdated: null
           });
 
+          const perfectRevisionsStore = reactive({
+            perfectRevisions: new Map(), // pageNum -> count
+            lastUpdated: null
+          });
+
           // Local state
           const isInitializing = ref(true);
           const quranData = ref(null);
@@ -624,6 +645,9 @@
             if (stored) {
               const data = JSON.parse(stored);
               if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
+              if (data.perfectRevisions) {
+                perfectRevisionsStore.perfectRevisions = new Map(Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), v]));
+              }
               if (data.recordings) audioStore.recordings = data.recordings;
             }
           };
@@ -684,6 +708,59 @@
             document.documentElement.classList.toggle('dark');
           };
 
+          // Perfect Revision functions
+          const getPerfectCount = (pageNum) => {
+            return perfectRevisionsStore.perfectRevisions.get(pageNum) || 0;
+          };
+
+          const incrementPerfectRevision = (pageNum) => {
+            const currentCount = getPerfectCount(pageNum);
+            perfectRevisionsStore.perfectRevisions.set(pageNum, currentCount + 1);
+            perfectRevisionsStore.lastUpdated = new Date();
+            appStore.successMessage = `Page ${pageNum} marked perfect! (+1)`;
+            setTimeout(() => appStore.successMessage = '', 2000);
+            saveData();
+          };
+
+          const currentPagePerfectCount = computed(() => {
+            return getPerfectCount(appStore.currentPage);
+          });
+
+          // Get memorization score (0-100) based on perfect revision count
+          const getHifzScore = (pageNum) => {
+            const perfectCount = getPerfectCount(pageNum);
+            // Score increases: 0 perfect = 0, 1 = 15, 2 = 30, 3+ = 50
+            // Higher counts increase score further up to 100
+            if (perfectCount === 0) return 0;
+            if (perfectCount === 1) return 15;
+            if (perfectCount === 2) return 30;
+            if (perfectCount === 3) return 50;
+            if (perfectCount >= 4 && perfectCount < 7) return 60 + (perfectCount - 4) * 5;
+            return 90;
+          };
+
+          // Get score colors for UI display
+          const getScoreColors = (score) => {
+            if (score > 90) {
+              return { label: 'Firm', bg: '#111', color: '#fff', icon: 'la-star' };
+            } else if (score >= 80) {
+              return { label: 'Strong', bg: '#1b5e20', color: '#fff', icon: 'la-check-circle' };
+            } else if (score >= 60) {
+              return { label: 'Good', bg: '#0277bd', color: '#fff', icon: 'la-thumbs-up' };
+            } else if (score >= 40) {
+              return { label: 'Fair', bg: '#ff8f00', color: '#fff', icon: 'la-exclamation-circle' };
+            } else if (score > 0) {
+              return { label: 'Weak', bg: '#c62828', color: '#fff', icon: 'la-exclamation-triangle' };
+            } else {
+              return { label: 'New', bg: '#757575', color: '#fff', icon: 'la-bookmark' };
+            }
+          };
+
+          const currentPageHifzStatus = computed(() => {
+            const score = getHifzScore(appStore.currentPage);
+            return getScoreColors(score);
+          });
+
           // Word interaction functions
           const highlightWord = (word) => {
             // Toggle word selection
@@ -716,6 +793,7 @@
           const saveData = () => {
             const data = {
               memorized: Array.from(memorizedStore.memorizedPages),
+              perfectRevisions: Object.fromEntries(perfectRevisionsStore.perfectRevisions),
               recordings: audioStore.recordings,
               settings: settingsStore,
               lastSaved: new Date().toISOString()
@@ -728,6 +806,7 @@
               version: '2.0.0',
               exported: new Date().toISOString(),
               memorized: Array.from(memorizedStore.memorizedPages),
+              perfectRevisions: Object.fromEntries(perfectRevisionsStore.perfectRevisions),
               mistakes: Object.fromEntries(
                 Array.from(mistakesStore.mistakes).map(([key, val]) => [key, Array.from(val)])
               ),
@@ -873,6 +952,7 @@
             memorizedStore,
             mistakesStore,
             audioStore,
+            perfectRevisionsStore,
             isInitializing,
             quranData,
             gotoInput,
@@ -884,11 +964,14 @@
             currentPageWords,
             hoveredWordId,
             isCurrentPageMemorized,
+            currentPagePerfectCount,
+            currentPageHifzStatus,
             previousPage,
             nextPage,
             gotoPage,
             toggleTheme,
             toggleMemorized,
+            incrementPerfectRevision,
             highlightWord,
             updateSettings,
             playAudio,
