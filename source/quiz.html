@@ -91,8 +91,84 @@
 
             <!-- Quiz Content Area -->
             <div class="bg-white rounded-lg shadow p-6">
+                <!-- Welcome/Tutorial Section (shown initially) -->
+                <div v-if="!selectedSurahs.length && currentTab !== 'config'" class="space-y-8">
+                    <div class="text-center mb-8">
+                        <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Welcome to Murajah Quiz! 📖</h2>
+                        <p class="text-lg text-gray-600 dark:text-gray-400">Master the Qur'an through interactive quizzes</p>
+                    </div>
+
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded mb-8">
+                        <h3 class="text-xl font-semibold text-blue-900 dark:text-blue-200 mb-2">🎯 Getting Started</h3>
+                        <p class="text-blue-800 dark:text-blue-300 mb-4">Before you start, please select the surahs you want to practice:</p>
+                        <button @click="currentTab = 'config'" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                            ⚙️ Go to Settings
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Lightning Round Card -->
+                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                            <h3 class="text-2xl font-bold text-primary mb-2">⚡ Lightning Round</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                Race against the clock! Select your time limit (60s to 5min) and difficulty level (Easy/Medium/Hard). Questions alternate between "Next/Previous Verse" and "Translation" to keep you sharp.
+                            </p>
+                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                                <p>⏱️ <strong>Timed Challenge:</strong> Beat the clock</p>
+                                <p>📊 <strong>Mixed Questions:</strong> Verse continuity + translation</p>
+                                <p>🎯 <strong>Difficulty Levels:</strong> Affects mistake limits</p>
+                            </div>
+                        </div>
+
+                        <!-- Verse Completion Card -->
+                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                            <h3 class="text-2xl font-bold text-primary mb-2">📝 Verse Completion</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                Fill in the missing words! A verse appears with 2-5 words blanked out. Click on the correct words in sequence to fill the blanks.
+                            </p>
+                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                                <p>🎲 <strong>Random Blanks:</strong> 2-5 words per verse</p>
+                                <p>⬅️ <strong>Fill Left to Right:</strong> Select words to complete</p>
+                                <p>✅ <strong>Instant Feedback:</strong> Know if you're right</p>
+                            </div>
+                        </div>
+
+                        <!-- Test Continuation Card -->
+                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                            <h3 class="text-2xl font-bold text-primary mb-2">🔗 Test Continuation</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                Know your verses! A verse is shown, and you must select either the NEXT or PREVIOUS verse from four options.
+                            </p>
+                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                                <p>⬇️⬆️ <strong>Next or Previous:</strong> Badge shows which one</p>
+                                <p>🎯 <strong>Multiple Choice:</strong> 4 options per question</p>
+                                <p>📈 <strong>Track Progress:</strong> Score and streak</p>
+                            </div>
+                        </div>
+
+                        <!-- Translation Match Card -->
+                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                            <h3 class="text-2xl font-bold text-primary mb-2">🌐 Translation Match</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                Match verses with meanings! A Qur'anic verse is shown in Arabic. Choose the correct English translation from four options.
+                            </p>
+                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                                <p>📖 <strong>Arabic to English:</strong> Test your understanding</p>
+                                <p>🎯 <strong>Multiple Choice:</strong> 4 translation options</p>
+                                <p>🏆 <strong>Build Mastery:</strong> Learn meanings deeply</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded text-center">
+                        <p class="text-green-800 dark:text-green-300 text-lg font-semibold">
+                            ✨ Select your surahs in Settings to begin your journey! ✨
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Lightning Round -->
-                <div v-if="currentTab === 'lightning-round'" class="space-y-6">
+                <div v-else-if="currentTab === 'lightning-round'" class="space-y-6">
                     <!-- Selection Screen (before starting) -->
                     <div v-if="!lightningIsActive && !lightningRoundEnded">
                         <div class="text-center mb-8">
@@ -257,10 +333,11 @@
 
                 <!-- Verse Completion -->
                 <div v-if="currentTab === 'verse-completion'" class="space-y-6">
+                    <!-- Header with Score -->
                     <div class="flex justify-between items-start">
                         <div>
-                            <h2 class="text-lg font-semibold">Verse Completion</h2>
-                            <p class="text-gray-600">Fill in the missing words from the verse.</p>
+                            <h2 class="text-3xl font-bold text-primary mb-1">📝 Verse Completion</h2>
+                            <p class="text-gray-600 dark:text-gray-400">Fill in the missing words to complete the verse</p>
                         </div>
                         
                         <!-- Score Display -->
@@ -285,6 +362,58 @@
                         </div>
                     </div>
 
+                    <!-- Tutorial Section (shown before quiz starts) -->
+                    <div v-if="!completionVerse && !isLoading && selectedSurahs.length" class="space-y-6">
+                        <div class="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 border-2 border-pink-200 dark:border-pink-700 rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-pink-700 dark:text-pink-300 mb-4">How It Works 🎯</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">1️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">A Verse Appears</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">A Qur'anic verse is displayed with 2-5 random words blanked out (shown as yellow boxes).</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">2️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Select Words</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Click on the correct words from the options below, filling from <strong>left to right</strong>.</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">3️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Check Answer</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Click "Check Answer" to verify if the words are in the correct order.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+                                    <li>✓ Read the context to guess missing words</li>
+                                    <li>✓ Order matters - words must match exactly</li>
+                                    <li>✓ Fill from left-to-right across the blanks</li>
+                                    <li>✓ Build familiarity with verse structure</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                                    <li>✓ Verse memorization through word recognition</li>
+                                    <li>✓ Understanding verse flow and meaning</li>
+                                    <li>✓ Recall ability with contextual hints</li>
+                                    <li>✓ Build your Quran knowledge progressively</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button @click="generateCompletionQuestion" class="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-bold text-lg hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-105">
+                                🚀 Start Verse Completion
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
                         <p class="text-gray-600">Please select some surahs from the configuration first</p>
@@ -293,13 +422,7 @@
                         </button>
                     </div>
 
-                    <div v-else-if="!completionVerse && !isLoading" class="text-center py-12">
-                        <button @click="generateCompletionQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
-                            Start Quiz
-                        </button>
-                    </div>
-                    
-                    <div v-else-if="isLoading" class="text-center py-12">
+                    <div v-else-if="!completionVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
                         <p class="mt-4 text-gray-600">Loading question...</p>
                     </div>
@@ -393,18 +516,11 @@
 
                 <!-- Test Continuation -->
                 <div v-if="currentTab === 'multiple-choice'" class="space-y-6">
+                    <!-- Header with Score -->
                     <div class="flex justify-between items-start">
                         <div>
-                            <h2 class="text-lg font-semibold">Test Continuation</h2>
-                            <p class="text-gray-600">
-                                Select the 
-                                <span v-if="continuationType === 'next'" class="ml-2 inline-block bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-full font-semibold">
-                                    ⬇️ NEXT VERSE
-                                </span>
-                                <span v-else class="ml-2 inline-block bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 px-3 py-1 rounded-full font-semibold">
-                                    ⬆️ PREVIOUS VERSE
-                                </span>
-                            </p>
+                            <h2 class="text-3xl font-bold text-primary mb-1">🔗 Test Continuation</h2>
+                            <p class="text-gray-600 dark:text-gray-400">Select the next or previous verse correctly</p>
                         </div>
                         
                         <!-- Score Display -->
@@ -429,6 +545,58 @@
                         </div>
                     </div>
 
+                    <!-- Tutorial Section (shown before quiz starts) -->
+                    <div v-if="!continuationVerse && !isLoading && selectedSurahs.length" class="space-y-6">
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4">How It Works 🎯</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">1️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">See the Verse</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">A verse from the Qur'an is displayed with a badge showing if you need the <strong>Next</strong> or <strong>Previous</strong> verse.</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">2️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Choose Wisely</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Select from 4 options - one is correct, three are distractors from other verses.</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">3️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Get Feedback</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Immediately see if you're correct and learn the verse order in the Qur'an.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+                                    <li>✓ Pay attention to the badge (Next ⬇️ or Previous ⬆️)</li>
+                                    <li>✓ Recognize verse themes to spot distractors</li>
+                                    <li>✓ Build sequential memory of the Qur'an</li>
+                                    <li>✓ Speed comes with practice and familiarity</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                                    <li>✓ Verse sequence and progression in surahs</li>
+                                    <li>✓ Recognize verse boundaries and transitions</li>
+                                    <li>✓ Build structural memory of the Qur'an</li>
+                                    <li>✓ Improve recitation accuracy</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button @click="generateContinuationQuestion" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition transform hover:scale-105">
+                                🚀 Start Test Continuation
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
                         <p class="text-gray-600">Please select some surahs from the configuration first</p>
@@ -437,13 +605,7 @@
                         </button>
                     </div>
 
-                    <div v-else-if="!continuationVerse && !isLoading" class="text-center py-12">
-                        <button @click="generateContinuationQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
-                            Start Quiz
-                        </button>
-                    </div>
-                    
-                    <div v-else-if="isLoading" class="text-center py-12">
+                    <div v-else-if="!continuationVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
                         <p class="mt-4 text-gray-600">Loading question...</p>
                     </div>
@@ -497,10 +659,11 @@
 
                 <!-- Translation Match -->
                 <div v-if="currentTab === 'translation-match'" class="space-y-6">
+                    <!-- Header with Score -->
                     <div class="flex justify-between items-start">
                         <div>
-                            <h2 class="text-lg font-semibold">Translation Match</h2>
-                            <p class="text-gray-600">Match verses with their translations.</p>
+                            <h2 class="text-3xl font-bold text-primary mb-1">🌐 Translation Match</h2>
+                            <p class="text-gray-600 dark:text-gray-400">Match Arabic verses to their English meanings</p>
                         </div>
                         
                         <!-- Score Display -->
@@ -525,6 +688,58 @@
                         </div>
                     </div>
 
+                    <!-- Tutorial Section (shown before quiz starts) -->
+                    <div v-if="!currentVerse && !isLoading && selectedSurahs.length" class="space-y-6">
+                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-200 dark:border-amber-700 rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-amber-700 dark:text-amber-300 mb-4">How It Works 🎯</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">1️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">See Arabic Verse</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">A Qur'anic verse is displayed in beautiful Arabic script for you to understand.</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">2️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Choose Translation</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Select the correct English translation from 4 options - one correct, three distractors.</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">3️⃣</div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Learn Meaning</h4>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">Build understanding of verse meanings and strengthen your knowledge of the Qur'an.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-orange-900 dark:text-orange-200 mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-orange-800 dark:text-orange-300">
+                                    <li>✓ Look for keywords and familiar themes</li>
+                                    <li>✓ Pay attention to context clues in the verse</li>
+                                    <li>✓ Note common translation phrases from the Qur'an</li>
+                                    <li>✓ Eliminate obviously wrong answers first</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                                    <li>✓ Qur'anic verse meanings and interpretations</li>
+                                    <li>✓ Common translation vocabulary and phrases</li>
+                                    <li>✓ Deeper understanding of Islamic teachings</li>
+                                    <li>✓ Tafsir concepts through context</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button @click="generateNewQuestion" class="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition transform hover:scale-105">
+                                🚀 Start Translation Match
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
                         <p class="text-gray-600">Please select some surahs from the configuration first</p>
@@ -533,13 +748,7 @@
                         </button>
                     </div>
 
-                    <div v-else-if="!currentVerse && !isLoading" class="text-center py-12">
-                        <button @click="generateNewQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
-                            Start Quiz
-                        </button>
-                    </div>
-                    
-                    <div v-else-if="isLoading" class="text-center py-12">
+                    <div v-else-if="!currentVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
                         <p class="mt-4 text-gray-600">Loading question...</p>
                     </div>
@@ -587,51 +796,83 @@
                 </div>
 
                 <!-- Configuration -->
-                <div v-if="currentTab === 'config'" class="space-y-6">
+                <div v-if="currentTab === 'config'" class="space-y-8">
+                    <!-- Header -->
                     <div>
-                        <h2 class="text-lg font-semibold mb-4">Quiz Settings</h2>
-                        <div class="space-y-4">
-                            <!-- Default Settings Actions -->
-                            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                                <h3 class="text-md font-medium text-blue-900 dark:text-blue-200 mb-3">Default Settings</h3>
-                                <div class="flex flex-wrap gap-2">
-                                    <button @click="saveDefaultSettings" 
-                                        class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                                        💾 Save as Default
-                                    </button>
-                                    <button @click="loadDefaultSettings" 
-                                        class="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
-                                        📥 Load Default Settings
-                                    </button>
-                                </div>
-                            </div>
+                        <h2 class="text-3xl font-bold text-primary mb-1">⚙️ Quiz Settings</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Customize your learning experience</p>
+                    </div>
 
-                            <!-- Surah Selection -->
+                    <!-- Default Settings Card -->
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-purple-900 dark:text-purple-200 mb-4">💾 Manage Defaults</h3>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">Save and load your favorite surah selections for quick access</p>
+                        <div class="flex flex-wrap gap-3">
+                            <button @click="saveDefaultSettings" 
+                                class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition transform hover:scale-105">
+                                💾 Save Current as Default
+                            </button>
+                            <button @click="loadDefaultSettings" 
+                                class="px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-pink-700 transition transform hover:scale-105">
+                                📥 Load Default Selection
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Surah Selection Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6">
+                        <div class="flex justify-between items-start mb-6">
                             <div>
-                                <h3 class="text-md font-medium text-gray-700 mb-2">Select Surahs for Quiz</h3>
-                                <div class="flex flex-wrap gap-2 mb-4">
-                                    <button @click="toggleAllSurahs" 
-                                        class="px-3 py-1 text-sm rounded-md"
-                                        :class="allSurahsSelected ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
-                                        {{ allSurahsSelected ? 'Deselect All' : 'Select All' }}
-                                    </button>
-                                    <button @click="saveConfig" 
-                                        class="px-3 py-1 text-sm bg-primary text-white rounded-md">
-                                        Save Settings
-                                    </button>
-                                </div>
-                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                    <div v-for="(name, number) in surahs" 
-                                        :key="number"
-                                        @click="toggleSurah(number)"
-                                        class="flex items-center p-2 rounded-lg cursor-pointer transition-colors"
-                                        :class="selectedSurahs.includes(number) ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'">
-                                        <span class="mr-2 text-sm">{{ number }}.</span>
-                                        <span class="font-arabic text-lg">{{ name }}</span>
-                                    </div>
+                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">📚 Select Surahs</h3>
+                                <p class="text-gray-600 dark:text-gray-400">Choose which surahs to practice. {{ selectedSurahs.length }} / {{ Object.keys(surahs).length }} selected</p>
+                            </div>
+                            <div class="bg-primary text-white rounded-lg px-4 py-2 text-center">
+                                <p class="text-xs text-white/80">Selection</p>
+                                <p class="text-2xl font-bold">{{ Math.round((selectedSurahs.length / Object.keys(surahs).length) * 100) }}%</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button @click="toggleAllSurahs" 
+                                class="px-4 py-2 rounded-lg font-semibold transition transform hover:scale-105"
+                                :class="allSurahsSelected 
+                                    ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 hover:bg-red-200' 
+                                    : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 hover:bg-green-200'">
+                                {{ allSurahsSelected ? '✗ Deselect All' : '✓ Select All' }}
+                            </button>
+                            <button @click="saveConfig" 
+                                class="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition transform hover:scale-105">
+                                💾 Save Settings
+                            </button>
+                        </div>
+
+                        <!-- Surah Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            <div v-for="(name, number) in surahs" 
+                                :key="number"
+                                @click="toggleSurah(number)"
+                                class="p-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2"
+                                :class="selectedSurahs.includes(number) 
+                                    ? 'bg-primary text-white border-primary shadow-lg' 
+                                    : 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600 hover:border-primary'">
+                                <div class="text-center">
+                                    <p class="font-bold text-lg">{{ number }}</p>
+                                    <p class="font-arabic text-sm leading-tight">{{ name }}</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
+                        <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-2">📖 Tips</h4>
+                        <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                            <li>✓ Select surahs you're currently memorizing</li>
+                            <li>✓ Start with a few surahs, then expand gradually</li>
+                            <li>✓ Your selection is saved automatically</li>
+                            <li>✓ Use "Save as Default" to quickly restore your selection later</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -853,7 +1094,7 @@
         createApp({
             setup() {
                 const isDarkMode = ref(false)
-                const currentTab = ref('word-match')
+                const currentTab = ref('lightning-round')
                 const isLoading = ref(true)
                 const error = ref(null)
                 const surahs = ref({})
