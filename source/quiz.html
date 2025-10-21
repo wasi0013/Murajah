@@ -707,6 +707,16 @@
 
                     <!-- Question Display -->
                     <div v-else-if="continuationVerse" class="space-y-6">
+                        <!-- Badge indicating Next or Previous -->
+                        <div class="flex justify-center mb-4">
+                            <span v-if="continuationType === 'next'" class="inline-block px-6 py-2 bg-blue-500 text-white rounded-full font-bold text-lg">
+                                ⬇️ Find the NEXT verse
+                            </span>
+                            <span v-else class="inline-block px-6 py-2 bg-orange-500 text-white rounded-full font-bold text-lg">
+                                ⬆️ Find the PREVIOUS verse
+                            </span>
+                        </div>
+
                         <!-- Current Verse -->
                         <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <p class="text-2xl text-right font-arabic text-gray-900 dark:text-white" style="line-height: 2;">{{ continuationVerse.text }}</p>
