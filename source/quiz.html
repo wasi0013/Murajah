@@ -103,10 +103,108 @@
                     <p class="text-gray-600">Complete the missing parts of verses.</p>
                 </div>
 
-                <!-- Multiple Choice -->
-                <div v-if="currentTab === 'multiple-choice'" class="space-y-4">
-                    <h2 class="text-lg font-semibold">Multiple Choice</h2>
-                    <p class="text-gray-600">Choose the correct translation or continuation.</p>
+                <!-- Test Continuation -->
+                <div v-if="currentTab === 'multiple-choice'" class="space-y-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-semibold">Test Continuation</h2>
+                            <p class="text-gray-600">
+                                Select the 
+                                <span v-if="continuationType === 'next'" class="ml-2 inline-block bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-full font-semibold">
+                                    ⬇️ NEXT VERSE
+                                </span>
+                                <span v-else class="ml-2 inline-block bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 px-3 py-1 rounded-full font-semibold">
+                                    ⬆️ PREVIOUS VERSE
+                                </span>
+                            </p>
+                        </div>
+                        
+                        <!-- Score Display -->
+                        <div class="text-right">
+                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                                <div class="mb-2">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-2xl font-bold text-primary">
+                                        {{ continuationScore }}/{{ continuationAttempts }}
+                                        <span class="text-sm text-gray-500">
+                                            ({{ continuationAttempts ? Math.round((continuationScore/continuationAttempts) * 100) : 0 }}%)
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="continuationStreak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                        {{ continuationStreak }} 🔥
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Container -->
+                    <div v-if="!selectedSurahs.length" class="text-center py-12">
+                        <p class="text-gray-600">Please select some surahs from the configuration first</p>
+                        <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
+                            Go to Configuration
+                        </button>
+                    </div>
+
+                    <div v-else-if="!continuationVerse && !isLoading" class="text-center py-12">
+                        <button @click="generateContinuationQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
+                            Start Quiz
+                        </button>
+                    </div>
+                    
+                    <div v-else-if="isLoading" class="text-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Loading question...</p>
+                    </div>
+
+                    <!-- Question Display -->
+                    <div v-else-if="continuationVerse" class="space-y-6">
+                        <!-- Current Verse -->
+                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <p class="text-2xl text-right font-arabic" style="line-height: 2;">{{ continuationVerse.text }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Surah {{ continuationVerse.chapter }}, Verse {{ continuationVerse.verse }}
+                            </p>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="grid gap-4">
+                            <template v-if="!continuationAnswerRevealed">
+                                <button v-for="(option, index) in continuationOptions" 
+                                    :key="index"
+                                    @click="checkContinuationAnswer(index)"
+                                    class="p-4 rounded-lg text-right font-arabic transition-colors border-2 bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary">
+                                    <p class="text-2xl" style="line-height: 2;">{{ option.text }}</p>
+                                </button>
+                            </template>
+                            <template v-else>
+                                <!-- After answer selection -->
+                                <div v-if="selectedWrongContinuation !== null" class="p-4 rounded-lg text-right font-arabic border-2 bg-red-50 border-red-500 dark:bg-red-900/30">
+                                    <p class="text-2xl text-red-600 dark:text-red-400" style="line-height: 2;">
+                                        {{ continuationOptions[selectedWrongContinuation].text }}
+                                    </p>
+                                    <p class="text-sm text-red-500 dark:text-red-400 mt-2">
+                                        ❌ Incorrect Answer (Verse {{ continuationOptions[selectedWrongContinuation].verse }})
+                                    </p>
+                                </div>
+                                <div class="p-6 rounded-lg text-right font-arabic border-2 bg-green-50 border-green-500 dark:bg-green-900/30">
+                                    <p class="text-2xl text-green-700 dark:text-green-400" style="line-height: 2;">
+                                        {{ continuationOptions.find(opt => opt.isCorrect).text }}
+                                    </p>
+                                    <p class="text-sm text-green-600 dark:text-green-500 mt-2">
+                                        ✅ Correct Answer (Verse {{ continuationOptions.find(opt => opt.isCorrect).verse }})
+                                    </p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div v-if="error" class="text-red-500 text-center mt-4">
+                        {{ error }}
+                    </div>
                 </div>
 
                 <!-- Translation Match -->
@@ -468,6 +566,16 @@
                 const sessionAttempts = ref(0)
                 const streak = ref(0)
 
+                // Test Continuation Quiz State
+                const continuationVerse = ref(null)
+                const continuationOptions = ref([])
+                const continuationAnswerRevealed = ref(false)
+                const selectedWrongContinuation = ref(null)
+                const continuationScore = ref(0)
+                const continuationAttempts = ref(0)
+                const continuationStreak = ref(0)
+                const continuationType = ref('next') // 'next' or 'previous'
+
                 // Load quiz data
                 const loadQuizData = async () => {
                     try {
@@ -663,10 +771,140 @@
                     }
                 }
 
+                // Generate continuation question
+                const generateContinuationQuestion = async () => {
+                    if (!selectedSurahs.value.length) return;
+                    
+                    // Reset scores if this is a new session
+                    if (!continuationVerse.value) {
+                        continuationScore.value = 0;
+                        continuationAttempts.value = 0;
+                        continuationStreak.value = 0;
+                    }
+                    
+                    isLoading.value = true;
+                    continuationAnswerRevealed.value = false;
+                    selectedWrongContinuation.value = null;
+                    continuationType.value = Math.random() < 0.5 ? 'next' : 'previous';
+                    
+                    try {
+                        // Select random surah from selected ones
+                        const randomSurahNum = selectedSurahs.value[
+                            Math.floor(Math.random() * selectedSurahs.value.length)
+                        ];
+                        
+                        // Get verses for this surah
+                        const surahVerses = quranData.value[randomSurahNum];
+                        if (!surahVerses || surahVerses.length === 0) {
+                            throw new Error('No verses found for selected surah');
+                        }
+                        
+                        // Select a verse that has a next/previous verse
+                        let selectedVerseIndex;
+                        if (continuationType.value === 'next') {
+                            // Select verse that has a next verse (not the last one)
+                            selectedVerseIndex = Math.floor(Math.random() * (surahVerses.length - 1));
+                        } else {
+                            // Select verse that has a previous verse (not the first one)
+                            selectedVerseIndex = Math.floor(Math.random() * (surahVerses.length - 1)) + 1;
+                        }
+                        
+                        const verseNumber = selectedVerseIndex + 1;
+                        
+                        // Set current verse
+                        continuationVerse.value = {
+                            chapter: parseInt(randomSurahNum),
+                            verse: verseNumber,
+                            text: surahVerses[selectedVerseIndex].text
+                        };
+
+                        // Determine correct answer verse number
+                        const correctVerseIndex = continuationType.value === 'next' 
+                            ? selectedVerseIndex + 1 
+                            : selectedVerseIndex - 1;
+                        const correctVerseNumber = correctVerseIndex + 1;
+
+                        // Create options
+                        const options = [];
+                        
+                        // Add correct answer
+                        options.push({
+                            text: surahVerses[correctVerseIndex].text,
+                            verse: correctVerseNumber,
+                            isCorrect: true
+                        });
+
+                        // Add wrong answers from different verses (avoid adjacent verses)
+                        const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
+                        while (options.length < 4) {
+                            const randomIndex = Math.floor(Math.random() * surahVerses.length);
+                            if (!usedIndices.has(randomIndex)) {
+                                usedIndices.add(randomIndex);
+                                options.push({
+                                    text: surahVerses[randomIndex].text,
+                                    verse: randomIndex + 1,
+                                    isCorrect: false
+                                });
+                            }
+                        }
+
+                        // Fisher-Yates shuffle
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+
+                        continuationOptions.value = options;
+                    } catch (err) {
+                        console.error('Error generating continuation question:', err);
+                        error.value = 'Failed to generate question.';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                // Check continuation answer
+                const checkContinuationAnswer = async (index) => {
+                    continuationAnswerRevealed.value = true;
+                    const isCorrect = continuationOptions.value[index].isCorrect;
+                    
+                    if (!isCorrect) {
+                        selectedWrongContinuation.value = index;
+                    }
+                    
+                    // Update session score
+                    continuationAttempts.value++;
+                    if (isCorrect) {
+                        continuationScore.value++;
+                        continuationStreak.value++;
+                    } else {
+                        continuationStreak.value = 0;
+                    }
+                    
+                    // Save score
+                    try {
+                        await QuizDB.saveScore('test-continuation', isCorrect ? 1 : 0, {
+                            surah: continuationVerse.value.chapter,
+                            verse: continuationVerse.value.verse,
+                            type: continuationType.value,
+                            selectedVerse: continuationOptions.value[index].verse,
+                            correctVerse: continuationOptions.value.find(opt => opt.isCorrect).verse,
+                            streak: continuationStreak.value
+                        });
+                    } catch (err) {
+                        console.error('Error saving score:', err);
+                    }
+
+                    // Auto-generate new question after delay
+                    setTimeout(() => {
+                        generateContinuationQuestion();
+                    }, 3000);
+                };
+
                 const tabs = ref([
                     { id: 'word-match', name: 'Word Match' },
                     { id: 'verse-completion', name: 'Verse Completion' },
-                    { id: 'multiple-choice', name: 'Multiple Choice' },
+                    { id: 'multiple-choice', name: 'Test Continuation' },
                     { id: 'translation-match', name: 'Translation Match' },
                     { id: 'config', name: '⚙️ Settings' }
                 ])
@@ -746,13 +984,23 @@
                     sessionScore,
                     sessionAttempts,
                     streak,
+                    continuationVerse,
+                    continuationOptions,
+                    continuationAnswerRevealed,
+                    selectedWrongContinuation,
+                    continuationScore,
+                    continuationAttempts,
+                    continuationStreak,
+                    continuationType,
                     toggleDarkMode,
                     changeTab,
                     toggleSurah,
                     toggleAllSurahs,
                     saveConfig,
                     generateNewQuestion,
-                    checkAnswer
+                    checkAnswer,
+                    generateContinuationQuestion,
+                    checkContinuationAnswer
                 }
             }
         }).mount('#app')
