@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murajah Quiz</title>
+    <!-- Vue 3 Production -->
+    <script src="resources/js/vue.global.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="resources/js/tailwind.3.4.7.js"></script>
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --color-primary: #2196f3;
+            --color-secondary: #1976d2;
+            --color-accent: #82b1ff;
+        }
+        
+        /* Custom utility classes */
+        .bg-primary { background-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .border-primary { border-color: var(--color-primary); }
+        
+        .bg-secondary { background-color: var(--color-secondary); }
+        .text-secondary { color: var(--color-secondary); }
+        
+        .bg-accent { background-color: var(--color-accent); }
+        .text-accent { color: var(--color-accent); }
+
+        /* Dark mode overrides */
+        .dark .dark\:bg-gray-800 { background-color: #1a1a1a; }
+        .dark .dark\:text-white { color: #ffffff; }
+        .dark .dark\:hover\:bg-gray-700:hover { background-color: #2d2d2d; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <p class="mt-4 text-gray-600">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="error" class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+            <p class="flex items-center">
+                <span class="mr-2">⚠️</span>
+                {{ error }}
+            </p>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white shadow dark:bg-gray-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Murajah Quiz</h1>
+                    <nav class="flex space-x-4">
+                        <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span v-if="isDarkMode" class="text-yellow-500">🌙</span>
+                            <span v-else class="text-orange-500">☀️</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Quiz Type Tabs -->
+            <div class="mb-8">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8" aria-label="Quiz Types">
+                        <button 
+                            v-for="tab in tabs" 
+                            :key="tab.id"
+                            @click="currentTab = tab.id"
+                            :class="[
+                                currentTab === tab.id
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+                            ]"
+                        >
+                            {{ tab.name }}
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Quiz Content Area -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <!-- Word Match Quiz -->
+                <div v-if="currentTab === 'word-match'" class="space-y-4">
+                    <h2 class="text-lg font-semibold">Word Match Quiz</h2>
+                    <p class="text-gray-600">Match Arabic words with their translations.</p>
+                </div>
+
+                <!-- Verse Completion -->
+                <div v-if="currentTab === 'verse-completion'" class="space-y-4">
+                    <h2 class="text-lg font-semibold">Verse Completion</h2>
+                    <p class="text-gray-600">Complete the missing parts of verses.</p>
+                </div>
+
+                <!-- Multiple Choice -->
+                <div v-if="currentTab === 'multiple-choice'" class="space-y-4">
+                    <h2 class="text-lg font-semibold">Multiple Choice</h2>
+                    <p class="text-gray-600">Choose the correct translation or continuation.</p>
+                </div>
+
+                <!-- Translation Match -->
+                <div v-if="currentTab === 'translation-match'" class="space-y-4">
+                    <h2 class="text-lg font-semibold">Translation Match</h2>
+                    <p class="text-gray-600">Match verses with their translations.</p>
+                </div>
+
+                <!-- Configuration -->
+                <div v-if="currentTab === 'config'" class="space-y-6">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-4">Quiz Settings</h2>
+                        <div class="space-y-4">
+                            <!-- Surah Selection -->
+                            <div>
+                                <h3 class="text-md font-medium text-gray-700 mb-2">Select Surahs for Quiz</h3>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <button @click="toggleAllSurahs" 
+                                        class="px-3 py-1 text-sm rounded-md"
+                                        :class="allSurahsSelected ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+                                        {{ allSurahsSelected ? 'Deselect All' : 'Select All' }}
+                                    </button>
+                                    <button @click="saveConfig" 
+                                        class="px-3 py-1 text-sm bg-primary text-white rounded-md">
+                                        Save Settings
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    <div v-for="(name, number) in surahs" 
+                                        :key="number"
+                                        @click="toggleSurah(number)"
+                                        class="flex items-center p-2 rounded-lg cursor-pointer transition-colors"
+                                        :class="selectedSurahs.includes(number) ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'">
+                                        <span class="mr-2 text-sm">{{ number }}.</span>
+                                        <span class="font-arabic text-lg">{{ name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <p class="text-center text-gray-500 text-sm">
+                    Murajah Quiz © 2025
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Database Setup -->
+    <script>
+        // IndexedDB Setup
+        const QuizDB = {
+            db: null,
+            DB_NAME: 'MurajahQuizDB',
+            VERSION: 1,
+
+            // Store names
+            STORES: {
+                PROGRESS: 'quizProgress',
+                SETTINGS: 'settings',
+                SCORES: 'scores',
+                BOOKMARKS: 'bookmarks'
+            },
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.VERSION);
+
+                    request.onerror = () => {
+                        console.error('Failed to open database:', request.error);
+                        reject(request.error);
+                    };
+
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        console.log('Database opened successfully');
+                        resolve(this.db);
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Quiz Progress Store
+                        if (!db.objectStoreNames.contains(this.STORES.PROGRESS)) {
+                            const progressStore = db.createObjectStore(this.STORES.PROGRESS, { keyPath: 'id', autoIncrement: true });
+                            progressStore.createIndex('quizType', 'quizType', { unique: false });
+                            progressStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+
+                        // Settings Store
+                        if (!db.objectStoreNames.contains(this.STORES.SETTINGS)) {
+                            db.createObjectStore(this.STORES.SETTINGS, { keyPath: 'key' });
+                        }
+
+                        // Scores Store
+                        if (!db.objectStoreNames.contains(this.STORES.SCORES)) {
+                            const scoresStore = db.createObjectStore(this.STORES.SCORES, { keyPath: 'id', autoIncrement: true });
+                            scoresStore.createIndex('quizType', 'quizType', { unique: false });
+                            scoresStore.createIndex('score', 'score', { unique: false });
+                            scoresStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+
+                        // Bookmarks Store
+                        if (!db.objectStoreNames.contains(this.STORES.BOOKMARKS)) {
+                            const bookmarksStore = db.createObjectStore(this.STORES.BOOKMARKS, { keyPath: 'id', autoIncrement: true });
+                            bookmarksStore.createIndex('type', 'type', { unique: false });
+                            bookmarksStore.createIndex('reference', 'reference', { unique: false });
+                        }
+                    };
+                });
+            },
+
+            // Generic CRUD operations
+            async add(storeName, data) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(storeName, 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.add({ ...data, timestamp: Date.now() });
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async get(storeName, id) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(storeName, 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.get(id);
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async getAll(storeName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(storeName, 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.getAll();
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async update(storeName, id, data) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(storeName, 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.put({ ...data, id, timestamp: Date.now() });
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async delete(storeName, id) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(storeName, 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.delete(id);
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            // Specific quiz operations
+            async saveQuizProgress(quizType, data) {
+                return this.add(this.STORES.PROGRESS, {
+                    quizType,
+                    ...data
+                });
+            },
+
+            async getQuizProgress(quizType) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(this.STORES.PROGRESS, 'readonly');
+                    const store = transaction.objectStore(this.STORES.PROGRESS);
+                    const index = store.index('quizType');
+                    const request = index.getAll(quizType);
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async saveScore(quizType, score, details = {}) {
+                return this.add(this.STORES.SCORES, {
+                    quizType,
+                    score,
+                    details
+                });
+            },
+
+            async getScores(quizType) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(this.STORES.SCORES, 'readonly');
+                    const store = transaction.objectStore(this.STORES.SCORES);
+                    const index = store.index('quizType');
+                    const request = index.getAll(quizType);
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async setSetting(key, value) {
+                try {
+                    // First try to delete any existing setting
+                    try {
+                        await this.delete(this.STORES.SETTINGS, key);
+                    } catch (e) {
+                        // Ignore delete errors
+                    }
+                    
+                    // Then add the new setting
+                    return await this.add(this.STORES.SETTINGS, { 
+                        key, 
+                        value: JSON.stringify(value),
+                        timestamp: Date.now()
+                    });
+                } catch (err) {
+                    console.error('Error saving setting:', err);
+                    throw err;
+                }
+            },
+
+            async getSetting(key) {
+                try {
+                    const setting = await this.get(this.STORES.SETTINGS, key);
+                    if (setting) {
+                        return {
+                            ...setting,
+                            value: JSON.parse(setting.value)
+                        };
+                    }
+                    return null;
+                } catch (err) {
+                    console.error('Error getting setting:', err);
+                    return null;
+                }
+            }
+        };
+    </script>
+
+    <!-- Vue App Script -->
+    <script>
+        const { createApp, ref } = Vue
+
+        createApp({
+            setup() {
+                const isDarkMode = ref(false)
+                const currentTab = ref('word-match')
+                const isLoading = ref(true)
+                const error = ref(null)
+                const surahs = ref({})
+                const selectedSurahs = ref([])
+                const allSurahsSelected = ref(false)
+
+                // Load surahs data
+                const loadSurahs = async () => {
+                    try {
+                        const response = await fetch('resources/surah-names.json')
+                        const data = await response.json()
+                        surahs.value = data
+                        
+                        // Load saved surah selection
+                        const savedSelection = await QuizDB.getSetting('selectedSurahs')
+                        if (savedSelection) {
+                            selectedSurahs.value = savedSelection.value
+                            updateAllSurahsState()
+                        }
+                    } catch (err) {
+                        console.error('Failed to load surahs:', err)
+                        error.value = 'Failed to load Surah list.'
+                    }
+                }
+
+                // Toggle individual surah selection
+                const toggleSurah = (number) => {
+                    const index = selectedSurahs.value.indexOf(number)
+                    if (index === -1) {
+                        selectedSurahs.value.push(number)
+                    } else {
+                        selectedSurahs.value.splice(index, 1)
+                    }
+                    updateAllSurahsState()
+                }
+
+                // Update all surahs selected state
+                const updateAllSurahsState = () => {
+                    allSurahsSelected.value = selectedSurahs.value.length === Object.keys(surahs.value).length
+                }
+
+                // Toggle all surahs
+                const toggleAllSurahs = () => {
+                    if (allSurahsSelected.value) {
+                        selectedSurahs.value = []
+                    } else {
+                        selectedSurahs.value = Object.keys(surahs.value)
+                    }
+                    updateAllSurahsState()
+                }
+
+                // Save configuration
+                const saveConfig = async () => {
+                    try {
+                        await QuizDB.setSetting('selectedSurahs', selectedSurahs.value)
+                        // Show success message
+                        const prevError = error.value
+                        error.value = 'Settings saved successfully!'
+                        setTimeout(() => {
+                            if (error.value === 'Settings saved successfully!') {
+                                error.value = prevError
+                            }
+                        }, 2000)
+                    } catch (err) {
+                        console.error('Failed to save settings:', err)
+                        error.value = 'Failed to save settings.'
+                    }
+                }
+
+                const tabs = ref([
+                    { id: 'word-match', name: 'Word Match' },
+                    { id: 'verse-completion', name: 'Verse Completion' },
+                    { id: 'multiple-choice', name: 'Multiple Choice' },
+                    { id: 'translation-match', name: 'Translation Match' },
+                    { id: 'config', name: '⚙️ Settings' }
+                ])
+
+                // Initialize database and load settings
+                const initializeApp = async () => {
+                    try {
+                        await QuizDB.init()
+                        
+                        // Load dark mode setting
+                        const darkModeSetting = await QuizDB.getSetting('darkMode')
+                        if (darkModeSetting) {
+                            isDarkMode.value = darkModeSetting.value
+                            if (isDarkMode.value) {
+                                document.documentElement.classList.add('dark')
+                            }
+                        }
+
+                        // Load last active tab
+                        const lastTab = await QuizDB.getSetting('lastTab')
+                        if (lastTab) {
+                            currentTab.value = lastTab.value
+                        }
+
+                        isLoading.value = false
+                    } catch (err) {
+                        console.error('Failed to initialize app:', err)
+                        error.value = 'Failed to load app settings. Please refresh the page.'
+                        isLoading.value = false
+                    }
+                }
+
+                // Toggle dark mode and save setting
+                const toggleDarkMode = async () => {
+                    isDarkMode.value = !isDarkMode.value
+                    document.documentElement.classList.toggle('dark')
+                    try {
+                        await QuizDB.setSetting('darkMode', isDarkMode.value)
+                    } catch (err) {
+                        console.error('Failed to save dark mode setting:', err)
+                    }
+                }
+
+                // Handle tab changes and save last active tab
+                const changeTab = async (tabId) => {
+                    currentTab.value = tabId
+                    try {
+                        await QuizDB.setSetting('lastTab', tabId)
+                    } catch (err) {
+                        console.error('Failed to save last active tab:', err)
+                    }
+                }
+
+                // Initialize app when component mounts
+                const init = async () => {
+                    await initializeApp()
+                    await loadSurahs()
+                }
+                init()
+
+                return {
+                    isDarkMode,
+                    currentTab,
+                    tabs,
+                    isLoading,
+                    error,
+                    surahs,
+                    selectedSurahs,
+                    allSurahsSelected,
+                    toggleDarkMode,
+                    changeTab,
+                    toggleSurah,
+                    toggleAllSurahs,
+                    saveConfig
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
