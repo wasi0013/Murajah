@@ -98,9 +98,139 @@
                 </div>
 
                 <!-- Verse Completion -->
-                <div v-if="currentTab === 'verse-completion'" class="space-y-4">
-                    <h2 class="text-lg font-semibold">Verse Completion</h2>
-                    <p class="text-gray-600">Complete the missing parts of verses.</p>
+                <div v-if="currentTab === 'verse-completion'" class="space-y-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-semibold">Verse Completion</h2>
+                            <p class="text-gray-600">Fill in the missing words from the verse.</p>
+                        </div>
+                        
+                        <!-- Score Display -->
+                        <div class="text-right">
+                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                                <div class="mb-2">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-2xl font-bold text-primary">
+                                        {{ completionScore }}/{{ completionAttempts }}
+                                        <span class="text-sm text-gray-500">
+                                            ({{ completionAttempts ? Math.round((completionScore/completionAttempts) * 100) : 0 }}%)
+                                        </span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="completionStreak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                        {{ completionStreak }} 🔥
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Container -->
+                    <div v-if="!selectedSurahs.length" class="text-center py-12">
+                        <p class="text-gray-600">Please select some surahs from the configuration first</p>
+                        <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
+                            Go to Configuration
+                        </button>
+                    </div>
+
+                    <div v-else-if="!completionVerse && !isLoading" class="text-center py-12">
+                        <button @click="generateCompletionQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
+                            Start Quiz
+                        </button>
+                    </div>
+                    
+                    <div v-else-if="isLoading" class="text-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Loading question...</p>
+                    </div>
+
+                    <!-- Question Display -->
+                    <div v-else-if="completionVerse" class="space-y-6">
+                        <!-- Current Verse with Blanks -->
+                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                Surah {{ completionVerse.chapter }}, Verse {{ completionVerse.verse }}
+                            </p>
+                            <div class="text-2xl text-right font-arabic" style="line-height: 2.5;">
+                                <span v-for="(word, index) in completionVerseDisplay || []" :key="index">
+                                    <span v-if="word.isBlank" class="inline-block bg-yellow-200 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold">
+                                        {{ getFilledWord(word.originalIndex) || '___' }}
+                                    </span>
+                                    <span v-else class="mx-1">
+                                        {{ word.text }}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Progress -->
+                        <div v-if="!completionAnswerRevealed" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                            <p class="text-sm text-blue-900 dark:text-blue-200">
+                                Missing words: {{ completionMissingCount }} / {{ completionCorrectAnswers ? completionCorrectAnswers.length : 0 }}
+                            </p>
+                            <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-2">
+                                <div class="bg-blue-600 h-2 rounded-full transition-all" :style="{ width: (completionCorrectAnswers && completionTotalMissing ? (completionMissingCount / completionTotalMissing * 100) : 0) + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <!-- Word Options -->
+                        <div class="space-y-4">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Select the correct words in order (right to left):</p>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                <button v-for="(option, index) in (completionOptions || [])" 
+                                    :key="index"
+                                    @click="selectCompletionWord(index)"
+                                    :disabled="completionAnswerRevealed || completionSelectedWords.includes(index)"
+                                    :class="[
+                                        'p-3 rounded-lg font-arabic transition-colors border-2',
+                                        completionSelectedWords.includes(index)
+                                            ? 'bg-gray-300 dark:bg-gray-600 border-gray-400 text-gray-600 dark:text-gray-400 cursor-not-allowed'
+                                            : completionAnswerRevealed
+                                                ? option?.isCorrect ? 'bg-green-100 dark:bg-green-900 border-green-500 text-green-700 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-800 border-gray-300'
+                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                    ]">
+                                    <p class="text-lg" style="line-height: 1.5;">{{ option?.text || '?' }}</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Selected Words Display -->
+                        <div v-if="completionSelectedWords.length > 0 && !completionAnswerRevealed" class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-purple-900 dark:text-purple-200 mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionCorrectAnswers ? completionCorrectAnswers.length : 0 }}</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 px-3 py-1 rounded-full text-sm">
+                                            {{ position + 1 }}. {{ (completionOptions && completionOptions[wordIndex]) ? completionOptions[wordIndex].text : '?' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap">
+                                    Check Answer
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Result Display -->
+                        <div v-if="completionAnswerRevealed" class="space-y-3">
+                            <div v-if="completionIsCorrect" class="bg-green-50 dark:bg-green-900/30 border border-green-500 rounded-lg p-4">
+                                <p class="text-green-700 dark:text-green-200 font-semibold text-lg">✅ Correct! All words in the right order!</p>
+                            </div>
+                            <div v-else class="bg-red-50 dark:bg-red-900/30 border border-red-500 rounded-lg p-4">
+                                <p class="text-red-700 dark:text-red-200 font-semibold">❌ Incorrect order or words</p>
+                                <div class="mt-3 text-right font-arabic">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Correct order:</p>
+                                    <p class="text-xl" style="line-height: 2;">{{ completionVerse.text }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="error" class="text-red-500 text-center mt-4">
+                        {{ error }}
+                    </div>
                 </div>
 
                 <!-- Test Continuation -->
@@ -591,6 +721,22 @@
                 const continuationStreak = ref(0)
                 const continuationType = ref('next') // 'next' or 'previous'
 
+                // Verse Completion Quiz State
+                const completionVerse = ref(null)
+                const completionVerseDisplay = ref([])
+                const completionOptions = ref([])
+                const completionSelectedWords = ref([])
+                const completionAnswerRevealed = ref(false)
+                const completionIsCorrect = ref(false)
+                const completionScore = ref(0)
+                const completionAttempts = ref(0)
+                const completionStreak = ref(0)
+                const completionCorrectAnswers = ref([])
+                const completionTotalMissing = ref(0)
+                const completionMissingCount = ref(0)
+                const completionBlankIndices = ref([]) // Indices of blank words in verse
+                const completionFilledWords = ref({}) // Map of blank position -> filled word
+
                 // Load quiz data
                 const loadQuizData = async () => {
                     try {
@@ -831,6 +977,195 @@
                     }
                 }
 
+                // Generate completion question
+                const generateCompletionQuestion = async () => {
+                    if (!selectedSurahs.value.length) return;
+                    
+                    // Reset scores if this is a new session
+                    if (!completionVerse.value) {
+                        completionScore.value = 0;
+                        completionAttempts.value = 0;
+                        completionStreak.value = 0;
+                    }
+                    
+                    isLoading.value = true;
+                    completionAnswerRevealed.value = false;
+                    completionSelectedWords.value = [];
+                    completionIsCorrect.value = false;
+                    
+                    try {
+                        // Select random surah from selected ones
+                        const randomSurahNum = selectedSurahs.value[
+                            Math.floor(Math.random() * selectedSurahs.value.length)
+                        ];
+                        
+                        // Get verses for this surah
+                        const surahVerses = quranData.value[randomSurahNum];
+                        if (!surahVerses || surahVerses.length === 0) {
+                            throw new Error('No verses found for selected surah');
+                        }
+                        
+                        // Select a random verse
+                        const randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
+                        const verseNumber = randomVerseIndex + 1;
+                        const verseText = surahVerses[randomVerseIndex].text;
+                        
+                        // Split verse into words
+                        const words = verseText.split(/\s+/).filter(w => w.length > 0);
+                        
+                        if (words.length < 3) {
+                            throw new Error('Verse too short for this quiz');
+                        }
+                        
+                        // Determine how many words to blank (between 2-5)
+                        const blankCount = Math.floor(2 + Math.random() * 4); // Random between 2-5
+                        
+                        // Randomly select which words to blank
+                        const blankIndices = new Set();
+                        while (blankIndices.size < blankCount) {
+                            blankIndices.add(Math.floor(Math.random() * words.length));
+                        }
+                        
+                        // Create display array with blanks
+                        const display = words.map((word, index) => ({
+                            text: word,
+                            isBlank: blankIndices.has(index),
+                            originalIndex: index
+                        }));
+                        
+                        // Get correct answers in RIGHT-TO-LEFT order (highest index to lowest)
+                        // This represents reading from right to left in Arabic
+                        const correctAnswersArray = Array.from(blankIndices)
+                            .sort((a, b) => b - a) // Sort in descending order (right to left)
+                            .map(index => words[index]);
+                        
+                        completionVerse.value = {
+                            chapter: parseInt(randomSurahNum),
+                            verse: verseNumber,
+                            text: verseText
+                        };
+                        
+                        completionVerseDisplay.value = display;
+                        completionCorrectAnswers.value = correctAnswersArray;
+                        // Store blank indices in RIGHT-TO-LEFT order for visual filling and answer validation
+                        // Highest index first (rightmost blank) = position 0
+                        // Lowest index last (leftmost blank) = last position
+                        completionBlankIndices.value = Array.from(blankIndices).sort((a, b) => b - a);
+                        completionFilledWords.value = {}; // Reset filled words map
+                        completionTotalMissing.value = blankCount;
+                        completionMissingCount.value = 0;
+                        
+                        // Get random wrong words from other verses
+                        const wrongWords = new Set();
+                        const allWords = [];
+                        
+                        Object.keys(quranData.value).forEach(surahKey => {
+                            quranData.value[surahKey].forEach(verse => {
+                                verse.text.split(/\s+/).filter(w => w.length > 0).forEach(word => {
+                                    allWords.push(word);
+                                });
+                            });
+                        });
+                        
+                        // Add wrong words until we have enough
+                        while (wrongWords.size < blankCount * 2) {
+                            const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+                            if (!correctAnswersArray.includes(randomWord)) {
+                                wrongWords.add(randomWord);
+                            }
+                        }
+                        
+                        // Combine and shuffle options
+                        const options = [
+                            ...correctAnswersArray.map(word => ({ text: word, isCorrect: true })),
+                            ...Array.from(wrongWords).map(word => ({ text: word, isCorrect: false }))
+                        ];
+                        
+                        // Fisher-Yates shuffle
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+                        
+                        completionOptions.value = options;
+                    } catch (err) {
+                        console.error('Error generating completion question:', err);
+                        error.value = 'Failed to generate question.';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                // Helper function to get the word filled at a specific blank position
+                const getFilledWord = (verseWordIndex) => {
+                    // Guard checks
+                    if (!completionBlankIndices.value || completionBlankIndices.value.length === 0) {
+                        return null;
+                    }
+                    
+                    // Find position in RIGHT-TO-LEFT sequence (highest index = position 0 = rightmost blank)
+                    const positionInRTLSequence = completionBlankIndices.value.indexOf(verseWordIndex);
+                    if (positionInRTLSequence === -1) return null; // Not a blank position
+                    
+                    // REVERSE mapping: get the word from the opposite end of the selection array
+                    // This ensures first click fills rightmost blank VISUALLY
+                    const reversedPosition = (completionBlankIndices.value.length - 1) - positionInRTLSequence;
+                    const selectedWordIndex = completionSelectedWords.value[reversedPosition];
+                    if (selectedWordIndex === undefined || selectedWordIndex === null) return null;
+                    
+                    const option = completionOptions.value[selectedWordIndex];
+                    return option && option.text ? option.text : null;
+                };
+
+                // Select a completion word
+                const selectCompletionWord = (index) => {
+                    if (!completionSelectedWords.value.includes(index)) {
+                        completionSelectedWords.value.push(index);
+                        completionMissingCount.value++;
+                    }
+                };
+
+                // Check completion answer
+                const checkCompletionAnswer = async () => {
+                    completionAnswerRevealed.value = true;
+                    
+                    // Check if selected words match correct answers in REVERSED order
+                    // Since we use reversed mapping for display, we need to reverse the selected words too
+                    const reversedSelectedIndices = completionSelectedWords.value.slice().reverse();
+                    const selectedWordsText = reversedSelectedIndices.map(i => completionOptions.value[i].text);
+                    const isCorrect = selectedWordsText.length === completionCorrectAnswers.value.length &&
+                                     selectedWordsText.every((word, i) => word === completionCorrectAnswers.value[i]);
+                    
+                    completionIsCorrect.value = isCorrect;
+                    
+                    // Update session score
+                    completionAttempts.value++;
+                    if (isCorrect) {
+                        completionScore.value++;
+                        completionStreak.value++;
+                    } else {
+                        completionStreak.value = 0;
+                    }
+                    
+                    // Save score
+                    try {
+                        await QuizDB.saveScore('verse-completion', isCorrect ? 1 : 0, {
+                            surah: completionVerse.value.chapter,
+                            verse: completionVerse.value.verse,
+                            missingWords: completionCorrectAnswers.value.length,
+                            selectedCorrectly: isCorrect,
+                            streak: completionStreak.value
+                        });
+                    } catch (err) {
+                        console.error('Error saving score:', err);
+                    }
+
+                    // Auto-generate new question after delay
+                    setTimeout(() => {
+                        generateCompletionQuestion();
+                    }, 3000);
+                };
+
                 // Generate continuation question
                 const generateContinuationQuestion = async () => {
                     if (!selectedSurahs.value.length) return;
@@ -1052,6 +1387,19 @@
                     continuationAttempts,
                     continuationStreak,
                     continuationType,
+                    completionVerse,
+                    completionVerseDisplay,
+                    completionOptions,
+                    completionSelectedWords,
+                    completionAnswerRevealed,
+                    completionIsCorrect,
+                    completionScore,
+                    completionAttempts,
+                    completionStreak,
+                    completionTotalMissing,
+                    completionMissingCount,
+                    completionBlankIndices,
+                    completionFilledWords,
                     toggleDarkMode,
                     changeTab,
                     toggleSurah,
@@ -1062,7 +1410,11 @@
                     generateNewQuestion,
                     checkAnswer,
                     generateContinuationQuestion,
-                    checkContinuationAnswer
+                    checkContinuationAnswer,
+                    generateCompletionQuestion,
+                    selectCompletionWord,
+                    checkCompletionAnswer,
+                    getFilledWord
                 }
             }
         }).mount('#app')
