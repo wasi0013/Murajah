@@ -544,10 +544,10 @@
                         <!-- Progress -->
                         <div v-if="!completionAnswerRevealed" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                             <p class="text-sm text-blue-900 dark:text-blue-200">
-                                Missing words: {{ completionMissingCount }} / {{ completionCorrectAnswers ? completionCorrectAnswers.length : 0 }}
+                                Words filled: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}
                             </p>
                             <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-2">
-                                <div class="bg-blue-600 h-2 rounded-full transition-all" :style="{ width: (completionCorrectAnswers && completionTotalMissing ? (completionMissingCount / completionTotalMissing * 100) : 0) + '%' }"></div>
+                                <div class="bg-blue-600 h-2 rounded-full transition-all" :style="{ width: (completionTotalMissing ? (completionSelectedWords.length / completionTotalMissing * 100) : 0) + '%' }"></div>
                             </div>
                         </div>
 
@@ -556,6 +556,7 @@
                             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Select the correct words in order (right to left):</p>
                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                                 <button v-for="(option, index) in (completionOptions || [])" 
+                                    v-show="!completionSelectedWords.includes(index) || completionAnswerRevealed"
                                     :key="index"
                                     @click="selectCompletionWord(index)"
                                     :disabled="completionAnswerRevealed || completionSelectedWords.includes(index)"
@@ -576,14 +577,17 @@
                         <div v-if="completionSelectedWords.length > 0 && !completionAnswerRevealed" class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-purple-900 dark:text-purple-200 mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionCorrectAnswers ? completionCorrectAnswers.length : 0 }}</p>
+                                    <p class="text-sm text-purple-900 dark:text-purple-200 mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}</p>
                                     <div class="flex flex-wrap gap-2">
                                         <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 px-3 py-1 rounded-full text-sm">
                                             {{ position + 1 }}. {{ (completionOptions && completionOptions[wordIndex]) ? completionOptions[wordIndex].text : '?' }}
                                         </span>
                                     </div>
                                 </div>
-                                <button @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap">
+                                <div v-if="completionSelectedWords.length === completionTotalMissing" class="text-right">
+                                    <p class="text-sm text-purple-700 dark:text-purple-300 font-semibold animate-pulse">✓ Checking...</p>
+                                </div>
+                                <button v-else @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap">
                                     Check Answer
                                 </button>
                             </div>
@@ -1529,7 +1533,7 @@
                         let words = [];
                         let randomSurahNum, randomVerseIndex, verseNumber;
                         let attempts = 0;
-                        const maxAttempts = 100;
+                        const maxAttempts = 10;
                         
                         while (words.length < 3 && attempts < maxAttempts) {
                             // Select random surah from selected ones
@@ -1672,6 +1676,13 @@
                     if (!completionSelectedWords.value.includes(index)) {
                         completionSelectedWords.value.push(index);
                         completionMissingCount.value++;
+                        
+                        // Auto-check answer when all words are selected
+                        if (completionSelectedWords.value.length === completionTotalMissing.value) {
+                            setTimeout(() => {
+                                checkCompletionAnswer();
+                            }, 300); // Small delay for visual feedback
+                        }
                     }
                 };
 
