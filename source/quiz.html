@@ -525,11 +525,14 @@
                     <!-- Question Display -->
                     <div v-else-if="completionVerse" class="space-y-6">
                         <!-- Current Verse with Blanks -->
-                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                Surah {{ completionVerse.chapter }}, Verse {{ completionVerse.verse }}
-                            </p>
-                            <div class="text-2xl text-right font-arabic" style="line-height: 2.5;">
+                        <div class="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-4 border-blue-300 dark:border-blue-700 shadow-lg">
+                            <div class="mb-4">
+                                <p class="text-xs font-semibold text-blue-600 dark:text-blue-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-blue-500 dark:text-blue-400 font-medium">
+                                    Surah {{ completionVerse.chapter }}, Verse {{ completionVerse.verse }}
+                                </p>
+                            </div>
+                            <div class="text-2xl text-right font-arabic text-blue-900 dark:text-blue-100" style="line-height: 2.5;">
                                 <span v-for="(word, index) in completionVerseDisplay || []" :key="index">
                                     <span v-if="word.isBlank" class="inline-block bg-yellow-200 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold">
                                         {{ getFilledWord(word.originalIndex) || '___' }}
@@ -722,11 +725,14 @@
                         </div>
 
                         <!-- Current Verse -->
-                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p class="text-2xl text-right font-arabic text-gray-900 dark:text-white" style="line-height: 2;">{{ continuationVerse.text }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                Surah {{ continuationVerse.chapter }}, Verse {{ continuationVerse.verse }}
-                            </p>
+                        <div class="p-8 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl border-4 border-cyan-300 dark:border-cyan-700 shadow-lg">
+                            <div class="mb-4">
+                                <p class="text-xs font-semibold text-cyan-600 dark:text-cyan-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-cyan-500 dark:text-cyan-400 font-medium">
+                                    Surah {{ continuationVerse.chapter }}, Verse {{ continuationVerse.verse }}
+                                </p>
+                            </div>
+                            <p class="text-2xl text-right font-arabic text-cyan-900 dark:text-cyan-100" style="line-height: 2;">{{ continuationVerse.text }}</p>
                         </div>
 
                         <!-- Options -->
@@ -872,9 +878,14 @@
                     <!-- Question Display -->
                     <div v-else-if="currentVerse" class="space-y-6">
                         <!-- Verse -->
-                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p class="text-2xl text-right font-arabic text-gray-900 dark:text-white" style="line-height: 2;">{{ currentVerse.text }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Surah {{ currentVerse.chapter }}, Verse {{ currentVerse.verse }}</p>
+                        <div class="p-8 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border-4 border-amber-300 dark:border-amber-700 shadow-lg">
+                            <div class="mb-4">
+                                <p class="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-amber-500 dark:text-amber-400 font-medium">
+                                    Surah {{ currentVerse.chapter }}, Verse {{ currentVerse.verse }}
+                                </p>
+                            </div>
+                            <p class="text-2xl text-right font-arabic text-amber-900 dark:text-amber-100" style="line-height: 2;">{{ currentVerse.text }}</p>
                         </div>
 
                         <!-- Translation Options -->
