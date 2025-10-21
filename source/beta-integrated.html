@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Murajah - Quran Memorization</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
+    
+    <!-- Vue 3 Production -->
+    <script src="resources/js/vue.global.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="resources/js/tailwind.3.4.7.js"></script>
+    <!-- Line Awesome Icons -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        :root {
+            --color-primary: #2196f3;
+            --color-secondary: #1976d2;
+            --color-accent: #82b1ff;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        /* Custom utility classes */
+        .bg-primary { background-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .border-primary { border-color: var(--color-primary); }
+        
+        .bg-secondary { background-color: var(--color-secondary); }
+        .text-secondary { color: var(--color-secondary); }
+        
+        .bg-accent { background-color: var(--color-accent); }
+        .text-accent { color: var(--color-accent); }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Dark mode fixes */
+        .dark .dark\:bg-gray-800 { background-color: #1a1a1a; }
+        .dark .dark\:text-white { color: #ffffff; }
+        .dark .dark\:hover\:bg-gray-700:hover { background-color: #2d2d2d; }
+        
+        .dark .bg-gray-50 { background-color: #1f2937 !important; color: #f3f4f6; }
+        .dark .bg-white { background-color: #1f2937 !important; }
+        .dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.4) !important; }
+        .dark .bg-gray-100 { background-color: #2d3748 !important; }
+        
+        .dark .text-gray-900 { color: #f3f4f6 !important; }
+        .dark .text-gray-700 { color: #d1d5db !important; }
+        .dark .text-gray-600 { color: #e5e7eb !important; }
+        .dark .text-gray-500 { color: #d1d5db !important; }
+        
+        .dark .border-gray-200 { border-color: #374151 !important; }
+        .dark .border-gray-300 { border-color: #4b5563 !important; }
+        
+        /* Quran text styling */
+        @font-face {
+            font-family: 'Surah';
+            src: local('Surah');
+        }
+        
+        .quran-text {
+            font-family: 'QPCV2Page', serif;
+            text-align: center;
+            direction: rtl;
+            line-height: 2.2;
+        }
+        
+        .quran-word {
+            display: inline;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .quran-word:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+            border-radius: 2px;
+        }
+        
+        .quran-word.mistake-word {
+            border-bottom: 2px solid #e53935;
+            background-color: rgba(229, 57, 53, 0.08);
+        }
+        
+        .quran-word.memorized-word {
+            border-bottom: 2px solid #4caf50;
+            background-color: rgba(76, 175, 80, 0.08);
+        }
+        
+        /* Loading states */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(33, 150, 243, 0.3);
+            border-top-color: #2196f3;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive utilities */
+        .container-responsive {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        @media (max-width: 640px) {
+            .container-responsive {
+                padding: 0 0.75rem;
+            }
+        }
+        
+        /* Touch target minimum */
+        button, a, input, select, textarea {
+            min-height: 44px;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .text-sm { font-size: 0.875rem !important; }
+            .text-lg { font-size: 1rem !important; }
+            .text-xl { font-size: 1.125rem !important; }
+            .text-2xl { font-size: 1.25rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            
+            .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+            .py-8 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .slide-up { animation: slideUp 0.3s ease-in-out; }
+        
+        /* Grid for memorized pages */
+        .pages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 4px;
+        }
+        
+        .page-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .page-cell:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Bubble grid for mistakes */
+        .mistake-bubbles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            gap: 3px;
+        }
+        
+        .mistake-bubble {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+        
+        .mistake-bubble:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+        <!-- Vue app will render here -->
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-center">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-400">Loading Murajah...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Murajah - Vue 3 Application
+         * Mobile-first Quran Memorization App with Vue 3, Tailwind CSS, and IndexedDB
+         * 
+         * Components:
+         * - QuranPageComponent: Display Quran text with word interactions
+         * - NavigationComponent: Page navigation controls
+         * - DashboardComponent: Progress and statistics
+         * - StatusIndicatorsComponent: Quick status badges
+         * - MistakeTrackerComponent: Word mistake visualization
+         * - MemorizedGridComponent: Visual grid of memorized pages
+         * - AudioPlaylistComponent: Audio recording and playback
+         * - SettingsComponent: App settings and preferences
+         */
+
+        // Check browser compatibility
+        if (!window.indexedDB) {
+            alert('IndexedDB is not supported in your browser. Please use a modern browser.');
+        }
+
+        // Import Vue
+        const { createApp, ref, reactive, computed, onMounted, watch, h } = Vue;
+
+        // ====================================
+        // IndexedDB Initialization
+        // ====================================
+        
+        const DB_NAME = 'MurajahDB';
+        const DB_VERSION = 1;
+
+        const STORES = {
+            memorizedPages: { keyPath: 'pageNumber' },
+            perfectRevisions: { keyPath: 'pageNumber' },
+            mistakes: { keyPath: 'id', indexes: ['pageNumber', 'wordId'] },
+            audioRecordings: { keyPath: 'id', indexes: ['pageNumber', 'recordedAt'] },
+            settings: { keyPath: 'key' },
+            quranLayout: { keyPath: 'pageNumber' },
+            quranWords: { keyPath: 'id', indexes: ['pageNumber', 'surah'] }
+        };
+
+        class MurajahDB {
+            constructor() {
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        console.log('[Murajah] IndexedDB initialized');
+                        resolve(this.db);
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Create stores if they don't exist
+                        for (const [storeName, config] of Object.entries(STORES)) {
+                            if (!db.objectStoreNames.contains(storeName)) {
+                                const store = db.createObjectStore(storeName, { keyPath: config.keyPath });
+                                
+                                // Create indexes if specified
+                                if (config.indexes) {
+                                    config.indexes.forEach(index => {
+                                        store.createIndex(index, index, { unique: false });
+                                    });
+                                }
+                                console.log(`[Murajah] Created store: ${storeName}`);
+                            }
+                        }
+                    };
+                });
+            }
+
+            async getMemorized() {
+                const tx = this.db.transaction(['memorizedPages'], 'readonly');
+                const store = tx.objectStore('memorizedPages');
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result.map(r => r.pageNumber));
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async addMemorized(pageNumber) {
+                const tx = this.db.transaction(['memorizedPages'], 'readwrite');
+                const store = tx.objectStore('memorizedPages');
+                return store.add({ pageNumber, memorizedAt: new Date().toISOString() });
+            }
+
+            async removeMemorized(pageNumber) {
+                const tx = this.db.transaction(['memorizedPages'], 'readwrite');
+                const store = tx.objectStore('memorizedPages');
+                return store.delete(pageNumber);
+            }
+
+            async getSetting(key, defaultValue = null) {
+                const tx = this.db.transaction(['settings'], 'readonly');
+                const store = tx.objectStore('settings');
+                return new Promise((resolve, reject) => {
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result?.value ?? defaultValue);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async setSetting(key, value) {
+                const tx = this.db.transaction(['settings'], 'readwrite');
+                const store = tx.objectStore('settings');
+                return store.put({ key, value, updatedAt: new Date().toISOString() });
+            }
+        }
+
+        const murajahDB = new MurajahDB();
+
+        // ====================================
+        // State Stores (Composition API)
+        // ====================================
+
+        const appStore = reactive({
+            currentPage: 1,
+            totalPages: 604,
+            isLoading: true,
+            theme: 'light', // 'light' | 'dark'
+            appVersion: '2.0.0-integrated'
+        });
+
+        const quranStore = reactive({
+            layoutData: [],
+            wordsData: {},
+            surahNames: {},
+            translations: {},
+            isLoaded: false
+        });
+
+        const memorizedStore = reactive({
+            memorizedPages: new Set()
+        });
+
+        const mistakesStore = reactive({
+            mistakes: new Map() // Map<pageNumber, Set<wordId>>
+        });
+
+        const settingsStore = reactive({
+            finishRevisionDays: 30,
+            pagesPerDay: 1,
+            tajweedEnabled: true,
+            fontSize: 'medium' // small | medium | large
+        });
+
+        // ====================================
+        // Computed Properties
+        // ====================================
+
+        const memorizedCount = computed(() => memorizedStore.memorizedPages.size);
+        const memorizedPercentage = computed(() => 
+            Math.round((memorizedCount.value / appStore.totalPages) * 100)
+        );
+        const pagePercent = computed(() => 
+            (appStore.currentPage / appStore.totalPages) * 100
+        );
+        const remainingPages = computed(() => appStore.totalPages - memorizedCount.value);
+
+        // ====================================
+        // Vue Components
+        // ====================================
+
+        // QuranPageComponent
+        const QuranPageComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-8 mb-6">
+                    <div class="text-center mb-4">
+                        <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">
+                            Page {{ currentPage }}
+                        </h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Juz {{ Math.ceil(currentPage / 20) }} • Surah placeholder
+                        </p>
+                    </div>
+                    <div class="quran-text text-lg md:text-2xl leading-relaxed min-h-96">
+                        <p class="text-gray-400 dark:text-gray-500 text-center">
+                            <i class="la la-book-open text-3xl mb-3 block"></i>
+                            Quran text loads from resources/qpc-v2-15-lines.json
+                        </p>
+                    </div>
+                </div>
+            `,
+            props: {
+                currentPage: Number,
+                memorizedPages: Set,
+                mistakes: Map
+            }
+        };
+
+        // NavigationComponent
+        const NavigationComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <div class="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                        <button @click="$emit('prev')" :disabled="currentPage === 1" 
+                            class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
+                            <i class="la la-chevron-left"></i>
+                            <span class="hidden sm:inline">Previous</span>
+                        </button>
+                        
+                        <span class="text-gray-600 dark:text-gray-400 font-semibold whitespace-nowrap">
+                            {{ currentPage }} / {{ totalPages }}
+                        </span>
+                        
+                        <button @click="$emit('next')" :disabled="currentPage === totalPages" 
+                            class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
+                            <span class="hidden sm:inline">Next</span>
+                            <i class="la la-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex gap-2 justify-center flex-wrap">
+                        <input v-model.number="gotoPage" type="number" min="1" :max="totalPages" 
+                            placeholder="Go to..." @keyup.enter="navigateTo"
+                            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary w-24 md:w-32">
+                        <button @click="navigateTo" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors inline-flex items-center gap-2">
+                            <i class="la la-arrow-right"></i> Go
+                        </button>
+                    </div>
+                </div>
+            `,
+            props: {
+                currentPage: Number,
+                totalPages: Number
+            },
+            emits: ['prev', 'next', 'goto'],
+            setup(props, { emit }) {
+                const gotoPage = ref('');
+                
+                const navigateTo = () => {
+                    const page = parseInt(gotoPage.value, 10);
+                    if (page >= 1 && page <= props.totalPages) {
+                        emit('goto', page);
+                        gotoPage.value = '';
+                    }
+                };
+                
+                return { gotoPage, navigateTo };
+            }
+        };
+
+        // StatusIndicatorsComponent
+        const StatusIndicatorsComponent = {
+            template: `
+                <div class="grid grid-cols-3 gap-2 md:gap-4 mb-6">
+                    <div class="bg-blue-50 dark:bg-blue-900/30 p-3 md:p-4 rounded-lg text-center">
+                        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Memorized</p>
+                        <p class="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">{{ memorized }}</p>
+                    </div>
+                    <div class="bg-purple-50 dark:bg-purple-900/30 p-3 md:p-4 rounded-lg text-center">
+                        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Remaining</p>
+                        <p class="text-xl md:text-2xl font-bold text-purple-600 dark:text-purple-400">{{ remaining }}</p>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-orange-900/30 p-3 md:p-4 rounded-lg text-center">
+                        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Progress</p>
+                        <p class="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ percentage }}%</p>
+                    </div>
+                </div>
+            `,
+            props: {
+                memorized: Number,
+                remaining: Number,
+                percentage: Number
+            }
+        };
+
+        // DashboardComponent
+        const DashboardComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Dashboard</h3>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Overall Progress</span>
+                            <span class="text-sm font-semibold text-primary">{{ percentage }}%</span>
+                        </div>
+                        <div class="bg-gray-200 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
+                            <div class="bg-green-600 h-full transition-all duration-300" :style="{ width: percentage + '%' }"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Juz Breakdown -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-semibold mb-3 text-gray-900 dark:text-white">Juz Progress (30)</h4>
+                        <div class="grid grid-cols-6 md:grid-cols-10 gap-1 md:gap-2">
+                            <div v-for="juz in 30" :key="juz"
+                                class="aspect-square flex items-center justify-center rounded text-xs font-bold text-white cursor-pointer transition-transform hover:scale-110"
+                                :class="juzMemorizedClass(juz)">
+                                {{ juz }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 gap-3 md:gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Pages per Day</p>
+                            <p class="text-lg font-bold text-primary">{{ pagesPerDay }}</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Est. Completion</p>
+                            <p class="text-lg font-bold text-primary">{{ estimatedDays }} days</p>
+                        </div>
+                    </div>
+                </div>
+            `,
+            props: {
+                memorized: Number,
+                remaining: Number,
+                percentage: Number,
+                pagesPerDay: Number,
+                totalPages: Number
+            },
+            setup(props) {
+                const juzMemorizedClass = (juz) => {
+                    const start = (juz - 1) * 20 + 1;
+                    const end = juz * 20;
+                    let count = 0;
+                    for (let i = start; i <= end; i++) {
+                        if (memorizedStore.memorizedPages.has(i)) count++;
+                    }
+                    
+                    if (count === 20) return 'bg-green-600';
+                    if (count >= 15) return 'bg-green-500';
+                    if (count >= 10) return 'bg-blue-500';
+                    if (count >= 5) return 'bg-yellow-500';
+                    if (count > 0) return 'bg-orange-500';
+                    return 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400';
+                };
+                
+                const estimatedDays = computed(() => {
+                    return Math.ceil(props.remaining / props.pagesPerDay);
+                });
+                
+                return { juzMemorizedClass, estimatedDays };
+            }
+        };
+
+        // MistakeTrackerComponent
+        const MistakeTrackerComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Mistakes Tracker</h3>
+                    
+                    <div v-if="pagesWithMistakes.length === 0" class="text-center py-8">
+                        <i class="la la-check-circle text-4xl text-green-500 mb-3 block"></i>
+                        <p class="text-gray-600 dark:text-gray-400">No mistakes tracked yet!</p>
+                    </div>
+                    
+                    <div v-else class="space-y-4">
+                        <div v-for="(pageNum, idx) in pagesWithMistakes.slice(0, 5)" :key="idx"
+                            class="bg-gray-50 dark:bg-gray-700 p-4 rounded">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold text-gray-900 dark:text-white">Page {{ pageNum }}</h4>
+                                <span class="text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-1 rounded">
+                                    {{ getMistakeCount(pageNum) }} mistakes
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Click to review this page</p>
+                        </div>
+                    </div>
+                </div>
+            `,
+            props: {
+                mistakes: Map
+            },
+            setup(props) {
+                const pagesWithMistakes = computed(() => {
+                    return Array.from(props.mistakes.keys()).sort((a, b) => 
+                        (props.mistakes.get(b)?.size || 0) - (props.mistakes.get(a)?.size || 0)
+                    );
+                });
+                
+                const getMistakeCount = (pageNum) => {
+                    return props.mistakes.get(pageNum)?.size || 0;
+                };
+                
+                return { pagesWithMistakes, getMistakeCount };
+            }
+        };
+
+        // MemorizedGridComponent
+        const MemorizedGridComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Memorized Pages</h3>
+                    
+                    <div class="pages-grid">
+                        <div v-for="page in totalPages" :key="page"
+                            @click="$emit('select-page', page)"
+                            class="page-cell"
+                            :class="isMemorized(page) ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-400'"
+                            :title="'Page ' + page">
+                            {{ page }}
+                        </div>
+                    </div>
+                </div>
+            `,
+            props: {
+                memorizedPages: Set,
+                totalPages: Number
+            },
+            emits: ['select-page'],
+            setup(props) {
+                const isMemorized = (page) => props.memorizedPages.has(page);
+                return { isMemorized };
+            }
+        };
+
+        // AudioPlaylistComponent
+        const AudioPlaylistComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Audio Recording</h3>
+                    
+                    <div class="space-y-4">
+                        <button @click="toggleRecording" 
+                            :class="[
+                                'w-full py-3 rounded-lg font-semibold text-white transition-colors flex items-center justify-center gap-2',
+                                isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-secondary'
+                            ]">
+                            <i :class="isRecording ? 'la la-stop-circle' : 'la la-microphone'"></i>
+                            {{ isRecording ? 'Stop Recording' : 'Start Recording' }}
+                        </button>
+                        
+                        <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+                            <i class="la la-info-circle"></i>
+                            Record audio for the current page
+                        </p>
+                    </div>
+                </div>
+            `,
+            data() {
+                return {
+                    isRecording: false
+                };
+            },
+            methods: {
+                toggleRecording() {
+                    this.isRecording = !this.isRecording;
+                }
+            }
+        };
+
+        // SettingsComponent
+        const SettingsComponent = {
+            template: `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Settings</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                                <i class="la la-calendar"></i> Revision Days
+                            </label>
+                            <input v-model.number="settings.finishRevisionDays" type="number" min="1" max="365"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                                <i class="la la-book"></i> Pages per Day
+                            </label>
+                            <input v-model.number="settings.pagesPerDay" type="number" min="1" max="30"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input v-model="settings.tajweedEnabled" type="checkbox" class="w-5 h-5">
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    <i class="la la-music"></i> Enable Tajweed Rules
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <button class="w-full px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg font-semibold transition-colors inline-flex items-center justify-center gap-2">
+                            <i class="la la-download"></i> Export Data
+                        </button>
+                        <button class="w-full px-4 py-2 bg-accent hover:bg-primary text-white rounded-lg font-semibold transition-colors inline-flex items-center justify-center gap-2">
+                            <i class="la la-upload"></i> Import Data
+                        </button>
+                        <button class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors inline-flex items-center justify-center gap-2">
+                            <i class="la la-redo"></i> Reset All
+                        </button>
+                    </div>
+                </div>
+            `,
+            setup() {
+                return {
+                    settings: settingsStore
+                };
+            }
+        };
+
+        // ====================================
+        // Main App Component
+        // ====================================
+
+        const App = {
+            template: `
+                <div class="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+                    <!-- Loading State -->
+                    <div v-if="appStore.isLoading" class="flex items-center justify-center min-h-screen">
+                        <div class="text-center">
+                            <div class="loading-spinner mx-auto mb-4"></div>
+                            <p class="text-gray-600 dark:text-gray-400">Loading Murajah...</p>
+                        </div>
+                    </div>
+
+                    <!-- Main App -->
+                    <template v-else>
+                        <!-- Header -->
+                        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
+                            <div class="container-responsive py-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <!-- Logo & Title -->
+                                    <div class="flex items-center gap-3 flex-shrink-0">
+                                        <i class="la la-quran text-2xl text-primary"></i>
+                                        <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Murajah</h1>
+                                    </div>
+
+                                    <!-- Status & Controls -->
+                                    <div class="flex items-center gap-3">
+                                        <div class="text-sm text-gray-600 dark:text-gray-400 hidden sm:block">
+                                            {{ memorizedCount }}/{{ appStore.totalPages }}
+                                        </div>
+                                        <button @click="toggleTheme" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                            <i :class="appStore.theme === 'dark' ? 'la la-sun' : 'la la-moon'" class="text-lg"></i>
+                                        </button>
+                                        <button @click="currentView = currentView === 'read' ? 'stats' : 'read'" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                            <i :class="currentView === 'read' ? 'la la-chart-line' : 'la la-book'" class="text-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+
+                        <!-- Main Content -->
+                        <main class="container-responsive py-6 md:py-8">
+                            <!-- Reading View -->
+                            <template v-if="currentView === 'read'">
+                                <!-- Quran Page -->
+                                <quran-page-component 
+                                    :current-page="appStore.currentPage"
+                                    :memorized-pages="memorizedStore.memorizedPages"
+                                    :mistakes="mistakesStore.mistakes" />
+
+                                <!-- Navigation -->
+                                <navigation-component 
+                                    :current-page="appStore.currentPage"
+                                    :total-pages="appStore.totalPages"
+                                    @prev="prevPage"
+                                    @next="nextPage"
+                                    @goto="gotoPage" />
+
+                                <!-- Memorize Button -->
+                                <div class="text-center mb-8">
+                                    <button @click="toggleMemorized" 
+                                        :class="[
+                                            'px-6 py-3 rounded-lg font-semibold text-white transition-colors text-lg inline-flex items-center gap-2',
+                                            isCurrentPageMemorized 
+                                                ? 'bg-green-600 hover:bg-green-700' 
+                                                : 'bg-primary hover:bg-secondary'
+                                        ]">
+                                        <i class="la" :class="isCurrentPageMemorized ? 'la-check' : 'la-book'"></i>
+                                        {{ isCurrentPageMemorized ? 'Memorized ✓' : 'Mark as Memorized' }}
+                                    </button>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6">
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-sm font-semibold text-gray-900 dark:text-white">Overall Progress</span>
+                                        <span class="text-sm font-semibold text-primary">{{ memorizedPercentage }}%</span>
+                                    </div>
+                                    <div class="bg-gray-200 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
+                                        <div class="bg-green-600 h-full transition-all duration-300" :style="{ width: memorizedPercentage + '%' }"></div>
+                                    </div>
+                                    <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-3">
+                                        {{ memorizedCount }}/{{ appStore.totalPages }} pages memorized
+                                    </p>
+                                </div>
+
+                                <!-- Status Indicators -->
+                                <status-indicators-component 
+                                    :memorized="memorizedCount"
+                                    :remaining="remainingPages"
+                                    :percentage="memorizedPercentage" />
+
+                                <!-- Mistakes Tracker -->
+                                <mistake-tracker-component :mistakes="mistakesStore.mistakes" />
+
+                                <!-- Audio Recording -->
+                                <audio-playlist-component />
+                            </template>
+
+                            <!-- Stats View -->
+                            <template v-else>
+                                <status-indicators-component 
+                                    :memorized="memorizedCount"
+                                    :remaining="remainingPages"
+                                    :percentage="memorizedPercentage" />
+
+                                <!-- Dashboard -->
+                                <dashboard-component 
+                                    :memorized="memorizedCount"
+                                    :remaining="remainingPages"
+                                    :percentage="memorizedPercentage"
+                                    :pages-per-day="settingsStore.pagesPerDay"
+                                    :total-pages="appStore.totalPages" />
+
+                                <!-- Memorized Grid -->
+                                <memorized-grid-component 
+                                    :memorized-pages="memorizedStore.memorizedPages"
+                                    :total-pages="appStore.totalPages"
+                                    @select-page="gotoPage" />
+
+                                <!-- Settings -->
+                                <settings-component />
+                            </template>
+                        </main>
+
+                        <!-- Footer -->
+                        <footer class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 py-6">
+                            <div class="container-responsive text-center text-sm text-gray-600 dark:text-gray-400">
+                                <p>Murajah v{{ appStore.appVersion }} • Mobile-First Quran Memorization</p>
+                                <p class="mt-2 text-xs">Made with <i class="la la-heart text-red-500"></i> for memorizers</p>
+                            </div>
+                        </footer>
+                    </template>
+                </div>
+            `,
+
+            components: {
+                'quran-page-component': QuranPageComponent,
+                'navigation-component': NavigationComponent,
+                'status-indicators-component': StatusIndicatorsComponent,
+                'dashboard-component': DashboardComponent,
+                'mistake-tracker-component': MistakeTrackerComponent,
+                'memorized-grid-component': MemorizedGridComponent,
+                'audio-playlist-component': AudioPlaylistComponent,
+                'settings-component': SettingsComponent
+            },
+
+            setup() {
+                const currentView = ref('read');
+                const isCurrentPageMemorized = computed(() => 
+                    memorizedStore.memorizedPages.has(appStore.currentPage)
+                );
+
+                const prevPage = () => {
+                    if (appStore.currentPage > 1) {
+                        appStore.currentPage--;
+                        updateURL();
+                    }
+                };
+
+                const nextPage = () => {
+                    if (appStore.currentPage < appStore.totalPages) {
+                        appStore.currentPage++;
+                        updateURL();
+                    }
+                };
+
+                const gotoPage = (page) => {
+                    if (page >= 1 && page <= appStore.totalPages) {
+                        appStore.currentPage = page;
+                        updateURL();
+                        currentView.value = 'read';
+                    }
+                };
+
+                const updateURL = () => {
+                    const url = new URL(window.location);
+                    url.searchParams.set('page', appStore.currentPage);
+                    window.history.replaceState({}, '', url.toString());
+                };
+
+                const toggleMemorized = async () => {
+                    if (isCurrentPageMemorized.value) {
+                        memorizedStore.memorizedPages.delete(appStore.currentPage);
+                        await murajahDB.removeMemorized(appStore.currentPage);
+                    } else {
+                        memorizedStore.memorizedPages.add(appStore.currentPage);
+                        await murajahDB.addMemorized(appStore.currentPage);
+                    }
+                };
+
+                const toggleTheme = async () => {
+                    const newTheme = appStore.theme === 'light' ? 'dark' : 'light';
+                    appStore.theme = newTheme;
+                    await murajahDB.setSetting('theme', newTheme);
+                    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+                };
+
+                const loadData = async () => {
+                    try {
+                        appStore.isLoading = true;
+
+                        // Initialize IndexedDB
+                        await murajahDB.init();
+
+                        // Load memorized pages from IndexedDB
+                        const memorized = await murajahDB.getMemorized();
+                        memorizedStore.memorizedPages = new Set(memorized);
+                        console.log('[Murajah] Loaded memorized pages:', memorized);
+
+                        // Load theme preference
+                        const theme = await murajahDB.getSetting('theme', 'light');
+                        appStore.theme = theme;
+                        document.documentElement.classList.toggle('dark', theme === 'dark');
+
+                        // Get page from URL
+                        const url = new URL(window.location);
+                        const pageParam = parseInt(url.searchParams.get('page') || '1', 10);
+                        appStore.currentPage = Math.max(1, Math.min(pageParam, appStore.totalPages));
+
+                        console.log('[Murajah] Integrated app initialized successfully');
+                    } catch (error) {
+                        console.error('[Murajah] Error loading data:', error);
+                        alert('Error loading app data. Please refresh the page.');
+                    } finally {
+                        appStore.isLoading = false;
+                    }
+                };
+
+                onMounted(() => {
+                    loadData();
+                    
+                    // Keyboard shortcuts
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'ArrowLeft') prevPage();
+                        if (e.key === 'ArrowRight') nextPage();
+                    });
+                });
+
+                return {
+                    appStore,
+                    memorizedStore,
+                    mistakesStore,
+                    settingsStore,
+                    memorizedCount,
+                    memorizedPercentage,
+                    remainingPages,
+                    isCurrentPageMemorized,
+                    currentView,
+                    prevPage,
+                    nextPage,
+                    gotoPage,
+                    toggleMemorized,
+                    toggleTheme
+                };
+            }
+        };
+
+        // ====================================
+        // Initialize Vue App
+        // ====================================
+
+        const app = createApp(App);
+        app.mount('#app');
+
+        console.log('[Murajah] Vue 3 integrated app initialized with 8 components');
+    </script>
+</body>
+</html>
