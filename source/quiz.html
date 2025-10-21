@@ -303,6 +303,21 @@
                     <div>
                         <h2 class="text-lg font-semibold mb-4">Quiz Settings</h2>
                         <div class="space-y-4">
+                            <!-- Default Settings Actions -->
+                            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                                <h3 class="text-md font-medium text-blue-900 dark:text-blue-200 mb-3">Default Settings</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="saveDefaultSettings" 
+                                        class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                        💾 Save as Default
+                                    </button>
+                                    <button @click="loadDefaultSettings" 
+                                        class="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+                                        📥 Load Default Settings
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Surah Selection -->
                             <div>
                                 <h3 class="text-md font-medium text-gray-700 mb-2">Select Surahs for Quiz</h3>
@@ -771,6 +786,51 @@
                     }
                 }
 
+                // Save default settings
+                const saveDefaultSettings = async () => {
+                    try {
+                        await QuizDB.setSetting('defaultSurahs', selectedSurahs.value)
+                        // Show success message
+                        const prevError = error.value
+                        error.value = '✅ Default settings saved successfully!'
+                        setTimeout(() => {
+                            if (error.value === '✅ Default settings saved successfully!') {
+                                error.value = prevError
+                            }
+                        }, 2000)
+                    } catch (err) {
+                        console.error('Failed to save default settings:', err)
+                        error.value = 'Failed to save default settings.'
+                    }
+                }
+
+                // Load default settings
+                const loadDefaultSettings = async () => {
+                    try {
+                        const defaultSettings = await QuizDB.getSetting('defaultSurahs')
+                        if (defaultSettings && defaultSettings.value) {
+                            selectedSurahs.value = defaultSettings.value
+                            updateAllSurahsState()
+                            // Show success message
+                            const prevError = error.value
+                            error.value = '✅ Default settings loaded successfully!'
+                            setTimeout(() => {
+                                if (error.value === '✅ Default settings loaded successfully!') {
+                                    error.value = prevError
+                                }
+                            }, 2000)
+                        } else {
+                            error.value = 'No default settings found. Please save settings as default first.'
+                            setTimeout(() => {
+                                error.value = null
+                            }, 3000)
+                        }
+                    } catch (err) {
+                        console.error('Failed to load default settings:', err)
+                        error.value = 'Failed to load default settings.'
+                    }
+                }
+
                 // Generate continuation question
                 const generateContinuationQuestion = async () => {
                     if (!selectedSurahs.value.length) return;
@@ -997,6 +1057,8 @@
                     toggleSurah,
                     toggleAllSurahs,
                     saveConfig,
+                    saveDefaultSettings,
+                    loadDefaultSettings,
                     generateNewQuestion,
                     checkAnswer,
                     generateContinuationQuestion,
