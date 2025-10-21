@@ -110,9 +110,57 @@
                 </div>
 
                 <!-- Translation Match -->
-                <div v-if="currentTab === 'translation-match'" class="space-y-4">
-                    <h2 class="text-lg font-semibold">Translation Match</h2>
-                    <p class="text-gray-600">Match verses with their translations.</p>
+                <div v-if="currentTab === 'translation-match'" class="space-y-6">
+                    <div>
+                        <h2 class="text-lg font-semibold">Translation Match</h2>
+                        <p class="text-gray-600">Match verses with their translations.</p>
+                    </div>
+
+                    <!-- Quiz Container -->
+                    <div v-if="!selectedSurahs.length" class="text-center py-12">
+                        <p class="text-gray-600">Please select some surahs from the configuration first</p>
+                        <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
+                            Go to Configuration
+                        </button>
+                    </div>
+
+                    <div v-else-if="!currentVerse && !isLoading" class="text-center py-12">
+                        <button @click="generateNewQuestion" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary">
+                            Start Quiz
+                        </button>
+                    </div>
+                    
+                    <div v-else-if="isLoading" class="text-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Loading question...</p>
+                    </div>
+
+                    <!-- Question Display -->
+                    <div v-else-if="currentVerse" class="space-y-6">
+                        <!-- Verse -->
+                        <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <p class="text-2xl text-right font-arabic" style="line-height: 2;">{{ currentVerse.text }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Surah {{ currentVerse.chapter }}, Verse {{ currentVerse.verse }}</p>
+                        </div>
+
+                        <!-- Translation Options -->
+                        <div class="grid gap-4">
+                            <button v-for="(option, index) in translationOptions" 
+                                :key="index"
+                                @click="checkAnswer(index)"
+                                :disabled="answerRevealed"
+                                :class="[
+                                    'p-4 rounded-lg text-left transition-colors border-2',
+                                    answerRevealed 
+                                        ? (option.isCorrect 
+                                            ? 'bg-green-100 border-green-500 dark:bg-green-900' 
+                                            : 'bg-red-50 border-red-200 dark:bg-red-900 opacity-60')
+                                        : 'bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary'
+                                ]">
+                                <p class="text-lg">{{ option.text }}</p>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Configuration -->
@@ -373,6 +421,121 @@
                 const surahs = ref({})
                 const selectedSurahs = ref([])
                 const allSurahsSelected = ref(false)
+                const quranData = ref({})
+                const translationData = ref({})
+                const currentVerse = ref(null)
+                const translationOptions = ref([])
+                const answerRevealed = ref(false)
+
+                // Load quiz data
+                const loadQuizData = async () => {
+                    try {
+                        const [quranResponse, translationResponse] = await Promise.all([
+                            fetch('resources/quran.json'),
+                            fetch('resources/en.json')
+                        ]);
+                        quranData.value = await quranResponse.json();
+                        translationData.value = await translationResponse.json();
+                    } catch (err) {
+                        console.error('Failed to load quiz data:', err);
+                        error.value = 'Failed to load quiz data.';
+                    }
+                };
+
+                // Get random verses excluding current verse
+                const getRandomVerses = (currentVerse, count) => {
+                    const allVerses = [];
+                    Object.keys(translationData.value).forEach(surahNum => {
+                        Object.values(translationData.value[surahNum]).forEach(verse => {
+                            if (verse.chapter !== currentVerse.chapter || verse.verse !== currentVerse.verse) {
+                                allVerses.push(verse);
+                            }
+                        });
+                    });
+                    
+                    const result = [];
+                    while (result.length < count && allVerses.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * allVerses.length);
+                        result.push(allVerses.splice(randomIndex, 1)[0]);
+                    }
+                    return result;
+                };
+
+                // Generate new question
+                const generateNewQuestion = async () => {
+                    if (!selectedSurahs.value.length) return;
+                    
+                    isLoading.value = true;
+                    answerRevealed.value = false;
+                    
+                    try {
+                        // Select random surah from selected ones
+                        const randomSurahNum = selectedSurahs.value[
+                            Math.floor(Math.random() * selectedSurahs.value.length)
+                        ];
+                        
+                        // Get random verse from that surah
+                        const surahVerses = quranData.value[randomSurahNum];
+                        const randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
+                        const verseNumber = randomVerseIndex + 1;
+                        
+                        // Set current verse
+                        currentVerse.value = {
+                            chapter: parseInt(randomSurahNum),
+                            verse: verseNumber,
+                            text: surahVerses[randomVerseIndex].text
+                        };
+
+                        // Get correct translation
+                        const correctTranslation = translationData.value[randomSurahNum].find(
+                            v => v.verse === verseNumber
+                        );
+
+                        // Get 3 random wrong translations
+                        const wrongTranslations = getRandomVerses(currentVerse.value, 3);
+
+                        // Combine and shuffle options
+                        const options = [
+                            { text: correctTranslation.text, isCorrect: true },
+                            ...wrongTranslations.map(t => ({ text: t.text, isCorrect: false }))
+                        ];
+                        
+                        // Fisher-Yates shuffle
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+
+                        translationOptions.value = options;
+                    } catch (err) {
+                        console.error('Error generating question:', err);
+                        error.value = 'Failed to generate question.';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                // Check answer
+                const checkAnswer = async (index) => {
+                    answerRevealed.value = true;
+                    const isCorrect = translationOptions.value[index].isCorrect;
+                    
+                    // Save score
+                    try {
+                        await QuizDB.saveScore('translation-match', isCorrect ? 1 : 0, {
+                            surah: currentVerse.value.chapter,
+                            verse: currentVerse.value.verse,
+                            selectedAnswer: translationOptions.value[index].text
+                        });
+                    } catch (err) {
+                        console.error('Error saving score:', err);
+                    }
+
+                    // Auto-generate new question after delay
+                    setTimeout(() => {
+                        generateNewQuestion();
+                    }, 2000);
+                };
 
                 // Load surahs data
                 const loadSurahs = async () => {
@@ -498,6 +661,7 @@
                 const init = async () => {
                     await initializeApp()
                     await loadSurahs()
+                    await loadQuizData() // Load quiz data after initialization
                 }
                 init()
 
@@ -510,11 +674,18 @@
                     surahs,
                     selectedSurahs,
                     allSurahsSelected,
+                    quranData,
+                    translationData,
+                    currentVerse,
+                    translationOptions,
+                    answerRevealed,
                     toggleDarkMode,
                     changeTab,
                     toggleSurah,
                     toggleAllSurahs,
-                    saveConfig
+                    saveConfig,
+                    generateNewQuestion,
+                    checkAnswer
                 }
             }
         }).mount('#app')
