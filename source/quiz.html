@@ -338,6 +338,12 @@
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">📝 Verse Completion</h2>
                             <p class="text-gray-600 dark:text-gray-400">Fill in the missing words to complete the verse</p>
+                            <!-- Start Button -->
+                            <div v-if="!completionVerse && !isLoading && selectedSurahs.length" class="mt-4">
+                                <button @click="generateCompletionQuestion" class="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-bold hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-105">
+                                    🚀 Start
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Score Display -->
@@ -405,12 +411,6 @@
                                     <li>✓ Build your Quran knowledge progressively</li>
                                 </ul>
                             </div>
-                        </div>
-
-                        <div class="text-center">
-                            <button @click="generateCompletionQuestion" class="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-bold text-lg hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-105">
-                                🚀 Start Verse Completion
-                            </button>
                         </div>
                     </div>
 
@@ -521,6 +521,12 @@
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">🔗 Test Continuation</h2>
                             <p class="text-gray-600 dark:text-gray-400">Select the next or previous verse correctly</p>
+                            <!-- Start Button -->
+                            <div v-if="!continuationVerse && !isLoading && selectedSurahs.length" class="mt-4">
+                                <button @click="generateContinuationQuestion" class="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold hover:from-blue-600 hover:to-cyan-600 transition transform hover:scale-105">
+                                    🚀 Start
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Score Display -->
@@ -588,12 +594,6 @@
                                     <li>✓ Improve recitation accuracy</li>
                                 </ul>
                             </div>
-                        </div>
-
-                        <div class="text-center">
-                            <button @click="generateContinuationQuestion" class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition transform hover:scale-105">
-                                🚀 Start Test Continuation
-                            </button>
                         </div>
                     </div>
 
@@ -664,6 +664,12 @@
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">🌐 Translation Match</h2>
                             <p class="text-gray-600 dark:text-gray-400">Match Arabic verses to their English meanings</p>
+                            <!-- Start Button -->
+                            <div v-if="!currentVerse && !isLoading && selectedSurahs.length" class="mt-4">
+                                <button @click="generateNewQuestion" class="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition transform hover:scale-105">
+                                    🚀 Start
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Score Display -->
@@ -731,12 +737,6 @@
                                     <li>✓ Tafsir concepts through context</li>
                                 </ul>
                             </div>
-                        </div>
-
-                        <div class="text-center">
-                            <button @click="generateNewQuestion" class="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition transform hover:scale-105">
-                                🚀 Start Translation Match
-                            </button>
                         </div>
                     </div>
 
@@ -1412,27 +1412,38 @@
                     completionIsCorrect.value = false;
                     
                     try {
-                        // Select random surah from selected ones
-                        const randomSurahNum = selectedSurahs.value[
-                            Math.floor(Math.random() * selectedSurahs.value.length)
-                        ];
+                        // Keep picking verses until we find one long enough
+                        let verseText = '';
+                        let words = [];
+                        let randomSurahNum, randomVerseIndex, verseNumber;
+                        let attempts = 0;
+                        const maxAttempts = 100;
                         
-                        // Get verses for this surah
-                        const surahVerses = quranData.value[randomSurahNum];
-                        if (!surahVerses || surahVerses.length === 0) {
-                            throw new Error('No verses found for selected surah');
+                        while (words.length < 3 && attempts < maxAttempts) {
+                            // Select random surah from selected ones
+                            randomSurahNum = selectedSurahs.value[
+                                Math.floor(Math.random() * selectedSurahs.value.length)
+                            ];
+                            
+                            // Get verses for this surah
+                            const surahVerses = quranData.value[randomSurahNum];
+                            if (!surahVerses || surahVerses.length === 0) {
+                                throw new Error('No verses found for selected surah');
+                            }
+                            
+                            // Select a random verse
+                            randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
+                            verseNumber = randomVerseIndex + 1;
+                            verseText = surahVerses[randomVerseIndex].text;
+                            
+                            // Split verse into words
+                            words = verseText.split(/\s+/).filter(w => w.length > 0);
+                            attempts++;
                         }
                         
-                        // Select a random verse
-                        const randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
-                        const verseNumber = randomVerseIndex + 1;
-                        const verseText = surahVerses[randomVerseIndex].text;
-                        
-                        // Split verse into words
-                        const words = verseText.split(/\s+/).filter(w => w.length > 0);
-                        
+                        // If we couldn't find a long enough verse, use the shortest one we found
                         if (words.length < 3) {
-                            throw new Error('Verse too short for this quiz');
+                            console.warn(`Could not find verse with 3+ words after ${maxAttempts} attempts. Using shorter verse.`);
                         }
                         
                         // Determine how many words to blank (between 2-5)
@@ -1476,21 +1487,30 @@
                         // Get random wrong words from other verses
                         const wrongWords = new Set();
                         const allWords = [];
+                        const correctAnswersSet = new Set(correctAnswersArray); // Use Set for O(1) lookup
                         
                         Object.keys(quranData.value).forEach(surahKey => {
                             quranData.value[surahKey].forEach(verse => {
                                 verse.text.split(/\s+/).filter(w => w.length > 0).forEach(word => {
-                                    allWords.push(word);
+                                    if (!correctAnswersSet.has(word)) {
+                                        allWords.push(word);
+                                    }
                                 });
                             });
                         });
                         
                         // Add wrong words until we have enough
-                        while (wrongWords.size < blankCount * 2) {
+                        // Limit iterations to prevent infinite loop
+                        const maxWrongWordsNeeded = blankCount * 2;
+                        const maxIterations = Math.min(allWords.length, maxWrongWordsNeeded * 10);
+                        let iterations = 0;
+                        
+                        while (wrongWords.size < maxWrongWordsNeeded && iterations < maxIterations) {
                             const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
-                            if (!correctAnswersArray.includes(randomWord)) {
+                            if (randomWord && !correctAnswersSet.has(randomWord)) {
                                 wrongWords.add(randomWord);
                             }
+                            iterations++;
                         }
                         
                         // Combine and shuffle options
