@@ -91,10 +91,168 @@
 
             <!-- Quiz Content Area -->
             <div class="bg-white rounded-lg shadow p-6">
-                <!-- Word Match Quiz -->
-                <div v-if="currentTab === 'word-match'" class="space-y-4">
-                    <h2 class="text-lg font-semibold">Word Match Quiz</h2>
-                    <p class="text-gray-600">Match Arabic words with their translations.</p>
+                <!-- Lightning Round -->
+                <div v-if="currentTab === 'lightning-round'" class="space-y-6">
+                    <!-- Selection Screen (before starting) -->
+                    <div v-if="!lightningIsActive && !lightningRoundEnded">
+                        <div class="text-center mb-8">
+                            <h2 class="text-3xl font-bold text-primary mb-2">⚡ Lightning Round</h2>
+                            <p class="text-gray-600 text-lg">Answer as many questions as you can before time runs out!</p>
+                        </div>
+
+                        <!-- Time Selection -->
+                        <div class="mb-8">
+                            <h3 class="text-xl font-semibold mb-4">Select Duration:</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <button v-for="time in [60, 120, 180, 300]" :key="time"
+                                    @click="lightningSelectedTime = time"
+                                    :class="[
+                                        'py-4 px-4 rounded-lg font-semibold text-lg transition-all border-2',
+                                        lightningSelectedTime === time
+                                            ? 'bg-primary text-white border-primary scale-105'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:border-primary'
+                                    ]">
+                                    {{ time === 60 ? '60s' : time === 120 ? '2 min' : time === 180 ? '3 min' : '5 min' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Difficulty Selection -->
+                        <div class="mb-8">
+                            <h3 class="text-xl font-semibold mb-4">Select Difficulty:</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <button v-for="diff in ['easy', 'medium', 'hard']" :key="diff"
+                                    @click="lightningSelectedDifficulty = diff"
+                                    :class="[
+                                        'py-4 px-4 rounded-lg font-semibold text-lg transition-all border-2',
+                                        lightningSelectedDifficulty === diff
+                                            ? 'bg-primary text-white border-primary scale-105'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:border-primary'
+                                    ]">
+                                    <span class="mr-2">
+                                        {{ diff === 'easy' ? '🟢' : diff === 'medium' ? '🟡' : '🔴' }}
+                                    </span>
+                                    {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
+                                    <div class="text-xs mt-1">
+                                        {{ diff === 'easy' ? '❌ Ignored' : diff === 'medium' ? '3 Max' : '1 Stop' }}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Start Button -->
+                        <div class="text-center">
+                            <button @click="startLightningRound"
+                                :disabled="!lightningSelectedTime || !lightningSelectedDifficulty"
+                                :class="[
+                                    'px-8 py-4 rounded-lg font-bold text-lg transition-all',
+                                    lightningSelectedTime && lightningSelectedDifficulty
+                                        ? 'bg-primary text-white hover:bg-secondary cursor-pointer'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ]">
+                                🚀 Start Round
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Round Display -->
+                    <div v-else-if="lightningIsActive" class="space-y-6">
+                        <!-- Timer and Stats Header -->
+                        <div class="flex justify-between items-center bg-gradient-to-r from-primary to-secondary p-6 rounded-lg text-white">
+                            <div>
+                                <p class="text-sm opacity-90">Time Remaining</p>
+                                <p class="text-4xl font-bold font-mono" :class="lightningTimeLeft <= 10 ? 'text-red-300 animate-pulse' : ''">
+                                    {{ Math.floor(lightningTimeLeft / 60) }}:{{ String(lightningTimeLeft % 60).padStart(2, '0') }}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-lg">Score: <span class="font-bold text-2xl">{{ lightningScore }}/{{ lightningAttempts }}</span></p>
+                                <p class="text-lg mt-2" :class="lightningMistakesLeft <= 1 ? 'text-red-300' : ''">
+                                    {{ lightningSelectedDifficulty === 'easy' ? '♾️ No Limit' : `❌ ${lightningMistakesLeft} Mistakes` }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Question Display -->
+                        <div v-if="lightningCurrentQuestion" class="space-y-4">
+                            <div class="text-center mb-6">
+                                <span class="inline-block bg-accent text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                    {{ lightningCurrentQuestionType === 'continuation' 
+                                        ? (lightningCurrentQuestion.type === 'next' ? '⬇️ Next Verse' : '⬆️ Previous Verse')
+                                        : '📖 Translation' 
+                                    }}
+                                </span>
+                            </div>
+
+                            <!-- Question Text -->
+                            <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <p class="text-2xl text-right font-arabic" style="line-height: 2;">{{ lightningCurrentQuestion.text }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                    Surah {{ lightningCurrentQuestion.chapter }}, Verse {{ lightningCurrentQuestion.verse }}
+                                </p>
+                            </div>
+
+                            <!-- Answer Options -->
+                            <div class="grid gap-3">
+                                <button v-for="(option, index) in lightningOptions" :key="index"
+                                    @click="checkLightningAnswer(index)"
+                                    :disabled="lightningAnswerRevealed"
+                                    :class="[
+                                        'p-4 rounded-lg text-left transition-all border-2',
+                                        lightningAnswerRevealed
+                                            ? (option.isCorrect 
+                                                ? 'bg-green-100 dark:bg-green-900 border-green-500 text-green-700 dark:text-green-200' 
+                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-300 text-gray-600 dark:text-gray-400')
+                                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                    ]">
+                                    <p class="font-medium text-right font-arabic" style="line-height: 1.6;">{{ option.text }}</p>
+                                </button>
+                            </div>
+
+                            <!-- Feedback -->
+                            <div v-if="lightningAnswerRevealed" class="text-center">
+                                <div v-if="lightningAnswerIsCorrect" class="text-green-600 font-bold text-lg">
+                                    ✅ Correct!
+                                </div>
+                                <div v-else class="text-red-600 font-bold text-lg">
+                                    ❌ Incorrect!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Round End Summary -->
+                    <div v-else-if="lightningRoundEnded" class="text-center space-y-6">
+                        <h2 class="text-3xl font-bold">Round Complete! 🎉</h2>
+                        <div class="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg p-8 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div>
+                                    <p class="text-sm text-gray-600">Final Score</p>
+                                    <p class="text-3xl font-bold text-primary">{{ lightningScore }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Questions</p>
+                                    <p class="text-3xl font-bold">{{ lightningAttempts }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Accuracy</p>
+                                    <p class="text-3xl font-bold text-green-500">{{ lightningAttempts ? Math.round((lightningScore / lightningAttempts) * 100) : 0 }}%</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Difficulty</p>
+                                    <p class="text-2xl font-bold">{{ lightningSelectedDifficulty.toUpperCase() }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 justify-center">
+                            <button @click="resetLightningRound" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary font-semibold">
+                                Play Again
+                            </button>
+                            <button @click="saveLightningScore" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">
+                                Save Score
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Verse Completion -->
@@ -737,6 +895,25 @@
                 const completionBlankIndices = ref([]) // Indices of blank words in verse
                 const completionFilledWords = ref({}) // Map of blank position -> filled word
 
+                // Lightning Round State
+                const lightningSelectedTime = ref(null) // Selected time in seconds: 60, 120, 180, 300
+                const lightningSelectedDifficulty = ref(null) // 'easy', 'medium', 'hard'
+                const lightningTimeLeft = ref(0) // Current countdown in seconds
+                const lightningTotalTime = ref(0) // Original selected time
+                const lightningScore = ref(0) // Questions answered correctly
+                const lightningAttempts = ref(0) // Total questions asked
+                const lightningMistakesLeft = ref(0) // Mistakes remaining
+                const lightningMaxMistakes = ref(0) // Max mistakes allowed based on difficulty
+                const lightningIsActive = ref(false) // Is round currently running
+                const lightningCurrentQuestion = ref(null) // Current question data
+                const lightningCurrentQuestionType = ref(null) // 'continuation' or 'translation'
+                const lightningOptions = ref([]) // Current question options
+                const lightningAnswerRevealed = ref(false) // Has answer been revealed
+                const lightningAnswerIsCorrect = ref(false) // Was answer correct
+                const lightningTimerId = ref(null) // Store timer ID for cleanup
+                const lightningRoundEnded = ref(false) // Has round ended
+                const lightningTimeRemaining = ref(0) // Time remaining when round ended (for stats)
+
                 // Load quiz data
                 const loadQuizData = async () => {
                     try {
@@ -1180,7 +1357,6 @@
                     isLoading.value = true;
                     continuationAnswerRevealed.value = false;
                     selectedWrongContinuation.value = null;
-                    continuationType.value = Math.random() < 0.5 ? 'next' : 'previous';
                     
                     try {
                         // Select random surah from selected ones
@@ -1194,15 +1370,12 @@
                             throw new Error('No verses found for selected surah');
                         }
                         
-                        // Select a verse that has a next/previous verse
-                        let selectedVerseIndex;
-                        if (continuationType.value === 'next') {
-                            // Select verse that has a next verse (not the last one)
-                            selectedVerseIndex = Math.floor(Math.random() * (surahVerses.length - 1));
-                        } else {
-                            // Select verse that has a previous verse (not the first one)
-                            selectedVerseIndex = Math.floor(Math.random() * (surahVerses.length - 1)) + 1;
-                        }
+                        // Select a verse that has BOTH next and previous (not first, not last)
+                        // This ensures any question type (next or previous) is valid
+                        const selectedVerseIndex = 1 + Math.floor(Math.random() * (surahVerses.length - 2));
+                        
+                        // NOW decide randomly if asking for next or previous
+                        continuationType.value = Math.random() < 0.5 ? 'next' : 'previous';
                         
                         const verseNumber = selectedVerseIndex + 1;
                         
@@ -1213,11 +1386,10 @@
                             text: surahVerses[selectedVerseIndex].text
                         };
 
-                        // Determine correct answer verse number
+                        // Determine correct answer verse index based on question type
                         const correctVerseIndex = continuationType.value === 'next' 
                             ? selectedVerseIndex + 1 
                             : selectedVerseIndex - 1;
-                        const correctVerseNumber = correctVerseIndex + 1;
 
                         // Create options
                         const options = [];
@@ -1225,9 +1397,16 @@
                         // Add correct answer
                         options.push({
                             text: surahVerses[correctVerseIndex].text,
-                            verse: correctVerseNumber,
+                            verse: correctVerseIndex + 1,  // Display number (1-based)
                             isCorrect: true
                         });
+
+                        console.log('🟦 QUESTION GENERATED:');
+                        console.log('  Type (badge):', continuationType.value);
+                        console.log('  Display Verse Index:', selectedVerseIndex, '(shows verse', selectedVerseIndex + 1, ')');
+                        console.log('  Correct Verse Index:', correctVerseIndex, '(verse', correctVerseIndex + 1, ')');
+                        console.log('  Correct answer text:', surahVerses[correctVerseIndex].text);
+                        console.log('  Correct answer object:', options[0]);
 
                         // Add wrong answers from different verses (avoid adjacent verses)
                         const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
@@ -1263,6 +1442,13 @@
                     continuationAnswerRevealed.value = true;
                     const isCorrect = continuationOptions.value[index].isCorrect;
                     
+                    console.log('🟩 ANSWER SUBMITTED:');
+                    console.log('  Selected option index:', index);
+                    console.log('  Selected option text:', continuationOptions.value[index].text);
+                    console.log('  Selected option verse:', continuationOptions.value[index].verse);
+                    console.log('  isCorrect flag:', isCorrect);
+                    console.log('  Correct answer was:', continuationOptions.value.find(opt => opt.isCorrect));
+                    
                     if (!isCorrect) {
                         selectedWrongContinuation.value = index;
                     }
@@ -1296,8 +1482,258 @@
                     }, 3000);
                 };
 
+                // Lightning Round Functions
+                const startLightningRound = async () => {
+                    if (!lightningSelectedTime.value || !lightningSelectedDifficulty.value) return;
+                    
+                    // Initialize round
+                    lightningTimeLeft.value = lightningSelectedTime.value;
+                    lightningTotalTime.value = lightningSelectedTime.value;
+                    lightningScore.value = 0;
+                    lightningAttempts.value = 0;
+                    lightningIsActive.value = true;
+                    lightningRoundEnded.value = false;
+                    lightningAnswerRevealed.value = false;
+                    
+                    // Set mistake limits based on difficulty
+                    if (lightningSelectedDifficulty.value === 'easy') {
+                        lightningMaxMistakes.value = Infinity;
+                        lightningMistakesLeft.value = Infinity;
+                    } else if (lightningSelectedDifficulty.value === 'medium') {
+                        lightningMaxMistakes.value = 3;
+                        lightningMistakesLeft.value = 3;
+                    } else { // hard
+                        lightningMaxMistakes.value = 1;
+                        lightningMistakesLeft.value = 1;
+                    }
+                    
+                    // Start countdown timer
+                    lightningTimerId.value = setInterval(() => {
+                        lightningTimeLeft.value--;
+                        
+                        if (lightningTimeLeft.value <= 0) {
+                            endLightningRound();
+                        }
+                    }, 1000);
+                    
+                    // Generate first question
+                    await generateLightningQuestion();
+                };
+
+                const generateLightningQuestion = async () => {
+                    if (!lightningIsActive.value || !selectedSurahs.value.length) return;
+                    
+                    lightningAnswerRevealed.value = false;
+                    lightningAnswerIsCorrect.value = false;
+                    
+                    try {
+                        // Randomly pick between continuation and translation
+                        lightningCurrentQuestionType.value = Math.random() < 0.5 ? 'continuation' : 'translation';
+                        
+                        if (lightningCurrentQuestionType.value === 'continuation') {
+                            await generateLightningContinuationQuestion();
+                        } else {
+                            await generateLightningTranslationQuestion();
+                        }
+                    } catch (err) {
+                        console.error('Error generating lightning question:', err);
+                    }
+                };
+
+                const generateLightningContinuationQuestion = async () => {
+                    try {
+                        const randomSurahNum = selectedSurahs.value[
+                            Math.floor(Math.random() * selectedSurahs.value.length)
+                        ];
+                        
+                        const surahVerses = quranData.value[randomSurahNum];
+                        if (!surahVerses || surahVerses.length === 0) {
+                            throw new Error('No verses found');
+                        }
+                        
+                        // Select a verse that has BOTH next and previous (not first, not last)
+                        const selectedVerseIndex = 1 + Math.floor(Math.random() * (surahVerses.length - 2));
+                        
+                        // NOW decide randomly if asking for next or previous
+                        const continuationType = Math.random() < 0.5 ? 'next' : 'previous';
+                        
+                        const verseNumber = selectedVerseIndex + 1;
+                        lightningCurrentQuestion.value = {
+                            chapter: parseInt(randomSurahNum),
+                            verse: verseNumber,
+                            text: surahVerses[selectedVerseIndex].text,
+                            type: continuationType
+                        };
+                        
+                        const correctVerseIndex = continuationType === 'next' 
+                            ? selectedVerseIndex + 1 
+                            : selectedVerseIndex - 1;
+                        
+                        const options = [];
+                        options.push({
+                            text: surahVerses[correctVerseIndex].text,
+                            verse: correctVerseIndex + 1,
+                            isCorrect: true
+                        });
+                        
+                        const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
+                        while (options.length < 4) {
+                            const randomIndex = Math.floor(Math.random() * surahVerses.length);
+                            if (!usedIndices.has(randomIndex)) {
+                                options.push({
+                                    text: surahVerses[randomIndex].text,
+                                    verse: randomIndex + 1,
+                                    isCorrect: false
+                                });
+                                usedIndices.add(randomIndex);
+                            }
+                        }
+                        
+                        // Fisher-Yates shuffle
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+                        
+                        lightningOptions.value = options;
+                    } catch (err) {
+                        console.error('Error generating continuation question:', err);
+                    }
+                };
+
+                const generateLightningTranslationQuestion = async () => {
+                    try {
+                        const randomSurahNum = selectedSurahs.value[
+                            Math.floor(Math.random() * selectedSurahs.value.length)
+                        ];
+                        
+                        const surahVerses = quranData.value[randomSurahNum];
+                        const randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
+                        const verseNumber = randomVerseIndex + 1;
+                        
+                        lightningCurrentQuestion.value = {
+                            chapter: parseInt(randomSurahNum),
+                            verse: verseNumber,
+                            text: surahVerses[randomVerseIndex].text,
+                            type: 'translation'
+                        };
+                        
+                        const correctTranslation = translationData.value[randomSurahNum].find(
+                            v => v.verse === verseNumber
+                        );
+                        
+                        const wrongTranslations = getRandomVerses(lightningCurrentQuestion.value, 3);
+                        
+                        const options = [
+                            { text: correctTranslation.text, isCorrect: true },
+                            ...wrongTranslations.map(t => ({ text: t.text, isCorrect: false }))
+                        ];
+                        
+                        // Fisher-Yates shuffle
+                        for (let i = options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [options[i], options[j]] = [options[j], options[i]];
+                        }
+                        
+                        lightningOptions.value = options;
+                    } catch (err) {
+                        console.error('Error generating translation question:', err);
+                    }
+                };
+
+                const checkLightningAnswer = (index) => {
+                    if (!lightningIsActive.value || lightningAnswerRevealed.value) return;
+                    
+                    lightningAnswerRevealed.value = true;
+                    const isCorrect = lightningOptions.value[index].isCorrect;
+                    lightningAnswerIsCorrect.value = isCorrect;
+                    
+                    // Update stats
+                    lightningAttempts.value++;
+                    if (isCorrect) {
+                        lightningScore.value++;
+                    } else {
+                        if (lightningMistakesLeft.value !== Infinity) {
+                            lightningMistakesLeft.value--;
+                        }
+                        
+                        // Check if round should end
+                        if (lightningMistakesLeft.value < 0 || (lightningSelectedDifficulty.value === 'hard' && !isCorrect)) {
+                            setTimeout(() => {
+                                endLightningRound();
+                            }, 500);
+                            return;
+                        }
+                    }
+                    
+                    // Auto-generate next question after 500ms
+                    setTimeout(() => {
+                        if (lightningIsActive.value) {
+                            generateLightningQuestion();
+                        }
+                    }, 500);
+                };
+
+                const endLightningRound = () => {
+                    lightningIsActive.value = false;
+                    lightningRoundEnded.value = true;
+                    lightningTimeRemaining.value = lightningTimeLeft.value;
+                    
+                    if (lightningTimerId.value) {
+                        clearInterval(lightningTimerId.value);
+                    }
+                };
+
+                const resetLightningRound = () => {
+                    lightningSelectedTime.value = null;
+                    lightningSelectedDifficulty.value = null;
+                    lightningTimeLeft.value = 0;
+                    lightningTotalTime.value = 0;
+                    lightningScore.value = 0;
+                    lightningAttempts.value = 0;
+                    lightningMistakesLeft.value = 0;
+                    lightningMaxMistakes.value = 0;
+                    lightningIsActive.value = false;
+                    lightningCurrentQuestion.value = null;
+                    lightningCurrentQuestionType.value = null;
+                    lightningOptions.value = [];
+                    lightningAnswerRevealed.value = false;
+                    lightningAnswerIsCorrect.value = false;
+                    lightningRoundEnded.value = false;
+                    lightningTimeRemaining.value = 0;
+                    
+                    if (lightningTimerId.value) {
+                        clearInterval(lightningTimerId.value);
+                    }
+                };
+
+                const saveLightningScore = async () => {
+                    try {
+                        const accuracy = lightningAttempts.value > 0 
+                            ? Math.round((lightningScore.value / lightningAttempts.value) * 100) 
+                            : 0;
+                        
+                        await QuizDB.saveScore('lightning-round', lightningScore.value, {
+                            difficulty: lightningSelectedDifficulty.value,
+                            totalTime: lightningTotalTime.value,
+                            timeRemaining: lightningTimeRemaining.value,
+                            questionsAnswered: lightningAttempts.value,
+                            accuracy: accuracy,
+                            correctAnswers: lightningScore.value
+                        });
+                        
+                        error.value = '✅ Score saved successfully!';
+                        setTimeout(() => {
+                            error.value = null;
+                        }, 3000);
+                    } catch (err) {
+                        console.error('Failed to save lightning score:', err);
+                        error.value = 'Failed to save score.';
+                    }
+                };
+
                 const tabs = ref([
-                    { id: 'word-match', name: 'Word Match' },
+                    { id: 'lightning-round', name: '⚡ Lightning Round' },
                     { id: 'verse-completion', name: 'Verse Completion' },
                     { id: 'multiple-choice', name: 'Test Continuation' },
                     { id: 'translation-match', name: 'Translation Match' },
@@ -1345,11 +1781,31 @@
 
                 // Handle tab changes and save last active tab
                 const changeTab = async (tabId) => {
+                    // Prevent tab switching during active lightning round
+                    if (lightningIsActive.value) {
+                        error.value = '⚠️ Cannot switch tabs during an active Lightning Round. Finish or reset the round first.'
+                        setTimeout(() => {
+                            error.value = null
+                        }, 3000)
+                        return
+                    }
+                    
                     currentTab.value = tabId
                     try {
                         await QuizDB.setSetting('lastTab', tabId)
                     } catch (err) {
                         console.error('Failed to save last active tab:', err)
+                    }
+                }
+
+                // Cleanup function for Lightning Round on unmount or before tab switch
+                const cleanupLightningRound = () => {
+                    if (lightningTimerId.value) {
+                        clearInterval(lightningTimerId.value)
+                        lightningTimerId.value = null
+                    }
+                    if (lightningIsActive.value) {
+                        endLightningRound()
                     }
                 }
 
@@ -1414,7 +1870,29 @@
                     generateCompletionQuestion,
                     selectCompletionWord,
                     checkCompletionAnswer,
-                    getFilledWord
+                    getFilledWord,
+                    lightningSelectedTime,
+                    lightningSelectedDifficulty,
+                    lightningTimeLeft,
+                    lightningTotalTime,
+                    lightningScore,
+                    lightningAttempts,
+                    lightningMistakesLeft,
+                    lightningMaxMistakes,
+                    lightningIsActive,
+                    lightningCurrentQuestion,
+                    lightningCurrentQuestionType,
+                    lightningOptions,
+                    lightningAnswerRevealed,
+                    lightningAnswerIsCorrect,
+                    lightningRoundEnded,
+                    startLightningRound,
+                    generateLightningQuestion,
+                    checkLightningAnswer,
+                    endLightningRound,
+                    resetLightningRound,
+                    saveLightningScore,
+                    cleanupLightningRound
                 }
             }
         }).mount('#app')
