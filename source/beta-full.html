@@ -65,15 +65,15 @@
     }
 
     .quran-text-small {
-      font-size: 1.25rem !important;
+      font-size: 20px !important;
     }
 
     .quran-text-medium {
-      font-size: 2rem !important;
+      font-size: 32px !important;
     }
 
     .quran-text-large {
-      font-size: 2.75rem !important;
+      font-size: 44px !important;
     }
 
     .quran-word {
@@ -546,7 +546,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :class="fontSizeClass" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
+                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2 leading-loose">
                     <!-- Surah Name Display -->
                     <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
@@ -567,7 +567,7 @@
                         'bg-red-200 dark:bg-red-900': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
-                      class="quran-word inline-block"
+                       class="quran-word inline-block"
                     >
                       {{ word.text }}
                     </span>
@@ -1204,7 +1204,14 @@
               appStore.successMessage = 'Removed from memorized';
             } else {
               memorizedStore.memorizedPages.add(appStore.currentPage);
-              appStore.successMessage = 'Marked as memorized!';
+              // Set score to 40 only if page is new (score = 0)
+              const currentScore = getHifzScore(appStore.currentPage);
+              if (currentScore < 40) {
+                perfectRevisionsStore.perfectRevisions.set(appStore.currentPage, 40);
+                appStore.successMessage = 'Marked as memorized! (Score: 40)';
+              } else {
+                appStore.successMessage = `Marked as memorized! (Score: ${currentScore} - kept)`;
+              }
             }
             setTimeout(() => appStore.successMessage = '', 2000);
             saveDataBackground();
@@ -1443,16 +1450,32 @@
             }
 
             let added = 0;
+            let alreadyHigherScore = 0;
             for (let i = start; i <= end; i++) {
               if (!memorizedStore.memorizedPages.has(i)) {
                 memorizedStore.memorizedPages.add(i);
+                // Set score to 40 only if page is new (score = 0)
+                const currentScore = getHifzScore(i);
+                if (currentScore < 40) {
+                  perfectRevisionsStore.perfectRevisions.set(i, 40);
+                }
                 added++;
+              } else {
+                // Check if already memorized with higher score
+                const currentScore = getHifzScore(i);
+                if (currentScore > 0) {
+                  alreadyHigherScore++;
+                }
               }
             }
 
             if (added > 0) {
               saveDataBackground();
-              appStore.successMessage = `${added} page(s) marked as memorized!`;
+              if (alreadyHigherScore > 0) {
+                appStore.successMessage = `${added} added, ${alreadyHigherScore} already memorized (scores kept)`;
+              } else {
+                appStore.successMessage = `${added} page(s) marked as memorized! (Score: 40)`;
+              }
               setTimeout(() => appStore.successMessage = '', 2000);
             } else {
               bulkWarning.value = `All pages in range ${start}-${end} were already memorized`;
@@ -1668,13 +1691,18 @@
             return mistakes ? Array.from(mistakes).sort((a, b) => a - b) : [];
           });
 
-          const fontSizeClass = computed(() => {
-            const classMap = {
-              'small': 'quran-text-small',
-              'medium': 'quran-text-medium',
-              'large': 'quran-text-large'
+          const fontSizeStyle = computed(() => {
+            const sizeMap = {
+              'small': '20px',
+              'medium': '32px',
+              'large': '44px'
             };
-            return classMap[settingsStore.fontSize] || 'quran-text-medium';
+            const fontSize = sizeMap[settingsStore.fontSize] || '32px';
+            console.log('[Murajah] fontSizeStyle computed:', {
+              fontSize: settingsStore.fontSize,
+              style: `font-size: ${fontSize}`
+            });
+            return { fontSize: fontSize };
           });
 
           const currentSurahName = computed(() => {
@@ -1801,6 +1829,12 @@
           watch(() => settingsStore.tajweedEnabled, () => {
             loadPageFont(appStore.currentPage);
             console.log('[Murajah] Tajweed setting changed, font reloaded');
+          });
+
+          // Watch fontSize setting and save changes
+          watch(() => settingsStore.fontSize, (newFontSize) => {
+            console.log('[Murajah] Font size changed to:', newFontSize);
+            saveDataBackground();
           });
 
           // Keyboard shortcuts handler
@@ -1954,6 +1988,7 @@ Display:
             juzMemorizedCount,
             currentPageText,
             currentPageWords,
+            fontSizeStyle,
             hoveredWordId,
             showTooltip,
             tooltipX,
