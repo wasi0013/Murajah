@@ -358,6 +358,29 @@
             tx.onerror = () => reject(tx.error);
           });
         }
+
+        async saveTheme(theme) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: 'murajah-theme', value: theme });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadTheme() {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get('murajah-theme');
+            request.onsuccess = () => {
+              const result = request.result;
+              resolve(result ? result.value : 'light');
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
       }
 
       // Initialize IndexedDB
@@ -740,16 +763,16 @@
                     <button 
                       v-for="juzNum in 30" 
                       :key="juzNum"
-                      @click="gotoPage((juzNum - 1) * 20 + 1)"
+                      @click="goToPageNumber(getJuzRange(juzNum)[0])"
                       :class="[
                         'px-3 py-2 rounded-lg font-bold text-sm transition-colors',
-                        juzMemorizedCount(juzNum) === 20 
+                        juzMemorizedCount(juzNum) === (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1)
                           ? 'bg-green-500 text-white' 
                           : juzMemorizedCount(juzNum) > 0
                             ? 'bg-yellow-400 text-gray-900'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                       ]"
-                      :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/20 pages'"
+                      :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
                     >
                       {{ juzNum }}
                     </button>
@@ -925,7 +948,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             totalPages: 604,
             isLoading: false,
-            theme: localStorage.getItem('murajah-theme') || 'light',
+            theme: 'light', // Will be loaded from IndexedDB in initializeApp
             appVersion: '2.0.0-beta',
             errorMessage: '',
             successMessage: ''
@@ -979,6 +1002,14 @@
           const initializeApp = async () => {
             try {
               isInitializing.value = true;
+              
+              // Load theme from IndexedDB
+              try {
+                appStore.theme = await murajahDB.loadTheme();
+              } catch (error) {
+                console.warn('[Murajah] Failed to load theme from IndexedDB:', error);
+                appStore.theme = 'light';
+              }
               
               // Load Quran data
               quranData.value = await loadAllQuranData();
@@ -1131,7 +1162,16 @@
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
-            appStore.currentPage = num;
+            goToPageNumber(num);
+          };
+
+          const goToPageNumber = (pageNum) => {
+            if (pageNum < 1 || pageNum > 604) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 604';
+              setTimeout(() => appStore.errorMessage = '', 2000);
+              return;
+            }
+            appStore.currentPage = pageNum;
             gotoInput.value = '';
             updateURL();
           };
@@ -1177,8 +1217,10 @@
           // Theme functions
           const toggleTheme = () => {
             appStore.theme = appStore.theme === 'light' ? 'dark' : 'light';
-            localStorage.setItem('murajah-theme', appStore.theme);
             document.documentElement.classList.toggle('dark');
+            murajahDB.saveTheme(appStore.theme).catch(error => {
+              console.warn('[Murajah] Failed to save theme:', error);
+            });
           };
 
           // Perfect Revision functions
@@ -1317,8 +1359,7 @@
 
           // Settings functions
           const updateSettings = () => {
-            localStorage.setItem('murajah-settings', JSON.stringify(settingsStore));
-            saveDataBackground(); // Also save to main data store for consistency
+            saveDataBackground(); // Save to IndexedDB
             appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -1338,9 +1379,44 @@
           const bulkWarning = ref('');
           const selectedJuzPreset = ref(1);
 
+          // Hardcoded Juz ranges (Juz 1 has 21 pages, Juz 2-29 have 20 pages each, Juz 30 has 23 pages)
+          const JUZ_RANGES = {
+            1: [1, 21],
+            2: [22, 41],
+            3: [42, 61],
+            4: [62, 81],
+            5: [82, 101],
+            6: [102, 121],
+            7: [122, 141],
+            8: [142, 161],
+            9: [162, 181],
+            10: [182, 201],
+            11: [202, 221],
+            12: [222, 241],
+            13: [242, 261],
+            14: [262, 281],
+            15: [282, 301],
+            16: [302, 321],
+            17: [322, 341],
+            18: [342, 361],
+            19: [362, 381],
+            20: [382, 401],
+            21: [402, 421],
+            22: [422, 441],
+            23: [442, 461],
+            24: [462, 481],
+            25: [482, 501],
+            26: [502, 521],
+            27: [522, 541],
+            28: [542, 561],
+            29: [562, 581],
+            30: [582, 604]
+          };
+
+          const getJuzRange = (juzNum) => JUZ_RANGES[juzNum] || [1, 21];
+
           const juzMemorizedCount = (juzNum) => {
-            const startPage = (juzNum - 1) * 20 + 1;
-            const endPage = juzNum * 20;
+            const [startPage, endPage] = getJuzRange(juzNum);
             let count = 0;
             for (let i = startPage; i <= endPage; i++) {
               if (memorizedStore.memorizedPages.has(i)) count++;
@@ -1386,8 +1462,9 @@
 
             if (type === 'juz' && selectedJuzPreset.value >= 1 && selectedJuzPreset.value <= 30) {
               const juzNum = selectedJuzPreset.value;
-              bulkStartPage.value = (juzNum - 1) * 20 + 1;
-              bulkEndPage.value = juzNum * 20;
+              const [startPage, endPage] = getJuzRange(juzNum);
+              bulkStartPage.value = startPage;
+              bulkEndPage.value = endPage;
               bulkMemorize();
             } else if (type === 'all') {
               if (confirm('Mark ALL 604 pages as memorized?')) {
@@ -1565,7 +1642,6 @@
                 audioStore.recordings = [];
                 appStore.currentPage = 1;
                 await murajahDB.clearAll();
-                localStorage.clear();
                 appStore.successMessage = 'App reset!';
                 setTimeout(() => location.reload(), 2000);
               } catch (error) {
@@ -1646,10 +1722,18 @@
           });
 
           const currentJuzProgress = computed(() => {
-            const juzNum = Math.ceil(appStore.currentPage / 20);
-            const startPage = (juzNum - 1) * 20 + 1;
+            // Find which Juz the current page belongs to
+            let juzNum = 1;
+            for (let j = 1; j <= 30; j++) {
+              const [start, end] = getJuzRange(j);
+              if (appStore.currentPage >= start && appStore.currentPage <= end) {
+                juzNum = j;
+                break;
+              }
+            }
+            const [startPage, endPage] = getJuzRange(juzNum);
             let count = 0;
-            for (let i = startPage; i < appStore.currentPage && i <= juzNum * 20; i++) {
+            for (let i = startPage; i < appStore.currentPage && i <= endPage; i++) {
               if (memorizedStore.memorizedPages.has(i)) count++;
             }
             return count;
@@ -1864,6 +1948,7 @@ Display:
             bulkEndPage,
             bulkWarning,
             selectedJuzPreset,
+            getJuzRange,
             juzMemorizedCount,
             currentPageText,
             currentPageWords,
@@ -1883,6 +1968,7 @@ Display:
             previousPage,
             nextPage,
             gotoPage,
+            goToPageNumber,
             selectRandomPage,
             toggleTheme,
             toggleMemorized,
