@@ -1113,6 +1113,125 @@
                   <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 text-center text-sm" placeholder="Go">
                   <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
 
+                  <!-- Surah Navigator -->
+                  <select @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-sm hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer" title="Jump to Surah">
+                    <option value="">📖 Surahs (114)</option>
+                    <option value="1">1. الفاتحة</option>
+                    <option value="2">2. البقرة</option>
+                    <option value="3">3. آل عمران</option>
+                    <option value="4">4. النساء</option>
+                    <option value="5">5. المائدة</option>
+                    <option value="6">6. الأنعام</option>
+                    <option value="7">7. الأعراف</option>
+                    <option value="8">8. الأنفال</option>
+                    <option value="9">9. التوبة</option>
+                    <option value="10">10. يونس</option>
+                    <option value="11">11. هود</option>
+                    <option value="12">12. يوسف</option>
+                    <option value="13">13. الرعد</option>
+                    <option value="14">14. إبراهيم</option>
+                    <option value="15">15. الحجر</option>
+                    <option value="16">16. النحل</option>
+                    <option value="17">17. الإسراء</option>
+                    <option value="18">18. الكهف</option>
+                    <option value="19">19. مريم</option>
+                    <option value="20">20. طه</option>
+                    <option value="21">21. الأنبياء</option>
+                    <option value="22">22. الحج</option>
+                    <option value="23">23. المؤمنون</option>
+                    <option value="24">24. النور</option>
+                    <option value="25">25. الفرقان</option>
+                    <option value="26">26. الشعراء</option>
+                    <option value="27">27. النمل</option>
+                    <option value="28">28. القصص</option>
+                    <option value="29">29. العنكبوت</option>
+                    <option value="30">30. الروم</option>
+                    <option value="31">31. لقمان</option>
+                    <option value="32">32. السجدة</option>
+                    <option value="33">33. الأحزاب</option>
+                    <option value="34">34. سبإ</option>
+                    <option value="35">35. فاطر</option>
+                    <option value="36">36. يس</option>
+                    <option value="37">37. الصافات</option>
+                    <option value="38">38. ص</option>
+                    <option value="39">39. الزمر</option>
+                    <option value="40">40. غافر</option>
+                    <option value="41">41. فصلت</option>
+                    <option value="42">42. الشورى</option>
+                    <option value="43">43. الزخرف</option>
+                    <option value="44">44. الدخان</option>
+                    <option value="45">45. الجاثية</option>
+                    <option value="46">46. الأحقاف</option>
+                    <option value="47">47. محمد</option>
+                    <option value="48">48. الفتح</option>
+                    <option value="49">49. الحجرات</option>
+                    <option value="50">50. ق</option>
+                    <option value="51">51. الذاريات</option>
+                    <option value="52">52. الطور</option>
+                    <option value="53">53. النجم</option>
+                    <option value="54">54. القمر</option>
+                    <option value="55">55. الرحمن</option>
+                    <option value="56">56. الواقعة</option>
+                    <option value="57">57. الحديد</option>
+                    <option value="58">58. المجادلة</option>
+                    <option value="59">59. الحشر</option>
+                    <option value="60">60. الممتحنة</option>
+                    <option value="61">61. الصف</option>
+                    <option value="62">62. الجمعة</option>
+                    <option value="63">63. المنافقون</option>
+                    <option value="64">64. التغابن</option>
+                    <option value="65">65. الطلاق</option>
+                    <option value="66">66. التحريم</option>
+                    <option value="67">67. الملك</option>
+                    <option value="68">68. القلم</option>
+                    <option value="69">69. الحاقة</option>
+                    <option value="70">70. المعارج</option>
+                    <option value="71">71. نوح</option>
+                    <option value="72">72. الجن</option>
+                    <option value="73">73. المزمل</option>
+                    <option value="74">74. المدثر</option>
+                    <option value="75">75. القيامة</option>
+                    <option value="76">76. الإنسان</option>
+                    <option value="77">77. المرسلات</option>
+                    <option value="78">78. النبأ</option>
+                    <option value="79">79. النازعات</option>
+                    <option value="80">80. عبس</option>
+                    <option value="81">81. التكوير</option>
+                    <option value="82">82. الإنفطار</option>
+                    <option value="83">83. المطففين</option>
+                    <option value="84">84. الإنشقاق</option>
+                    <option value="85">85. البروج</option>
+                    <option value="86">86. الطارق</option>
+                    <option value="87">87. الأعلى</option>
+                    <option value="88">88. الغاشية</option>
+                    <option value="89">89. الفجر</option>
+                    <option value="90">90. البلد</option>
+                    <option value="91">91. الشمس</option>
+                    <option value="92">92. الليل</option>
+                    <option value="93">93. الضحى</option>
+                    <option value="94">94. الشرح</option>
+                    <option value="95">95. التين</option>
+                    <option value="96">96. العلق</option>
+                    <option value="97">97. القدر</option>
+                    <option value="98">98. البينة</option>
+                    <option value="99">99. الزلزلة</option>
+                    <option value="100">100. العاديات</option>
+                    <option value="101">101. القارعة</option>
+                    <option value="102">102. التكاثر</option>
+                    <option value="103">103. العصر</option>
+                    <option value="104">104. الهمزة</option>
+                    <option value="105">105. الفيل</option>
+                    <option value="106">106. قريش</option>
+                    <option value="107">107. الماعون</option>
+                    <option value="108">108. الكوثر</option>
+                    <option value="109">109. الكافرون</option>
+                    <option value="110">110. النصر</option>
+                    <option value="111">111. المسد</option>
+                    <option value="112">112. الإخلاص</option>
+                    <option value="113">113. الفلق</option>
+                    <option value="114">114. الناس</option>
+                  </select>
+
                   <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
@@ -1960,6 +2079,24 @@
 
           const getJuzRange = (juzNum) => JUZ_RANGES[juzNum] || [1, 21];
 
+          // Surah starting pages mapping (surah number -> starting page) - Extracted from actual Quran data
+          const SURAH_PAGES = {
+            1: 1, 2: 2, 3: 50, 4: 76, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 207,
+            11: 221, 12: 235, 13: 249, 14: 255, 15: 262, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
+            21: 322, 22: 331, 23: 341, 24: 349, 25: 359, 26: 366, 27: 376, 28: 385, 29: 396, 30: 404,
+            31: 411, 32: 414, 33: 417, 34: 428, 35: 434, 36: 440, 37: 445, 38: 452, 39: 458, 40: 467,
+            41: 477, 42: 483, 43: 489, 44: 496, 45: 498, 46: 502, 47: 506, 48: 511, 49: 515, 50: 518,
+            51: 520, 52: 523, 53: 525, 54: 528, 55: 531, 56: 534, 57: 537, 58: 542, 59: 545, 60: 548,
+            61: 551, 62: 553, 63: 554, 64: 555, 65: 557, 66: 560, 67: 562, 68: 564, 69: 566, 70: 568,
+            71: 570, 72: 572, 73: 574, 74: 575, 75: 577, 76: 578, 77: 580, 78: 582, 79: 583, 80: 584,
+            81: 586, 82: 587, 83: 587, 84: 589, 85: 590, 86: 591, 87: 591, 88: 592, 89: 593, 90: 594,
+            91: 595, 92: 595, 93: 596, 94: 596, 95: 597, 96: 597, 97: 598, 98: 598, 99: 599, 100: 599,
+            101: 600, 102: 600, 103: 601, 104: 601, 105: 601, 106: 602, 107: 602, 108: 602, 109: 603, 110: 603,
+            111: 603, 112: 604, 113: 604, 114: 604
+          };
+
+          const getSurahStartPage = (surahNum) => SURAH_PAGES[surahNum] || 1;
+
           const juzMemorizedCount = (juzNum) => {
             const [startPage, endPage] = getJuzRange(juzNum);
             let count = 0;
@@ -2558,6 +2695,7 @@ Display:
             juzMemorizedCount,
             getJuzMemorizedPercentage,
             getJuzGradientStyle,
+            getSurahStartPage,
             currentPageText,
             currentPageWords,
             fontSizeStyle,
