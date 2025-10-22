@@ -698,7 +698,7 @@
               </div>
 
               <!-- Quran Text Display with Overlay Navigation -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900 relative group">
+              <div id="quran-text-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900 relative group">
                 <div class="text-center space-y-2">
                   <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Page {{ appStore.currentPage }} of 604</p>
                   <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
@@ -1344,6 +1344,14 @@
             updateURL();
             appStore.successMessage = `Random page selected: Page ${randomPage}`;
             setTimeout(() => appStore.successMessage = '', 3000);
+            
+            // Scroll to Quran text section after a brief delay to let Vue update the DOM
+            setTimeout(() => {
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 100);
           };
 
           const updateURL = () => {
