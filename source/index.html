@@ -153,6 +153,37 @@
       color: #1a1a1a;
     }
 
+    /* Responsive Quran Text - Mobile Optimization */
+    @media (max-width: 640px) {
+      /* Small phones */
+      .quran-text {
+        line-height: 1.2;
+      }
+      .quran-word {
+        padding: 0.05rem 0.1rem;
+      }
+    }
+
+    @media (max-width: 768px) and (min-width: 641px) {
+      /* Tablets and medium devices */
+      .quran-text {
+        line-height: 1.35;
+      }
+      .quran-word {
+        padding: 0.08rem 0.15rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      /* Desktop and larger screens */
+      .quran-text {
+        line-height: 1.6;
+      }
+      .quran-word {
+        padding: 0.1rem 0.25rem;
+      }
+    }
+
     /* Surah Name Styling - keep black text for readability */
     .quran-text .surah-name {
       font-family: 'SurahNames', 'Traditional Arabic', serif;
