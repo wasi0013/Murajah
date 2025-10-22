@@ -628,6 +628,10 @@
                     <span v-if="appStore.theme === 'light'" class="text-orange-500 text-xl">☀️</span>
                     <span v-else class="text-yellow-500 text-xl">🌙</span>
                   </button>
+
+                  <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Settings">
+                    <i class="fas fa-cog text-gray-700 dark:text-gray-200 text-xl"></i>
+                  </button>
                 </div>
               </div>
             </header>
@@ -993,90 +997,127 @@
                 </div>
               </div>
 
-              <!-- Settings Section -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Pages Per Day</label>
-                    <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
-                  </div>
+            </main>
 
-                  <div>
-                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Finish in (days)</label>
-                    <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Font Size</label>
-                    <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
-                      <option value="small">Small</option>
-                      <option value="medium">Medium</option>
-                      <option value="large">Large</option>
-                    </select>
-                  </div>
-
-                  <div class="flex items-center">
-                    <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded dark:bg-gray-700 dark:border-gray-600">
-                    <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tajweed Colors</label>
-                  </div>
+            <!-- Settings Modal -->
+            <div v-if="showSettingsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                  <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                  </h2>
+                  <button @click="showSettingsModal = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                  </button>
                 </div>
 
-                <!-- Data Management -->
-                <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Data Management</h3>
-                  
-                  <div class="flex gap-3 flex-wrap">
-                    <button @click="exportData" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                      <i class="fas fa-download"></i>
-                      <span>Export Data</span>
-                    </button>
+                <!-- Modal Content -->
+                <div class="px-6 py-6 space-y-6">
+                  <!-- General Settings -->
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <i class="fas fa-sliders-h text-blue-600"></i>
+                      General Settings
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Pages Per Day</label>
+                        <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                      </div>
 
-                    <button @click="importData" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      <i class="fas fa-upload"></i>
-                      <span>Import Data</span>
-                    </button>
+                      <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Finish in (days)</label>
+                        <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                      </div>
 
-                    <button @click="resetApp" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                      <i class="fas fa-redo"></i>
-                      <span>Reset All</span>
-                    </button>
+                      <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Font Size</label>
+                        <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
+                          <option value="small">Small</option>
+                          <option value="medium">Medium</option>
+                          <option value="large">Large</option>
+                        </select>
+                      </div>
+
+                      <div class="flex items-center">
+                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded dark:bg-gray-700 dark:border-gray-600">
+                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tajweed Colors</label>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <!-- Bulk Memorization Tool -->
-                <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Bulk Memorization</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">Mark multiple pages as memorized at once</p>
-                  
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Start Page</label>
-                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">End Page</label>
-                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
-                    </div>
-                    <div class="flex items-end">
-                      <button 
-                        @click="bulkMemorize"
-                        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                      >
-                        <i class="fas fa-check-double"></i>
-                        <span>Memorize Range</span>
+                  <!-- Data Management Section -->
+                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <i class="fas fa-database text-green-600"></i>
+                      Data Management
+                    </h3>
+                    
+                    <div class="flex gap-3 flex-wrap">
+                      <button @click="exportData" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        <i class="fas fa-download"></i>
+                        <span>Export Data</span>
+                      </button>
+
+                      <button @click="importData" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        <i class="fas fa-upload"></i>
+                        <span>Import Data</span>
+                      </button>
+
+                      <button @click="resetApp" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                        <i class="fas fa-redo"></i>
+                        <span>Reset All</span>
                       </button>
                     </div>
                   </div>
 
-                  <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    {{ bulkWarning }}
+                  <!-- Bulk Memorization Tool -->
+                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <i class="fas fa-list-check text-purple-600"></i>
+                      Bulk Memorization
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Mark multiple pages as memorized at once</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Start Page</label>
+                        <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">End Page</label>
+                        <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                      </div>
+                      <div class="flex items-end">
+                        <button 
+                          @click="bulkMemorize"
+                          class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                          <i class="fas fa-check-double"></i>
+                          <span>Memorize Range</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700">
+                      <i class="fas fa-exclamation-triangle mr-2"></i>
+                      {{ bulkWarning }}
+                    </div>
                   </div>
                 </div>
+
+                <!-- Modal Footer -->
+                <div class="sticky bottom-0 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end">
+                  <button @click="showSettingsModal = false" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium">
+                    Close
+                  </button>
+                </div>
               </div>
-            </main>
+            </div>
 
             <!-- Footer -->
             <footer class="bg-gray-900 text-gray-400 text-center py-6 mt-12">
@@ -1153,6 +1194,7 @@
           const quranData = ref(null);
           const gotoInput = ref('');
           const audioRecorder = new AudioRecorder();
+          const showSettingsModal = ref(false);
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -2189,6 +2231,7 @@ Display:
             isInitializing,
             quranData,
             gotoInput,
+            showSettingsModal,
             statistics,
             recentRecordings,
             formattedCompletion,
