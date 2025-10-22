@@ -1532,6 +1532,129 @@
             console.log('[Murajah] Tajweed setting changed, font reloaded');
           });
 
+          // Keyboard shortcuts handler
+          const handleKeyboardShortcut = (event) => {
+            // Don't trigger shortcuts if user is typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+              return;
+            }
+
+            const key = event.key.toLowerCase();
+            
+            // T - Toggle Tajweed
+            if (key === 't') {
+              event.preventDefault();
+              settingsStore.tajweedEnabled = !settingsStore.tajweedEnabled;
+              updateSettings();
+              appStore.successMessage = `Tajweed ${settingsStore.tajweedEnabled ? 'enabled' : 'disabled'}`;
+              setTimeout(() => appStore.successMessage = '', 2000);
+              console.log('[Murajah] Tajweed toggled via keyboard:', settingsStore.tajweedEnabled);
+            }
+            
+            // Left Arrow - Previous Page
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              previousPage();
+              console.log('[Murajah] Previous page via keyboard');
+            }
+            
+            // Right Arrow - Next Page
+            if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              nextPage();
+              console.log('[Murajah] Next page via keyboard');
+            }
+            
+            // M - Toggle Memorized
+            if (key === 'm') {
+              event.preventDefault();
+              toggleMemorized();
+              console.log('[Murajah] Memorized toggled via keyboard');
+            }
+            
+            // P - Perfect Revision
+            if (key === 'p') {
+              event.preventDefault();
+              incrementPerfectRevision(appStore.currentPage);
+              console.log('[Murajah] Perfect revision via keyboard');
+            }
+            
+            // D - Toggle Dark Mode
+            if (key === 'd') {
+              event.preventDefault();
+              toggleTheme();
+              appStore.successMessage = `${appStore.theme === 'dark' ? 'Dark' : 'Light'} mode`;
+              setTimeout(() => appStore.successMessage = '', 2000);
+              console.log('[Murajah] Theme toggled via keyboard:', appStore.theme);
+            }
+            
+            // R - Random Page
+            if (key === 'r') {
+              event.preventDefault();
+              selectRandomPage();
+              console.log('[Murajah] Random page selected via keyboard');
+            }
+            
+            // G - Go to page (with prompt)
+            if (key === 'g') {
+              event.preventDefault();
+              const pageNum = prompt('Go to page (1-604):', appStore.currentPage.toString());
+              if (pageNum) {
+                const num = parseInt(pageNum);
+                if (!isNaN(num) && num >= 1 && num <= 604) {
+                  appStore.currentPage = num;
+                  updateURL();
+                } else {
+                  appStore.errorMessage = 'Invalid page number';
+                  setTimeout(() => appStore.errorMessage = '', 2000);
+                }
+              }
+              console.log('[Murajah] Go to page via keyboard');
+            }
+            
+            // ? or H - Show Help (keyboard shortcuts)
+            if (key === '?' || key === 'h') {
+              event.preventDefault();
+              showKeyboardShortcutsHelp();
+            }
+          };
+
+          const showKeyboardShortcutsHelp = () => {
+            const shortcuts = `
+Murajah Keyboard Shortcuts:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Navigation:
+  ← / → Arrow Keys   Navigate between pages
+  G                  Go to specific page
+  R                  Random memorized page
+
+Memorization:
+  M                  Toggle memorized status
+  P                  Mark perfect revision
+  T                  Toggle Tajweed colors
+
+Display:
+  D                  Toggle dark mode
+  ? / H              Show this help menu
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            `;
+            alert(shortcuts);
+            console.log('[Murajah] Keyboard shortcuts displayed');
+          };
+
+          // Add keyboard event listener on mount
+          onMounted(() => {
+            document.addEventListener('keydown', handleKeyboardShortcut);
+            console.log('[Murajah] Keyboard shortcuts enabled');
+          });
+
+          // Clean up keyboard listener before unmount (optional for Vue 3)
+          const cleanupKeyboardListener = () => {
+            document.removeEventListener('keydown', handleKeyboardShortcut);
+            console.log('[Murajah] Keyboard shortcuts disabled');
+          };
+
           return {
             appStore,
             settingsStore,
@@ -1593,7 +1716,10 @@
             exportData,
             importData,
             resetApp,
-            loadPageFont
+            loadPageFont,
+            handleKeyboardShortcut,
+            showKeyboardShortcutsHelp,
+            cleanupKeyboardListener
           };
         }
       });
