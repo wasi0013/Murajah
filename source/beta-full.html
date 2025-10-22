@@ -428,10 +428,10 @@
                 </div>
                 <div class="flex items-center gap-4">
                   <!-- Hifz Status in Header -->
-                  <div v-if="currentPageHifzStatus" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-white/20 backdrop-blur">
+                  <div v-if="currentPageHifzStatus" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-white" :style="{ backgroundColor: currentPageHifzStatus.bg }">
                     <i :class="'la ' + currentPageHifzStatus.icon" class="text-lg"></i>
                     <div class="text-xs">
-                      <div class="opacity-75">{{ currentPageHifzStatus.label }}</div>
+                      <div class="opacity-90">{{ currentPageHifzStatus.label }}</div>
                     </div>
                   </div>
                   
@@ -1242,16 +1242,11 @@
           });
 
           // Get memorization score (0-100) based on perfect revision count
+          // Score = perfect count directly (each mistake decreases count by 1)
           const getHifzScore = (pageNum) => {
             const perfectCount = getPerfectCount(pageNum);
-            // Score increases: 0 perfect = 0, 1 = 15, 2 = 30, 3+ = 50
-            // Higher counts increase score further up to 100
-            if (perfectCount === 0) return 0;
-            if (perfectCount === 1) return 15;
-            if (perfectCount === 2) return 30;
-            if (perfectCount === 3) return 50;
-            if (perfectCount >= 4 && perfectCount < 7) return 60 + (perfectCount - 4) * 5;
-            return 90;
+            // Cap at 100, but allow negative scores to go to 0
+            return Math.max(0, Math.min(perfectCount, 100));
           };
 
           // Get score colors for UI display
