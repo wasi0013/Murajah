@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- LineAwesome Icons -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- LineAwesome Icons CDN -->
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/line-awesome@1.3.0/dist/line-awesome/css/line-awesome.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Murajah</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
+  <link rel="stylesheet" href="resources/css/style.css">
+  
+</head>
+
+<body>
+  <div id="countdownOverlay"
+  style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:9999;justify-content:center;align-items:center;">
+  <span id="countdownText" style="font-size:5em;color:#fff;font-weight:bold;"></span>
+</div>
+    
+
+  <!-- Daily Revision Banner -->
+  <div id="revisionBanner" class="revision-banner hidden">
+    <span id="revisionMessage"></span>
+    <button id="revisionDoneBtn">Mark Today's Revision Done</button>
+    <button class="close-btn"><i class="la la-times"></i></button>
+  </div>
+  
+  <!-- Status Indicators Container -->
+  <div id="pageInfo" style="display:flex;justify-content:space-between;align-items:center;margin:14px auto;max-width:900px;">
+     <!-- Logo -->
+  <div style="display:flex;justify-content:center;margin-top:5px;">
+    <img src="resources/logo.png" alt="Murajah Logo" style="height:80px;width:auto;">
+  </div>
+    <div id="statusIndicators" style="display:flex;align-items:center;gap:16px;">
+      <!-- Hifz Status Indicator -->
+      <div id="hifzStatusIndicator" style="display:none;transition:all 0.2s ease-in-out;position:relative;">
+        <div style="font-size:1.2em;font-weight:60;display:flex;align-items:center;gap:6px;">
+          <i class="la la-bookmark" style="font-size:1.1em;"></i>
+          <span class="status-text"></span>
+        </div>
+      </div>
+      <!-- Mistake Count Indicator -->
+      <div id="mistakeCountIndicator" style="display:none;transition:all 0.2s ease-in-out;position:relative;">
+        <div style="font-size:0.85em;text-transform:uppercase;letter-spacing:0.05em;color:#666;margin-bottom:2px;">Accuracy</div>
+        <div style="font-size:1.2em;font-weight:600;color:#4caf50;display:flex;align-items:center;gap:6px;">
+          <i class="la la-check-circle" style="font-size:1.1em;"></i>
+          <span class="mistakes-text"></span>
+        </div>
+      </div>
+    </div>
+   
+    <div id="currentSurah" style="text-align:right;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
+  </div>
+  <div id="currentSurah" style="text-align:right;margin:24px auto;max-width:900px;font-family:'Surah',serif;font-size:2em;color:#1e4c78;"></div>
+  <!-- Overlay Navigation Arrows -->
+  <button id="prevPageOverlay" class="page-nav-overlay prev" title="Previous Page">
+    <i class="la la-chevron-left"></i>
+  </button>
+  <button id="nextPageOverlay" class="page-nav-overlay next" title="Next Page">
+    <i class="la la-chevron-right"></i>
+  </button>
+
+  <div class="quran-page" id="quranPage" style="background-color: #fff9ee"></div>
+  <div class="navigation">
+    <div style="position:relative;display:flex;align-items:center;">
+      <button id="perfectRevisionBtn" title="Perfect Revision (no mistakes)" style="background:#ffd600;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:12px;position:relative;">
+        <i class="la la-star"></i>
+      </button>
+      <button id="randomMemorizedBtn" title="Pick Random Memorized Page" style="background:#00ffaa;color:#222;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-random"></i>
+      </button>
+      <button id="tajweedBtn" title="Toggle Tajweed" style="margin-left:10px; background:#ffbb00;color:#f1f1f1;border:none;border-radius:6px;padding:8px 18px 10px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-palette"></i>
+      </button>
+      <div id="perfectRevisionCounter" style="position:absolute;left:-38px;top:50%;transform:translateY(-50%);background:rgba(255,215,0,0.92);color:#222;padding:2px 10px;border-radius:12px;font-size:1em;font-weight:bold;box-shadow:0 2px 8px rgba(255,215,0,0.12);pointer-events:none;z-index:2;display:none;"></div>
+      
+    </div>
+    <button id="prevPage">&lt;</button>
+    <span id="pageIndicator">(1/604)</span>
+    <button id="nextPage">&gt;</button>
+    <input type="number" id="gotoPageInput" min="1" max="604" placeholder="Page #"
+      style="width: 70px; font-size: 1em; margin-left: 16px;">
+    <button id="gotoPageBtn">Go</button>
+    <button id="memorizeBtn" style="margin-left:16px;">Mark as Memorized</button>
+    <div id="audioControls" style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+      <button id="playBtn" title="Play"
+        style="background: #24b416;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-play"></i>
+      </button>
+      <button id="pauseBtn" title="Pause"
+        style="background:#707c81;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-pause"></i>
+      </button>
+      <button id="stopBtn" title="Stop"
+        style="background:#494949;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-stop"></i>
+      </button>
+      <button id="recordBtn" title="Record"
+        style="background:#ae00ff;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-microphone"></i>
+      </button>
+      <button id="deleteAudioBtn" title="Delete Audio"
+        style="background:#ec4e4e;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.3em;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="la la-trash"></i>
+      </button>
+
+    </div>
+  </div>
+
+  <div id="dashboard"
+    style="max-width:900px;width:calc(100% - 32px);margin:24px auto 32px auto;padding:12px 24px 24px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <div style="background:#e3f2fd;border-radius:8px;height:24px;width:100%;overflow:hidden;">
+      <div id="progressBar" style="height:100%;background:#1976d2;width:0%;transition:width 0.5s;"></div>
+    </div>
+    <div id="progressText" style="text-align:center;font-size:1.1em;margin-top:8px;color:#1976d2;"></div>
+    <div style="display:flex;flex-direction:row;gap:0;justify-content:center;align-items:flex-start;margin-top:18px;">
+      <div id="stats"
+        style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);display:flex;justify-content:center;align-items:center;">
+        <div style="width:100%;padding:8px 0 0 0;">
+
+          <div style="display:flex;justify-content:center;align-items:center;">
+            <canvas id="juzPieChart" width="140" height="140"
+              style="background:#f5f5f5;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.08);"></canvas>
+          </div>
+          <div id="statsBox"
+            style="background:#e3f2fd;border-radius:10px;padding:12px 10px 10px 10px;margin:16px 0 10px 0;box-shadow:0 2px 8px rgba(25,118,210,0.06);font-size:1.08em;">
+            <div id="statRevisePerDay"></div>
+            <div id="statMinDaysNeeded"></div>
+            <div id="statEstimatedCompletion"></div>
+          </div>
+          <div
+            style="background:#fff;border-radius:10px;padding:10px 10px 8px 10px;box-shadow:0 2px 8px rgba(25,118,210,0.04);">
+            <label for="finishRevisionInput" style="font-size:1em;color:#1976d2;">Finish revision in (days):</label>
+            <input type="number" id="finishRevisionInput" min="1" max="999"
+              style="width:80px;margin-left:8px;font-size:1em;">
+            <br><br>
+            <label for="pagesPerDayInput" style="font-size:1em;color:#1976d2;">Pages memorized per day:</label>
+            <input type="number" id="pagesPerDayInput" min="0.01" max="604" step="0.01"
+              style="width:80px;margin-left:8px;font-size:1em;">
+            <br><br>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <label for="bulkStart" style="font-size:1em;color:#1976d2;">Range:</label>
+              <input type="number" id="bulkStart" min="1" max="604" placeholder="Start"
+                style="width:80px;font-size:1em;">
+              <span style="font-size:1.5em;color:#1976d2;">&#8211;</span>
+              <input type="number" id="bulkEnd" min="1" max="604" placeholder="End" style="width:80px;font-size:1em;">
+              <button id="bulkMarkBtn"
+                style="background:#1976d2;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:1em;cursor:pointer;">Memorized</button>
+            </div>
+            <div id="bulkError" style="color:#d32f2f;font-size:0.98em;margin-top:8px;display:none;"></div>
+
+          </div>
+          <div id="statsButtons" style="display:flex;align-items:center;gap:12px;margin-top:18px;">
+            <button id="exportBtn"
+              style="background:#29b6f6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Backup</button>
+            <button id="importBtn"
+              style="background:#ffa726;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Restore</button>
+            <button id="resetBtn"
+              style="background:#e53935;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:1.1em;cursor:pointer;">Reset</button>
+            <input type="file" id="importFile" accept="application/json" style="display:none;">
+          </div>
+        </div>
+
+      </div>
+      <div id="memorizedGrid"
+        style="flex:1;max-width:440px;min-width:320px;height:100%;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 8px;box-shadow:0 2px 8px rgba(33,150,243,0.04);">
+      </div>
+    </div>
+  </div>
+  <!-- Mistake Bubble Grid Section -->
+  <div id="mistakeBubbleGrid"
+    style="width:calc(100% - 32px);max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(229,57,53,0.08);">
+    <h3 style="margin-top:0;margin-bottom:16px;font-size:1.2em;color:#e53935;text-align:left;">Pages with Mistakes</h3>
+    <div id="mistakeBubbleGridInner"></div>
+  </div>
+  <div id="audioPlaylist"
+    style="width:calc(100% - 32px);max-width:900px;margin:32px auto 0 auto;padding:18px 24px 18px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    <h3 style="margin-top:0;margin-bottom:16px;font-size:1.2em;color:#1976d2;text-align:left;">Recorded Audio Playlist
+    </h3>
+    <div id="playlistItems"></div>
+  </div>
+  
+  
+  <script>
+/**
+ * Murajah - Quran Memorization App
+ * Main JavaScript Module
+ */
+
+// =================================
+// 1. Constants and Global Variables
+// =================================
+
+// Paths and configuration constants
+const LAYOUT_PATH = './resources/qpc-v2-15-lines.json';
+const WORDS_PATH = './resources/qpc-v2-word-by-word.json';
+const TOTAL_PAGES = 604;
+
+// App state variables
+let url = new URL(window.location.href)
+let c = url.searchParams.get("page");
+let currentPage = parseInt(c || '1', 10);
+currentPage = Number.isInteger(currentPage)? currentPage: 1
+currentPage = (currentPage < 1 || currentPage > 604)? 1: currentPage
+
+url.searchParams.set('page', currentPage)
+console.log(url)
+window.history.replaceState({}, '', url.toString())
+
+  
+let layoutData = [];
+let wordsData = {};
+let translations = {};
+let surahNames = {};
+let memorizedPages = [];
+
+// Audio state variables
+let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
+let audioPlayer = new Audio();
+
+// Progress tracking state
+let perfectRevisions = {};
+let mistakes = {};
+
+// =================================
+// Function Declarations
+// ================================
+
+/**
+ * Gets the appropriate colors and label based on memorization score
+ * @param {number} score - The memorization score (0-100)
+ * @returns {Object} Object containing background color, text color, and label
+ */
+function getScoreColors(score) {
+  if (score > 90) {
+    return {
+      label: 'Firm',
+      bg: '#111',
+      color: '#fff',
+      icon: 'la-star'
+    };
+  } else if (score >= 80) {
+    return {
+      label: 'Strong',
+      bg: '#1b5e20',
+      color: '#fff',
+      icon: 'la-check-circle'
+    };
+  } else if (score >= 60) {
+    return {
+      label: 'Good',
+      bg: '#0277bd',
+      color: '#fff',
+      icon: 'la-thumbs-up'
+    };
+  } else if (score >= 40) {
+    return {
+      label: 'Fair',
+      bg: '#ff8f00',
+      color: '#fff',
+      icon: 'la-exclamation-circle'
+    };
+  } else if (score > 0) {
+    return {
+      label: 'Weak',
+      bg: '#c62828',
+      color: '#fff',
+      icon: 'la-exclamation-triangle'
+    };
+  } else {
+    return {
+      label: 'New',
+      bg: '#757575',
+      color: '#fff',
+      icon: 'la-bookmark'
+    };
+  }
+}
+
+function updateHifzStatusIndicator() {
+  const indicator = document.getElementById('hifzStatusIndicator');
+  if (!indicator) return;
+  
+  const score = getPerfectCount(currentPage);
+  const { label, bg, color, icon } = getScoreColors(score);
+  
+  indicator.style.display = 'block';
+  const statusText = indicator.querySelector('.status-text');
+  const iconElem = indicator.querySelector('.la');
+  
+  if (statusText) statusText.textContent = label;
+  if (iconElem) {
+    iconElem.className = `la ${icon}`;
+  }
+  
+  indicator.style.backgroundColor = bg;
+  indicator.style.color = color;
+  indicator.style.display = 'block';
+  indicator.style.opacity = '0.92';
+}
+
+
+// =============================
+// Mistake Tracker Section
+// =============================
+
+
+function getPerfectKey(pageNum) {
+  return `${pageNum}`;
+}
+
+function loadPerfectRevisions() {
+  const raw = localStorage.getItem('perfectRevisions');
+  perfectRevisions = raw ? JSON.parse(raw) : {};
+}
+
+function savePerfectRevisions() {
+  localStorage.setItem('perfectRevisions', JSON.stringify(perfectRevisions));
+}
+
+function getPerfectCount(pageNum) {
+  const key = getPerfectKey(pageNum);
+  return perfectRevisions[key] || 0;
+}
+
+function setPerfectCount(pageNum, count) {
+  const key = getPerfectKey(pageNum);
+  perfectRevisions[key] = Math.max(0, count);
+  savePerfectRevisions();
+}
+
+function updatePerfectRevisionCounter() {
+  const counter = document.getElementById('perfectRevisionCounter');
+  if (!counter) return;
+  const count = getPerfectCount(currentPage);
+  if (count > 0) {
+    counter.textContent = count;
+    counter.style.display = 'block';
+    counter.style.opacity = '0.92';
+  } else {
+    counter.style.display = 'none';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  loadPerfectRevisions();
+  updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
+  document.getElementById('perfectRevisionBtn').onclick = function () {
+    const count = getPerfectCount(currentPage) + 1;
+    setPerfectCount(currentPage, count);
+    updatePerfectRevisionCounter();
+    updateHifzStatusIndicator();
+  };
+});
+
+// Utility: Update mistake count indicator
+function updateMistakeCountIndicator() {
+  const mistakeKey = getMistakeKey(currentPage);
+  const pageMistakes = mistakes[mistakeKey] || [];
+  const mistakeCount = Array.isArray(pageMistakes) ? pageMistakes.length : 0;
+  
+  const indicator = document.getElementById('mistakeCountIndicator');
+  if (!indicator) return;
+  
+  if (mistakeCount > 0) {
+    indicator.textContent = `Mistakes: ${mistakeCount}`;
+    indicator.style.display = 'block';
+    indicator.style.opacity = '0.85';
+    indicator.style.background = 'rgba(229,57,53,0.12)';
+    indicator.style.color = '#e53935';
+  } else {
+    indicator.style.display = 'none';
+  }
+}
+
+
+// =============================
+// Mistake Bubble Grid Section
+// =============================
+function renderMistakeBubbleGrid() {
+  // Gather all pages with mistakes
+  const pageMistakeCounts = [];
+  for (const key in mistakes) {
+  
+      const pageNum = Number(key);
+      const count = Array.isArray(mistakes[key]) ? mistakes[key].length : 0;
+      if (count > 0) {
+        pageMistakeCounts.push({ pageNum, count });
+    }
+  }
+  // Sort descending by mistake count
+  pageMistakeCounts.sort((a, b) => b.count - a.count);
+  const grid = document.getElementById('mistakeBubbleGridInner');
+  if (!grid) return;
+  if (pageMistakeCounts.length === 0) {
+    grid.innerHTML = '<div style="color:#888;text-align:center;">No mistakes recorded.</div>';
+    return;
+  }
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:left;">';
+  pageMistakeCounts.forEach(({ pageNum, count }) => {
+  // Color: base lighter red, darken less per mistake (max 10)
+  const baseColor = [150, 60, 60]; // lighter red
+  const darken = Math.min(count, 10) * 0.04; // less darkening per mistake
+  const color = `rgb(${baseColor.map(c => Math.round(c * (1 - darken))).join(',')},0.5)`;
+    html += `<div class=\"mistake-bubble\" data-page=\"${pageNum}\" title=\"Page ${pageNum}: ${count} mistake${count>1?'s':''}\"`
+      + ` style=\"position:relative;width:50px;height:50px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.1em;cursor:pointer;box-shadow:0 2px 8px rgba(229,57,53,0.12);transition:background 0.2s;\">`
+  + `<span style='position:absolute;top:-18px;right:-6px;background:rgba(229,57,53,0.92);color:#fff;padding:0px 15px;border-radius:50%;font-size:0.75em;font-weight:bold;box-shadow:0 2px 8px rgba(229,57,53,0.12);pointer-events:none;z-index:2;'>${count}</span>`
+      + `${pageNum}</div>`;
+  });
+  html += '</div>';
+  grid.innerHTML = html;
+  // Add click handlers
+  Array.from(grid.getElementsByClassName('mistake-bubble')).forEach(bubble => {
+    bubble.onclick = function () {
+      const page = parseInt(bubble.getAttribute('data-page'), 10);
+      if (!isNaN(page)) {
+        changePage(page);
+      }
+    };
+  });
+}
+function updateMistakeBubbleGrid() {
+  renderMistakeBubbleGrid();
+}
+
+// Load mistakes from localStorage on init
+document.addEventListener('DOMContentLoaded', function () {
+  const mistakesRaw = localStorage.getItem('mistakes');
+  mistakes = mistakesRaw ? JSON.parse(mistakesRaw) : {};
+  updateMistakeBubbleGrid(); // initial render
+});
+
+// Utility: Get mistake key for current page
+function getMistakeKey(pageNum) {
+  return `${pageNum}`;
+}
+
+// Utility: Save mistakes to localStorage
+function saveMistakes() {
+  localStorage.setItem('mistakes', JSON.stringify(mistakes));
+}
+
+// Attach mistake tracker to Quran words after page render
+function attachMistakeTracker(pageNum) {
+  const mistakeKey = getMistakeKey(pageNum);
+  const pageMistakes = mistakes[mistakeKey] || [];
+  // Find all word spans
+  const wordSpans = document.querySelectorAll('.quran-line .quran-word');
+  wordSpans.forEach(span => {
+    // Each span should have a unique word id as a data attribute
+    const wordId = span.getAttribute('data-word-id');
+    if (!wordId) return;
+    // Highlight if mistake
+    if (pageMistakes.includes(Number(wordId))) {
+      span.classList.add('mistake-word');
+    } else {
+      span.classList.remove('mistake-word');
+    }
+    // Add click handler to toggle mistake
+    span.addEventListener('click', function (e) {
+      let pageMistakes = mistakes[mistakeKey] || [];
+      const idx = pageMistakes.indexOf(Number(wordId));
+      if (idx === -1) {
+        pageMistakes.push(Number(wordId));
+        span.classList.add('mistake-word');
+        // Decrement perfect revision count if > 0
+        const perfectCount = getPerfectCount(pageNum);
+        if (perfectCount > 0) {
+          setPerfectCount(pageNum, perfectCount - 1);
+          updatePerfectRevisionCounter();
+        }
+        console.log('[MistakeTracker] Mistake highlighted:', wordId, 'on page', pageNum);
+      } else {
+        pageMistakes.splice(idx, 1);
+        span.classList.remove('mistake-word');
+        console.log('[MistakeTracker] Mistake removed:', wordId, 'on page', pageNum);
+      }
+      mistakes[mistakeKey] = pageMistakes;
+      saveMistakes();
+      updateMistakeCountIndicator();
+      updateMistakeBubbleGrid(); // update grid on mistake change
+    });
+  });
+  updateMistakeCountIndicator();
+  updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
+}
+// =============================
+// End Mistake Tracker Section
+// =============================
+  // =============================
+  // Murajah Quran App JavaScript
+  // =============================
+    // DEBUG: App initialization
+    console.debug('[Murajah] App script loaded');
+   // --- Audio Recording State ---
+    console.debug('[Murajah] mediaRecorder initialized:', mediaRecorder);
+    function getAudioKey(pageNum) {
+  // --- getAudioKey: Returns localStorage key for audio by page ---
+      console.debug('[Murajah] getAudioKey called with pageNum:', pageNum);
+      return `aud-${pageNum}`;
+    }
+    function updateAudioControls() {
+  // --- updateAudioControls: Enable/disable audio controls and playlist ---
+  const audioKey = getAudioKey(currentPage);
+  const audioData = localStorage.getItem(audioKey);
+  console.debug('[Murajah] updateAudioControls called for page', currentPage);
+  console.debug('[Murajah] audioKey:', audioKey, 'audioData:', !!audioData, 'mediaRecorder:', mediaRecorder ? mediaRecorder.state : null);
+  const recordBtn = document.getElementById('recordBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const playBtn = document.getElementById('playBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const deleteBtn = document.getElementById('deleteAudioBtn');
+      deleteBtn.removeAttribute('style');
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        recordBtn.style.display = 'none';
+        stopBtn.style.display = 'flex';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+        deleteBtn.style.display = 'none';
+      } else if (audioData) {
+        recordBtn.style.display = 'none';
+        stopBtn.style.display = 'flex';
+        playBtn.style.display = 'flex';
+        pauseBtn.style.display = 'flex';
+        // Show delete button with correct style
+        deleteBtn.style.display = 'flex';
+        deleteBtn.style.background = '#ec4e4e';
+        deleteBtn.style.color = '#fff';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.borderRadius = '6px';
+        deleteBtn.style.padding = '8px 18px';
+        deleteBtn.style.fontSize = '1.3em';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.alignItems = 'center';
+        deleteBtn.style.justifyContent = 'center';
+      } else {
+        recordBtn.style.display = 'flex';
+        stopBtn.style.display = 'none';
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+        deleteBtn.style.display = 'none';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+  // --- DOMContentLoaded: Initial event bindings and setup ---
+      console.debug('[Murajah] DOMContentLoaded event');
+      updateAudioControls();
+      document.getElementById('deleteAudioBtn').onclick = function () {
+        const audioKey = getAudioKey(currentPage);
+        if (localStorage.getItem(audioKey)) {
+          if (confirm('Delete audio for this page?')) {
+            localStorage.removeItem(audioKey);
+            updateAudioControls();
+          }
+        } else {
+          alert('No audio to delete for this page.');
+        }
+      };
+      document.getElementById('recordBtn').onclick = async function () {
+  // --- recordBtn.onclick: Start recording with countdown ---
+        console.debug('[Murajah] recordBtn clicked');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          console.warn('[Murajah] Audio recording not supported');
+          alert('Audio recording not supported.');
+          return;
+        }
+        // Blur Quran page
+        const quranPage = document.getElementById('quranPage');
+        quranPage.classList.add('blurred');
+        console.debug('[Murajah] Quran page blurred, countdown started');
+        // Show countdown overlay
+        const overlay = document.getElementById('countdownOverlay');
+        const text = document.getElementById('countdownText');
+        overlay.style.display = 'flex';
+        let count = 3;
+        text.textContent = count;
+        let countdownInterval = setInterval(() => {
+          console.debug('[Murajah] Countdown:', count);
+          count--;
+          if (count > 0) {
+            text.textContent = count;
+          } else {
+            clearInterval(countdownInterval);
+            overlay.style.display = 'none';
+            // Start recording
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+              console.debug('[Murajah] Starting MediaRecorder');
+              mediaRecorder = new MediaRecorder(stream);
+              audioChunks = [];
+              mediaRecorder.ondataavailable = function (e) {
+                console.debug('[Murajah] MediaRecorder ondataavailable, chunk size:', e.data.size);
+                audioChunks.push(e.data);
+              };
+              mediaRecorder.onstop = function () {
+                console.debug('[Murajah] MediaRecorder stopped, audioChunks:', audioChunks.length);
+                audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                  console.debug('[Murajah] Audio file saved to localStorage for page', currentPage);
+                  localStorage.setItem(getAudioKey(currentPage), reader.result);
+                  updateAudioControls();
+                };
+                reader.readAsDataURL(audioBlob);
+                // Unblur Quran page when recording stops
+                quranPage.classList.remove('blurred');
+              };
+              mediaRecorder.start();
+              console.debug('[Murajah] MediaRecorder started');
+              updateAudioControls();
+            }).catch(err => {
+              console.error('[Murajah] Could not start recording:', err);
+              alert('Could not start recording: ' + err.message);
+              quranPage.classList.remove('blurred');
+            });
+          }
+        }, 1000);
+      };
+      document.getElementById('stopBtn').onclick = function () {
+  // --- stopBtn.onclick: Stop recording ---
+        console.debug('[Murajah] stopBtn clicked');
+        console.debug('[Murajah] Stopping MediaRecorder');
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+          // Unblur Quran page when manually stopped
+          document.getElementById('quranPage').classList.remove('blurred');
+        }
+      };
+      document.getElementById('playBtn').onclick = function () {
+  // --- playBtn.onclick: Play audio ---
+        console.debug('[Murajah] playBtn clicked');
+        const audioData = localStorage.getItem(getAudioKey(currentPage));
+        if (audioData) {
+          console.debug('[Murajah] Playing audio for page', currentPage);
+          audioPlayer.src = audioData;
+          audioPlayer.play();
+          document.getElementById('playBtn').style.display = 'none';
+          document.getElementById('pauseBtn').style.display = '';
+        }
+      };
+      document.getElementById('pauseBtn').onclick = function () {
+  // --- pauseBtn.onclick: Pause audio ---
+  // --- deleteAudioBtn.onclick: Delete audio for current page ---
+        console.debug('[Murajah] pauseBtn clicked');
+        audioPlayer.pause();
+        console.debug('[Murajah] Audio paused');
+        document.getElementById('playBtn').style.display = '';
+        document.getElementById('pauseBtn').style.display = 'none';
+      };
+      audioPlayer.onended = function () {
+        console.debug('[Murajah] Audio playback ended');
+        console.debug('[Murajah] deleteAudioBtn clicked');
+        console.debug('[Murajah] Audio exists for page', currentPage, 'deleting...');
+        console.debug('[Murajah] Audio deleted for page', currentPage);
+        console.debug('[Murajah] No audio to delete for page', currentPage);
+        updateAudioControls();
+      };
+    });
+    // Update audio controls when page changes
+    function changePage(page) {
+  // --- changePage: Navigation logic ---
+      console.debug('[Murajah] changePage called with', page);
+      if (page < 1 || page > TOTAL_PAGES) return;
+  currentPage = page;
+  let url = new URL(window.location.href);  
+  url.searchParams.set('page', page)
+  window.history.replaceState({}, '', url.toString())
+
+  renderPage(currentPage);
+  updateMemorizeBtn();
+  updateAudioControls();
+  updatePerfectRevisionCounter();
+  updateHifzStatusIndicator();
+    }
+    function updateStatsPanel() {
+  // --- updateStatsPanel: Update stats UI ---
+      console.debug('[Murajah] updateStatsPanel called');
+      const memorized = memorizedPages.length;
+      let finishRevision = parseInt(localStorage.getItem('finishRevisionDays') || '30', 10);
+      let pagesPerDay = parseFloat(localStorage.getItem('pagesPerDay') || '1');
+      document.getElementById('finishRevisionInput').value = finishRevision;
+      document.getElementById('pagesPerDayInput').value = pagesPerDay;
+
+      // Revise per day
+      const revisePerDay = finishRevision > 0 ? Math.ceil(memorized / finishRevision) : 0;
+      document.getElementById('statRevisePerDay').textContent = `Revise per day: ${revisePerDay}`;
+      // Min days needed
+      const minDaysNeeded = pagesPerDay > 0 ? Math.ceil((604 - memorized) / pagesPerDay) : '∞';
+      document.getElementById('statMinDaysNeeded').textContent = `Min days needed: ${minDaysNeeded}`;
+      // Estimated completion
+      let estDate = '';
+      if (pagesPerDay > 0) {
+        const now = new Date();
+        now.setDate(now.getDate() + minDaysNeeded);
+        estDate = now.toLocaleDateString();
+      } else {
+        estDate = 'N/A';
+      }
+      document.getElementById('statEstimatedCompletion').textContent = `Estimated completion: ${estDate}`;
+    }
+    function drawJuzPieChart(juzMemorized, totalJuz) {
+  // --- drawJuzPieChart: Draw memorization pie chart ---
+      console.debug('[Murajah] drawJuzPieChart called:', juzMemorized, '/', totalJuz);
+      const canvas = document.getElementById('juzPieChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const percent = juzMemorized / totalJuz;
+      // Draw donut background
+      ctx.beginPath();
+      ctx.arc(70, 70, 65, 0, 2 * Math.PI);
+      ctx.arc(70, 70, 45, 2 * Math.PI, 0, true);
+      ctx.closePath();
+      ctx.fillStyle = '#e3f2fd';
+      ctx.fill();
+
+      // Draw memorized arc with gradient
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + 2 * Math.PI * percent;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(70, 70, 65, startAngle, endAngle, false);
+      ctx.arc(70, 70, 45, endAngle, startAngle, true);
+      ctx.closePath();
+      // Create gradient
+      const grad = ctx.createLinearGradient(70, 5, 70, 135);
+      grad.addColorStop(0, '#6dd5ed'); // light blue
+      grad.addColorStop(1, '#2193b0'); // deeper blue
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+
+      // Draw center label
+      ctx.font = 'bold 1.1em sans-serif';
+      ctx.fillStyle = '#2193b0';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${juzMemorized} / ${totalJuz}`, 70, 70);
+    }
+
+    function renderMemorizedGrid() {
+  // --- renderMemorizedGrid: Display memorized pages grid ---
+      console.debug('[Murajah] renderMemorizedGrid called');
+      const grid = document.getElementById('memorizedGrid');
+      const total = TOTAL_PAGES;
+      let html = '';
+      // First row: page 1 centered
+      html += '<div style="display:flex;justify-content:center;margin-bottom:4px;">';
+      const isMemorized1 = memorizedPages.includes(1);
+      html += `<div class="grid-cell" data-page="1" title="Page 1" style="width:18px;height:18px;border-radius:4px;background:${isMemorized1 ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;"></div>`;
+      html += '</div>';
+
+      // Next rows: 20 cells per row
+      let page = 2;
+      for (let row = 0; row < Math.floor((total - 1) / 20); row++) {
+        html += '<div style="display:flex;justify-content:center;margin-bottom:2px;">';
+        for (let col = 0; col < 20 && page <= total; col++, page++) {
+          const isMemorized = memorizedPages.includes(page);
+          html += `<div class="grid-cell" data-page="${page}" title="Page ${page}" style="width:13px;height:13px;border-radius:2px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;margin-right:1px;"></div>`;
+        }
+        html += '</div>';
+      }
+
+      // Last row: remaining cells centered
+      if (page <= total) {
+        html += '<div style="display:flex;justify-content:center;margin-bottom:2px;">';
+        for (; page <= total; page++) {
+          const isMemorized = memorizedPages.includes(page);
+          html += `<div class="grid-cell" data-page="${page}" title="Page ${page}" style="width:13px;height:13px;border-radius:2px;background:${isMemorized ? '#43a047' : '#e0e0e0'};border:1px solid #bdbdbd;display:inline-block;cursor:pointer;margin-right:1px;"></div>`;
+        }
+        html += '</div>';
+      }
+
+      grid.innerHTML = html;
+      // Add click event listeners to each cell
+      Array.from(grid.getElementsByClassName('grid-cell')).forEach(cell => {
+        cell.onclick = function () {
+          const page = parseInt(cell.getAttribute('data-page'), 10);
+          console.debug('[Murajah] Memorized grid cell clicked:', page);
+          const idx = memorizedPages.indexOf(page);
+          if (idx === -1) {
+            memorizedPages.push(page);
+          } else {
+            memorizedPages.splice(idx, 1);
+          }
+          localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+          updateDashboard();
+          updateMemorizeBtn();
+        };
+      });
+    }
+    // Collapsible bulk memorization section logic
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('bulkMarkBtn').onclick = function () {
+  // --- bulkMarkBtn.onclick: Bulk mark pages as memorized ---
+        console.debug('[Murajah] bulkMarkBtn clicked');
+        const start = parseInt(document.getElementById('bulkStart').value, 10);
+        const end = parseInt(document.getElementById('bulkEnd').value, 10);
+        const errorDiv = document.getElementById('bulkError');
+        errorDiv.style.display = 'none';
+        if (isNaN(start) || isNaN(end) || start < 1 || end > TOTAL_PAGES || start >= end) {
+          console.warn('[Murajah] Invalid bulk mark range:', start, end);
+          errorDiv.textContent = 'Please enter valid start and end pages (start < end, both between 1 and 604).';
+          errorDiv.style.display = 'block';
+          return;
+        }
+        let changed = false;
+        for (let p = start; p <= end; p++) {
+          if (!memorizedPages.includes(p)) {
+            memorizedPages.push(p);
+            changed = true;
+          }
+        }
+        if (changed) {
+          console.debug('[Murajah] Bulk memorized pages', start, 'to', end);
+          localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+          updateDashboard();
+          updateMemorizeBtn();
+        }
+        errorDiv.textContent = `Marked pages ${start} to ${end} as memorized.`;
+        errorDiv.style.color = '#1976d2';
+        errorDiv.style.display = 'block';
+      };
+    });
+    
+    async function loadJSON(path) {
+  // --- loadJSON: Fetch JSON data ---
+      console.debug('[Murajah] loadJSON called for', path);
+      const res = await fetch(path);
+      return res.json();
+    }
+
+    function updateMemorizeBtn() {
+  // --- updateMemorizeBtn: Update memorize button UI ---
+      console.debug('[Murajah] updateMemorizeBtn called for page', currentPage);
+      const btn = document.getElementById('memorizeBtn');
+      if (memorizedPages.includes(currentPage)) {
+        btn.textContent = 'Memorized ✓';
+        btn.style.background = '#1976d2'; // Soothing blue
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
+      } else {
+        btn.textContent = 'Mark as Memorized';
+        btn.style.background = '#2196f3'; // Lighter blue for default
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
+      }
+    }
+
+    function toggleMemorized(pageNum) {
+  // --- toggleMemorized: Toggle memorized state for a page ---
+      console.debug('[Murajah] toggleMemorized called for page', pageNum);
+      const idx = memorizedPages.indexOf(pageNum);
+      if (idx === -1) {
+        memorizedPages.push(pageNum);
+      } else {
+        memorizedPages.splice(idx, 1);
+      }
+      localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+      updateMemorizeBtn();
+    }
+
+    function updateDashboard() {
+  // --- updateDashboard: Update dashboard UI ---
+      console.debug('[Murajah] updateDashboard called');
+      const total = TOTAL_PAGES;
+      const memorized = memorizedPages.length;
+      const percent = total ? Math.round((memorized / total) * 100) : 0;
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressText').textContent = `${memorized} / ${total} (${percent}%)`;
+      // Draw Juz pie chart
+      const totalJuz = 30;
+      const juzMemorized = Math.floor(memorizedPages.length / 20);
+      drawJuzPieChart(juzMemorized, totalJuz);
+      updateStatsPanel();
+      renderMemorizedGrid();
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      // Persistent input logic
+      document.getElementById('finishRevisionInput').onchange = function () {
+  // --- finishRevisionInput.onchange: Update revision days ---
+        console.debug('[Murajah] finishRevisionInput changed:', this.value);
+        localStorage.setItem('finishRevisionDays', this.value);
+        updateStatsPanel();
+      };
+      document.getElementById('pagesPerDayInput').onchange = function () {
+  // --- pagesPerDayInput.onchange: Update pages per day ---
+        console.debug('[Murajah] pagesPerDayInput changed:', this.value);
+        localStorage.setItem('pagesPerDay', this.value);
+        updateStatsPanel();
+      };
+    });
+
+    // Export/Import localStorage to/from JSON file
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('exportBtn').onclick = function () {
+  // --- exportBtn.onclick: Export localStorage to JSON ---
+  // --- importBtn.onclick: Import localStorage from JSON ---
+        console.debug('[Murajah] exportBtn clicked');
+        console.debug('[Murajah] importBtn clicked');
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          data[key] = localStorage.getItem(key);
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // Get current date in YYYY-MM-DD format
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        a.download = `murajah-backup-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+      // Import logic
+      const importBtn = document.getElementById('importBtn');
+      const importFile = document.getElementById('importFile');
+      importBtn.onclick = function () {
+        importFile.click();
+      };
+      importFile.onchange = function (e) {
+        // --- importFile.onchange: Handle file input change ---
+        console.debug('[Murajah] importFile changed');
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          console.debug('[Murajah] Import file loaded');
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (typeof data === 'object' && data !== null) {
+              console.debug('[Murajah] Importing data to localStorage');
+              for (const key in data) {
+                localStorage.setItem(key, data[key]);
+              }
+              alert('Data imported!');
+              location.reload();
+            } else {
+              alert('Invalid file format.');
+            }
+          } catch (err) {
+            console.error('[Murajah] Error importing data:', err);
+            alert('Error importing data: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      // Reset logic
+      document.getElementById('resetBtn').onclick = function () {
+        if (confirm('Are you sure you want to reset all data? This will delete all your progress, mistakes, and audio.')) {
+          localStorage.clear();
+          alert('All data has been reset. The page will now reload.');
+          location.reload();
+        }
+      };
+    });
+    async function init() {
+  // --- init: App initialization ---
+      console.debug('[Murajah] init called');
+      console.debug('[Murajah] renderPage called for', currentPage);
+      // Load memorized pages from localStorage
+      const mem = localStorage.getItem('memorizedPages');
+      memorizedPages = mem ? JSON.parse(mem) : [];
+      layoutData = await loadJSON(LAYOUT_PATH);
+      wordsData = await loadJSON(WORDS_PATH);
+      surahNames = await loadJSON('./resources/surah-names.json');
+      translations = await loadJSON('./resources/english-wbw-translation.json');
+      renderPage(currentPage);
+      updateDashboard();
+      renderMemorizedGrid();
+      updateAudioControls();
+      // Set up both sets of navigation buttons
+      document.getElementById('prevPage').onclick = () => changePage(currentPage - 1);
+      document.getElementById('prevPageOverlay').onclick = () => changePage(currentPage - 1);
+      console.debug('[Murajah] prevPage buttons set');
+
+      document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
+      document.getElementById('nextPageOverlay').onclick = () => changePage(currentPage + 1);
+      console.debug('[Murajah] nextPage buttons set');
+
+      // Update overlay button states when page changes
+      document.getElementById('prevPageOverlay').disabled = currentPage === 1;
+      document.getElementById('nextPageOverlay').disabled = currentPage === TOTAL_PAGES;
+
+      document.getElementById('randomMemorizedBtn').onclick = function () {
+        if (!Array.isArray(memorizedPages) || memorizedPages.length === 0) {
+          alert('No memorized pages found.');
+          return;
+        }
+        // Pick a random page from memorizedPages
+        const randomIdx = Math.floor(Math.random() * memorizedPages.length);
+        const randomPage = memorizedPages[randomIdx];
+        changePage(randomPage);
+        // Optionally, show a toast or highlight
+      };
+      document.getElementById('nextPage').onclick = () => changePage(currentPage + 1);
+      console.debug('[Murajah] nextPage button set');
+      document.getElementById('gotoPageBtn').onclick = () => {
+        console.debug('[Murajah] gotoPageBtn clicked');
+        const val = parseInt(document.getElementById('gotoPageInput').value, 10);
+        if (!isNaN(val) && val >= 1 && val <= TOTAL_PAGES) {
+          changePage(val);
+        } else {
+          alert('Please enter a valid page number (1-604).');
+        }
+      };
+      document.getElementById('gotoPageInput').addEventListener('keydown', function (e) {
+        console.debug('[Murajah] gotoPageInput keydown:', e.key);
+        if (e.key === 'Enter') {
+          document.getElementById('gotoPageBtn').click();
+        }
+      });
+      document.getElementById('memorizeBtn').onclick = () => {
+        console.debug('[Murajah] memorizeBtn clicked');
+        toggleMemorized(currentPage);
+      };
+      document.getElementById('tajweedBtn').onclick = () => {
+        console.debug('[Murajah] tajweedBtn clicked');
+        let t = parseInt(localStorage.getItem('t') || '1', 10)
+        if (t == 1){
+          localStorage.setItem('t', '0')
+          location.reload()
+        }
+        else {
+          localStorage.setItem('t', '1')
+          location.reload()
+        }
+      };
+    }
+
+    function changePage(page) {
+      if (page < 1 || page > TOTAL_PAGES) return;
+      currentPage = page;
+      let url = new URL(window.location.href)
+      url.searchParams.set('page', page);
+      window.history.replaceState({}, '', url.toString())
+
+  
+      renderPage(currentPage);
+      updateMemorizeBtn();
+    }
+
+    function renderPage(pageNum) {
+  // --- renderPage: Render Quran page ---
+      console.debug('[Murajah] renderPage called for', pageNum);
+      
+      // Update current surah display
+      const currentSurahDiv = document.getElementById('currentSurah');
+      const surahLine = layoutData.pages.slice().sort((a, b) => b.page_number - a.page_number).find(l => l.page_number <= pageNum && l.line_type === 'surah_name');
+      if (surahLine) {
+        currentSurahDiv.textContent = getSurahName(surahLine.surah_number);
+      }
+      
+      // Dynamically inject @font-face for the current page
+      const fontId = 'dynamicQPCFont';
+      let styleTag = document.getElementById(fontId);
+      if (styleTag) styleTag.remove();
+      styleTag = document.createElement('style');
+      styleTag.id = fontId;
+      let tajweed = parseInt(localStorage.getItem("t")|| '1', 10)
+      let src = `src: url('./resources/font/p${pageNum}.woff2') format('woff2')`
+      if (tajweed == 1){
+        src = `src: url('./resources/tajweed/p${pageNum}.woff2') format('woff2')`
+      }
+      styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;
+      document.head.appendChild(styleTag);
+
+      const pageLines = layoutData.pages.filter(l => l.page_number === pageNum);
+      const container = document.getElementById('quranPage');
+      container.innerHTML = '';
+      pageLines.forEach(line => {
+        if (line.line_type === 'surah_name') {
+          console.debug('[Murajah] Rendering surah name:', line.surah_number);
+          const surahDiv = document.createElement('div');
+          surahDiv.className = 'surah-name';
+          surahDiv.textContent = `سورة ${getSurahName(line.surah_number)}`;
+          container.appendChild(surahDiv);
+        } else if (line.line_type === 'basmallah') {
+          console.debug('[Murajah] Rendering basmallah');
+          const basmallahDiv = document.createElement('div');
+          basmallahDiv.className = 'basmallah';
+          basmallahDiv.textContent = '﷽';
+          container.appendChild(basmallahDiv);
+        } else {
+          const lineDiv = document.createElement('div');
+          lineDiv.className = 'quran-line';
+          lineDiv.style.fontFamily = 'QPCV2Page, serif';
+          if (line.first_word_id && line.last_word_id) {
+            for (let wid = line.last_word_id; wid >= line.first_word_id; wid--) {
+              console.debug('[Murajah] Rendering word id:', wid);
+              const wordObj = getWordById(wid);
+              if (!wordObj) continue;
+              const wordSpan = document.createElement('span');
+              wordSpan.className = 'quran-word';
+              wordSpan.textContent = wordObj.text;
+              // Remove browser tooltip
+              wordSpan.title = '';
+              wordSpan.setAttribute('data-word-id', wordObj.id); // For mistake tracker
+              // Custom tooltip logic
+              wordSpan.onmouseenter = function (e) {
+                console.debug('[Murajah] Word mouseenter:', wordObj);
+                let tip = document.getElementById('customTooltip');
+                if (!tip) {
+                  tip = document.createElement('div');
+                  tip.id = 'customTooltip';
+                  tip.style.position = 'fixed';
+                  tip.style.zIndex = '9999';
+                  tip.style.background = '#fff';
+                  tip.style.color = '#222';
+                  tip.style.fontSize = '1.5em';
+                  tip.style.padding = '12px 18px';
+                  tip.style.wordSpacing = '0.2em';
+                  tip.style.borderRadius = '10px';
+                  tip.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+                  tip.style.maxWidth = '350px';
+                  tip.style.pointerEvents = 'none';
+                  document.body.appendChild(tip);
+                }
+                const key = `${wordObj.surah}:${wordObj.ayah}:${wordObj.word}`;
+                tip.textContent = translations[key] || '(No translation)';
+                tip.style.display = 'block';
+                // Position near mouse
+                tip.style.left = (e.clientX + 18) + 'px';
+                tip.style.top = (e.clientY + 18) + 'px';
+              };
+              wordSpan.onmousemove = function (e) {
+                console.debug('[Murajah] Word mousemove:', wordObj);
+                const tip = document.getElementById('customTooltip');
+                if (tip) {
+                  tip.style.left = (e.clientX + 18) + 'px';
+                  tip.style.top = (e.clientY + 18) + 'px';
+                }
+              };
+              wordSpan.onmouseleave = function () {
+                console.debug('[Murajah] Word mouseleave:', wordObj);
+                const tip = document.getElementById('customTooltip');
+                if (tip) tip.style.display = 'none';
+              };
+              lineDiv.appendChild(wordSpan);
+            }
+          }
+          container.appendChild(lineDiv);
+        }
+      });
+      // Mistake tracker: attach after all words rendered
+      attachMistakeTracker(pageNum);
+      document.getElementById('pageIndicator').textContent = `${pageNum} / ${TOTAL_PAGES}`;
+      // Update both sets of navigation buttons
+      document.getElementById('prevPage').disabled = pageNum === 1;
+      document.getElementById('nextPage').disabled = pageNum === TOTAL_PAGES;
+      document.getElementById('prevPageOverlay').disabled = pageNum === 1;
+      document.getElementById('nextPageOverlay').disabled = pageNum === TOTAL_PAGES;
+      updateMemorizeBtn();
+      function updateMemorizeBtn() {
+        const btn = document.getElementById('memorizeBtn');
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.border = '';
+        btn.style.boxShadow = '';
+        if (memorizedPages.includes(currentPage)) {
+          btn.textContent = 'Memorized ✓';
+          btn.style.background = '#1976d2'; // Soothing blue
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.boxShadow = '0 2px 8px rgba(25, 118, 210, 0.08)';
+        } else {
+          btn.textContent = 'Mark as Memorized';
+          btn.style.background = '#2196f3'; // Lighter blue for default
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.boxShadow = '0 2px 8px rgba(33, 150, 243, 0.08)';
+        }
+      }
+
+      function toggleMemorized(pageNum) {
+        const idx = memorizedPages.indexOf(pageNum);
+        if (idx === -1) {
+          memorizedPages.push(pageNum);
+        } else {
+          memorizedPages.splice(idx, 1);
+        }
+        localStorage.setItem('memorizedPages', JSON.stringify(memorizedPages));
+        updateMemorizeBtn();
+        updateDashboard();
+      }
+    }
+
+    function getWordById(id) {
+  // --- getWordById: Lookup word by ID ---
+      console.debug('[Murajah] getWordById called for id:', id);
+      // Find word by id in wordsData
+      for (const key in wordsData) {
+        if (wordsData[key].id == id) return wordsData[key];
+      }
+      return null;
+    }
+
+    function getSurahName(num) {
+  // --- getSurahName: Lookup surah name ---
+      console.debug('[Murajah] getSurahName called for num:', num);
+      // Lookup surah name from surahNames JSON
+      return surahNames && surahNames[num] ? surahNames[num] : num;
+    }
+
+    function onWordClick(wordObj) {
+  // --- onWordClick: Word click handler ---
+      console.debug('[Murajah] onWordClick called:', wordObj);
+      alert(`Word: ${wordObj.text}\nSurah: ${wordObj.surah}\nAyah: ${wordObj.ayah}\nWord #: ${wordObj.word}`);
+    }
+
+    // Render audio playlist
+    function renderAudioPlaylist() {
+  // --- renderAudioPlaylist: Render audio playlist ---
+  // =============================
+  // End of Murajah Quran App JS
+  // =============================
+      console.debug('[Murajah] renderAudioPlaylist called');
+      const playlistDiv = document.getElementById('playlistItems');
+      playlistDiv.innerHTML = '';
+      const audios = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        console.debug('[Murajah] Checking localStorage key:', key)      
+        if (key && (key.startsWith('aud-'))) {
+          const pageNum = key.split('-').pop();
+          audios.push({ key, pageNum, data: localStorage.getItem(key) });
+        }
+      }
+      if (audios.length === 0) {
+        console.debug('[Murajah] No recordings yet for playlist');
+        playlistDiv.innerHTML = '<div style="color:#888;text-align:center;">No recordings yet.</div>';
+        return;
+      }
+      audios.sort((a, b) => Number(a.pageNum) - Number(b.pageNum));
+      audios.forEach(audio => {
+        console.debug('[Murajah] Rendering playlist audio:', audio);
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.marginBottom = '12px';
+        item.style.gap = '16px';
+        item.style.borderBottom = '1px solid #eee';
+        item.style.paddingBottom = '8px';
+        const label = document.createElement('span');
+        label.textContent = `Page ${audio.pageNum}`;
+        label.style.fontWeight = 'bold';
+        label.style.color = '#1976d2';
+        const player = document.createElement('audio');
+        player.controls = true;
+        player.src = audio.data;
+        player.style.flex = '1';
+        player.style.margin = '0 12px';
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.background = '#ec4e4e';
+        delBtn.style.color = '#fff';
+        delBtn.style.border = 'none';
+        delBtn.style.borderRadius = '6px';
+        delBtn.style.padding = '6px 14px';
+        delBtn.style.cursor = 'pointer';
+        delBtn.onclick = function () {
+          console.debug('[Murajah] Playlist delete clicked for page', audio.pageNum);
+          if (confirm(`Delete audio for Page ${audio.pageNum}?`)) {
+            localStorage.removeItem(audio.key);
+            console.debug('[Murajah] Playlist audio deleted for page', audio.pageNum);
+            console.debug('[Murajah] DOMContentLoaded for playlist');
+            renderAudioPlaylist();
+            updateAudioControls();
+          }
+        };
+        item.appendChild(label);
+        item.appendChild(player);
+        item.appendChild(delBtn);
+        playlistDiv.appendChild(item);
+      });
+    }
+
+    // Re-render playlist on page load and after audio changes
+    document.addEventListener('DOMContentLoaded', function () {
+      renderAudioPlaylist();
+    });
+    
+
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      // Only respond if we're not in an input field or textarea
+      if (e.target.tagName.toLowerCase() !== 'input' && e.target.tagName.toLowerCase() !== 'textarea') {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault(); // Prevent default scroll
+          if (currentPage > 1) {
+            changePage(currentPage - 1);
+          }
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault(); // Prevent default scroll
+          if (currentPage < TOTAL_PAGES) {
+            changePage(currentPage + 1);
+          }
+        }
+      }
+    });
+
+    // Initialize main app
+    window.onload = () => {
+      init();
+      RevisionTracker.init();
+    };
+
+    // Daily Revision Tracking
+    const RevisionTracker = {
+      settings: {
+        revisionsPerDay: 12,
+        daysToComplete: 10
+      },
+
+      storageKeys: {
+        currentBatch: 'rb', // revision batch
+        lastRevisionDate: 'rd', // revision date
+        settings: 'rs' // revision settings
+      },
+
+      init() {
+        // Load settings from localStorage
+        const [daysToComplete, revisionsPerDay] = (localStorage.getItem('c') || '10,12').split(',').map(Number);
+        this.settings.daysToComplete = daysToComplete;
+        this.settings.revisionsPerDay = revisionsPerDay;
+
+        // Setup event listeners
+        document.querySelector('#revisionBanner .close-btn').addEventListener('click', () => {
+          document.getElementById('revisionBanner').classList.add('hidden');
+        });
+
+        document.getElementById('revisionDoneBtn').addEventListener('click', () => {
+          this.markTodayComplete();
+        });
+
+        // Check revision status on load
+        this.checkRevisionStatus();
+      },
+
+      getMemorizedPages() {
+        const pagesStr = localStorage.getItem('p');
+        if (!pagesStr) return [];
+        return pagesStr.split(',').map(Number).sort((a, b) => a - b);
+      },
+
+      splitIntoGroups(pages) {
+        const groups = [];
+        const pagesPerGroup = Math.ceil(pages.length / this.settings.daysToComplete);
+        
+        for (let i = 0; i < pages.length; i += pagesPerGroup) {
+          groups.push(pages.slice(i, i + pagesPerGroup));
+        }
+        
+        return groups;
+      },
+
+      getCurrentBatch() {
+        return parseInt(localStorage.getItem(this.storageKeys.currentBatch) || '0');
+      },
+
+      checkRevisionStatus() {
+        const today = new Date().toDateString();
+        const lastRevision = localStorage.getItem(this.storageKeys.lastRevisionDate);
+        
+        if (lastRevision === today) {
+          // Already completed today's revision
+          return;
+        }
+
+        const memorizedPages = this.getMemorizedPages();
+        if (memorizedPages.length === 0) return;
+
+        const groups = this.splitIntoGroups(memorizedPages);
+        const currentBatch = this.getCurrentBatch();
+        
+        if (currentBatch >= groups.length) {
+          // Reset to first batch when complete
+          localStorage.setItem(this.storageKeys.currentBatch, '0');
+          this.showBanner(groups[0]);
+        } else {
+          this.showBanner(groups[currentBatch]);
+        }
+      },
+
+      showBanner(pages) {
+        const banner = document.getElementById('revisionBanner');
+        const message = document.getElementById('revisionMessage');
+        
+        const start = pages[0];
+        const end = pages[pages.length - 1];
+        message.textContent = `Today's revision: Pages ${start} to ${end} (${pages.length} pages)`;
+        
+        banner.classList.remove('hidden');
+      },
+
+      markTodayComplete() {
+        const today = new Date().toDateString();
+        localStorage.setItem(this.storageKeys.lastRevisionDate, today);
+        
+        const currentBatch = this.getCurrentBatch();
+        localStorage.setItem(this.storageKeys.currentBatch, (currentBatch + 1).toString());
+        
+        document.getElementById('revisionBanner').classList.add('hidden');
+      },
+
+      updateSettings(revisionsPerDay, daysToComplete) {
+        this.settings.revisionsPerDay = revisionsPerDay;
+        this.settings.daysToComplete = daysToComplete;
+        localStorage.setItem('c', `${daysToComplete},${revisionsPerDay}`);
+        
+        // Reset progress when settings change
+        localStorage.removeItem(this.storageKeys.currentBatch);
+        this.checkRevisionStatus();
+      }
+    };
+  </script>
+
+  <footer
+    style="width:100%;text-align:center;padding:18px 0 12px 0;background:#f5f5f5;color:#888;font-size:1em;position:relative;bottom:0;left:0;">
+
+    Murajah &copy; 2025. Made with <span style="color:#e57373;">&#10084;</span> for Quran memorization.
+  </footer>
+</body>
+
+</html>
