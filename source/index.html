@@ -41,18 +41,49 @@
 
     html {
       scroll-behavior: smooth;
+      background-color: #ffffff;
+      color: #111827;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    html.dark {
+      background-color: #111827;
+      color: #f3f4f6;
     }
 
     body {
       transition: background-color 0.3s ease, color 0.3s ease;
+      background-color: inherit;
+      color: inherit;
     }
 
     body.dark-mode {
-      @apply bg-gray-900 text-gray-100;
+      background-color: #111827;
+      color: #f3f4f6;
     }
 
     body:not(.dark-mode) {
-      @apply bg-white text-gray-900;
+      background-color: #ffffff;
+      color: #111827;
+    }
+
+    /* Root app container */
+    #app {
+      background-color: inherit;
+      color: inherit;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+    }
+
+    /* Main app wrapper */
+    .dark-mode {
+      background-color: #111827;
+      color: #f3f4f6;
+    }
+
+    .dark-mode main {
+      background-color: #111827;
+      color: #f3f4f6;
     }
 
     /* Quran Text Styling */
@@ -62,6 +93,13 @@
       direction: rtl;
       text-align: right;
       letter-spacing: 0.1em;
+      color: #111827; /* Explicit color for light mode */
+      background-color: #f3f4f6; /* Light mode background */
+    }
+
+    .dark-mode .quran-text {
+      color: #1a1a1a; /* Black text in dark mode */
+      background-color: #d4b896; /* Sepia/parchment color for dark mode */
     }
 
     .quran-text-small {
@@ -82,30 +120,55 @@
       transition: all 0.2s ease;
       padding: 0.25rem;
       border-radius: 4px;
+      color: inherit; /* Ensure text inherits from parent */
     }
 
     .quran-word:hover {
-      @apply bg-blue-200;
+      @apply bg-blue-200 text-blue-900;
     }
 
     .quran-word.mistake {
-      @apply bg-red-200;
+      @apply bg-red-200 text-red-900;
     }
 
     .quran-word.memorized-highlight {
-      @apply bg-green-200;
+      @apply bg-green-200 text-green-900;
     }
 
     .dark-mode .quran-word:hover {
-      @apply bg-blue-800;
+      background-color: #c4a876;
+      color: #1a1a1a;
     }
 
     .dark-mode .quran-word.mistake {
-      @apply bg-red-800;
+      background-color: #d97777;
+      color: #1a1a1a;
     }
 
     .dark-mode .quran-word.memorized-highlight {
-      @apply bg-green-800;
+      background-color: #9acd32;
+      color: #1a1a1a;
+    }
+
+    /* Surah Name Styling - keep black text for readability */
+    .quran-text .surah-name {
+      font-family: 'SurahNames', 'Traditional Arabic', serif;
+      color: #000 !important;
+      font-size: 2.25rem;
+    }
+
+    .dark-mode .quran-text .surah-name {
+      color: #000 !important;
+    }
+
+    /* Basmallah styling */
+    .quran-text .basmallah {
+      color: #000 !important;
+      font-size: 2.25rem;
+    }
+
+    .dark-mode .quran-text .basmallah {
+      color: #000 !important;
     }
 
     /* Smooth Transitions */
@@ -193,14 +256,67 @@
       padding: 16px;
     }
 
-    /* Dark Mode Utilities */
     .dark-mode * {
       color-scheme: dark;
     }
 
+    /* Dark mode backgrounds for major sections */
+    .dark-mode header,
+    .dark-mode main,
+    .dark-mode footer {
+      background-color: inherit;
+      color: inherit;
+    }
+
+    /* Card backgrounds in dark mode */
+    .dark-mode .bg-white {
+      background-color: #1f2937;
+      color: #f3f4f6;
+    }
+
+    .dark-mode .bg-gray-50 {
+      background-color: #111827;
+      color: #f3f4f6;
+    }
+
+    .dark-mode .bg-gray-100 {
+      background-color: #1f2937;
+      color: #f3f4f6;
+    }
+
+    .dark-mode .bg-gray-200 {
+      background-color: #374151;
+      color: #f3f4f6;
+    }
+
+    /* Ensure text in dark mode sections is visible */
+    .dark-mode p,
+    .dark-mode span,
+    .dark-mode div,
+    .dark-mode label,
+    .dark-mode h1,
+    .dark-mode h2,
+    .dark-mode h3,
+    .dark-mode h4,
+    .dark-mode h5,
+    .dark-mode h6 {
+      color: inherit;
+    }
+
+    /* Enhanced button styling for dark mode */
+    .dark-mode button {
+      color: inherit;
+    }
+
     /* Focus Visible for Accessibility */
     button:focus-visible, a:focus-visible, input:focus-visible {
-      @apply outline-offset-2 outline-2 outline-blue-500;
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    .dark-mode button:focus-visible, .dark-mode a:focus-visible, .dark-mode input:focus-visible {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
     }
 
     /* Scrollbar Styling */
@@ -210,27 +326,63 @@
     }
 
     ::-webkit-scrollbar-track {
-      @apply bg-gray-100;
+      background-color: #f3f4f6;
     }
 
     .dark-mode ::-webkit-scrollbar-track {
-      @apply bg-gray-800;
+      background-color: #1f2937;
     }
 
     ::-webkit-scrollbar-thumb {
-      @apply bg-gray-400 rounded;
+      background-color: #9ca3af;
+      border-radius: 4px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      @apply bg-gray-500;
+      background-color: #6b7280;
     }
 
     .dark-mode ::-webkit-scrollbar-thumb {
-      @apply bg-gray-600 rounded;
+      background-color: #4b5563;
+      border-radius: 4px;
     }
 
     .dark-mode ::-webkit-scrollbar-thumb:hover {
-      @apply bg-gray-500;
+      background-color: #6b7280;
+    }
+
+    /* Ensure text elements maintain proper colors in dark mode */
+    .dark-mode p,
+    .dark-mode span,
+    .dark-mode div,
+    .dark-mode label,
+    .dark-mode h1,
+    .dark-mode h2,
+    .dark-mode h3,
+    .dark-mode h4,
+    .dark-mode h5,
+    .dark-mode h6 {
+      color: inherit;
+    }
+
+    /* Ensure option elements have proper text in dark mode */
+    .dark-mode option {
+      background-color: #374151;
+      color: #f3f4f6;
+    }
+
+    /* Enhancement for select elements */
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'%3E%3C/path%3E%3C/svg%3E");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+      appearance: none;
+    }
+
+    .dark-mode select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%9CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'%3E%3C/path%3E%3C/svg%3E");
     }
   </style>
 </head>
@@ -410,7 +562,7 @@
 
       const app = createApp({
         template: `
-          <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all">
+          <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <!-- Loading Screen -->
             <div v-if="isInitializing" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div class="text-center">
@@ -512,7 +664,7 @@
               <!-- Progress Section -->
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                  <h2 class="text-2xl font-bold">Progress</h2>
+                  <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Progress</h2>
                   <span class="text-sm text-gray-600 dark:text-gray-400">{{ statistics.memorized }}/604 Pages</span>
                 </div>
 
@@ -546,7 +698,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
+                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-8 rounded-lg min-h-96 overflow-y-auto space-y-4">
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2 leading-loose">
                     <!-- Surah Name Display -->
                     <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
@@ -606,7 +758,7 @@
                 </div>
               </div>
 
-              <!-- Page Navigation -->
+                <!-- Page Navigation -->
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 space-y-3">
                 <!-- Navigation Controls -->
                 <div class="flex items-center justify-center gap-2 flex-wrap">
@@ -614,20 +766,18 @@
                     <i class="fas fa-chevron-left"></i>
                   </button>
 
-                  <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                  <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-900 dark:text-gray-100">
                     <span class="text-xl font-bold">{{ appStore.currentPage }}</span>
                     <span class="text-gray-600 dark:text-gray-400">/604</span>
                   </div>
 
-                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 text-center text-sm" placeholder="Go">
+                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 text-center text-sm" placeholder="Go">
                   <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
 
                   <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
-                </div>
-
-                <!-- Action Buttons -->
+                </div>                <!-- Action Buttons -->
                 <div class="flex items-center gap-2 flex-wrap justify-center">
                   <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-1 px-3 py-2 text-white rounded-lg transition-colors text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
@@ -665,22 +815,22 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Recent Recordings -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-microphone text-blue-600"></i>
+                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                    <i class="fas fa-microphone text-blue-600 dark:text-blue-400"></i>
                     Recent Recordings
                   </h3>
                   <div v-if="statistics.audios > 0" class="space-y-3 max-h-48 overflow-y-auto">
                     <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between gap-3">
                       <div class="flex-1 min-w-0">
-                        <p class="font-medium">Page {{ recording.pageNumber }}</p>
+                        <p class="font-medium text-gray-900 dark:text-gray-100">Page {{ recording.pageNumber }}</p>
                         <p class="text-xs text-gray-600 dark:text-gray-400">{{ recording.recordedAt }}</p>
                         <p class="text-xs text-gray-600 dark:text-gray-400" v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }}</p>
                       </div>
                       <div class="flex items-center gap-2">
-                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" :title="'Play recording for page ' + recording.pageNumber">
+                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600 dark:text-gray-400 dark:hover:text-white" :title="'Play recording for page ' + recording.pageNumber">
                           <i class="fas fa-play"></i>
                         </button>
-                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors" :title="'Delete recording for page ' + recording.pageNumber">
+                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600 dark:text-gray-400 dark:hover:text-white" :title="'Delete recording for page ' + recording.pageNumber">
                           <i class="fas fa-trash"></i>
                         </button>
                       </div>
@@ -693,27 +843,27 @@
 
                 <!-- Summary Statistics -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-chart-bar text-blue-600"></i>
+                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                    <i class="fas fa-chart-bar text-blue-600 dark:text-blue-400"></i>
                     Summary Statistics
                   </h3>
                   <div class="grid grid-cols-2 gap-3">
                     <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Memorized</p>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">Memorized</p>
                       <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ statistics.memorized }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400">of 604</p>
                     </div>
                     <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Juzs</p>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">Juzs</p>
                       <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ statistics.juzCount }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400">of 30</p>
                     </div>
                     <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Completion</p>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">Completion</p>
                       <p class="text-2xl font-bold text-green-600 dark:text-green-300">{{ statistics.percentage }}%</p>
                     </div>
                     <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Points</p>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">Points</p>
                       <p class="text-2xl font-bold text-orange-600 dark:text-orange-300">{{ statistics.totalPoints }}</p>
                     </div>
                   </div>
@@ -722,8 +872,8 @@
 
               <!-- Mistake Bubble Grid -->
               <div v-if="currentPageMistakeCount > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                <h3 class="text-xl font-bold flex items-center gap-2">
-                  <i class="fas fa-exclamation-circle text-red-600"></i>
+                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
                   Mistakes on Page {{ appStore.currentPage }}
                 </h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentPageMistakeCount }} mistake(s) found</p>
@@ -734,7 +884,7 @@
                     v-for="wordId in currentPageMistakes" 
                     :key="wordId"
                     @click="highlightWord({ id: wordId })"
-                    class="p-3 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-200 font-bold text-sm hover:bg-red-300 dark:hover:bg-red-800 transition-colors text-center"
+                    class="p-3 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-200 font-bold text-sm hover:bg-red-300 dark:hover:bg-red-800 transition-colors text-center border border-red-300 dark:border-red-700"
                     :title="'Mistake: Word ' + wordId"
                   >
                     {{ wordId }}
@@ -751,14 +901,14 @@
 
               <!-- Advanced Analytics Section -->
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
-                <h2 class="text-2xl font-bold flex items-center gap-2">
-                  <i class="fas fa-chart-pie text-purple-600"></i>
+                <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <i class="fas fa-chart-pie text-purple-600 dark:text-purple-400"></i>
                   Analytics & Progress
                 </h2>
 
                 <!-- Juz Progress Grid -->
                 <div>
-                  <h3 class="text-lg font-bold mb-4">Progress by Juz</h3>
+                  <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Progress by Juz</h3>
                   <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
                     <button 
                       v-for="juzNum in 30" 
@@ -767,38 +917,38 @@
                       :class="[
                         'px-3 py-2 rounded-lg font-bold text-sm transition-colors',
                         juzMemorizedCount(juzNum) === (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1)
-                          ? 'bg-green-500 text-white' 
+                          ? 'bg-green-500 text-white hover:bg-green-600' 
                           : juzMemorizedCount(juzNum) > 0
-                            ? 'bg-yellow-400 text-gray-900'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-500'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                       ]"
                       :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
                     >
                       {{ juzNum }}
                     </button>
                   </div>
-                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap">
-                    <span><span class="text-green-600 font-semibold">Completed</span></span>|
-                    <span><span class="text-yellow-500 font-semibold">Partial</span></span>|
-                    <span><span class="text-gray-400 font-semibold">Not started</span></span>
+                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 dark:text-gray-300">
+                    <span><span class="text-green-600 dark:text-green-400 font-semibold">Completed</span></span>|
+                    <span><span class="text-yellow-500 dark:text-yellow-400 font-semibold">Partial</span></span>|
+                    <span><span class="text-gray-400 dark:text-gray-500 font-semibold">Not started</span></span>
                   </p>
                 </div>
 
                 <!-- Completion Estimate -->
                 <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
-                  <h3 class="text-lg font-bold mb-4">Completion Estimate</h3>
+                  <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Completion Estimate</h3>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                      <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Completion Date</p>
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <p class="text-sm text-gray-600 dark:text-gray-300">Estimated Completion Date</p>
                       <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ formattedCompletion }}</p>
                     </div>
-                    <div class="p-4 bg-purple-50 dark:bg-purple-900 rounded-lg">
-                      <p class="text-sm text-gray-600 dark:text-gray-400">Days Remaining</p>
+                    <div class="p-4 bg-purple-50 dark:bg-purple-900 rounded-lg border border-purple-200 dark:border-purple-700">
+                      <p class="text-sm text-gray-600 dark:text-gray-300">Days Remaining</p>
                       <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ daysRemaining }}</p>
                     </div>
                   </div>
-                  <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <p class="text-sm">
+                  <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm border border-gray-300 dark:border-gray-600">
+                    <p>
                       Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
                     </p>
                   </div>
@@ -807,22 +957,22 @@
 
               <!-- Settings Section -->
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
-                <h2 class="text-2xl font-bold">Settings</h2>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h2>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label class="block text-sm font-medium mb-2">Pages Per Day</label>
-                    <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Pages Per Day</label>
+                    <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium mb-2">Finish in (days)</label>
-                    <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Finish in (days)</label>
+                    <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium mb-2">Font Size</label>
-                    <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Font Size</label>
+                    <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
                       <option value="small">Small</option>
                       <option value="medium">Medium</option>
                       <option value="large">Large</option>
@@ -830,14 +980,14 @@
                   </div>
 
                   <div class="flex items-center">
-                    <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded">
-                    <label for="tajweed" class="ml-3">Enable Tajweed Colors</label>
+                    <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded dark:bg-gray-700 dark:border-gray-600">
+                    <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tajweed Colors</label>
                   </div>
                 </div>
 
                 <!-- Data Management -->
                 <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                  <h3 class="text-lg font-bold">Data Management</h3>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Data Management</h3>
                   
                   <div class="flex gap-3 flex-wrap">
                     <button @click="exportData" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
@@ -859,17 +1009,17 @@
 
                 <!-- Bulk Memorization Tool -->
                 <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                  <h3 class="text-lg font-bold">Bulk Memorization</h3>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Bulk Memorization</h3>
                   <p class="text-sm text-gray-600 dark:text-gray-400">Mark multiple pages as memorized at once</p>
                   
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label class="block text-sm font-medium mb-2">Start Page</label>
-                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                      <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Start Page</label>
+                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
                     </div>
                     <div>
-                      <label class="block text-sm font-medium mb-2">End Page</label>
-                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                      <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">End Page</label>
+                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
                     </div>
                     <div class="flex items-end">
                       <button 
@@ -904,7 +1054,7 @@
                     </button>
                   </div>
 
-                  <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                  <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
                     {{ bulkWarning }}
                   </div>
@@ -1224,7 +1374,20 @@
           // Theme functions
           const toggleTheme = () => {
             appStore.theme = appStore.theme === 'light' ? 'dark' : 'light';
-            document.documentElement.classList.toggle('dark');
+            
+            // Toggle dark class on html and body elements
+            if (appStore.theme === 'dark') {
+              document.documentElement.classList.add('dark');
+              document.body.classList.add('dark-mode');
+              document.documentElement.style.backgroundColor = '#111827';
+              document.documentElement.style.color = '#f3f4f6';
+            } else {
+              document.documentElement.classList.remove('dark');
+              document.body.classList.remove('dark-mode');
+              document.documentElement.style.backgroundColor = '#ffffff';
+              document.documentElement.style.color = '#111827';
+            }
+            
             murajahDB.saveTheme(appStore.theme).catch(error => {
               console.warn('[Murajah] Failed to save theme:', error);
             });
@@ -1812,9 +1975,20 @@
           // Lifecycle
           onMounted(async () => {
             await initializeApp();
+            
+            // Apply theme to html and body elements
             if (appStore.theme === 'dark') {
               document.documentElement.classList.add('dark');
+              document.body.classList.add('dark-mode');
+              document.documentElement.style.backgroundColor = '#111827';
+              document.documentElement.style.color = '#f3f4f6';
+            } else {
+              document.documentElement.classList.remove('dark');
+              document.body.classList.remove('dark-mode');
+              document.documentElement.style.backgroundColor = '#ffffff';
+              document.documentElement.style.color = '#111827';
             }
+            
             // Load font for initial page
             loadPageFont(appStore.currentPage);
           });
@@ -1823,6 +1997,22 @@
           watch(() => appStore.currentPage, (newPage) => {
             updateURL();
             loadPageFont(newPage);
+          });
+
+          // Watch theme changes and apply to document
+          watch(() => appStore.theme, (newTheme) => {
+            if (newTheme === 'dark') {
+              document.documentElement.classList.add('dark');
+              document.body.classList.add('dark-mode');
+              document.documentElement.style.backgroundColor = '#111827';
+              document.documentElement.style.color = '#f3f4f6';
+            } else {
+              document.documentElement.classList.remove('dark');
+              document.body.classList.remove('dark-mode');
+              document.documentElement.style.backgroundColor = '#ffffff';
+              document.documentElement.style.color = '#111827';
+            }
+            console.log('[Murajah] Theme changed to:', newTheme);
           });
 
           // Watch tajweed setting and reload font when toggled
