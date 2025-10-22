@@ -433,6 +433,31 @@
                       <div class="font-bold">{{ currentPageHifzStatus.label }}</div>
                     </div>
                   </div>
+
+                  <!-- Audio Recording Section -->
+                  <div v-if="AudioRecorder.isSupported()" class="flex flex-col gap-2">
+                    <div v-if="!audioStore.isRecording" class="flex items-center gap-2">
+                      <button @click="startRecording" class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
+                        <i class="fas fa-microphone"></i>
+                        <span>Record</span>
+                      </button>
+                      <span v-if="currentPageAudioCount > 0" class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ currentPageAudioCount }} recording(s)</span>
+                    </div>
+                    <div v-else class="flex items-center gap-2 p-4 bg-red-100 dark:bg-red-900 rounded-lg border-2 border-red-500">
+                      <div class="flex-1">
+                        <p class="font-bold text-red-700 dark:text-red-200">Recording...</p>
+                        <p class="text-sm text-red-600 dark:text-red-300">{{ recordingDuration }}</p>
+                      </div>
+                      <button @click="stopRecording" class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                        <i class="fas fa-stop"></i>
+                        <span>Stop</span>
+                      </button>
+                      <button @click="cancelRecording" class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -445,14 +470,20 @@
                     Recent Recordings
                   </h3>
                   <div v-if="statistics.audios > 0" class="space-y-3 max-h-48 overflow-y-auto">
-                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between">
-                      <div>
+                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between gap-3">
+                      <div class="flex-1 min-w-0">
                         <p class="font-medium">Page {{ recording.pageNumber }}</p>
                         <p class="text-xs text-gray-600 dark:text-gray-400">{{ recording.recordedAt }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400" v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }}</p>
                       </div>
-                      <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" :title="'Play recording for page ' + recording.pageNumber">
-                        <i class="fas fa-play"></i>
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" :title="'Play recording for page ' + recording.pageNumber">
+                          <i class="fas fa-play"></i>
+                        </button>
+                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors" :title="'Delete recording for page ' + recording.pageNumber">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div v-else class="text-gray-600 dark:text-gray-400 text-sm">
@@ -789,7 +820,96 @@
             }
           };
 
-          // Data functions
+          let recordingTimer = null;
+          const recordingStartTime = ref(null);
+          const recordingDuration = ref('0:00');
+
+          const startRecording = async () => {
+            try {
+              await audioRecorder.startRecording();
+              audioStore.isRecording = true;
+              recordingStartTime.value = Date.now();
+
+              recordingTimer = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime.value;
+                recordingDuration.value = AudioRecorder.formatDuration(elapsed);
+              }, 100);
+
+              appStore.successMessage = 'Recording started...';
+              setTimeout(() => appStore.successMessage = '', 2000);
+            } catch (error) {
+              console.error('[Murajah] Recording error:', error);
+              appStore.errorMessage = 'Failed to start recording: ' + error.message;
+              audioStore.isRecording = false;
+            }
+          };
+
+          const stopRecording = async () => {
+            try {
+              if (recordingTimer) clearInterval(recordingTimer);
+              
+              const result = await audioRecorder.stopRecording();
+              
+              if (result) {
+                const recording = {
+                  pageNumber: appStore.currentPage,
+                  recordedAt: new Date().toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }),
+                  duration: result.duration,
+                  blob: result.blob,
+                  timestamp: Date.now()
+                };
+
+                audioStore.recordings.push(recording);
+                audioStore.isRecording = false;
+                recordingStartTime.value = null;
+                recordingDuration.value = '0:00';
+
+                saveData();
+                appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
+                setTimeout(() => appStore.successMessage = '', 3000);
+              }
+            } catch (error) {
+              console.error('[Murajah] Stop recording error:', error);
+              appStore.errorMessage = 'Failed to stop recording';
+              audioStore.isRecording = false;
+            }
+          };
+
+          const cancelRecording = () => {
+            try {
+              if (recordingTimer) clearInterval(recordingTimer);
+              
+              audioRecorder.cancelRecording();
+              
+              audioStore.isRecording = false;
+              recordingStartTime.value = null;
+              recordingDuration.value = '0:00';
+
+              appStore.successMessage = 'Recording cancelled';
+              setTimeout(() => appStore.successMessage = '', 2000);
+            } catch (error) {
+              console.error('[Murajah] Cancel recording error:', error);
+              audioStore.isRecording = false;
+            }
+          };
+
+          const deleteAudio = (index) => {
+            if (confirm('Delete this recording?')) {
+              audioStore.recordings.splice(index, 1);
+              saveData();
+              appStore.successMessage = 'Recording deleted';
+              setTimeout(() => appStore.successMessage = '', 2000);
+            }
+          };
+
+          const formatAudioDuration = (ms) => {
+            return AudioRecorder.formatDuration(ms);
+          };
           const saveData = () => {
             const data = {
               memorized: Array.from(memorizedStore.memorizedPages),
@@ -862,6 +982,10 @@
           };
 
           // Computed
+          const currentPageAudioCount = computed(() => {
+            return audioStore.recordings.filter(r => r.pageNumber === appStore.currentPage).length;
+          });
+
           const statistics = computed(() => {
             return calculateStatistics({
               memorized: memorizedStore.memorizedPages.size,
@@ -966,6 +1090,8 @@
             isCurrentPageMemorized,
             currentPagePerfectCount,
             currentPageHifzStatus,
+            currentPageAudioCount,
+            recordingDuration,
             previousPage,
             nextPage,
             gotoPage,
@@ -975,6 +1101,12 @@
             highlightWord,
             updateSettings,
             playAudio,
+            startRecording,
+            stopRecording,
+            cancelRecording,
+            deleteAudio,
+            formatAudioDuration,
+            AudioRecorder,
             exportData,
             importData,
             resetApp,
