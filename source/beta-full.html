@@ -30,6 +30,15 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
+    /* Surah Names Font */
+    @font-face {
+      font-family: 'SurahNames';
+      src: url('./resources/surah_names.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      unicode-range: U+0600-U+06FF;
+    }
+
     html {
       scroll-behavior: smooth;
     }
@@ -378,15 +387,16 @@
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900 relative group">
                 <div class="text-center space-y-2">
                   <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Page {{ appStore.currentPage }} of 604</p>
-                  <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Quran Content</h2>
+                  <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
                 <div v-if="quranData && currentPageWords.length > 0" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2 leading-loose">
                     <!-- Surah Name Display -->
-                    <div v-if="line.type === 'surah_name'" class="w-full text-xl font-bold text-blue-600 dark:text-blue-400 my-2">
-                      {{ line.text }}
+                    <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                      {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
+                      <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-4xl mt-2">﷽</div>
                     </div>
                     
                     <!-- Words Display -->
@@ -869,6 +879,7 @@
               
               // Load Quran data
               quranData.value = await loadAllQuranData();
+              console.log('[Murajah] QuranData loaded, surahNames sample:', Object.keys(quranData.value.surahNames || {}).slice(0, 3), quranData.value.surahNames);
               
               // Load stored data
               await loadStoredData();
@@ -1020,6 +1031,25 @@
             } else {
               return { label: 'New', bg: '#757575', color: '#fff', icon: 'la-bookmark' };
             }
+          };
+
+          // Get Arabic surah name from surah number
+          const getSurahNameArabic = (surahNum) => {
+            console.log(`[getSurahNameArabic] Called with surahNum:`, surahNum, 'type:', typeof surahNum);
+            if (!surahNum || !quranData.value || !quranData.value.surahNames) {
+              console.log(`[getSurahNameArabic] Failed guard check - surahNum:`, surahNum, 'quranData exists:', !!quranData.value, 'surahNames exists:', !!(quranData.value && quranData.value.surahNames));
+              return 'Quran Content';
+            }
+            const surahNames = quranData.value.surahNames;
+            console.log(`[getSurahNameArabic] Looking up surahNames[${surahNum}]`, surahNames[surahNum]);
+            // The surahNames object has numeric keys (1, 2, 3, etc.) from the loaded JSON
+            let surahName = surahNames[surahNum];
+            if (surahName) {
+              console.log(`[Murajah] Got surah name for ${surahNum}:`, surahName);
+              return surahName;
+            }
+            console.warn(`[Murajah] Surah name not found for:`, surahNum);
+            return `Surah ${surahNum}`;
           };
 
           const currentPageHifzStatus = computed(() => {
@@ -1328,6 +1358,34 @@
             return mistakes ? Array.from(mistakes).sort((a, b) => a - b) : [];
           });
 
+          const currentSurahName = computed(() => {
+            if (!quranData.value || !currentPageWords.value || currentPageWords.value.length === 0) {
+              return 'Quran Content';
+            }
+            
+            // Extract surah number from the first word of current page
+            for (const line of currentPageWords.value) {
+              if (line.words && line.words.length > 0) {
+                const firstWord = line.words[0];
+                if (firstWord && firstWord.surah) {
+                  const surahNum = firstWord.surah;
+                  // Get surah names from quranData - should be an object with string keys
+                  if (quranData.value.surahNames) {
+                    const surahNames = quranData.value.surahNames;
+                    // Try both array and object access patterns
+                    let surahName = surahNames[surahNum] || surahNames[surahNum.toString()] || surahNames[surahNum - 1];
+                    if (surahName) {
+                      return surahName;
+                    }
+                  }
+                  return `Surah ${surahNum}`;
+                }
+              }
+            }
+            
+            return 'Quran Content';
+          });
+
           const statistics = computed(() => {
             return calculateStatistics({
               memorized: memorizedStore.memorizedPages.size,
@@ -1447,6 +1505,7 @@
             currentPageAudioCount,
             currentPageMistakeCount,
             currentPageMistakes,
+            currentSurahName,
             recordingDuration,
             previousPage,
             nextPage,
@@ -1456,6 +1515,7 @@
             toggleMemorized,
             incrementPerfectRevision,
             highlightWord,
+            getSurahNameArabic,
             updateSettings,
             clearPageMistakes,
             bulkMemorize,
