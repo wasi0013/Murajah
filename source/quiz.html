@@ -14,9 +14,40 @@
     <!-- Custom Styles -->
     <style>
         :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --light-bg: #ffffff;
+            --light-text: #111827;
+            --dark-bg: #111827;
+            --dark-text: #f3f4f6;
+            --card-dark: #1f2937;
+            --card-light: #ffffff;
             --color-primary: #2196f3;
             --color-secondary: #1976d2;
             --color-accent: #82b1ff;
+        }
+        
+        /* Light mode defaults */
+        html {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark mode */
+        html.dark,
+        html.dark-mode,
+        body.dark {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
         }
         
         /* Custom utility classes */
@@ -30,14 +61,40 @@
         .bg-accent { background-color: var(--color-accent); }
         .text-accent { color: var(--color-accent); }
 
-        /* Dark mode overrides */
-        .dark .dark\:bg-gray-800 { background-color: #1a1a1a; }
-        .dark .dark\:text-white { color: #ffffff; }
-        .dark .dark\:hover\:bg-gray-700:hover { background-color: #2d2d2d; }
+        /* Dark mode overrides - Core backgrounds */
+        .dark,
+        .dark-mode {
+            background-color: var(--dark-bg) !important;
+            color: var(--dark-text) !important;
+        }
+
+        /* Header and main content backgrounds */
+        .dark header {
+            background-color: var(--card-dark) !important;
+            color: var(--dark-text) !important;
+        }
+
+        .dark main {
+            background-color: var(--dark-bg) !important;
+            color: var(--dark-text) !important;
+        }
+
+        .dark footer {
+            background-color: #0f172a !important;
+            color: var(--dark-text) !important;
+        }
+
+        /* Generic background color overrides */
+        .dark .bg-white { background-color: var(--card-dark) !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-50 { background-color: var(--dark-bg) !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-100 { background-color: var(--card-dark) !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-200 { background-color: #374151 !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-700 { background-color: #1f2937 !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-800 { background-color: var(--card-dark) !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-900 { background-color: #0f172a !important; color: var(--dark-text) !important; }
+        .dark .bg-gray-950 { background-color: var(--dark-bg) !important; color: var(--dark-text) !important; }
         
-        /* Comprehensive dark mode fixes - Force dark backgrounds */
-        .dark .bg-gray-50 { background-color: #1f2937 !important; color: #f3f4f6; }
-        .dark .bg-white { background-color: #1f2937 !important; }
+        /* Color-specific background overrides */
         .dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.4) !important; }
         .dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.4) !important; }
         .dark .bg-orange-50 { background-color: rgba(124, 45, 18, 0.4) !important; }
@@ -45,26 +102,33 @@
         .dark .bg-pink-50 { background-color: rgba(131, 24, 67, 0.4) !important; }
         .dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.4) !important; }
         .dark .bg-cyan-50 { background-color: rgba(21, 94, 109, 0.4) !important; }
-        .dark .bg-gray-100 { background-color: #2d3748 !important; }
-        
-        /* Force light text in dark mode */
-        .dark .text-gray-900 { color: #f3f4f6 !important; }
+        .dark .bg-red-100 { background-color: rgba(127, 29, 29, 0.8) !important; }
+        .dark .bg-red-200 { background-color: rgba(153, 27, 27, 0.8) !important; }
+        .dark .bg-green-100 { background-color: rgba(20, 83, 45, 0.8) !important; }
+        .dark .bg-green-200 { background-color: rgba(34, 110, 59, 0.8) !important; }
+
+        /* Text color overrides for dark mode readability */
+        .dark .text-gray-900 { color: var(--dark-text) !important; }
+        .dark .text-gray-800 { color: #e5e7eb !important; }
         .dark .text-gray-700 { color: #d1d5db !important; }
         .dark .text-gray-600 { color: #e5e7eb !important; }
         .dark .text-gray-500 { color: #d1d5db !important; }
         .dark .text-gray-400 { color: #9ca3af !important; }
         .dark .text-gray-300 { color: #d1d5db !important; }
-        
-        /* Borders in dark mode */
-        .dark .border-gray-200 { border-color: #374151 !important; }
-        .dark .border-gray-300 { border-color: #4b5563 !important; }
-        .dark .border-white { border-color: #e5e7eb !important; }
+        .dark .text-gray-200 { color: #e5e7eb !important; }
+        .dark .text-gray-100 { color: #f3f4f6 !important; }
         
         /* Colored text in dark mode */
         .dark .text-blue-900 { color: #93c5fd !important; }
         .dark .text-blue-800 { color: #bfdbfe !important; }
+        .dark .text-blue-700 { color: #93c5fd !important; }
         .dark .text-green-900 { color: #86efac !important; }
         .dark .text-green-800 { color: #bbf7d0 !important; }
+        .dark .text-green-700 { color: #86efac !important; }
+        .dark .text-red-900 { color: #fca5a5 !important; }
+        .dark .text-red-800 { color: #fecaca !important; }
+        .dark .text-red-700 { color: #fca5a5 !important; }
+        .dark .text-red-200 { color: #fecaca !important; }
         .dark .text-orange-900 { color: #fed7aa !important; }
         .dark .text-orange-800 { color: #fecaca !important; }
         .dark .text-amber-900 { color: #fef3c7 !important; }
@@ -74,58 +138,149 @@
         .dark .text-purple-900 { color: #e9d5ff !important; }
         .dark .text-purple-700 { color: #e9d5ff !important; }
         .dark .text-cyan-900 { color: #a5f3fc !important; }
-        .dark .text-red-700 { color: #fca5a5 !important; }
-        .dark .text-red-800 { color: #fecaca !important; }
-        
-        /* Disabled button styling */
-        .dark .bg-gray-300 { background-color: #4b5563 !important; }
-        .dark .text-gray-500 { color: #9ca3af !important; }
-        
-        /* Red/Green backgrounds for Select All button */
-        .dark .bg-red-100 { background-color: rgba(127, 29, 29, 0.8) !important; }
-        .dark .bg-red-200 { background-color: rgba(153, 27, 27, 0.8) !important; }
-        .dark .bg-red-900 { background-color: rgba(127, 29, 29, 0.8) !important; }
-        .dark .text-red-200 { color: #fecaca !important; }
-        
-        .dark .bg-green-100 { background-color: rgba(20, 83, 45, 0.8) !important; }
-        .dark .bg-green-200 { background-color: rgba(34, 110, 59, 0.8) !important; }
-        .dark .bg-green-900 { background-color: rgba(20, 83, 45, 0.8) !important; }
         .dark .text-green-200 { color: #bbf7d0 !important; }
         
+        /* Border colors for dark mode */
+        .dark .border-gray-200 { border-color: #374151 !important; }
+        .dark .border-gray-300 { border-color: #4b5563 !important; }
+        .dark .border-white { border-color: #e5e7eb !important; }
+        .dark .border-gray-700 { border-color: #4b5563 !important; }
+        
+        /* Button and form element styling in dark mode */
+        .dark button:not([class*="bg-"]) { background-color: #374151 !important; color: var(--dark-text) !important; }
+        .dark input { background-color: #374151 !important; color: var(--dark-text) !important; border-color: #4b5563 !important; }
+        .dark textarea { background-color: #374151 !important; color: var(--dark-text) !important; border-color: #4b5563 !important; }
+        .dark select { background-color: #374151 !important; color: var(--dark-text) !important; border-color: #4b5563 !important; }
+
+        /* Button text color fixes for dark mode - ensure white text on colored backgrounds */
+        .dark .bg-primary,
+        .dark .bg-secondary,
+        .dark .bg-accent,
+        .dark .bg-blue-500,
+        .dark .bg-blue-600,
+        .dark .bg-green-600,
+        .dark .bg-red-600,
+        .dark .bg-purple-600,
+        .dark .bg-yellow-600,
+        .dark .bg-orange-600,
+        .dark .bg-gray-600 {
+            color: white !important;
+        }
+
+        .dark .bg-primary span,
+        .dark .bg-secondary span,
+        .dark .bg-accent span,
+        .dark .bg-blue-500 span,
+        .dark .bg-blue-600 span,
+        .dark .bg-green-600 span,
+        .dark .bg-red-600 span,
+        .dark .bg-purple-600 span,
+        .dark .bg-yellow-600 span,
+        .dark .bg-orange-600 span,
+        .dark .bg-gray-600 span {
+            color: white !important;
+        }
+
+        .dark .bg-primary i,
+        .dark .bg-secondary i,
+        .dark .bg-accent i,
+        .dark .bg-blue-500 i,
+        .dark .bg-blue-600 i,
+        .dark .bg-green-600 i,
+        .dark .bg-red-600 i,
+        .dark .bg-purple-600 i,
+        .dark .bg-yellow-600 i,
+        .dark .bg-orange-600 i,
+        .dark .bg-gray-600 i {
+            color: white !important;
+        }
+
+        /* Typography in dark mode */
+        .dark h1,
+        .dark h2,
+        .dark h3,
+        .dark h4,
+        .dark h5,
+        .dark h6 {
+            color: var(--dark-text) !important;
+        }
+
+        .dark p { color: #e5e7eb !important; }
+        .dark strong { color: #ffffff !important; }
+        .dark li { color: #e5e7eb !important; }
+        .dark a { color: #93c5fd !important; }
+        .dark a:hover { color: #bfdbfe !important; }
+
+        /* Tables in dark mode */
+        .dark table { color: #e5e7eb !important; }
+        .dark tr { color: #e5e7eb !important; }
+        .dark td { color: #e5e7eb !important; }
+        .dark th { color: var(--dark-text) !important; background-color: #2d3748 !important; }
+
+        /* Gradient backgrounds in dark mode */
+        .dark .bg-gradient-to-r,
+        .dark .bg-gradient-to-l,
+        .dark .bg-gradient-to-t,
+        .dark .bg-gradient-to-b,
+        .dark .bg-gradient-to-br,
+        .dark .bg-gradient-to-tl {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(168, 85, 247, 0.3)) !important;
+        }
+
         /* Shadow in dark mode */
         .dark .shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8) !important; }
-        
-        /* Specific element styling for dark mode */
-        .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 { color: #f3f4f6; }
-        .dark p { color: #e5e7eb; }
-        .dark strong { color: #ffffff; }
-        .dark li { color: #e5e7eb; }
-        .dark span { color: inherit; }
-        .dark a { color: #93c5fd; }
-        .dark a:hover { color: #bfdbfe; }
-        
-        /* Buttons and inputs */
-        .dark button { color: inherit; }
-        .dark button:not([class*="bg-"]) { background-color: #374151; color: #f3f4f6; }
-        .dark input { background-color: #374151; color: #f3f4f6; border-color: #4b5563; }
-        .dark textarea { background-color: #374151; color: #f3f4f6; border-color: #4b5563; }
-        .dark select { background-color: #374151; color: #f3f4f6; border-color: #4b5563; }
-        
-        /* Tables and lists */
-        .dark table { color: #e5e7eb; }
-        .dark tr { color: #e5e7eb; }
-        .dark td { color: #e5e7eb; }
-        .dark th { color: #f3f4f6; background-color: #2d3748; }
-        
-        /* Gradient backgrounds in dark mode */
-        .dark [class*="bg-gradient"] { background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(168, 85, 247, 0.5)) !important; }
-        
-        /* Loading overlay */
+        .dark .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.9) !important; }
+        .dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8) !important; }
+
+        /* Loading overlay in dark mode */
         .dark .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.75) !important; }
-        
-        /* Ensure all divs and containers are dark */
-        .dark div { --tw-text-opacity: 1; }
-        .dark > * { color: #e5e7eb; }
+        .dark .bg-gray-900 { background-color: rgba(0, 0, 0, 0.9) !important; }
+
+        /* Loading overlay in dark mode */
+        .dark .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.75) !important; }
+        .dark .bg-gray-900 { background-color: rgba(0, 0, 0, 0.9) !important; }
+
+        /* Ensure proper color inheritance in dark mode */
+        .dark > * { color: inherit; }
+        .dark * { color-scheme: dark; }
+
+        /* Modal and overlay styling */
+        .bg-white[class*="p-6"][class*="rounded-lg"] {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .bg-white[class*="p-6"][class*="rounded-lg"] {
+            background-color: var(--card-dark) !important;
+            color: var(--dark-text) !important;
+        }
+
+        /* Error message styling */
+        .bg-red-100 {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark .bg-red-100 {
+            background-color: rgba(127, 29, 29, 0.8) !important;
+            border-color: rgba(244, 63, 94, 0.6) !important;
+            color: #fca5a5 !important;
+        }
+
+        .dark .border-red-400 {
+            border-color: rgba(244, 63, 94, 0.6) !important;
+        }
+
+        .dark .text-red-700 {
+            color: #fca5a5 !important;
+        }
+
+        /* Ensure spinner colors are visible in dark mode */
+        .dark .border-primary {
+            border-color: var(--color-primary) !important;
+        }
+
+        .dark .text-gray-600 {
+            color: #e5e7eb !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950">
@@ -2146,9 +2301,7 @@
                         const darkModeSetting = await QuizDB.getSetting('darkMode')
                         if (darkModeSetting) {
                             isDarkMode.value = darkModeSetting.value
-                            if (isDarkMode.value) {
-                                document.documentElement.classList.add('dark')
-                            }
+                            applyThemeToDOM(isDarkMode.value ? 'dark' : 'light')
                         }
 
                         // Load last active tab
@@ -2165,10 +2318,31 @@
                     }
                 }
 
+                // Apply theme to DOM elements
+                const applyThemeToDOM = (theme) => {
+                    if (theme === 'dark') {
+                        document.documentElement.classList.add('dark')
+                        document.documentElement.classList.add('dark-mode')
+                        document.body.classList.add('dark')
+                        document.body.classList.add('dark-mode')
+                        document.documentElement.style.backgroundColor = '#111827'
+                        document.documentElement.style.color = '#f3f4f6'
+                        console.log('[Quiz] Dark mode applied to DOM')
+                    } else {
+                        document.documentElement.classList.remove('dark')
+                        document.documentElement.classList.remove('dark-mode')
+                        document.body.classList.remove('dark')
+                        document.body.classList.remove('dark-mode')
+                        document.documentElement.style.backgroundColor = '#ffffff'
+                        document.documentElement.style.color = '#111827'
+                        console.log('[Quiz] Light mode applied to DOM')
+                    }
+                }
+
                 // Toggle dark mode and save setting
                 const toggleDarkMode = async () => {
                     isDarkMode.value = !isDarkMode.value
-                    document.documentElement.classList.toggle('dark')
+                    applyThemeToDOM(isDarkMode.value ? 'dark' : 'light')
                     try {
                         await QuizDB.setSetting('darkMode', isDarkMode.value)
                     } catch (err) {
@@ -2254,6 +2428,7 @@
                     completionBlankIndices,
                     completionFilledWords,
                     toggleDarkMode,
+                    applyThemeToDOM,
                     changeTab,
                     toggleSurah,
                     toggleAllSurahs,
