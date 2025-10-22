@@ -1258,9 +1258,10 @@
                         juzMemorizedCount(juzNum) === (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1)
                           ? 'bg-green-500 text-white hover:bg-green-600' 
                           : juzMemorizedCount(juzNum) > 0
-                            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-500'
+                            ? 'text-gray-900 hover:opacity-90'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                       ]"
+                      :style="juzMemorizedCount(juzNum) > 0 && juzMemorizedCount(juzNum) < (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) ? getJuzGradientStyle(juzNum) : {}"
                       :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
                     >
                       {{ juzNum }}
@@ -1968,6 +1969,32 @@
             return count;
           };
 
+          // Calculate memorization percentage for a Juz (0-100)
+          const getJuzMemorizedPercentage = (juzNum) => {
+            const [startPage, endPage] = getJuzRange(juzNum);
+            const totalPages = endPage - startPage + 1;
+            const memorized = juzMemorizedCount(juzNum);
+            return (memorized / totalPages) * 100;
+          };
+
+          // Get gradient background style for partially memorized Juz
+          const getJuzGradientStyle = (juzNum) => {
+            const memorized = juzMemorizedCount(juzNum);
+            const [startPage, endPage] = getJuzRange(juzNum);
+            const totalPages = endPage - startPage + 1;
+
+            // If fully memorized or not started, no gradient needed
+            if (memorized === 0 || memorized === totalPages) {
+              return {};
+            }
+
+            // Calculate percentage for gradient (green to yellow split)
+            const percentage = (memorized / totalPages) * 100;
+            return {
+              background: `linear-gradient(to right, #22c55e 0%, #22c55e ${percentage}%, #eab308 ${percentage}%, #eab308 100%)`
+            };
+          };
+
           const daysRemaining = computed(() => {
             if (statistics.value.remaining <= 0) return 0;
             if (settingsStore.pagesPerDay <= 0) return 0;
@@ -2529,6 +2556,8 @@ Display:
             selectedJuzPreset,
             getJuzRange,
             juzMemorizedCount,
+            getJuzMemorizedPercentage,
+            getJuzGradientStyle,
             currentPageText,
             currentPageWords,
             fontSizeStyle,
