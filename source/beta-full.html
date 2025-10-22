@@ -58,11 +58,22 @@
     /* Quran Text Styling */
     .quran-text {
       font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      font-size: 2rem;
       line-height: 2;
       direction: rtl;
       text-align: right;
       letter-spacing: 0.1em;
+    }
+
+    .quran-text-small {
+      font-size: 1.25rem !important;
+    }
+
+    .quran-text-medium {
+      font-size: 2rem !important;
+    }
+
+    .quran-text-large {
+      font-size: 2.75rem !important;
     }
 
     .quran-word {
@@ -232,6 +243,127 @@
 
     // IIFE to handle async imports
     (async () => {
+      // ==================== IndexedDB Manager ====================
+      class MurajahDB {
+        constructor() {
+          this.dbName = 'murajah-db';
+          this.version = 1;
+          this.db = null;
+        }
+
+        async init() {
+          return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+              this.db = request.result;
+              console.log('[Murajah] IndexedDB initialized');
+              resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+              const db = event.target.result;
+              
+              // Create object stores if they don't exist
+              if (!db.objectStoreNames.contains('appData')) {
+                db.createObjectStore('appData', { keyPath: 'id' });
+              }
+              if (!db.objectStoreNames.contains('recordings')) {
+                db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+              }
+              console.log('[Murajah] IndexedDB schema created');
+            };
+          });
+        }
+
+        async saveData(data) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: 'murajah-data', ...data });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log('[Murajah] Data saved to IndexedDB');
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadData() {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get('murajah-data');
+            request.onsuccess = () => {
+              const result = request.result;
+              if (result) {
+                const { id, ...data } = result;
+                resolve(data);
+              } else {
+                resolve(null);
+              }
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async clearAll() {
+          const tx = this.db.transaction(['appData', 'recordings'], 'readwrite');
+          tx.objectStore('appData').clear();
+          tx.objectStore('recordings').clear();
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log('[Murajah] IndexedDB cleared');
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async saveRecording(index, recording) {
+          const tx = this.db.transaction(['recordings'], 'readwrite');
+          const store = tx.objectStore('recordings');
+          store.put({ id: `recording-${index}`, ...recording });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadRecording(index) {
+          const tx = this.db.transaction(['recordings'], 'readonly');
+          const store = tx.objectStore('recordings');
+          return new Promise((resolve, reject) => {
+            const request = store.get(`recording-${index}`);
+            request.onsuccess = () => {
+              const result = request.result;
+              if (result) {
+                const { id, ...data } = result;
+                resolve(data);
+              } else {
+                resolve(null);
+              }
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async deleteRecording(index) {
+          const tx = this.db.transaction(['recordings'], 'readwrite');
+          const store = tx.objectStore('recordings');
+          store.delete(`recording-${index}`);
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+      }
+
+      // Initialize IndexedDB
+      const murajahDB = new MurajahDB();
+      await murajahDB.init();
+
       // Import utility modules
       const dataLoaderModule = await import('./resources/js/utils/dataLoader.js');
       const { loadAllQuranData, getPageText, getPageWordsDetailed } = dataLoaderModule;
@@ -391,7 +523,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
+                <div v-if="quranData && currentPageWords.length > 0" :class="fontSizeClass" class="quran-text text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-96 overflow-y-auto space-y-4">
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2 leading-loose">
                     <!-- Surah Name Display -->
                     <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
@@ -452,76 +584,57 @@
               </div>
 
               <!-- Page Navigation -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                <h2 class="text-2xl font-bold">Current Page</h2>
-                
-                <div class="flex items-center justify-between gap-4 flex-wrap">
-                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 space-y-3">
+                <!-- Navigation Controls -->
+                <div class="flex items-center justify-center gap-2 flex-wrap">
+                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Previous page">
                     <i class="fas fa-chevron-left"></i>
-                    <span>Previous</span>
                   </button>
 
-                  <div class="flex items-center gap-3">
-                    <span class="text-2xl font-bold">{{ appStore.currentPage }}</span>
+                  <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                    <span class="text-xl font-bold">{{ appStore.currentPage }}</span>
                     <span class="text-gray-600 dark:text-gray-400">/604</span>
-                    <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 text-center" placeholder="Go to">
-                    <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">Go</button>
                   </div>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                    <span>Next</span>
+                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 text-center text-sm" placeholder="Go">
+                  <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
+
+                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>
 
-                <!-- Memorization Button -->
-                <div class="flex items-center gap-3 flex-wrap">
-                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-colors">
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-1 px-3 py-2 text-white rounded-lg transition-colors text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
-                    <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Mark as Memorized' }}</span>
+                    <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Memorize' }}</span>
                   </button>
-                  <span v-if="isCurrentPageMemorized" class="text-green-600 dark:text-green-400 text-sm font-medium">✓ Memorized</span>
 
-                  <!-- Perfect Revision Button -->
-                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors">
+                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-1 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-sm">
                     <i class="fas fa-star"></i>
-                    <span>Perfect Revision</span>
-                    <span v-if="currentPagePerfectCount > 0" class="ml-1 font-bold">({{ currentPagePerfectCount }})</span>
+                    <span>Perfect</span>
+                    <span v-if="currentPagePerfectCount > 0" class="font-bold">({{ currentPagePerfectCount }})</span>
                   </button>
 
-                  <!-- Hifz Status Indicator -->
-                  <div v-if="currentPageHifzStatus" class="flex items-center gap-2 px-4 py-3 rounded-lg text-white transition-all" :style="{ backgroundColor: currentPageHifzStatus.bg }">
-                    <i :class="'la ' + currentPageHifzStatus.icon"></i>
-                    <div class="text-left">
-                      <div class="text-xs opacity-75">Status</div>
-                      <div class="font-bold">{{ currentPageHifzStatus.label }}</div>
-                    </div>
-                  </div>
+                  <button v-if="AudioRecorder.isSupported() && !audioStore.isRecording" @click="startRecording" class="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm">
+                    <i class="fas fa-microphone"></i>
+                    <span>Record</span>
+                  </button>
+                </div>
 
-                  <!-- Audio Recording Section -->
-                  <div v-if="AudioRecorder.isSupported()" class="flex flex-col gap-2">
-                    <div v-if="!audioStore.isRecording" class="flex items-center gap-2">
-                      <button @click="startRecording" class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
-                        <i class="fas fa-microphone"></i>
-                        <span>Record</span>
-                      </button>
-                      <span v-if="currentPageAudioCount > 0" class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ currentPageAudioCount }} recording(s)</span>
-                    </div>
-                    <div v-else class="flex items-center gap-2 p-4 bg-red-100 dark:bg-red-900 rounded-lg border-2 border-red-500">
-                      <div class="flex-1">
-                        <p class="font-bold text-red-700 dark:text-red-200">Recording...</p>
-                        <p class="text-sm text-red-600 dark:text-red-300">{{ recordingDuration }}</p>
-                      </div>
-                      <button @click="stopRecording" class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
-                        <i class="fas fa-stop"></i>
-                        <span>Stop</span>
-                      </button>
-                      <button @click="cancelRecording" class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                        <span>Cancel</span>
-                      </button>
-                    </div>
+                <!-- Recording Status -->
+                <div v-if="audioStore.isRecording" class="flex items-center gap-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg border-2 border-red-500">
+                  <div class="flex-1">
+                    <p class="font-bold text-red-700 dark:text-red-200 text-sm">Recording...</p>
+                    <p class="text-xs text-red-600 dark:text-red-300">{{ recordingDuration }}</p>
                   </div>
+                  <button @click="stopRecording" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors">
+                    <i class="fas fa-stop"></i>
+                  </button>
+                  <button @click="cancelRecording" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors">
+                    <i class="fas fa-times"></i>
+                  </button>
                 </div>
               </div>
 
@@ -555,28 +668,30 @@
                   </div>
                 </div>
 
-                <!-- Quick Stats -->
+                <!-- Summary Statistics -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
                   <h3 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-chart-bar text-purple-600"></i>
-                    Statistics
+                    <i class="fas fa-chart-bar text-blue-600"></i>
+                    Summary Statistics
                   </h3>
-                  <div class="space-y-3">
-                    <div class="flex justify-between">
-                      <span class="text-gray-600 dark:text-gray-400">Completion Rate</span>
-                      <span class="font-bold">{{ statistics.percentage }}%</span>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Memorized</p>
+                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ statistics.memorized }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">of 604</p>
                     </div>
-                    <div class="flex justify-between">
-                      <span class="text-gray-600 dark:text-gray-400">Total Points</span>
-                      <span class="font-bold text-green-600">{{ statistics.totalPoints }}</span>
+                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Juzs</p>
+                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ statistics.juzCount }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">of 30</p>
                     </div>
-                    <div class="flex justify-between">
-                      <span class="text-gray-600 dark:text-gray-400">Avg Perfect/Page</span>
-                      <span class="font-bold">{{ statistics.averagePerfect }}</span>
+                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Completion</p>
+                      <p class="text-2xl font-bold text-green-600 dark:text-green-300">{{ statistics.percentage }}%</p>
                     </div>
-                    <div class="flex justify-between">
-                      <span class="text-gray-600 dark:text-gray-400">Pages This Juz</span>
-                      <span class="font-bold">{{ currentJuzProgress }}/20</span>
+                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Points</p>
+                      <p class="text-2xl font-bold text-orange-600 dark:text-orange-300">{{ statistics.totalPoints }}</p>
                     </div>
                   </div>
                 </div>
@@ -665,84 +780,6 @@
                     </p>
                   </div>
                 </div>
-
-                <!-- Bulk Memorization Tool -->
-                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
-                  <h3 class="text-lg font-bold mb-4">Bulk Memorization</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Mark multiple pages as memorized at once</p>
-                  
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium mb-2">Start Page</label>
-                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium mb-2">End Page</label>
-                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
-                    </div>
-                    <div class="flex items-end">
-                      <button 
-                        @click="bulkMemorize"
-                        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                      >
-                        <i class="fas fa-check-double"></i>
-                        <span>Memorize Range</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Preset Buttons for Common Ranges -->
-                  <div class="mt-4 flex flex-wrap gap-2">
-                    <button 
-                      @click="bulkMemorizePreset('juz', selectedJuzPreset)"
-                      class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                    >
-                      <i class="fas fa-book"></i> Juz
-                    </button>
-                    <button 
-                      @click="bulkMemorizePreset('all', null)"
-                      class="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
-                    >
-                      <i class="fas fa-star"></i> All Pages
-                    </button>
-                    <button 
-                      @click="bulkMemorizePreset('clear', null)"
-                      class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                    >
-                      <i class="fas fa-times"></i> Clear All
-                    </button>
-                  </div>
-
-                  <div v-if="bulkWarning" class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    {{ bulkWarning }}
-                  </div>
-                </div>
-
-                <!-- Stats Summary -->
-                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
-                  <h3 class="text-lg font-bold mb-4">Summary Statistics</h3>
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Memorized Pages</p>
-                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ statistics.memorized }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">of 604</p>
-                    </div>
-                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Juzs</p>
-                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ statistics.juzCount }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">of 30</p>
-                    </div>
-                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Completion</p>
-                      <p class="text-2xl font-bold text-green-600 dark:text-green-300">{{ statistics.percentage }}%</p>
-                    </div>
-                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">Total Points</p>
-                      <p class="text-2xl font-bold text-orange-600 dark:text-orange-300">{{ statistics.totalPoints }}</p>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <!-- Settings Section -->
@@ -794,6 +831,59 @@
                       <i class="fas fa-redo"></i>
                       <span>Reset All</span>
                     </button>
+                  </div>
+                </div>
+
+                <!-- Bulk Memorization Tool -->
+                <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
+                  <h3 class="text-lg font-bold">Bulk Memorization</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Mark multiple pages as memorized at once</p>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2">Start Page</label>
+                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2">End Page</label>
+                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    </div>
+                    <div class="flex items-end">
+                      <button 
+                        @click="bulkMemorize"
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <i class="fas fa-check-double"></i>
+                        <span>Memorize Range</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Preset Buttons for Common Ranges -->
+                  <div class="flex flex-wrap gap-2">
+                    <button 
+                      @click="bulkMemorizePreset('juz', selectedJuzPreset)"
+                      class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-book"></i> Juz
+                    </button>
+                    <button 
+                      @click="bulkMemorizePreset('all', null)"
+                      class="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-star"></i> All Pages
+                    </button>
+                    <button 
+                      @click="bulkMemorizePreset('clear', null)"
+                      class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-times"></i> Clear All
+                    </button>
+                  </div>
+
+                  <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    {{ bulkWarning }}
                   </div>
                 </div>
               </div>
@@ -910,21 +1000,113 @@
           };
 
           const loadStoredData = async () => {
-            // Simulate loading from IndexedDB
-            // In production, this would use the MurajahDB class
-            const stored = localStorage.getItem('murajah-data');
-            if (stored) {
-              const data = JSON.parse(stored);
-              if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
-              if (data.perfectRevisions) {
-                perfectRevisionsStore.perfectRevisions = new Map(Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), v]));
+            try {
+              // Try to load from IndexedDB first
+              const data = await murajahDB.loadData();
+              if (data) {
+                if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
+                if (data.perfectRevisions) {
+                  perfectRevisionsStore.perfectRevisions = new Map(Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), v]));
+                }
+                if (data.mistakes) {
+                  mistakesStore.mistakes = new Map(Object.entries(data.mistakes).map(([k, v]) => [parseInt(k), new Set(v)]));
+                }
+                if (data.recordings) {
+                  // Load recordings with their blobs from IndexedDB
+                  audioStore.recordings = [];
+                  for (let i = 0; i < data.recordings.length; i++) {
+                    try {
+                      const recordingWithBlob = await murajahDB.loadRecording(i);
+                      if (recordingWithBlob) {
+                        audioStore.recordings.push(recordingWithBlob);
+                      }
+                    } catch (error) {
+                      console.warn('[Murajah] Failed to load recording blob:', error);
+                    }
+                  }
+                }
+                if (data.settings) Object.assign(settingsStore, data.settings);
+              } else {
+                // Fallback: Try localStorage for backward compatibility
+                const stored = localStorage.getItem('murajah-data');
+                if (stored) {
+                  const data = JSON.parse(stored);
+                  if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
+                  if (data.perfectRevisions) {
+                    perfectRevisionsStore.perfectRevisions = new Map(Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), v]));
+                  }
+                  if (data.mistakes) {
+                    mistakesStore.mistakes = new Map(Object.entries(data.mistakes).map(([k, v]) => [parseInt(k), new Set(v)]));
+                  }
+                  if (data.recordings) audioStore.recordings = data.recordings;
+                  if (data.settings) Object.assign(settingsStore, data.settings);
+                  
+                  // Migrate to IndexedDB
+                  await saveData();
+                  localStorage.removeItem('murajah-data');
+                }
               }
-              if (data.mistakes) {
-                mistakesStore.mistakes = new Map(Object.entries(data.mistakes).map(([k, v]) => [parseInt(k), new Set(v)]));
-              }
-              if (data.recordings) audioStore.recordings = data.recordings;
-              if (data.settings) Object.assign(settingsStore, data.settings);
+            } catch (error) {
+              console.error('[Murajah] Failed to load stored data:', error);
             }
+            // Ensure fontSize is always a valid value
+            if (!['small', 'medium', 'large'].includes(settingsStore.fontSize)) {
+              settingsStore.fontSize = 'medium';
+            }
+          };
+
+          // Save data to IndexedDB
+          const saveData = async () => {
+            // Separate recordings data: blobs go to IndexedDB recordings store, metadata to appData
+            const recordingsMetadata = audioStore.recordings.map(r => ({
+              pageNumber: r.pageNumber,
+              recordedAt: r.recordedAt,
+              duration: r.duration,
+              timestamp: r.timestamp
+            }));
+
+            // Extract plain objects from reactive stores (Proxy objects can't be cloned by IndexedDB)
+            const plainSettings = {
+              finishRevisionDays: settingsStore.finishRevisionDays,
+              pagesPerDay: settingsStore.pagesPerDay,
+              fontSize: settingsStore.fontSize,
+              tajweedEnabled: settingsStore.tajweedEnabled
+            };
+
+            const data = {
+              memorized: Array.from(memorizedStore.memorizedPages),
+              perfectRevisions: Object.fromEntries(perfectRevisionsStore.perfectRevisions),
+              mistakes: Object.fromEntries(
+                Array.from(mistakesStore.mistakes).map(([key, val]) => [key, Array.from(val)])
+              ),
+              recordings: recordingsMetadata, // Only metadata, not blobs
+              settings: plainSettings, // Plain object, not Proxy
+              lastSaved: new Date().toISOString()
+            };
+            try {
+              await murajahDB.saveData(data);
+              
+              // Also save audio blobs separately (without metadata fields that might cause issues)
+              for (let i = 0; i < audioStore.recordings.length; i++) {
+                const recording = audioStore.recordings[i];
+                if (recording.blob) {
+                  try {
+                    await murajahDB.saveRecording(i, recording);
+                  } catch (blobError) {
+                    console.warn('[Murajah] Failed to save audio blob:', blobError);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('[Murajah] Failed to save data to IndexedDB:', error);
+              // Fallback to localStorage (but exclude blobs)
+              localStorage.setItem('murajah-data', JSON.stringify(data));
+            }
+          };
+
+          // Fire-and-forget wrapper for saveData (for non-critical saves)
+          const saveDataBackground = () => {
+            saveData().catch(console.error);
           };
 
           // Navigation functions
@@ -985,7 +1167,7 @@
               appStore.successMessage = 'Marked as memorized!';
             }
             setTimeout(() => appStore.successMessage = '', 2000);
-            saveData();
+            saveDataBackground();
           };
 
           const isCurrentPageMemorized = computed(() => {
@@ -1010,7 +1192,7 @@
             perfectRevisionsStore.lastUpdated = new Date();
             appStore.successMessage = `Page ${pageNum} marked perfect! (+1)`;
             setTimeout(() => appStore.successMessage = '', 2000);
-            saveData();
+            saveDataBackground();
           };
 
           const currentPagePerfectCount = computed(() => {
@@ -1087,7 +1269,7 @@
             }
             
             // Save after updating
-            saveData();
+            saveDataBackground();
             console.log(`[Murajah] Word ${word.id} mistake toggled on page ${appStore.currentPage}`);
           };
 
@@ -1136,6 +1318,7 @@
           // Settings functions
           const updateSettings = () => {
             localStorage.setItem('murajah-settings', JSON.stringify(settingsStore));
+            saveDataBackground(); // Also save to main data store for consistency
             appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -1143,7 +1326,7 @@
           const clearPageMistakes = () => {
             if (confirm(`Clear all mistakes on page ${appStore.currentPage}?`)) {
               mistakesStore.mistakes.delete(appStore.currentPage);
-              saveData();
+              saveDataBackground();
               appStore.successMessage = 'Mistakes cleared!';
               setTimeout(() => appStore.successMessage = '', 2000);
             }
@@ -1190,7 +1373,7 @@
             }
 
             if (added > 0) {
-              saveData();
+              saveDataBackground();
               appStore.successMessage = `${added} page(s) marked as memorized!`;
               setTimeout(() => appStore.successMessage = '', 2000);
             } else {
@@ -1211,14 +1394,14 @@
                 for (let i = 1; i <= 604; i++) {
                   memorizedStore.memorizedPages.add(i);
                 }
-                saveData();
+                saveDataBackground();
                 appStore.successMessage = 'All 604 pages marked as memorized!';
                 setTimeout(() => appStore.successMessage = '', 2000);
               }
             } else if (type === 'clear') {
               if (confirm('Clear all memorized pages?')) {
                 memorizedStore.memorizedPages.clear();
-                saveData();
+                saveDataBackground();
                 appStore.successMessage = 'All memorized pages cleared!';
                 setTimeout(() => appStore.successMessage = '', 2000);
               }
@@ -1284,7 +1467,7 @@
                 recordingStartTime.value = null;
                 recordingDuration.value = '0:00';
 
-                saveData();
+                saveDataBackground();
                 appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
                 setTimeout(() => appStore.successMessage = '', 3000);
               }
@@ -1316,7 +1499,7 @@
           const deleteAudio = (index) => {
             if (confirm('Delete this recording?')) {
               audioStore.recordings.splice(index, 1);
-              saveData();
+              saveDataBackground();
               appStore.successMessage = 'Recording deleted';
               setTimeout(() => appStore.successMessage = '', 2000);
             }
@@ -1324,19 +1507,6 @@
 
           const formatAudioDuration = (ms) => {
             return AudioRecorder.formatDuration(ms);
-          };
-          const saveData = () => {
-            const data = {
-              memorized: Array.from(memorizedStore.memorizedPages),
-              perfectRevisions: Object.fromEntries(perfectRevisionsStore.perfectRevisions),
-              mistakes: Object.fromEntries(
-                Array.from(mistakesStore.mistakes).map(([key, val]) => [key, Array.from(val)])
-              ),
-              recordings: audioStore.recordings,
-              settings: settingsStore,
-              lastSaved: new Date().toISOString()
-            };
-            localStorage.setItem('murajah-data', JSON.stringify(data));
           };
 
           const exportData = () => {
@@ -1376,7 +1546,7 @@
                 if (data.version === '2.0.0') {
                   if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
                   if (data.settings) Object.assign(settingsStore, data.settings);
-                  saveData();
+                  await saveData();
                   appStore.successMessage = 'Data imported successfully!';
                   setTimeout(() => location.reload(), 2000);
                 }
@@ -1387,15 +1557,21 @@
             input.click();
           };
 
-          const resetApp = () => {
+          const resetApp = async () => {
             if (confirm('Are you sure? This will reset all data.')) {
-              memorizedStore.memorizedPages.clear();
-              mistakesStore.mistakes.clear();
-              audioStore.recordings = [];
-              appStore.currentPage = 1;
-              localStorage.clear();
-              appStore.successMessage = 'App reset!';
-              setTimeout(() => location.reload(), 2000);
+              try {
+                memorizedStore.memorizedPages.clear();
+                mistakesStore.mistakes.clear();
+                audioStore.recordings = [];
+                appStore.currentPage = 1;
+                await murajahDB.clearAll();
+                localStorage.clear();
+                appStore.successMessage = 'App reset!';
+                setTimeout(() => location.reload(), 2000);
+              } catch (error) {
+                console.error('[Murajah] Error resetting app:', error);
+                appStore.errorMessage = 'Failed to reset app';
+              }
             }
           };
 
@@ -1412,6 +1588,15 @@
           const currentPageMistakes = computed(() => {
             const mistakes = mistakesStore.mistakes.get(appStore.currentPage);
             return mistakes ? Array.from(mistakes).sort((a, b) => a - b) : [];
+          });
+
+          const fontSizeClass = computed(() => {
+            const classMap = {
+              'small': 'quran-text-small',
+              'medium': 'quran-text-medium',
+              'large': 'quran-text-large'
+            };
+            return classMap[settingsStore.fontSize] || 'quran-text-medium';
           });
 
           const currentSurahName = computed(() => {
@@ -1536,6 +1721,11 @@
           const handleKeyboardShortcut = (event) => {
             // Don't trigger shortcuts if user is typing in an input field
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+              return;
+            }
+
+            // Don't trigger shortcuts if Ctrl, Cmd, or Alt are pressed (let browser handle these)
+            if (event.ctrlKey || event.metaKey || event.altKey) {
               return;
             }
 
