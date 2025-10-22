@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#1f2937">
   <title>Murajah - Quran Memorization</title>
   
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
+  
   <!-- Tailwind CSS -->
   <script src="./resources/js/tailwind.3.4.7.js"></script>
   
@@ -572,11 +575,10 @@
             </div>
 
             <!-- Header -->
-            <header class="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg">
+            <header class="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow">
               <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <i class="fas fa-quran text-2xl"></i>
-                  <h1 class="text-2xl font-bold">Murajah</h1>
+                  <img src="./resources/logo-bg.png" alt="Murajah" class="h-12 w-auto" style="border-radius: 15%;">
                 </div>
                 <div class="flex items-center gap-4">
                   <!-- Hifz Status in Header -->
@@ -587,8 +589,9 @@
                     </div>
                   </div>
                   
-                  <button @click="toggleTheme" class="p-2 hover:bg-blue-700 rounded-lg transition-colors" :title="appStore.theme === 'light' ? 'Dark Mode' : 'Light Mode'">
-                    <i :class="appStore.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun'" class="text-xl"></i>
+                  <button @click="toggleTheme" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" :title="appStore.theme === 'light' ? 'Dark Mode' : 'Light Mode'">
+                    <span v-if="appStore.theme === 'light'" class="text-orange-500 text-xl">☀️</span>
+                    <span v-else class="text-yellow-500 text-xl">🌙</span>
                   </button>
                 </div>
               </div>
