@@ -151,12 +151,14 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex justify-between items-center">
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><img src="resources/logo-bg.png" width="80" style="border-radius:15%;"></h1>
-                    <nav class="flex space-x-4">
-                        <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <span v-if="isDarkMode" class="text-yellow-500">🌙</span>
-                            <span v-else class="text-orange-500">☀️</span>
-                        </button>
+                    <nav class="flex items-center gap-6 mr-4">
+                        <a href="./index.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Memorize</a>
+                        <a href="./quiz.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Quiz</a>
                     </nav>
+                    <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span v-if="isDarkMode" class="text-yellow-500">🌙</span>
+                        <span v-else class="text-orange-500">☀️</span>
+                    </button>
                 </div>
             </div>
         </header>
