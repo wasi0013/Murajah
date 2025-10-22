@@ -1447,7 +1447,7 @@
               memorized: memorizedStore.memorizedPages.size,
               mistakes: Array.from(mistakesStore.mistakes.values()).reduce((sum, set) => sum + set.size, 0),
               audios: audioStore.recordings.length,
-              perfectRevisions: 0
+              perfectRevisions: Array.from(perfectRevisionsStore.perfectRevisions.values()).reduce((sum, count) => sum + count, 0)
             });
           });
 
