@@ -262,14 +262,42 @@
                   <i class="fas fa-quran text-2xl"></i>
                   <h1 class="text-2xl font-bold">Murajah</h1>
                 </div>
-                <button @click="toggleTheme" class="p-2 hover:bg-blue-700 rounded-lg transition-colors" :title="appStore.theme === 'light' ? 'Dark Mode' : 'Light Mode'">
-                  <i :class="appStore.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun'" class="text-xl"></i>
-                </button>
+                <div class="flex items-center gap-4">
+                  <!-- Hifz Status in Header -->
+                  <div v-if="currentPageHifzStatus" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-white/20 backdrop-blur">
+                    <i :class="'la ' + currentPageHifzStatus.icon" class="text-lg"></i>
+                    <div class="text-xs">
+                      <div class="opacity-75">{{ currentPageHifzStatus.label }}</div>
+                    </div>
+                  </div>
+                  
+                  <button @click="toggleTheme" class="p-2 hover:bg-blue-700 rounded-lg transition-colors" :title="appStore.theme === 'light' ? 'Dark Mode' : 'Light Mode'">
+                    <i :class="appStore.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun'" class="text-xl"></i>
+                  </button>
+                </div>
               </div>
             </header>
 
             <!-- Main Content -->
             <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+              <!-- Daily Revision Banner -->
+              <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
+                    <i class="fas fa-calendar-check"></i>
+                    Daily Revision
+                  </h3>
+                  <p class="text-sm opacity-90">Revise pages from your memorized collection today</p>
+                </div>
+                <button 
+                  @click="selectRandomPage" 
+                  class="ml-4 px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-2"
+                >
+                  <i class="fas fa-random"></i>
+                  Random Page
+                </button>
+              </div>
+
               <!-- Status Indicators Row -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-blue-500 text-white p-6 rounded-lg shadow">
@@ -346,8 +374,8 @@
                 </div>
               </div>
 
-              <!-- Quran Text Display -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900">
+              <!-- Quran Text Display with Overlay Navigation -->
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900 relative group">
                 <div class="text-center space-y-2">
                   <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Page {{ appStore.currentPage }} of 604</p>
                   <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Quran Content</h2>
@@ -384,6 +412,31 @@
                 <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
                   <p class="text-gray-600 dark:text-gray-400">Loading Quran text...</p>
+                </div>
+
+                <!-- Overlay Navigation Arrows (Hidden by default, visible on hover) -->
+                <div class="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none rounded-lg">
+                  <!-- Previous Page Arrow -->
+                  <button 
+                    v-if="appStore.currentPage > 1"
+                    @click="previousPage" 
+                    class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
+                    :title="'Previous Page (' + (appStore.currentPage - 1) + ')'"
+                  >
+                    <i class="fas fa-chevron-left text-2xl"></i>
+                  </button>
+                  <div v-else class="w-12"></div>
+
+                  <!-- Next Page Arrow -->
+                  <button 
+                    v-if="appStore.currentPage < appStore.totalPages"
+                    @click="nextPage" 
+                    class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
+                    :title="'Next Page (' + (appStore.currentPage + 1) + ')'"
+                  >
+                    <i class="fas fa-chevron-right text-2xl"></i>
+                  </button>
+                  <div v-else class="w-12"></div>
                 </div>
               </div>
 
@@ -513,6 +566,167 @@
                     <div class="flex justify-between">
                       <span class="text-gray-600 dark:text-gray-400">Pages This Juz</span>
                       <span class="font-bold">{{ currentJuzProgress }}/20</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mistake Bubble Grid -->
+              <div v-if="currentPageMistakeCount > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                  <i class="fas fa-exclamation-circle text-red-600"></i>
+                  Mistakes on Page {{ appStore.currentPage }}
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentPageMistakeCount }} mistake(s) found</p>
+                
+                <!-- Mistake Bubbles Grid -->
+                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  <button 
+                    v-for="wordId in currentPageMistakes" 
+                    :key="wordId"
+                    @click="highlightWord({ id: wordId })"
+                    class="p-3 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-200 font-bold text-sm hover:bg-red-300 dark:hover:bg-red-800 transition-colors text-center"
+                    :title="'Mistake: Word ' + wordId"
+                  >
+                    {{ wordId }}
+                  </button>
+                </div>
+                
+                <button 
+                  @click="clearPageMistakes"
+                  class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Clear All Mistakes
+                </button>
+              </div>
+
+              <!-- Advanced Analytics Section -->
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                  <i class="fas fa-chart-pie text-purple-600"></i>
+                  Analytics & Progress
+                </h2>
+
+                <!-- Juz Progress Grid -->
+                <div>
+                  <h3 class="text-lg font-bold mb-4">Progress by Juz</h3>
+                  <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                    <button 
+                      v-for="juzNum in 30" 
+                      :key="juzNum"
+                      @click="gotoPage((juzNum - 1) * 20 + 1)"
+                      :class="[
+                        'px-3 py-2 rounded-lg font-bold text-sm transition-colors',
+                        juzMemorizedCount(juzNum) === 20 
+                          ? 'bg-green-500 text-white' 
+                          : juzMemorizedCount(juzNum) > 0
+                            ? 'bg-yellow-400 text-gray-900'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ]"
+                      :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/20 pages'"
+                    >
+                      {{ juzNum }}
+                    </button>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                    Green = Completed | Yellow = Partial | Gray = Not started
+                  </p>
+                </div>
+
+                <!-- Completion Estimate -->
+                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
+                  <h3 class="text-lg font-bold mb-4">Completion Estimate</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                      <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Completion Date</p>
+                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ formattedCompletion }}</p>
+                    </div>
+                    <div class="p-4 bg-purple-50 dark:bg-purple-900 rounded-lg">
+                      <p class="text-sm text-gray-600 dark:text-gray-400">Days Remaining</p>
+                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ daysRemaining }}</p>
+                    </div>
+                  </div>
+                  <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <p class="text-sm">
+                      Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Bulk Memorization Tool -->
+                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
+                  <h3 class="text-lg font-bold mb-4">Bulk Memorization</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Mark multiple pages as memorized at once</p>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2">Start Page</label>
+                      <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2">End Page</label>
+                      <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700">
+                    </div>
+                    <div class="flex items-end">
+                      <button 
+                        @click="bulkMemorize"
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <i class="fas fa-check-double"></i>
+                        <span>Memorize Range</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Preset Buttons for Common Ranges -->
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    <button 
+                      @click="bulkMemorizePreset('juz', selectedJuzPreset)"
+                      class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-book"></i> Juz
+                    </button>
+                    <button 
+                      @click="bulkMemorizePreset('all', null)"
+                      class="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-star"></i> All Pages
+                    </button>
+                    <button 
+                      @click="bulkMemorizePreset('clear', null)"
+                      class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                    >
+                      <i class="fas fa-times"></i> Clear All
+                    </button>
+                  </div>
+
+                  <div v-if="bulkWarning" class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    {{ bulkWarning }}
+                  </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
+                  <h3 class="text-lg font-bold mb-4">Summary Statistics</h3>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Memorized Pages</p>
+                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ statistics.memorized }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">of 604</p>
+                    </div>
+                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Juzs</p>
+                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ statistics.juzCount }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">of 30</p>
+                    </div>
+                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Completion</p>
+                      <p class="text-2xl font-bold text-green-600 dark:text-green-300">{{ statistics.percentage }}%</p>
+                    </div>
+                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800 rounded-lg">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">Total Points</p>
+                      <p class="text-2xl font-bold text-orange-600 dark:text-orange-300">{{ statistics.totalPoints }}</p>
                     </div>
                   </div>
                 </div>
@@ -707,6 +921,19 @@
             }
           };
 
+          const selectRandomPage = () => {
+            if (memorizedStore.memorizedPages.size === 0) {
+              appStore.errorMessage = 'No memorized pages yet';
+              return;
+            }
+            const memorizedArray = Array.from(memorizedStore.memorizedPages);
+            const randomPage = memorizedArray[Math.floor(Math.random() * memorizedArray.length)];
+            appStore.currentPage = randomPage;
+            updateURL();
+            appStore.successMessage = `Random page selected: Page ${randomPage}`;
+            setTimeout(() => appStore.successMessage = '', 3000);
+          };
+
           const updateURL = () => {
             window.history.replaceState(
               {},
@@ -808,6 +1035,91 @@
             localStorage.setItem('murajah-settings', JSON.stringify(settingsStore));
             appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          const clearPageMistakes = () => {
+            if (confirm(`Clear all mistakes on page ${appStore.currentPage}?`)) {
+              mistakesStore.mistakes.delete(appStore.currentPage);
+              saveData();
+              appStore.successMessage = 'Mistakes cleared!';
+              setTimeout(() => appStore.successMessage = '', 2000);
+            }
+          };
+
+          // Bulk memorization and statistics functions
+          const bulkStartPage = ref(1);
+          const bulkEndPage = ref(20);
+          const bulkWarning = ref('');
+          const selectedJuzPreset = ref(1);
+
+          const juzMemorizedCount = (juzNum) => {
+            const startPage = (juzNum - 1) * 20 + 1;
+            const endPage = juzNum * 20;
+            let count = 0;
+            for (let i = startPage; i <= endPage; i++) {
+              if (memorizedStore.memorizedPages.has(i)) count++;
+            }
+            return count;
+          };
+
+          const daysRemaining = computed(() => {
+            if (statistics.value.remaining <= 0) return 0;
+            if (settingsStore.pagesPerDay <= 0) return 0;
+            return Math.ceil(statistics.value.remaining / settingsStore.pagesPerDay);
+          });
+
+          const bulkMemorize = () => {
+            bulkWarning.value = '';
+            const start = Math.max(1, Math.min(bulkStartPage.value, 604));
+            const end = Math.max(start, Math.min(bulkEndPage.value, 604));
+
+            if (start > end) {
+              bulkWarning.value = 'Start page must be less than or equal to end page';
+              return;
+            }
+
+            let added = 0;
+            for (let i = start; i <= end; i++) {
+              if (!memorizedStore.memorizedPages.has(i)) {
+                memorizedStore.memorizedPages.add(i);
+                added++;
+              }
+            }
+
+            if (added > 0) {
+              saveData();
+              appStore.successMessage = `${added} page(s) marked as memorized!`;
+              setTimeout(() => appStore.successMessage = '', 2000);
+            } else {
+              bulkWarning.value = `All pages in range ${start}-${end} were already memorized`;
+            }
+          };
+
+          const bulkMemorizePreset = (type, value) => {
+            bulkWarning.value = '';
+
+            if (type === 'juz' && selectedJuzPreset.value >= 1 && selectedJuzPreset.value <= 30) {
+              const juzNum = selectedJuzPreset.value;
+              bulkStartPage.value = (juzNum - 1) * 20 + 1;
+              bulkEndPage.value = juzNum * 20;
+              bulkMemorize();
+            } else if (type === 'all') {
+              if (confirm('Mark ALL 604 pages as memorized?')) {
+                for (let i = 1; i <= 604; i++) {
+                  memorizedStore.memorizedPages.add(i);
+                }
+                saveData();
+                appStore.successMessage = 'All 604 pages marked as memorized!';
+                setTimeout(() => appStore.successMessage = '', 2000);
+              }
+            } else if (type === 'clear') {
+              if (confirm('Clear all memorized pages?')) {
+                memorizedStore.memorizedPages.clear();
+                saveData();
+                appStore.successMessage = 'All memorized pages cleared!';
+                setTimeout(() => appStore.successMessage = '', 2000);
+              }
+            }
           };
 
           // Audio functions
@@ -986,6 +1298,16 @@
             return audioStore.recordings.filter(r => r.pageNumber === appStore.currentPage).length;
           });
 
+          const currentPageMistakeCount = computed(() => {
+            const mistakes = mistakesStore.mistakes.get(appStore.currentPage);
+            return mistakes ? mistakes.size : 0;
+          });
+
+          const currentPageMistakes = computed(() => {
+            const mistakes = mistakesStore.mistakes.get(appStore.currentPage);
+            return mistakes ? Array.from(mistakes).sort((a, b) => a - b) : [];
+          });
+
           const statistics = computed(() => {
             return calculateStatistics({
               memorized: memorizedStore.memorizedPages.size,
@@ -1084,6 +1406,12 @@
             recentRecordings,
             formattedCompletion,
             currentJuzProgress,
+            daysRemaining,
+            bulkStartPage,
+            bulkEndPage,
+            bulkWarning,
+            selectedJuzPreset,
+            juzMemorizedCount,
             currentPageText,
             currentPageWords,
             hoveredWordId,
@@ -1091,15 +1419,21 @@
             currentPagePerfectCount,
             currentPageHifzStatus,
             currentPageAudioCount,
+            currentPageMistakeCount,
+            currentPageMistakes,
             recordingDuration,
             previousPage,
             nextPage,
             gotoPage,
+            selectRandomPage,
             toggleTheme,
             toggleMemorized,
             incrementPerfectRevision,
             highlightWord,
             updateSettings,
+            clearPageMistakes,
+            bulkMemorize,
+            bulkMemorizePreset,
             playAudio,
             startRecording,
             stopRecording,
