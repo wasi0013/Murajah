@@ -398,6 +398,7 @@
                       @mouseleave="hoveredWordId = null"
                       :class="{
                         'bg-blue-100 dark:bg-blue-900 rounded-md px-2 py-1': hoveredWordId === word.id,
+                        'bg-red-200 dark:bg-red-900': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
                       :title="'Word ' + word.id + ' - Surah ' + word.surah + ':' + word.ayah"
@@ -893,7 +894,11 @@
               if (data.perfectRevisions) {
                 perfectRevisionsStore.perfectRevisions = new Map(Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), v]));
               }
+              if (data.mistakes) {
+                mistakesStore.mistakes = new Map(Object.entries(data.mistakes).map(([k, v]) => [parseInt(k), new Set(v)]));
+              }
               if (data.recordings) audioStore.recordings = data.recordings;
+              if (data.settings) Object.assign(settingsStore, data.settings);
             }
           };
 
@@ -914,11 +919,14 @@
 
           const gotoPage = () => {
             const num = parseInt(gotoInput.value);
-            if (num >= 1 && num <= 604) {
-              appStore.currentPage = num;
-              gotoInput.value = '';
-              updateURL();
+            if (isNaN(num) || num < 1 || num > 604) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 604';
+              setTimeout(() => appStore.errorMessage = '', 2000);
+              return;
             }
+            appStore.currentPage = num;
+            gotoInput.value = '';
+            updateURL();
           };
 
           const selectRandomPage = () => {
@@ -1021,13 +1029,22 @@
 
           // Word interaction functions
           const highlightWord = (word) => {
-            // Toggle word selection
-            if (selectedWords.value.has(word.id)) {
-              selectedWords.value.delete(word.id);
-            } else {
-              selectedWords.value.add(word.id);
+            // Add/remove word from mistakes for current page
+            if (!mistakesStore.mistakes.has(appStore.currentPage)) {
+              mistakesStore.mistakes.set(appStore.currentPage, new Set());
             }
-            console.log(`[Murajah] Word ${word.id} selected - Total: ${selectedWords.value.size}`);
+            
+            const pageErrors = mistakesStore.mistakes.get(appStore.currentPage);
+            
+            if (pageErrors.has(word.id)) {
+              pageErrors.delete(word.id);
+            } else {
+              pageErrors.add(word.id);
+            }
+            
+            // Save after updating
+            saveData();
+            console.log(`[Murajah] Word ${word.id} mistake toggled on page ${appStore.currentPage}`);
           };
 
           // Settings functions
@@ -1226,6 +1243,9 @@
             const data = {
               memorized: Array.from(memorizedStore.memorizedPages),
               perfectRevisions: Object.fromEntries(perfectRevisionsStore.perfectRevisions),
+              mistakes: Object.fromEntries(
+                Array.from(mistakesStore.mistakes).map(([key, val]) => [key, Array.from(val)])
+              ),
               recordings: audioStore.recordings,
               settings: settingsStore,
               lastSaved: new Date().toISOString()
@@ -1361,8 +1381,8 @@
             styleTag = document.createElement('style');
             styleTag.id = fontId;
             
-            // Check if tajweed is enabled (default: true)
-            const tajweed = localStorage.getItem('tajweed') !== 'false' ? true : false;
+            // Use settingsStore to check if tajweed is enabled
+            const tajweed = settingsStore.tajweedEnabled;
             
             let src;
             if (tajweed) {
@@ -1373,7 +1393,7 @@
             
             styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;
             document.head.appendChild(styleTag);
-            console.log(`[Murajah] Loaded font for page ${pageNum}`);
+            console.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
           };
 
           // Lifecycle
@@ -1390,6 +1410,12 @@
           watch(() => appStore.currentPage, (newPage) => {
             updateURL();
             loadPageFont(newPage);
+          });
+
+          // Watch tajweed setting and reload font when toggled
+          watch(() => settingsStore.tajweedEnabled, () => {
+            loadPageFont(appStore.currentPage);
+            console.log('[Murajah] Tajweed setting changed, font reloaded');
           });
 
           return {
