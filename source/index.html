@@ -92,7 +92,7 @@
     /* Quran Text Styling */
     .quran-text {
       font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      line-height: 2;
+      line-height: 1.1;
       direction: rtl;
       text-align: right;
       letter-spacing: 0.1em;
@@ -702,7 +702,7 @@
 
                 <!-- Quran Text Content - Word by Word Display -->
                 <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-8 rounded-lg min-h-96 overflow-y-auto space-y-4">
-                  <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2 leading-loose">
+                  <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2">
                     <!-- Surah Name Display -->
                     <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
                       {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
