@@ -404,14 +404,14 @@
                       v-for="word in line.words" 
                       :key="word.id"
                       @click="highlightWord(word)"
-                      @mouseenter="hoveredWordId = word.id"
-                      @mouseleave="hoveredWordId = null"
+                      @mouseenter="showWordTooltip(word, $event)"
+                      @mousemove="updateTooltipPosition($event)"
+                      @mouseleave="hideWordTooltip()"
                       :class="{
                         'bg-blue-100 dark:bg-blue-900 rounded-md px-2 py-1': hoveredWordId === word.id,
                         'bg-red-200 dark:bg-red-900': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
-                      :title="'Word ' + word.id + ' - Surah ' + word.surah + ':' + word.ayah"
                       class="quran-word inline-block"
                     >
                       {{ word.text }}
@@ -639,8 +639,10 @@
                       {{ juzNum }}
                     </button>
                   </div>
-                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                    Green = Completed | Yellow = Partial | Gray = Not started
+                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap">
+                    <span><span class="text-green-600 font-semibold">Completed</span></span>|
+                    <span><span class="text-yellow-500 font-semibold">Partial</span></span>|
+                    <span><span class="text-gray-400 font-semibold">Not started</span></span>
                   </p>
                 </div>
 
@@ -819,6 +821,11 @@
                 <button @click="appStore.successMessage = ''" class="ml-auto text-xl">&times;</button>
               </div>
             </div>
+
+            <!-- Word Translation Tooltip -->
+            <div v-if="showTooltip" class="fixed bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-3 rounded-lg shadow-2xl border-2 border-blue-500 pointer-events-none text-base font-semibold whitespace-nowrap" style="z-index: 10000; max-width: 400px; word-wrap: break-word; white-space: normal;" :style="{ left: tooltipX + 'px', top: tooltipY + 'px' }">
+              {{ tooltipText }}
+            </div>
           </div>
         `,
 
@@ -871,6 +878,12 @@
           // Word interaction state
           const hoveredWordId = ref(null);
           const selectedWords = ref(new Set());
+          
+          // Tooltip state
+          const showTooltip = ref(false);
+          const tooltipX = ref(0);
+          const tooltipY = ref(0);
+          const tooltipText = ref('');
 
           // Initialize app
           const initializeApp = async () => {
@@ -880,6 +893,7 @@
               // Load Quran data
               quranData.value = await loadAllQuranData();
               console.log('[Murajah] QuranData loaded, surahNames sample:', Object.keys(quranData.value.surahNames || {}).slice(0, 3), quranData.value.surahNames);
+              console.log('[Murajah] Translations sample:', Object.keys(quranData.value.translations || {}).slice(0, 5), 'Total translations:', Object.keys(quranData.value.translations || {}).length);
               
               // Load stored data
               await loadStoredData();
@@ -1075,6 +1089,48 @@
             // Save after updating
             saveData();
             console.log(`[Murajah] Word ${word.id} mistake toggled on page ${appStore.currentPage}`);
+          };
+
+          // Tooltip functions for word translations
+          const showWordTooltip = (word, event) => {
+            hoveredWordId.value = word.id;
+            if (!quranData.value || !quranData.value.translations) {
+              console.warn('[Murajah] No translations available');
+              return;
+            }
+            
+            // The translation key format is "surah:ayah:word" (e.g., "2:275:1")
+            const key = `${word.surah}:${word.ayah}:${word.word}`;
+            const translation = quranData.value.translations[key];
+            
+            console.log('[Murajah] Word tooltip lookup:', { 
+              word: { id: word.id, surah: word.surah, ayah: word.ayah, word: word.word },
+              key,
+              found: !!translation,
+              translation: translation || 'N/A'
+            });
+            
+            if (translation) {
+              tooltipText.value = translation;
+              tooltipX.value = event.clientX + 18;
+              tooltipY.value = event.clientY + 18;
+              showTooltip.value = true;
+              console.log('[Murajah] Word tooltip shown:', key, translation);
+            } else {
+              console.warn('[Murajah] Translation not found for key:', key);
+              // Don't show tooltip if no translation found
+              showTooltip.value = false;
+            }
+          };
+
+          const updateTooltipPosition = (event) => {
+            tooltipX.value = event.clientX + 18;
+            tooltipY.value = event.clientY + 18;
+          };
+
+          const hideWordTooltip = () => {
+            hoveredWordId.value = null;
+            showTooltip.value = false;
           };
 
           // Settings functions
@@ -1499,6 +1555,10 @@
             currentPageText,
             currentPageWords,
             hoveredWordId,
+            showTooltip,
+            tooltipX,
+            tooltipY,
+            tooltipText,
             isCurrentPageMemorized,
             currentPagePerfectCount,
             currentPageHifzStatus,
@@ -1515,6 +1575,9 @@
             toggleMemorized,
             incrementPerfectRevision,
             highlightWord,
+            showWordTooltip,
+            updateTooltipPosition,
+            hideWordTooltip,
             getSurahNameArabic,
             updateSettings,
             clearPageMistakes,

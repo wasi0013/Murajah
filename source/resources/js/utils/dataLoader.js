@@ -173,6 +173,7 @@ export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
               surah: wordEntry.surah,
               ayah: wordEntry.ayah,
               position: wordEntry.position,
+              word: wordEntry.word,
               lineIndex: line.line_number
             });
           }
