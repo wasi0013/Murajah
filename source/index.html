@@ -246,7 +246,7 @@
       text-align: right;
       letter-spacing: 0.1em;
       color: #111827;
-      background-color: #f3f4f6;
+      background-color: #fef3c7;
     }
 
     .dark-mode .quran-text {
@@ -1084,7 +1084,7 @@
               <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
                 <div class="flex-1">
                   <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
-                    <i class="fas fa-calendar-check"></i>
+                    <i class="fas fa-quran"></i>
                     Quick test
                   </h3>
                   <p class="text-sm opacity-90">Click Get Random Page, then Record and recite from memory. </p>
@@ -1110,7 +1110,7 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-3">
-                      <i class="fas fa-target text-amber-500"></i>
+                      <i class="fas fa-calendar-check text-amber-500"></i>
                       Daily Goals
                     </h2>
                     <p class="text-sm text-gray-600  mt-1">{{ new Date(dailyGoalsStore.todayGoal.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
@@ -1221,9 +1221,9 @@
                 <div class="bg-purple-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Perfect Revisions</p>
+                      <p class="text-sm opacity-90">Total Scores</p>
                       <p class="text-3xl font-bold">{{ statistics.perfectRevisions }}</p>
-                      <p class="text-xs opacity-75">Avg: {{ statistics.averagePerfect }}/page</p>
+                      <p class="text-xs opacity-75">10 points to each page with no mistakes.</p>
                     </div>
                     <i class="fas fa-star text-4xl opacity-30"></i>
                   </div>
@@ -1232,9 +1232,9 @@
                 <div class="bg-red-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Mistakes</p>
+                      <p class="text-sm opacity-90">Total Mistakes</p>
                       <p class="text-3xl font-bold">{{ statistics.mistakes }}</p>
-                      <p class="text-xs opacity-75">Word-level</p>
+                      <p class="text-xs opacity-75">Tap on word to toggle mistakes</p>
                     </div>
                     <i class="fas fa-exclamation-circle text-4xl opacity-30"></i>
                   </div>
@@ -1245,7 +1245,7 @@
                     <div>
                       <p class="text-sm opacity-90">Recordings</p>
                       <p class="text-3xl font-bold">{{ statistics.audios }}</p>
-                      <p class="text-xs opacity-75">Audio practice</p>
+                      <p class="text-xs opacity-75">available now.</p>
                     </div>
                     <i class="fas fa-microphone text-4xl opacity-30"></i>
                   </div>
