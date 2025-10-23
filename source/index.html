@@ -22,7 +22,6 @@
   <style>
     :root {
       --primary: #3b82f6;
-      --primary-dark: #1e40af;
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -30,7 +29,6 @@
       --light-text: #111827;
       --dark-bg: #111827;
       --dark-text: #f3f4f6;
-      --card-dark: #1f2937;
       --card-light: #ffffff;
     }
 
@@ -1051,7 +1049,7 @@
 
       const app = createApp({
         template: `
-          <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white text-gray-900">
             <!-- Loading Screen -->
             <div v-if="isInitializing" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div class="text-center">
@@ -1061,20 +1059,20 @@
             </div>
 
             <!-- Header -->
-            <header class="bg-white dark:bg-gray-800 shadow">
+            <header class="bg-white shadow">
               <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <img src="./resources/logo-bg.png" alt="Murajah" class="h-25 w-auto" style="border-radius: 15%;">
                 </div>
                 <nav class="flex items-center gap-6">
-                  <a href="./index.html#quran-text-section" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Memorize</a>
-                  <a href="./quiz.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Quiz</a>
+                  <a href="./index.html#quran-text-section" class="text-gray-700  hover:text-blue-600  font-medium transition-colors">Memorize</a>
+                  <a href="./quiz.html" class="text-gray-700  hover:text-blue-600  font-medium transition-colors">Quiz</a>
                 </nav>
                 <div class="flex items-center gap-4">
  
                   
-                  <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Settings">
-                    <i class="fas fa-cog text-gray-700 dark:text-gray-200 text-xl"></i>
+                  <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
+                    <i class="fas fa-cog text-gray-700  text-xl"></i>
                   </button>
                 </div>
               </div>
@@ -1101,20 +1099,20 @@
               </div>
 
               <!-- Daily Goals Card -->
-              <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 rounded-lg shadow-lg p-6 border-2 border-amber-200 dark:border-amber-700 space-y-6">
+              <div class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
                 <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
                   <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
-                  <p class="text-gray-600 dark:text-gray-400">Loading daily goals...</p>
+                  <p class="text-gray-600 ">Loading daily goals...</p>
                 </div>
                 <template v-else>
                 <!-- Header with Streak Badge -->
                 <div class="flex items-center justify-between">
                   <div>
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-3">
                       <i class="fas fa-target text-amber-500"></i>
                       Today's Goals
                     </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ new Date(dailyGoalsStore.todayGoal.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+                    <p class="text-sm text-gray-600  mt-1">{{ new Date(dailyGoalsStore.todayGoal.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
                   </div>
                   
                   <!-- Streak Badge -->
@@ -1126,7 +1124,7 @@
                       </div>
                       <p class="text-xs font-semibold mt-1">DAY STREAK</p>
                     </div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">Best: {{ dailyGoalsStore.longestStreak }}</p>
+                    <p class="text-xs text-gray-600 ">Best: {{ dailyGoalsStore.longestStreak }}</p>
                   </div>
                 </div>
 
@@ -1135,11 +1133,11 @@
                   <!-- Progress Bar and Stats -->
                   <div class="flex-shrink-0 text-center">
                     <div class="mb-4">
-                      <div class="text-4xl font-bold text-amber-600 dark:text-amber-400">{{ getTaskProgressPercentage() }}%</div>
-                      <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }} tasks</div>
+                      <div class="text-4xl font-bold text-amber-600 ">{{ getTaskProgressPercentage() }}%</div>
+                      <div class="text-sm text-gray-600  mt-1">{{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }} tasks</div>
                     </div>
                     <!-- Simple progress bar -->
-                    <div class="w-24 h-3 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="w-24 h-3 bg-gray-300  rounded-full overflow-hidden">
                       <div 
                         class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-300"
                         :style="{ width: getTaskProgressPercentage() + '%' }"
@@ -1149,7 +1147,7 @@
 
                   <!-- Tasks List -->
                   <div class="flex-1 space-y-3">
-                    <div v-for="(task, taskName) in dailyGoalsStore.todayGoal.tasks" :key="taskName" class="flex items-start gap-3 p-3 bg-white dark:bg-gray-700 rounded-lg hover:shadow-md transition-shadow">
+                    <div v-for="(task, taskName) in dailyGoalsStore.todayGoal.tasks" :key="taskName" class="flex items-start gap-3 p-3 bg-white  rounded-lg hover:shadow-md transition-shadow">
                       <!-- Checkbox -->
                       <button 
                         @click="task.completed ? uncompleteTaskGoal(taskName) : completeTaskGoal(taskName)"
@@ -1157,7 +1155,7 @@
                           'flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-all mt-0.5',
                           task.completed 
                             ? 'bg-green-500 border-green-500' 
-                            : 'border-gray-300 dark:border-gray-500 hover:border-green-400'
+                            : 'border-gray-300  hover:border-green-400'
                         ]"
                       >
                         <i v-if="task.completed" class="fas fa-check text-white text-sm"></i>
@@ -1165,23 +1163,23 @@
 
                       <!-- Task Info -->
                       <div class="flex-1 min-w-0">
-                        <h4 :class="['font-semibold text-gray-900 dark:text-white transition-all', task.completed && 'line-through text-gray-500 dark:text-gray-400']">
+                        <h4 :class="['font-semibold text-gray-900  transition-all', task.completed && 'line-through text-gray-500'] ">
                           {{ task.name }}
                         </h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ task.description }}</p>
+                        <p class="text-sm text-gray-600  mt-0.5">{{ task.description }}</p>
                         
                         <!-- Task-specific details -->
-                        <div v-if="taskName === 'reviewRange' && task.pages" class="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-gray-600 p-2 rounded">
+                        <div v-if="taskName === 'reviewRange' && task.pages" class="mt-2 text-xs text-gray-700  bg-blue-50  p-2 rounded">
                           <i class="fas fa-book-open"></i> Pages: {{ task.pages.join(', ') }} ({{ task.pages.length }} pages)
                         </div>
-                        <div v-if="taskName === 'memorizeDaily'" class="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-purple-50 dark:bg-gray-600 p-2 rounded">
+                        <div v-if="taskName === 'memorizeDaily'" class="mt-2 text-xs text-gray-700  bg-purple-50  p-2 rounded">
                           <i class="fas fa-target"></i> Target: {{ task.targetPages }} page{{ task.targetPages !== 1 ? 's' : '' }} today
                         </div>
                       </div>
 
                       <!-- Completion indicator -->
                       <div v-if="task.completed" class="flex-shrink-0">
-                        <p class="text-xs text-green-600 dark:text-green-400 font-semibold">
+                        <p class="text-xs text-green-600  font-semibold">
                           <i class="fas fa-check-circle"></i> Done
                         </p>
                       </div>
@@ -1190,15 +1188,15 @@
                 </div>
 
                 <!-- Motivational Message -->
-                <div v-if="getTaskProgressPercentage() === 100" class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 p-4 rounded">
-                  <p class="text-green-800 dark:text-green-100 font-semibold flex items-center gap-2">
+                <div v-if="getTaskProgressPercentage() === 100" class="bg-green-100  border-l-4 border-green-500 p-4 rounded">
+                  <p class="text-green-800  font-semibold flex items-center gap-2">
                     <i class="fas fa-star text-yellow-400"></i>
                     Excellent! You've completed all today's goals! Keep up the amazing work! 🎉
                   </p>
                 </div>
 
-                <div v-else-if="getTaskProgressPercentage() >= 50" class="bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
-                  <p class="text-blue-800 dark:text-blue-100 font-semibold flex items-center gap-2">
+                <div v-else-if="getTaskProgressPercentage() >= 50" class="bg-blue-100  border-l-4 border-blue-500 p-4 rounded">
+                  <p class="text-blue-800  font-semibold flex items-center gap-2">
                     <i class="fas fa-arrow-up text-blue-500"></i>
                     Great progress! Complete {{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }} more task{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length !== 1 ? 's' : '' }}.
                   </p>
@@ -1254,10 +1252,10 @@
               </div>
 
               <!-- Progress Section -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
+              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                  <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Progress</h2>
-                  <span class="text-sm text-gray-600 dark:text-gray-400">{{ statistics.memorized }}/604 Pages</span>
+                  <h2 class="text-2xl font-bold text-gray-900 ">Progress</h2>
+                  <span class="text-sm text-gray-600 ">{{ statistics.memorized }}/604 Pages</span>
                 </div>
 
                 <div class="space-y-2">
@@ -1268,25 +1266,25 @@
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p class="text-gray-600 dark:text-gray-400">Remaining</p>
+                    <p class="text-gray-600 ">Remaining</p>
                     <p class="text-xl font-bold">{{ statistics.remaining }}</p>
                   </div>
                   <div>
-                    <p class="text-gray-600 dark:text-gray-400">Juzs (Parts)</p>
+                    <p class="text-gray-600 ">Juzs (Parts)</p>
                     <p class="text-xl font-bold">{{ statistics.juzCount }}/30</p>
                   </div>
                   <div>
-                    <p class="text-gray-600 dark:text-gray-400">Est. Completion</p>
+                    <p class="text-gray-600 ">Est. Completion</p>
                     <p class="text-sm font-bold">{{ formattedCompletion }}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Quran Text Display with Overlay Navigation -->
-              <div id="quran-text-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200 dark:border-blue-900 relative group">
+              <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200  relative group">
                 <div class="text-center space-y-2">
-                  <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Page {{ appStore.currentPage }} of 604</p>
-                  <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
+                  <p class="text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
+                  <h2 class="text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
@@ -1328,7 +1326,7 @@
 
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2">
                     <!-- Surah Name Display -->
-                    <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black dark:text-black my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                    <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black  my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
                       {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
                       <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-4xl mt-2">﷽</div>
                     </div>
@@ -1342,8 +1340,8 @@
                       @mousemove="updateTooltipPosition($event)"
                       @mouseleave="hideWordTooltip()"
                       :class="{
-                        'bg-blue-100 dark:bg-blue-900 rounded-md px-2 py-1': hoveredWordId === word.id,
-                        'bg-red-200 dark:bg-red-900': currentPageMistakes.includes(word.id),
+                        'bg-blue-100  rounded-md px-2 py-1': hoveredWordId === word.id,
+                        'bg-red-200 ': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
                        class="quran-word inline-block"
@@ -1354,9 +1352,9 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
-                  <p class="text-gray-600 dark:text-gray-400">Loading Quran text...</p>
+                  <p class="text-gray-600 ">Loading Quran text...</p>
                 </div>
 
                 <!-- Overlay Navigation Arrows (Hidden by default, visible on hover) -->
@@ -1388,23 +1386,23 @@
               </div>
 
                 <!-- Page Navigation -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 space-y-3">
+              <div class="bg-white  rounded-lg shadow-lg p-4 space-y-3">
                 <!-- Navigation Controls -->
                 <div class="flex items-center justify-center gap-2 flex-wrap">
                   <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Previous page">
                     <i class="fas fa-chevron-left"></i>
                   </button>
 
-                  <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg text-gray-900 dark:text-gray-100">
+                  <div class="flex items-center gap-2 bg-gray-100  px-3 py-2 rounded-lg text-gray-900 ">
                     <span class="text-xl font-bold">{{ appStore.currentPage }}</span>
-                    <span class="text-gray-600 dark:text-gray-400">/604</span>
+                    <span class="text-gray-600 ">/604</span>
                   </div>
 
-                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 text-center text-sm" placeholder="Go">
+                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300  rounded-lg    text-center text-sm" placeholder="Go">
                   <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
 
                   <!-- Surah Navigator -->
-                  <select @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-sm hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer" title="Jump to Surah">
+                  <select @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
                     <option value="">📖 Surahs (114)</option>
                     <option value="1">1. الفاتحة</option>
                     <option value="2">2. البقرة</option>
@@ -1545,10 +1543,10 @@
                 </div>
 
                 <!-- Recording Status -->
-                <div v-if="audioStore.isRecording" class="flex items-center gap-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg border-2 border-red-500">
+                <div v-if="audioStore.isRecording" class="flex items-center gap-3 p-3 bg-red-100  rounded-lg border-2 border-red-500">
                   <div class="flex-1">
-                    <p class="font-bold text-red-700 dark:text-red-200 text-sm">Recording...</p>
-                    <p class="text-xs text-red-600 dark:text-red-300">{{ recordingDuration }}</p>
+                    <p class="font-bold text-red-700  text-sm">Recording...</p>
+                    <p class="text-xs text-red-600 ">{{ recordingDuration }}</p>
                   </div>
                   <button @click="stopRecording" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors">
                     <i class="fas fa-stop"></i>
@@ -1562,69 +1560,69 @@
               <!-- Dashboard Stats Grid -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Recent Recordings -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <i class="fas fa-microphone text-blue-600 dark:text-blue-400"></i>
+                <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                    <i class="fas fa-microphone text-blue-600 "></i>
                     Recent Recordings
                   </h3>
                   <div v-if="statistics.audios > 0" class="space-y-3 max-h-48 overflow-y-auto">
-                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between gap-3">
+                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100  rounded-lg flex items-center justify-between gap-3">
                       <div class="flex-1 min-w-0">
-                        <p class="font-medium text-gray-900 dark:text-gray-100">Page {{ recording.pageNumber }}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ recording.recordedAt }}</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400" v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }}</p>
+                        <p class="font-medium text-gray-900 ">Page {{ recording.pageNumber }}</p>
+                        <p class="text-xs text-gray-600 ">{{ recording.recordedAt }}</p>
+                        <p class="text-xs text-gray-600 " v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }}</p>
                       </div>
                       <div class="flex items-center gap-2">
-                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600 dark:text-gray-400 dark:hover:text-white" :title="'Play recording for page ' + recording.pageNumber">
+                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600  " :title="'Play recording for page ' + recording.pageNumber">
                           <i class="fas fa-play"></i>
                         </button>
-                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600 dark:text-gray-400 dark:hover:text-white" :title="'Delete recording for page ' + recording.pageNumber">
+                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600  " :title="'Delete recording for page ' + recording.pageNumber">
                           <i class="fas fa-trash"></i>
                         </button>
                       </div>
                     </div>
                   </div>
-                  <div v-else class="text-gray-600 dark:text-gray-400 text-sm">
+                  <div v-else class="text-gray-600  text-sm">
                     <i class="fas fa-circle-info mr-2"></i> No recordings yet
                   </div>
                 </div>
 
                 <!-- Summary Statistics -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <i class="fas fa-chart-bar text-blue-600 dark:text-blue-400"></i>
+                <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                    <i class="fas fa-chart-bar text-blue-600 "></i>
                     Summary Statistics
                   </h3>
                   <div class="grid grid-cols-2 gap-3">
-                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-300">Memorized</p>
-                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ statistics.memorized }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">of 604</p>
+                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
+                      <p class="text-xs text-gray-600 ">Memorized</p>
+                      <p class="text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
+                      <p class="text-xs text-gray-500 ">of 604</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-300">Juzs</p>
-                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ statistics.juzCount }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">of 30</p>
+                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
+                      <p class="text-xs text-gray-600 ">Juzs</p>
+                      <p class="text-2xl font-bold text-purple-600 ">{{ statistics.juzCount }}</p>
+                      <p class="text-xs text-gray-500 ">of 30</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-300">Completion</p>
-                      <p class="text-2xl font-bold text-green-600 dark:text-green-300">{{ statistics.percentage }}%</p>
+                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100   rounded-lg">
+                      <p class="text-xs text-gray-600 ">Completion</p>
+                      <p class="text-2xl font-bold text-green-600 ">{{ statistics.percentage }}%</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 rounded-lg">
-                      <p class="text-xs text-gray-600 dark:text-gray-300">Points</p>
-                      <p class="text-2xl font-bold text-orange-600 dark:text-orange-300">{{ statistics.totalPoints }}</p>
+                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg">
+                      <p class="text-xs text-gray-600 ">Points</p>
+                      <p class="text-2xl font-bold text-orange-600 ">{{ statistics.totalPoints }}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Mistake Bubble Grid -->
-              <div v-if="currentPageMistakeCount > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                  <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                  <i class="fas fa-exclamation-circle text-red-600 "></i>
                   Mistakes on Page {{ appStore.currentPage }}
                 </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentPageMistakeCount }} mistake(s) found</p>
+                <p class="text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
                 
                 <!-- Mistake Bubbles Grid -->
                 <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
@@ -1632,7 +1630,7 @@
                     v-for="wordId in currentPageMistakes" 
                     :key="wordId"
                     @click="highlightWord({ id: wordId })"
-                    class="p-3 rounded-full bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-200 font-bold text-sm hover:bg-red-300 dark:hover:bg-red-800 transition-colors text-center border border-red-300 dark:border-red-700"
+                    class="p-3 rounded-full bg-red-200  text-red-700  font-bold text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
                     :title="'Mistake: Word ' + wordId"
                   >
                     {{ wordId }}
@@ -1648,15 +1646,15 @@
               </div>
 
               <!-- Advanced Analytics Section -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
-                <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                  <i class="fas fa-chart-pie text-purple-600 dark:text-purple-400"></i>
+              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 ">
+                  <i class="fas fa-chart-pie text-purple-600 "></i>
                   Analytics & Progress
                 </h2>
 
                 <!-- Juz Progress Grid -->
                 <div>
-                  <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Progress by Juz</h3>
+                  <h3 class="text-lg font-bold mb-4 text-gray-900 ">Progress by Juz</h3>
                   <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
                     <button 
                       v-for="juzNum in 30" 
@@ -1668,7 +1666,7 @@
                           ? 'bg-green-500 text-white hover:bg-green-600' 
                           : juzMemorizedCount(juzNum) > 0
                             ? 'text-gray-900 hover:opacity-90'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            : 'bg-gray-200  text-gray-700  hover:bg-gray-300 '
                       ]"
                       :style="juzMemorizedCount(juzNum) > 0 && juzMemorizedCount(juzNum) < (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) ? getJuzGradientStyle(juzNum) : {}"
                       :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
@@ -1676,27 +1674,27 @@
                       {{ juzNum }}
                     </button>
                   </div>
-                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 dark:text-gray-300">
-                    <span><span class="text-green-600 dark:text-green-400 font-semibold">Completed</span></span>|
-                    <span><span class="text-yellow-500 dark:text-yellow-400 font-semibold">Partial</span></span>|
-                    <span><span class="text-gray-400 dark:text-gray-500 font-semibold">Not started</span></span>
+                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 ">
+                    <span><span class="text-green-600  font-semibold">Completed</span></span>|
+                    <span><span class="text-yellow-500  font-semibold">Partial</span></span>|
+                    <span><span class="text-gray-400  font-semibold">Not started</span></span>
                   </p>
                 </div>
 
                 <!-- Completion Estimate -->
-                <div class="border-t border-gray-300 dark:border-gray-700 pt-6">
-                  <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Completion Estimate</h3>
+                <div class="border-t border-gray-300  pt-6">
+                  <h3 class="text-lg font-bold mb-4 text-gray-900 ">Completion Estimate</h3>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p class="text-sm text-gray-600 dark:text-gray-300">Estimated Completion Date</p>
-                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-300">{{ formattedCompletion }}</p>
+                    <div class="p-4 bg-blue-50  rounded-lg border border-blue-200 ">
+                      <p class="text-sm text-gray-600 ">Estimated Completion Date</p>
+                      <p class="text-2xl font-bold text-blue-600 ">{{ formattedCompletion }}</p>
                     </div>
-                    <div class="p-4 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <p class="text-sm text-gray-600 dark:text-gray-300">Days Remaining</p>
-                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-300">{{ daysRemaining }}</p>
+                    <div class="p-4 bg-purple-50  rounded-lg border border-purple-200 ">
+                      <p class="text-sm text-gray-600 ">Days Remaining</p>
+                      <p class="text-2xl font-bold text-purple-600 ">{{ daysRemaining }}</p>
                     </div>
                   </div>
-                  <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm border border-gray-300 dark:border-gray-600">
+                  <div class="mt-4 p-4 bg-gray-100  rounded-lg text-gray-700  text-sm border border-gray-300 ">
                     <p>
                       Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
                     </p>
@@ -1706,14 +1704,14 @@
 
             <!-- Settings Modal -->
             <div v-if="showSettingsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div class="bg-white  rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <!-- Modal Header -->
-                <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                  <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <div class="sticky top-0 bg-white  border-b border-gray-200  px-6 py-4 flex items-center justify-between">
+                  <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-2">
                     <i class="fas fa-cog"></i>
                     Settings
                   </h2>
-                  <button @click="showSettingsModal = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                  <button @click="showSettingsModal = false" class="text-gray-500  hover:text-gray-700  transition-colors">
                     <i class="fas fa-times text-2xl"></i>
                   </button>
                 </div>
@@ -1722,25 +1720,25 @@
                 <div class="px-6 py-6 space-y-6">
                   <!-- General Settings -->
                   <div class="space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-sliders-h text-blue-600"></i>
                       General Settings
                     </h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Pages Per Day</label>
-                        <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Pages Per Day</label>
+                        <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300  rounded-lg   ">
                       </div>
 
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Finish in (days)</label>
-                        <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish in (days)</label>
+                        <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300  rounded-lg   ">
                       </div>
 
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Font Size</label>
-                        <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Font Size</label>
+                        <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300  rounded-lg  ">
                           <option value="small">Small</option>
                           <option value="medium">Medium</option>
                           <option value="large">Large</option>
@@ -1748,33 +1746,33 @@
                       </div>
 
                       <div class="flex items-center">
-                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded dark:bg-gray-700 dark:border-gray-600">
-                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tajweed Colors</label>
+                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  ">
+                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">Enable Tajweed Colors</label>
                       </div>
                     </div>
                   </div>
 
                   <!-- Daily Goals Settings -->
-                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <div class="border-t border-gray-300  pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-fire text-orange-500"></i>
                       Daily Goals
                     </h3>
                     
                     <!-- Streak Info -->
-                    <div class="p-4 bg-amber-50 dark:bg-gray-700 rounded-lg border-l-4 border-amber-500 space-y-2">
+                    <div class="p-4 bg-amber-50  rounded-lg border-l-4 border-amber-500 space-y-2">
                       <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Streak</span>
-                        <span class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        <span class="text-sm font-semibold text-gray-700 ">Current Streak</span>
+                        <span class="text-2xl font-bold text-orange-600 ">
                           <i class="fas fa-fire"></i>
                           {{ dailyGoalsStore.streak }} days
                         </span>
                       </div>
                       <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Best Streak</span>
+                        <span class="text-sm font-semibold text-gray-700 ">Best Streak</span>
                         <span class="text-lg font-bold text-orange-500">{{ dailyGoalsStore.longestStreak }} days</span>
                       </div>
-                      <div v-if="dailyGoalsStore.todayGoal && Object.values(dailyGoalsStore.todayGoal.tasks).some(t => t.completed)" class="flex items-center gap-2 text-green-700 dark:text-green-300 text-sm font-semibold mt-2">
+                      <div v-if="dailyGoalsStore.todayGoal && Object.values(dailyGoalsStore.todayGoal.tasks).some(t => t.completed)" class="flex items-center gap-2 text-green-700  text-sm font-semibold mt-2">
                         <i class="fas fa-check-circle"></i>
                         Tasks completed today: {{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }}
                       </div>
@@ -1782,7 +1780,7 @@
 
                     <!-- Task Selection -->
                     <div>
-                      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Select which tasks count towards your streak:</label>
+                      <label class="block text-sm font-semibold text-gray-700  mb-3">Select which tasks count towards your streak:</label>
                       <div class="space-y-2">
                         <div class="flex items-center">
                           <input 
@@ -1791,9 +1789,9 @@
                             type="checkbox" 
                             value="recordRandomPage" 
                             id="task-record"
-                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                            class="rounded  "
                           >
-                          <label for="task-record" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <label for="task-record" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-microphone text-red-500"></i>
                             Record Random Page
                           </label>
@@ -1806,9 +1804,9 @@
                             type="checkbox" 
                             value="reviewRange" 
                             id="task-review"
-                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                            class="rounded  "
                           >
-                          <label for="task-review" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <label for="task-review" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-book-open text-blue-500"></i>
                             Review Range
                           </label>
@@ -1821,9 +1819,9 @@
                             type="checkbox" 
                             value="memorizeDaily" 
                             id="task-memorize"
-                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                            class="rounded  "
                           >
-                          <label for="task-memorize" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <label for="task-memorize" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-quran text-purple-500"></i>
                             Memorize Daily
                           </label>
@@ -1836,9 +1834,9 @@
                             type="checkbox" 
                             value="reciteAyahs" 
                             id="task-recite"
-                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                            class="rounded  "
                           >
-                          <label for="task-recite" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                          <label for="task-recite" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-volume-up text-green-500"></i>
                             Recite 10 Ayahs
                           </label>
@@ -1847,15 +1845,15 @@
                     </div>
 
                     <!-- Streak Info Note -->
-                    <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-sm text-blue-800 dark:text-blue-100">
+                    <div class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
                       <i class="fas fa-info-circle mr-2"></i>
                       Streak breaks when no selected tasks are completed in a day. At least one completed task keeps the streak alive.
                     </div>
                   </div>
 
                   <!-- Data Management Section -->
-                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <div class="border-t border-gray-300  pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-database text-green-600"></i>
                       Data Management
                     </h3>
@@ -1879,21 +1877,21 @@
                   </div>
 
                   <!-- Bulk Memorization Tool -->
-                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <div class="border-t border-gray-300  pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-list-check text-purple-600"></i>
                       Bulk Memorization
                     </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Mark multiple pages as memorized at once</p>
+                    <p class="text-sm text-gray-600 ">Mark multiple pages as memorized at once</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Start Page</label>
-                        <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Start Page</label>
+                        <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">End Page</label>
-                        <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">End Page</label>
+                        <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div class="flex items-end">
                         <button 
@@ -1906,7 +1904,7 @@
                       </div>
                     </div>
 
-                    <div v-if="bulkWarning" class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg text-sm text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700">
+                    <div v-if="bulkWarning" class="p-3 bg-yellow-50  rounded-lg text-sm text-yellow-800  border border-yellow-200 ">
                       <i class="fas fa-exclamation-triangle mr-2"></i>
                       {{ bulkWarning }}
                     </div>
@@ -1914,8 +1912,8 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="sticky bottom-0 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end">
-                  <button @click="showSettingsModal = false" class="px-4 py-2 bg-gray-600 dark:bg-gray-600 text-white dark:text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-500 transition-colors font-medium">
+                <div class="sticky bottom-0 bg-gray-50  border-t border-gray-200  px-6 py-4 flex justify-end">
+                  <button @click="showSettingsModal = false" class="px-4 py-2 bg-gray-600  text-white  rounded-lg hover:bg-gray-700  transition-colors font-medium">
                     Close
                   </button>
                 </div>
@@ -1923,8 +1921,8 @@
             </div>
 
             <!-- Analytics Dashboard -->
-            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+              <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
                 <i class="fas fa-chart-line text-blue-600"></i>
                 Daily Goal Analytics
               </h3>
@@ -1932,48 +1930,48 @@
               <!-- Stats Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- Current Streak -->
-                <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
-                  <div class="text-sm font-medium text-orange-700 dark:text-orange-400 mb-1">Current Streak</div>
-                  <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg p-4 border border-orange-200 ">
+                  <div class="text-sm font-medium text-orange-700  mb-1">Current Streak</div>
+                  <div class="text-3xl font-bold text-orange-600  flex items-center gap-2">
                     <i class="fas fa-fire"></i>
                     {{ dailyGoalsStore.streak }}
                   </div>
-                  <div class="text-xs text-orange-600 dark:text-orange-400 mt-2">{{ streakMessage }}</div>
+                  <div class="text-xs text-orange-600  mt-2">{{ streakMessage }}</div>
                 </div>
 
                 <!-- Longest Streak -->
-                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                  <div class="text-sm font-medium text-purple-700 dark:text-purple-400 mb-1">Longest Streak</div>
-                  <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg p-4 border border-purple-200 ">
+                  <div class="text-sm font-medium text-purple-700  mb-1">Longest Streak</div>
+                  <div class="text-3xl font-bold text-purple-600  flex items-center gap-2">
                     <i class="fas fa-crown"></i>
                     {{ dailyGoalsStore.longestStreak }}
                   </div>
-                  <div class="text-xs text-purple-600 dark:text-purple-400 mt-2">Personal best</div>
+                  <div class="text-xs text-purple-600  mt-2">Personal best</div>
                 </div>
 
                 <!-- Completion Rate -->
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                  <div class="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">Completion Rate</div>
-                  <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ completionRate }}%</div>
-                  <div class="text-xs text-blue-600 dark:text-blue-400 mt-2">{{ completedDays }} of {{ totalDays }} days</div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg p-4 border border-blue-200 ">
+                  <div class="text-sm font-medium text-blue-700  mb-1">Completion Rate</div>
+                  <div class="text-3xl font-bold text-blue-600 ">{{ completionRate }}%</div>
+                  <div class="text-xs text-blue-600  mt-2">{{ completedDays }} of {{ totalDays }} days</div>
                 </div>
 
                 <!-- Total Completed -->
-                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                  <div class="text-sm font-medium text-green-700 dark:text-green-400 mb-1">Days Completed</div>
-                  <div class="text-3xl font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                <div class="bg-gradient-to-br from-green-50 to-green-100   rounded-lg p-4 border border-green-200 ">
+                  <div class="text-sm font-medium text-green-700  mb-1">Days Completed</div>
+                  <div class="text-3xl font-bold text-green-600  flex items-center gap-2">
                     <i class="fas fa-check-circle"></i>
                     {{ completedDays }}
                   </div>
-                  <div class="text-xs text-green-600 dark:text-green-400 mt-2">All goals achieved</div>
+                  <div class="text-xs text-green-600  mt-2">All goals achieved</div>
                 </div>
               </div>
 
               <!-- Charts Section -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Completion Trend (Last 30 Days) -->
-                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                  <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <div class="bg-gray-50  rounded-lg p-4 border border-gray-200  ">
+                  <h4 class="font-semibold text-gray-900  mb-4 flex items-center gap-2">
                     <i class="fas fa-trending-up text-green-600"></i>
                     Last 30 Days Trend
                   </h4>
@@ -1984,19 +1982,19 @@
                           'w-full rounded-t transition-all duration-200 hover:opacity-80',
                           status === 'complete' ? 'bg-green-500 h-20' : 
                           status === 'partial' ? 'bg-yellow-400 h-10' : 
-                          'bg-gray-300 dark:bg-gray-600 h-2'
+                          'bg-gray-300  h-2'
                         ]"
                         :title="getTrendDayTooltip(index, status)"
                       >
                       </div>
                     </div>
                   </div>
-                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-4 text-center">Past 30 days completion status</div>
+                  <div class="text-xs text-gray-600  mt-4 text-center">Past 30 days completion status</div>
                 </div>
 
                 <!-- Completion Breakdown -->
-                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                  <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <div class="bg-gray-50  rounded-lg p-4 border border-gray-200  ">
+                  <h4 class="font-semibold text-gray-900  mb-4 flex items-center gap-2">
                     <i class="fas fa-pie-chart text-blue-600"></i>
                     Overall Breakdown
                   </h4>
@@ -2006,31 +2004,31 @@
                       <div class="flex items-center gap-3">
                         <div class="w-4 h-4 rounded bg-green-500"></div>
                         <div>
-                          <div class="text-sm font-semibold text-gray-900 dark:text-white">Completed</div>
-                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ completePercentage }}%</div>
+                          <div class="text-sm font-semibold text-gray-900  ">Completed</div>
+                          <div class="text-xs text-gray-600  ">{{ completePercentage }}%</div>
                         </div>
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="w-4 h-4 rounded bg-yellow-400"></div>
                         <div>
-                          <div class="text-sm font-semibold text-gray-900 dark:text-white">Partial</div>
-                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ partialPercentage }}%</div>
+                          <div class="text-sm font-semibold text-gray-900  ">Partial</div>
+                          <div class="text-xs text-gray-600  ">{{ partialPercentage }}%</div>
                         </div>
                       </div>
                       <div class="flex items-center gap-3">
-                        <div class="w-4 h-4 rounded bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="w-4 h-4 rounded bg-gray-300  "></div>
                         <div>
-                          <div class="text-sm font-semibold text-gray-900 dark:text-white">None</div>
-                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ nonePercentage }}%</div>
+                          <div class="text-sm font-semibold text-gray-900 ">None</div>
+                          <div class="text-xs text-gray-600  ">{{ nonePercentage }}%</div>
                         </div>
                       </div>
                     </div>
                     <!-- Visual circle representation -->
-                    <div class="w-32 h-32 rounded-full bg-gradient-conic from-green-500 via-yellow-400 to-gray-300 dark:to-gray-600 flex items-center justify-center">
-                      <div class="w-28 h-28 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                    <div class="w-32 h-32 rounded-full bg-gradient-conic from-green-500 via-yellow-400 to-gray-300  flex items-center justify-center">
+                      <div class="w-28 h-28 rounded-full bg-white  flex items-center justify-center">
                         <div class="text-center">
-                          <div class="text-lg font-bold text-gray-900 dark:text-white">{{ completionRate }}%</div>
-                          <div class="text-xs text-gray-600 dark:text-gray-400">Complete</div>
+                          <div class="text-lg font-bold text-gray-900  ">{{ completionRate }}%</div>
+                          <div class="text-xs text-gray-600  ">Complete</div>
                         </div>
                       </div>
                     </div>
@@ -2039,20 +2037,20 @@
               </div>
 
               <!-- Recent Activity -->
-              <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <div class="mt-6 border-t border-gray-200  pt-6">
+                <h4 class="font-semibold text-gray-900  mb-4 flex items-center gap-2">
                   <i class="fas fa-history text-indigo-600"></i>
                   Recent Activity
                 </h4>
                 <div class="space-y-2 max-h-40 overflow-y-auto">
-                  <div v-if="recentActivity.length === 0" class="text-sm text-gray-600 dark:text-gray-400">
+                  <div v-if="recentActivity.length === 0" class="text-sm text-gray-600  ">
                     No recent activity
                   </div>
-                  <div v-for="(activity, index) in recentActivity.slice(0, 5)" :key="index" class="flex items-center gap-3 p-2 rounded bg-gray-100 dark:bg-gray-700/50 text-sm">
+                  <div v-for="(activity, index) in recentActivity.slice(0, 5)" :key="index" class="flex items-center gap-3 p-2 rounded bg-gray-100  text-sm">
                     <i :class="['fas', activity.icon, activity.color]"></i>
                     <div class="flex-1">
-                      <div class="text-gray-900 dark:text-white">{{ activity.text }}</div>
-                      <div class="text-xs text-gray-600 dark:text-gray-400">{{ activity.date }}</div>
+                      <div class="text-gray-900  ">{{ activity.text }}</div>
+                      <div class="text-xs text-gray-600  ">{{ activity.date }}</div>
                     </div>
                   </div>
                 </div>
@@ -2061,24 +2059,24 @@
 
             <!-- Daily Goals Contribution Graph (GitHub-style) -->
             <div v-if="dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-12">
+              <div class="bg-white  rounded-lg shadow-lg p-6 mb-12">
                 <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2">
                     <i class="fas fa-fire text-orange-500"></i>
                     Last 365 Days Goal Contribution Graph
                   </h3>
                   <div class="flex gap-3 text-xs">
                     <div class="flex items-center gap-1">
-                      <div class="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
-                      <span class="text-gray-600 dark:text-gray-400">None</span>
+                      <div class="w-3 h-3 rounded-sm bg-gray-200  "></div>
+                      <span class="text-gray-600  ">None</span>
                     </div>
                     <div class="flex items-center gap-1">
-                      <div class="w-3 h-3 rounded-sm bg-yellow-300 dark:bg-yellow-500"></div>
-                      <span class="text-gray-600 dark:text-gray-400">Partial</span>
+                      <div class="w-3 h-3 rounded-sm bg-yellow-300  "></div>
+                      <span class="text-gray-600  ">Partial</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <div class="w-3 h-3 rounded-sm bg-green-500"></div>
-                      <span class="text-gray-600 dark:text-gray-400">Complete</span>
+                      <span class="text-gray-600  ">Complete</span>
                     </div>
                   </div>
                 </div>
@@ -2088,7 +2086,7 @@
                   <div class="inline-block p-2">
                     <!-- Month Labels Row -->
                     <div class="flex gap-0.5 mb-2 ml-6">
-                      <div v-for="label in monthLabels" :key="label.name" :style="{ marginLeft: label.weekIndex === 0 ? '25px' : '50px' }" class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-10">
+                      <div v-for="label in monthLabels" :key="label.name" :style="{ marginLeft: label.weekIndex === 0 ? '25px' : '50px' }" class="text-xs font-semibold text-gray-600  w-10">
                         {{ label.name }}
                       </div>
                     </div>
@@ -2097,13 +2095,13 @@
                     <div class="flex gap-0.5">
                       <!-- Day of week labels (Sun-Sat) -->
                       <div class="flex flex-col gap-1 mr-0.5">
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">S</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">M</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">T</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">W</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">T</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">F</div>
-                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center">S</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">S</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">M</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">T</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">W</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">T</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center mb-2">F</div>
+                        <div class="text-xs font-semibold text-gray-600  w-6 text-center">S</div>
                       </div>
 
                       <!-- Contribution squares grid -->
@@ -2135,7 +2133,7 @@
                 </div>
 
                 <!-- Legend and Stats -->
-                <div class="mt-6 pt-4 border-t border-gray-300 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                <div class="mt-6 pt-4 border-t border-gray-300  text-xs text-gray-600  ">
                   <p>Contribution graph shows daily goal completion status for 2025. Green = all tasks completed, Yellow = partial completion, Gray = no tasks completed.</p>
                 </div>
 
@@ -3566,12 +3564,12 @@
           const getDayStatusColor = (status) => {
             switch (status) {
               case 'complete':
-                return 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'; // Green for all tasks
+                return 'bg-green-500 hover:bg-green-600'; // Green for all tasks
               case 'partial':
-                return 'bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-600'; // Yellow for some tasks
+                return 'bg-yellow-400 hover:bg-yellow-500'; // Yellow for some tasks
               case 'none':
               default:
-                return 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'; // Gray for none
+                return 'bg-gray-200  hover:bg-gray-300'; // Gray for none
             }
           };
 
