@@ -2430,6 +2430,28 @@
               const today = getTodayDate();
               console.log('[Murajah] Initializing daily goals for', today, 'with memorized pages:', Array.from(memorizedStore.memorizedPages || []).slice(0, 5));
               
+              // Check if this is a new user (no memorized pages) and adjust tasks accordingly
+              const isNewUser = memorizedStore.memorizedPages.size === 0;
+              const hasReviewRangeTask = dailyGoalsStore.selectedTasks.includes('reviewRange');
+              const hasRecordRandomPageTask = dailyGoalsStore.selectedTasks.includes('recordRandomPage');
+              
+              if (isNewUser && (hasReviewRangeTask || hasRecordRandomPageTask)) {
+                // For new users with no memorized pages, remove tasks that require memorized pages
+                dailyGoalsStore.selectedTasks = dailyGoalsStore.selectedTasks.filter(
+                  task => task !== 'reviewRange' && task !== 'recordRandomPage'
+                );
+                
+                // Ensure new users have at least reciteAyahs and memorizeDaily
+                if (!dailyGoalsStore.selectedTasks.includes('reciteAyahs')) {
+                  dailyGoalsStore.selectedTasks.push('reciteAyahs');
+                }
+                if (!dailyGoalsStore.selectedTasks.includes('memorizeDaily')) {
+                  dailyGoalsStore.selectedTasks.push('memorizeDaily');
+                }
+                
+                console.log('[Murajah] New user detected (no memorized pages) - adjusted tasks to:', dailyGoalsStore.selectedTasks);
+              }
+              
               try {
                 // Try to load today's goal from IndexedDB
                 const storedGoal = await murajahDB.loadDailyGoal(today);
