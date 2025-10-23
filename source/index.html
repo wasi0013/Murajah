@@ -762,6 +762,46 @@
     .dark-mode .word-tooltip::after {
       border-top-color: #1f2937;
     }
+
+    /* Recording Countdown Overlay */
+    .recording-countdown-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .countdown-timer {
+      font-size: 6rem;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      animation: countdownPulse 0.6s ease-in-out;
+    }
+
+    @keyframes countdownPulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Blur effect for Quran text section during recording */
+    #quran-text-section.blur-recording {
+      filter: blur(8px);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -1543,6 +1583,13 @@
                   </button>
                 </div>
 
+                <!-- Recording Countdown Overlay -->
+                <div v-if="recordingCountdown !== null" class="recording-countdown-overlay">
+                  <div class="countdown-timer">
+                    {{ recordingCountdown > 0 ? recordingCountdown : '🎤' }}
+                  </div>
+                </div>
+
                 <!-- Recording Status -->
                 <div v-if="audioStore.isRecording" class="flex items-center gap-3 p-3 bg-red-100  rounded-lg border-2 border-red-500">
                   <div class="flex-1">
@@ -2250,6 +2297,10 @@
           const tooltipX = ref(0);
           const tooltipY = ref(0);
           const tooltipText = ref('');
+
+          // Recording countdown state
+          const recordingCountdown = ref(null); // null, 3, 2, 1, 0 = recording started
+          let countdownTimer = null;
 
           // Touch device detection
           const isTouchDevice = () => {
@@ -3108,20 +3159,60 @@
 
           const startRecording = async () => {
             try {
-              await audioRecorder.startRecording();
-              audioStore.isRecording = true;
-              recordingStartTime.value = Date.now();
+              // Start countdown
+              recordingCountdown.value = 3;
+              
+              // Blur the Quran text section
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.classList.add('blur-recording');
+              }
 
-              recordingTimer = setInterval(() => {
-                const elapsed = Date.now() - recordingStartTime.value;
-                recordingDuration.value = AudioRecorder.formatDuration(elapsed);
-              }, 100);
+              // Countdown logic
+              countdownTimer = setInterval(() => {
+                if (recordingCountdown.value > 0) {
+                  recordingCountdown.value--;
+                } else {
+                  // Countdown finished, start actual recording
+                  clearInterval(countdownTimer);
+                  countdownTimer = null;
+                  recordingCountdown.value = null;
 
-              appStore.successMessage = 'Recording started...';
-              setTimeout(() => appStore.successMessage = '', 2000);
+                  // Start the actual recording
+                  audioRecorder.startRecording().then(() => {
+                    audioStore.isRecording = true;
+                    recordingStartTime.value = Date.now();
+
+                    recordingTimer = setInterval(() => {
+                      const elapsed = Date.now() - recordingStartTime.value;
+                      recordingDuration.value = AudioRecorder.formatDuration(elapsed);
+                    }, 100);
+
+                    appStore.successMessage = 'Recording in progress...';
+                    setTimeout(() => appStore.successMessage = '', 2000);
+                  }).catch((error) => {
+                    // Remove blur if recording fails
+                    const quranSection = document.getElementById('quran-text-section');
+                    if (quranSection) {
+                      quranSection.classList.remove('blur-recording');
+                    }
+                    recordingCountdown.value = null;
+                    audioStore.isRecording = false;
+                    console.error('[Murajah] Recording error:', error);
+                    appStore.errorMessage = 'Failed to start recording: ' + error.message;
+                  });
+                }
+              }, 1000);
+
             } catch (error) {
-              console.error('[Murajah] Recording error:', error);
-              appStore.errorMessage = 'Failed to start recording: ' + error.message;
+              // Remove blur if there's an error
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.classList.remove('blur-recording');
+              }
+              recordingCountdown.value = null;
+              console.error('[Murajah] Recording setup error:', error);
+              appStore.errorMessage = 'Failed to prepare recording: ' + error.message;
               audioStore.isRecording = false;
             }
           };
@@ -3151,6 +3242,12 @@
                 recordingStartTime.value = null;
                 recordingDuration.value = '0:00';
 
+                // Remove blur effect
+                const quranSection = document.getElementById('quran-text-section');
+                if (quranSection) {
+                  quranSection.classList.remove('blur-recording');
+                }
+
                 saveDataBackground();
                 appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
                 setTimeout(() => appStore.successMessage = '', 3000);
@@ -3159,24 +3256,53 @@
               console.error('[Murajah] Stop recording error:', error);
               appStore.errorMessage = 'Failed to stop recording';
               audioStore.isRecording = false;
+
+              // Remove blur effect on error
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.classList.remove('blur-recording');
+              }
             }
           };
 
           const cancelRecording = () => {
             try {
-              if (recordingTimer) clearInterval(recordingTimer);
+              // Clear countdown timer if active
+              if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+              }
+              
+              // Clear recording timer if recording was in progress
+              if (recordingTimer) {
+                clearInterval(recordingTimer);
+              }
               
               audioRecorder.cancelRecording();
               
               audioStore.isRecording = false;
+              recordingCountdown.value = null;
               recordingStartTime.value = null;
               recordingDuration.value = '0:00';
+
+              // Remove blur effect
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.classList.remove('blur-recording');
+              }
 
               appStore.successMessage = 'Recording cancelled';
               setTimeout(() => appStore.successMessage = '', 2000);
             } catch (error) {
               console.error('[Murajah] Cancel recording error:', error);
               audioStore.isRecording = false;
+              recordingCountdown.value = null;
+
+              // Remove blur effect on error
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) {
+                quranSection.classList.remove('blur-recording');
+              }
             }
           };
 
@@ -3911,6 +4037,7 @@ Display:
             currentPageMistakes,
             currentSurahName,
             recordingDuration,
+            recordingCountdown,
             previousPage,
             nextPage,
             gotoPage,
