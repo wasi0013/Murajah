@@ -106,6 +106,39 @@
         .dark .bg-red-200 { background-color: rgba(153, 27, 27, 0.8) !important; }
         .dark .bg-green-100 { background-color: rgba(20, 83, 45, 0.8) !important; }
         .dark .bg-green-200 { background-color: rgba(34, 110, 59, 0.8) !important; }
+        .dark .bg-blue-100 { background-color: rgba(30, 58, 138, 0.6) !important; }
+        .dark .bg-blue-200 { background-color: rgba(30, 58, 138, 0.7) !important; }
+        .dark .bg-yellow-100 { background-color: rgba(120, 53, 15, 0.6) !important; }
+        .dark .bg-yellow-200 { background-color: rgba(120, 53, 15, 0.7) !important; }
+
+        /* Ensure text color is readable on light background colors in dark mode */
+        .dark .bg-blue-50,
+        .dark .bg-green-50,
+        .dark .bg-orange-50,
+        .dark .bg-amber-50,
+        .dark .bg-pink-50,
+        .dark .bg-purple-50,
+        .dark .bg-cyan-50,
+        .dark .bg-blue-100,
+        .dark .bg-blue-200,
+        .dark .bg-yellow-100,
+        .dark .bg-yellow-200 {
+            color: var(--dark-text) !important;
+        }
+
+        .dark .bg-blue-50 button,
+        .dark .bg-green-50 button,
+        .dark .bg-orange-50 button,
+        .dark .bg-amber-50 button,
+        .dark .bg-pink-50 button,
+        .dark .bg-purple-50 button,
+        .dark .bg-cyan-50 button,
+        .dark .bg-blue-100 button,
+        .dark .bg-blue-200 button,
+        .dark .bg-yellow-100 button,
+        .dark .bg-yellow-200 button {
+            color: white !important;
+        }
 
         /* Text color overrides for dark mode readability */
         .dark .text-gray-900 { color: var(--dark-text) !important; }
@@ -280,6 +313,149 @@
 
         .dark .text-gray-600 {
             color: #e5e7eb !important;
+        }
+
+        /* ===== EXPLICIT LIGHT MODE RESETS ===== */
+        /* Ensure elements revert to light mode when .dark class is removed */
+        
+        /* Light mode background colors */
+        body:not(.dark) .bg-white { background-color: #ffffff !important; color: #111827 !important; }
+        body:not(.dark) .bg-gray-50 { background-color: #f9fafb !important; color: #111827 !important; }
+        body:not(.dark) .bg-gray-100 { background-color: #f3f4f6 !important; color: #111827 !important; }
+        body:not(.dark) .bg-gray-200 { background-color: #e5e7eb !important; color: #111827 !important; }
+        body:not(.dark) .bg-gray-700 { background-color: #374151 !important; }
+        body:not(.dark) .bg-gray-800 { background-color: #1f2937 !important; }
+        body:not(.dark) .bg-gray-900 { background-color: #111827 !important; }
+        
+        /* Light mode text colors */
+        body:not(.dark) .text-gray-900 { color: #111827 !important; }
+        body:not(.dark) .text-gray-800 { color: #1f2937 !important; }
+        body:not(.dark) .text-gray-700 { color: #374151 !important; }
+        body:not(.dark) .text-gray-600 { color: #4b5563 !important; }
+        body:not(.dark) .text-gray-500 { color: #6b7280 !important; }
+        body:not(.dark) .text-gray-400 { color: #9ca3af !important; }
+        body:not(.dark) .text-gray-300 { color: #d1d5db !important; }
+        body:not(.dark) .text-gray-200 { color: #e5e7eb !important; }
+        body:not(.dark) .text-gray-100 { color: #f3f4f6 !important; }
+        
+        /* Light mode header/footer */
+        body:not(.dark) header { background-color: #ffffff !important; color: #111827 !important; }
+        body:not(.dark) footer { background-color: #111827 !important; color: #9ca3af !important; }
+        body:not(.dark) main { background-color: inherit !important; color: #111827 !important; }
+        
+        /* Light mode inputs/selects */
+        body:not(.dark) input { background-color: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
+        body:not(.dark) textarea { background-color: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
+        body:not(.dark) select { background-color: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
+        
+        /* Light mode buttons */
+        body:not(.dark) button:not([class*="bg-"]) { background-color: #f3f4f6 !important; color: #111827 !important; }
+        
+        /* Light mode colored text */
+        body:not(.dark) .text-blue-900 { color: #1e3a8a !important; }
+        body:not(.dark) .text-blue-800 { color: #1e40af !important; }
+        body:not(.dark) .text-green-900 { color: #14532d !important; }
+        body:not(.dark) .text-green-800 { color: #166534 !important; }
+        body:not(.dark) .text-red-900 { color: #7f1d1d !important; }
+        body:not(.dark) .text-red-800 { color: #991b1b !important; }
+        body:not(.dark) .text-red-700 { color: #b91c1c !important; }
+        body:not(.dark) .text-red-200 { color: #fecaca !important; }
+        
+        /* Light mode borders */
+        body:not(.dark) .border-gray-200 { border-color: #e5e7eb !important; }
+        body:not(.dark) .border-gray-300 { border-color: #d1d5db !important; }
+        body:not(.dark) .border-gray-700 { border-color: #374151 !important; }
+        
+        /* Light mode modal styling */
+        body:not(.dark) .bg-white[class*="p-6"][class*="rounded-lg"] { background-color: #ffffff !important; color: #111827 !important; }
+        
+        /* Light mode error messages */
+        body:not(.dark) .bg-red-100 { background-color: #fee2e2 !important; border-color: #fca5a5 !important; color: #7f1d1d !important; }
+        body:not(.dark) .border-red-400 { border-color: #f87171 !important; }
+        
+        /* Ensure all elements in light mode have correct text color */
+        body:not(.dark) h1,
+        body:not(.dark) h2,
+        body:not(.dark) h3,
+        body:not(.dark) h4,
+        body:not(.dark) h5,
+        body:not(.dark) h6 {
+            color: #111827 !important;
+        }
+        
+        body:not(.dark) p { color: #374151 !important; }
+        body:not(.dark) strong { color: #111827 !important; }
+        body:not(.dark) li { color: #374151 !important; }
+        body:not(.dark) a { color: #2563eb !important; }
+        body:not(.dark) a:hover { color: #1d4ed8 !important; }
+
+        /* ===== RESPONSIVE TABS ===== */
+        /* Tab navigation container */
+        nav[aria-label="Quiz Types"] {
+            display: flex;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        /* Desktop tabs (>640px) */
+        @media (min-width: 641px) {
+            nav[aria-label="Quiz Types"] {
+                gap: 2rem; /* space-x-8 */
+            }
+
+            nav[aria-label="Quiz Types"] button {
+                padding: 1rem 0.25rem;
+                font-size: 0.875rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Tablet tabs (500px - 640px) */
+        @media (max-width: 640px) and (min-width: 501px) {
+            nav[aria-label="Quiz Types"] {
+                gap: 0.75rem; /* Reduced gap */
+            }
+
+            nav[aria-label="Quiz Types"] button {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.75rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Mobile tabs (<500px) */
+        @media (max-width: 500px) {
+            nav[aria-label="Quiz Types"] {
+                gap: 0.5rem; /* Minimal gap */
+            }
+
+            nav[aria-label="Quiz Types"] button {
+                padding: 0.5rem 0.4rem;
+                font-size: 0.65rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Hide scrollbar but keep scrolling functional */
+        nav[aria-label="Quiz Types"]::-webkit-scrollbar {
+            height: 2px;
+        }
+
+        nav[aria-label="Quiz Types"]::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        nav[aria-label="Quiz Types"]::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+
+        nav[aria-label="Quiz Types"]::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
         }
     </style>
 </head>
@@ -2327,6 +2503,8 @@
                         document.body.classList.add('dark-mode')
                         document.documentElement.style.backgroundColor = '#111827'
                         document.documentElement.style.color = '#f3f4f6'
+                        document.body.style.backgroundColor = '#111827'
+                        document.body.style.color = '#f3f4f6'
                         console.log('[Quiz] Dark mode applied to DOM')
                     } else {
                         document.documentElement.classList.remove('dark')
@@ -2335,6 +2513,8 @@
                         document.body.classList.remove('dark-mode')
                         document.documentElement.style.backgroundColor = '#ffffff'
                         document.documentElement.style.color = '#111827'
+                        document.body.style.backgroundColor = '#ffffff'
+                        document.body.style.color = '#111827'
                         console.log('[Quiz] Light mode applied to DOM')
                     }
                 }
