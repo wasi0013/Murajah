@@ -804,6 +804,9 @@
               if (!db.objectStoreNames.contains('recordings')) {
                 db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
               }
+              if (!db.objectStoreNames.contains('dailyGoals')) {
+                db.createObjectStore('dailyGoals', { keyPath: 'date' });
+              }
               console.log('[Murajah] IndexedDB schema created');
             };
           });
@@ -841,9 +844,10 @@
         }
 
         async clearAll() {
-          const tx = this.db.transaction(['appData', 'recordings'], 'readwrite');
+          const tx = this.db.transaction(['appData', 'recordings', 'dailyGoals'], 'readwrite');
           tx.objectStore('appData').clear();
           tx.objectStore('recordings').clear();
+          tx.objectStore('dailyGoals').clear();
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
               console.log('[Murajah] IndexedDB cleared');
@@ -909,6 +913,97 @@
             request.onsuccess = () => {
               const result = request.result;
               resolve(result ? result.value : 'light');
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        // ===== Daily Goals Methods =====
+        async saveDailyGoal(dailyGoal) {
+          const tx = this.db.transaction(['dailyGoals'], 'readwrite');
+          const store = tx.objectStore('dailyGoals');
+          store.put({ ...dailyGoal, savedAt: new Date().toISOString() });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log(`[Murajah] Daily goal saved for ${dailyGoal.date}`);
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadDailyGoal(date) {
+          const tx = this.db.transaction(['dailyGoals'], 'readonly');
+          const store = tx.objectStore('dailyGoals');
+          return new Promise((resolve, reject) => {
+            const request = store.get(date);
+            request.onsuccess = () => {
+              resolve(request.result || null);
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async loadDailyGoalHistory(daysBack = 90) {
+          const tx = this.db.transaction(['dailyGoals'], 'readonly');
+          const store = tx.objectStore('dailyGoals');
+          return new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onsuccess = () => {
+              const allRecords = request.result;
+              
+              // Filter records from last N days
+              const cutoffDate = new Date();
+              cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+              const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+              
+              const recentRecords = allRecords.filter(record => record.date >= cutoffDateStr);
+              resolve(recentRecords.sort((a, b) => new Date(a.date) - new Date(b.date)));
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async deleteDailyGoal(date) {
+          const tx = this.db.transaction(['dailyGoals'], 'readwrite');
+          const store = tx.objectStore('dailyGoals');
+          store.delete(date);
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log(`[Murajah] Daily goal deleted for ${date}`);
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async clearOldDailyGoals(daysToKeep = 90) {
+          const tx = this.db.transaction(['dailyGoals'], 'readonly');
+          const store = tx.objectStore('dailyGoals');
+          return new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onsuccess = () => {
+              const allRecords = request.result;
+              
+              const cutoffDate = new Date();
+              cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+              const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+              
+              const recordsToDelete = allRecords.filter(record => record.date < cutoffDateStr);
+              
+              if (recordsToDelete.length > 0) {
+                const deleteTx = this.db.transaction(['dailyGoals'], 'readwrite');
+                const deleteStore = deleteTx.objectStore('dailyGoals');
+                recordsToDelete.forEach(record => deleteStore.delete(record.date));
+                
+                deleteTx.oncomplete = () => {
+                  console.log(`[Murajah] Cleaned up ${recordsToDelete.length} old daily goal records`);
+                  resolve(recordsToDelete.length);
+                };
+                deleteTx.onerror = () => reject(deleteTx.error);
+              } else {
+                resolve(0);
+              }
             };
             request.onerror = () => reject(request.error);
           });
