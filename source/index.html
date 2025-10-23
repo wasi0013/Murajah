@@ -1688,6 +1688,16 @@
           const tooltipY = ref(0);
           const tooltipText = ref('');
 
+          // Touch device detection
+          const isTouchDevice = () => {
+            return (
+              ('ontouchstart' in window) ||
+              (navigator.maxTouchPoints > 0) ||
+              (navigator.msMaxTouchPoints > 0) ||
+              window.matchMedia('(hover: none) and (pointer: coarse)').matches
+            );
+          };
+
           // Initialize app
           const initializeApp = async () => {
             try {
@@ -2046,6 +2056,12 @@
 
           // Tooltip functions for word translations
           const showWordTooltip = (word, event) => {
+            // Don't show tooltip on touch devices
+            if (isTouchDevice()) {
+              console.log('[Murajah] Tooltip blocked on touch device');
+              return;
+            }
+
             hoveredWordId.value = word.id;
             if (!quranData.value || !quranData.value.translations) {
               console.warn('[Murajah] No translations available');
