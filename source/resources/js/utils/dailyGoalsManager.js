@@ -26,8 +26,8 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 
   if (selectedTasks.includes('recordRandomPage')) {
     todayGoal.tasks.recordRandomPage = {
-      name: 'Record Random Page',
-      description: 'Record yourself on a random memorized page',
+      name: 'Do a quick test',
+      description: 'Recite and record a random memorized page from memory and check mistakes.',
       completed: false,
       completedAt: null,
       recordingId: null
@@ -41,8 +41,8 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
       lastDailyGoal
     );
     todayGoal.tasks.reviewRange = {
-      name: 'Review Range',
-      description: `Review pages: ${reviewRange.pages.join(', ')}`,
+      name: 'Recite from memory',
+      description: `Revise these pages today: ${reviewRange.pages.join(', ')}`,
       completed: false,
       completedAt: null,
       startPage: reviewRange.startPage,
@@ -53,8 +53,8 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 
   if (selectedTasks.includes('memorizeDaily')) {
     todayGoal.tasks.memorizeDaily = {
-      name: 'Memorize Daily',
-      description: `Memorize ${settings.pagesPerDay || 1} pages today`,
+      name: 'Memorize new',
+      description: `Complete your daily memorization target.`,
       completed: false,
       completedAt: null,
       targetPages: settings.pagesPerDay || 1,
