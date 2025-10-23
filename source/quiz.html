@@ -457,6 +457,55 @@
         nav[aria-label="Quiz Types"]::-webkit-scrollbar-thumb:hover {
             background: rgba(156, 163, 175, 0.8);
         }
+
+        /* ===== DISABLE HOVER/TOOLTIPS ON TOUCH DEVICES ===== */
+        /* Use @media (hover: none) to detect touch devices without hover capability */
+        @media (hover: none) and (pointer: coarse) {
+            /* Disable all hover effects on touch devices */
+            *:hover {
+                background-color: inherit !important;
+                color: inherit !important;
+                border-color: inherit !important;
+            }
+
+            /* Disable hover scale transformations */
+            *:hover {
+                transform: none !important;
+            }
+
+            /* Disable hover border changes */
+            button:hover,
+            a:hover,
+            .hover\:border-primary:hover,
+            .hover\:bg-blue-50:hover {
+                border-color: inherit !important;
+                background-color: inherit !important;
+            }
+
+            /* Prevent tooltips from showing on touch */
+            [data-tooltip],
+            .tooltip,
+            [title] {
+                pointer-events: none;
+            }
+
+            /* Disable all active/focus states that might trigger tooltips */
+            *:active {
+                background-color: inherit !important;
+            }
+        }
+
+        /* Alternative: Use pointer-events to disable hover tooltips on all touch-capable devices */
+        @supports (pointer: coarse) {
+            @media (pointer: coarse) {
+                /* Hide any tooltip-like elements on touch devices */
+                [role="tooltip"],
+                .word-tooltip,
+                .translation-tooltip {
+                    display: none !important;
+                }
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950">
@@ -1630,6 +1679,35 @@
                     }
                 };
 
+                // Detect touch device capability
+                const isTouchDevice = () => {
+                    return (
+                        ('ontouchstart' in window) ||
+                        (navigator.maxTouchPoints > 0) ||
+                        (navigator.msMaxTouchPoints > 0) ||
+                        window.matchMedia('(hover: none) and (pointer: coarse)').matches
+                    );
+                };
+
+                // Disable tooltips on touch devices
+                const disableTooltipsOnTouch = () => {
+                    if (!isTouchDevice()) return;
+                    
+                    // Disable all mouseenter/mouseover tooltip triggers
+                    document.addEventListener('mouseenter', (e) => {
+                        e.preventDefault();
+                    }, { capture: true });
+                    
+                    // Remove hover-based tooltips from all elements
+                    const allElements = document.querySelectorAll('*[title], [data-tooltip], .tooltip, [role="tooltip"]');
+                    allElements.forEach(el => {
+                        el.removeAttribute('title');
+                        el.style.pointerEvents = 'none';
+                    });
+                    
+                    console.log('[Quiz] Tooltips disabled for touch device');
+                };
+
                 // Get random verses excluding current verse
                 const getRandomVerses = (currentVerse, count) => {
                     const allVerses = [];
@@ -2559,12 +2637,12 @@
                         endLightningRound()
                     }
                 }
-
                 // Initialize app when component mounts
                 const init = async () => {
                     await initializeApp()
                     await loadSurahs()
                     await loadQuizData() // Load quiz data after initialization
+                    disableTooltipsOnTouch() // Disable tooltips on touch devices
                 }
                 init()
 
