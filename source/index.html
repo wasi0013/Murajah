@@ -1709,9 +1709,6 @@
                 </div>
               </div>
 
-
-            </main>
-
             <!-- Settings Modal -->
             <div v-if="showSettingsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1929,6 +1926,240 @@
                 </div>
               </div>
             </div>
+
+            <!-- Analytics Dashboard -->
+            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                <i class="fas fa-chart-line text-blue-600"></i>
+                Daily Goal Analytics
+              </h3>
+
+              <!-- Stats Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Current Streak -->
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
+                  <div class="text-sm font-medium text-orange-700 dark:text-orange-400 mb-1">Current Streak</div>
+                  <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                    <i class="fas fa-fire"></i>
+                    {{ dailyGoalsStore.streak }}
+                  </div>
+                  <div class="text-xs text-orange-600 dark:text-orange-400 mt-2">{{ streakMessage }}</div>
+                </div>
+
+                <!-- Longest Streak -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                  <div class="text-sm font-medium text-purple-700 dark:text-purple-400 mb-1">Longest Streak</div>
+                  <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                    <i class="fas fa-crown"></i>
+                    {{ dailyGoalsStore.longestStreak }}
+                  </div>
+                  <div class="text-xs text-purple-600 dark:text-purple-400 mt-2">Personal best</div>
+                </div>
+
+                <!-- Completion Rate -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                  <div class="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">Completion Rate</div>
+                  <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ completionRate }}%</div>
+                  <div class="text-xs text-blue-600 dark:text-blue-400 mt-2">{{ completedDays }} of {{ totalDays }} days</div>
+                </div>
+
+                <!-- Total Completed -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                  <div class="text-sm font-medium text-green-700 dark:text-green-400 mb-1">Days Completed</div>
+                  <div class="text-3xl font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i>
+                    {{ completedDays }}
+                  </div>
+                  <div class="text-xs text-green-600 dark:text-green-400 mt-2">All goals achieved</div>
+                </div>
+              </div>
+
+              <!-- Charts Section -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Completion Trend (Last 30 Days) -->
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-trending-up text-green-600"></i>
+                    Last 30 Days Trend
+                  </h4>
+                  <div class="h-32 flex items-end gap-1 justify-between px-2">
+                    <div v-for="(status, index) in last30DaysTrend" :key="index" class="flex-1 flex flex-col items-center gap-1 group">
+                      <div 
+                        :class="[
+                          'w-full rounded-t transition-all duration-200 hover:opacity-80',
+                          status === 'complete' ? 'bg-green-500 h-20' : 
+                          status === 'partial' ? 'bg-yellow-400 h-10' : 
+                          'bg-gray-300 dark:bg-gray-600 h-2'
+                        ]"
+                        :title="getTrendDayTooltip(index, status)"
+                      >
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-4 text-center">Past 30 days completion status</div>
+                </div>
+
+                <!-- Completion Breakdown -->
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-pie-chart text-blue-600"></i>
+                    Overall Breakdown
+                  </h4>
+                  <div class="flex items-center justify-center gap-8">
+                    <!-- Pie Chart representation with percentages -->
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-4 h-4 rounded bg-green-500"></div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-900 dark:text-white">Completed</div>
+                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ completePercentage }}%</div>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div class="w-4 h-4 rounded bg-yellow-400"></div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-900 dark:text-white">Partial</div>
+                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ partialPercentage }}%</div>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div class="w-4 h-4 rounded bg-gray-300 dark:bg-gray-600"></div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-900 dark:text-white">None</div>
+                          <div class="text-xs text-gray-600 dark:text-gray-400">{{ nonePercentage }}%</div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Visual circle representation -->
+                    <div class="w-32 h-32 rounded-full bg-gradient-conic from-green-500 via-yellow-400 to-gray-300 dark:to-gray-600 flex items-center justify-center">
+                      <div class="w-28 h-28 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                        <div class="text-center">
+                          <div class="text-lg font-bold text-gray-900 dark:text-white">{{ completionRate }}%</div>
+                          <div class="text-xs text-gray-600 dark:text-gray-400">Complete</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Activity -->
+              <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <i class="fas fa-history text-indigo-600"></i>
+                  Recent Activity
+                </h4>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                  <div v-if="recentActivity.length === 0" class="text-sm text-gray-600 dark:text-gray-400">
+                    No recent activity
+                  </div>
+                  <div v-for="(activity, index) in recentActivity.slice(0, 5)" :key="index" class="flex items-center gap-3 p-2 rounded bg-gray-100 dark:bg-gray-700/50 text-sm">
+                    <i :class="['fas', activity.icon, activity.color]"></i>
+                    <div class="flex-1">
+                      <div class="text-gray-900 dark:text-white">{{ activity.text }}</div>
+                      <div class="text-xs text-gray-600 dark:text-gray-400">{{ activity.date }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Daily Goals Contribution Graph (GitHub-style) -->
+            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-12">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-fire text-orange-500"></i>
+                    Last 365 Days Goal Contribution Graph
+                  </h3>
+                  <div class="flex gap-3 text-xs">
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
+                      <span class="text-gray-600 dark:text-gray-400">None</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 rounded-sm bg-yellow-300 dark:bg-yellow-500"></div>
+                      <span class="text-gray-600 dark:text-gray-400">Partial</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="w-3 h-3 rounded-sm bg-green-500"></div>
+                      <span class="text-gray-600 dark:text-gray-400">Complete</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- GitHub-style Contribution Graph -->
+                <div class="">
+                  <div class="inline-block p-2">
+                    <!-- Month Labels Row -->
+                    <div class="flex gap-0.5 mb-2 ml-6">
+                      <div v-for="label in monthLabels" :key="label.name" :style="{ marginLeft: label.weekIndex === 0 ? '25px' : '50px' }" class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-10">
+                        {{ label.name }}
+                      </div>
+                    </div>
+
+                    <!-- Day labels and contribution grid -->
+                    <div class="flex gap-0.5">
+                      <!-- Day of week labels (Sun-Sat) -->
+                      <div class="flex flex-col gap-1 mr-0.5">
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">S</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">M</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">T</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">W</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">T</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center mb-2">F</div>
+                        <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 w-6 text-center">S</div>
+                      </div>
+
+                      <!-- Contribution squares grid -->
+                      <div class="flex gap-0.5">
+                        <div v-for="(week, weekIndex) in contributionGraph" :key="weekIndex" class="flex flex-col gap-0.5">
+                          <div 
+                            v-for="day in week"
+                            :key="day ? day.date : 'empty-' + weekIndex"
+                            @mouseenter="day ? showCalendarTooltip($event, day.tooltip) : null"
+                            @mouseleave="hideCalendarTooltip()"
+                            class="relative group"
+                          >
+                            <button
+                              v-if="day"
+                              :class="[
+                                'rounded transition-all duration-200',
+                                getDayStatusColor(day.status)
+                              ]"
+                              style="width: 20px; height: 20px; padding: 0; border: none; cursor: pointer; min-width: 20px; min-height: 20px;"
+                              :title="day.tooltip"
+                            >
+                            </button>
+                            <div v-else style="width: 20px; height: 20px; min-width: 20px; min-height: 20px;"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Legend and Stats -->
+                <div class="mt-6 pt-4 border-t border-gray-300 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                  <p>Contribution graph shows daily goal completion status for 2025. Green = all tasks completed, Yellow = partial completion, Gray = no tasks completed.</p>
+                </div>
+
+                <!-- Tooltip -->
+                <div 
+                  v-if="hoverTooltip.visible"
+                  class="fixed bg-gray-900 text-white px-3 py-2 rounded shadow-lg text-sm z-50 pointer-events-none"
+                  :style="{ 
+                    left: hoverTooltip.x + 'px', 
+                    top: hoverTooltip.y + 'px',
+                    transform: 'translate(-50%, -100%)'
+                  }"
+                >
+                  {{ hoverTooltip.text }}
+                </div>
+              </div>
+            </div>
+
+            </main>
 
             <!-- Footer -->
             <footer class="bg-gray-900 text-gray-400 text-center py-6 mt-12">
@@ -3107,6 +3338,314 @@
             console.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
           };
 
+          // ===== Calendar View Functions =====
+          const getDayStatus = (date) => {
+            // Check if this is today's date
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // For today, check todayGoal first
+            if (date === todayStr && dailyGoalsStore.todayGoal) {
+              const tasks = Object.values(dailyGoalsStore.todayGoal.tasks);
+              const totalSelected = dailyGoalsStore.selectedTasks.length;
+              const completedCount = tasks.filter(t => t.completed).length;
+              
+              if (completedCount === totalSelected && totalSelected > 0) return 'complete';
+              if (completedCount > 0) return 'partial';
+              return 'none';
+            }
+            
+            // For other dates, find goal in history
+            const goal = dailyGoalsStore.goalHistory.find(g => g.date === date);
+            if (!goal) return 'none'; // No goal recorded
+            
+            const tasks = Object.values(goal.tasks);
+            const totalSelected = dailyGoalsStore.selectedTasks.length;
+            const completedCount = tasks.filter(t => t.completed).length;
+            
+            if (completedCount === totalSelected && totalSelected > 0) return 'complete'; // All tasks done
+            if (completedCount > 0) return 'partial'; // Some tasks done
+            return 'none'; // No tasks done
+          };
+
+          // Analytics Dashboard Computed Properties
+          const completedDays = computed(() => {
+            return dailyGoalsStore.goalHistory.filter(g => {
+              const tasks = Object.values(g.tasks);
+              const completed = tasks.filter(t => t.completed).length;
+              return completed === dailyGoalsStore.selectedTasks.length && dailyGoalsStore.selectedTasks.length > 0;
+            }).length;
+          });
+
+          const totalDays = computed(() => {
+            // Count days with goalHistory + today if has todayGoal
+            let total = dailyGoalsStore.goalHistory.length;
+            if (dailyGoalsStore.todayGoal) total += 1;
+            return total;
+          });
+
+          const completionRate = computed(() => {
+            if (totalDays.value === 0) return 0;
+            return Math.round((completedDays.value / totalDays.value) * 100);
+          });
+
+          const streakMessage = computed(() => {
+            const streak = dailyGoalsStore.streak;
+            if (streak === 0) return 'Start your streak today!';
+            if (streak === 1) return '1 day strong';
+            if (streak < 7) return `${streak} days going`;
+            if (streak < 30) return `${Math.floor(streak / 7)} weeks strong`;
+            return `${Math.floor(streak / 30)} months strong`;
+          });
+
+          // Breakdown percentages
+          const completePercentage = computed(() => {
+            if (totalDays.value === 0) return 0;
+            return Math.round((completedDays.value / totalDays.value) * 100);
+          });
+
+          const partialDays = computed(() => {
+            return dailyGoalsStore.goalHistory.filter(g => {
+              const tasks = Object.values(g.tasks);
+              const completed = tasks.filter(t => t.completed).length;
+              return completed > 0 && completed < dailyGoalsStore.selectedTasks.length;
+            }).length;
+          });
+
+          const partialPercentage = computed(() => {
+            if (totalDays.value === 0) return 0;
+            return Math.round((partialDays.value / totalDays.value) * 100);
+          });
+
+          const nonePercentage = computed(() => {
+            return 100 - completePercentage.value - partialPercentage.value;
+          });
+
+          // Last 30 days trend
+          const last30DaysTrend = computed(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const trend = [];
+
+            for (let i = 29; i >= 0; i--) {
+              const date = new Date(today);
+              date.setDate(date.getDate() - i);
+              const dateStr = date.toISOString().split('T')[0];
+
+              // Check today's goal first
+              if (dateStr === today.toISOString().split('T')[0] && dailyGoalsStore.todayGoal) {
+                const tasks = Object.values(dailyGoalsStore.todayGoal.tasks);
+                const completed = tasks.filter(t => t.completed).length;
+                if (completed === dailyGoalsStore.selectedTasks.length && dailyGoalsStore.selectedTasks.length > 0) {
+                  trend.push('complete');
+                } else if (completed > 0) {
+                  trend.push('partial');
+                } else {
+                  trend.push('none');
+                }
+              } else {
+                // Check history
+                const goal = dailyGoalsStore.goalHistory.find(g => g.date === dateStr);
+                if (goal) {
+                  const tasks = Object.values(goal.tasks);
+                  const completed = tasks.filter(t => t.completed).length;
+                  if (completed === dailyGoalsStore.selectedTasks.length && dailyGoalsStore.selectedTasks.length > 0) {
+                    trend.push('complete');
+                  } else if (completed > 0) {
+                    trend.push('partial');
+                  } else {
+                    trend.push('none');
+                  }
+                } else {
+                  trend.push('none');
+                }
+              }
+            }
+
+            return trend;
+          });
+
+          // Recent activity log
+          const recentActivity = computed(() => {
+            const activities = [];
+
+            // Add completion activities from last 7 days
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            dailyGoalsStore.goalHistory.slice(-7).forEach(goal => {
+              const tasks = Object.values(goal.tasks);
+              const completed = tasks.filter(t => t.completed).length;
+              
+              if (completed > 0) {
+                const goalDate = new Date(goal.date);
+                const isToday = goal.date === today.toISOString().split('T')[0];
+                const isYesterday = goal.date === new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                
+                let dateText = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                if (isToday) dateText = 'Today';
+                else if (isYesterday) dateText = 'Yesterday';
+
+                activities.push({
+                  text: `${completed}/${dailyGoalsStore.selectedTasks.length} tasks completed`,
+                  date: dateText,
+                  icon: 'fa-check-circle',
+                  color: completed === dailyGoalsStore.selectedTasks.length ? 'text-green-600' : 'text-yellow-600'
+                });
+              }
+            });
+
+            return activities.reverse();
+          });
+
+          // Helper method for trend tooltip
+          const getTrendDayTooltip = (index, status) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const date = new Date(today);
+            date.setDate(date.getDate() - (29 - index));
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `${dateStr}: ${status}`;
+          };
+
+          const getDayStatusColor = (status) => {
+            switch (status) {
+              case 'complete':
+                return 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'; // Green for all tasks
+              case 'partial':
+                return 'bg-yellow-400 hover:bg-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-600'; // Yellow for some tasks
+              case 'none':
+              default:
+                return 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'; // Gray for none
+            }
+          };
+
+          const getDayTooltip = (date) => {
+            // Check if this is today's date
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // For today, use todayGoal
+            if (date === todayStr && dailyGoalsStore.todayGoal) {
+              const tasks = Object.values(dailyGoalsStore.todayGoal.tasks);
+              const completed = tasks.filter(t => t.completed).length;
+              const total = dailyGoalsStore.selectedTasks.length;
+              return `${completed}/${total} tasks completed on ${new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+            }
+            
+            // For other dates, find in history
+            const goal = dailyGoalsStore.goalHistory.find(g => g.date === date);
+            if (!goal) return 'No goal';
+            
+            const tasks = Object.values(goal.tasks);
+            const completed = tasks.filter(t => t.completed).length;
+            const total = dailyGoalsStore.selectedTasks.length;
+            
+            return `${completed}/${total} tasks completed on ${new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+          };
+
+          // GitHub-style contribution graph: Last 365 days
+          const contributionGraph = computed(() => {
+            // Last 365 days ending with today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const endDate = new Date(today);
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 364); // 365 days including today
+            
+            // Start with the actual first day (no padding at start)
+            const weeks = [];
+            let currentWeek = [];
+            let currentDate = new Date(startDate);
+            
+            // Add all 365 days
+            while (currentDate <= endDate) {
+              const dateStr = currentDate.toISOString().split('T')[0];
+              const status = getDayStatus(dateStr);
+              
+              currentWeek.push({
+                date: dateStr,
+                dateObj: new Date(currentDate),
+                status: status,
+                tooltip: getDayTooltip(dateStr)
+              });
+              
+              // Start new week on Sunday (7 items per week)
+              if (currentWeek.length === 7) {
+                weeks.push([...currentWeek]);
+                currentWeek = [];
+              }
+              
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Add remaining partial week with padding at the END
+            if (currentWeek.length > 0) {
+              // Pad with empty days at end to complete the week
+              while (currentWeek.length < 7) {
+                currentWeek.push(null);
+              }
+              weeks.push(currentWeek);
+            }
+            
+            return weeks;
+          });
+
+          // Month labels for GitHub-style graph (last 365 days)
+          const monthLabels = computed(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const endDate = new Date(today);
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 364);
+            
+            const labels = [];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            let currentDate = new Date(startDate);
+            let lastMonth = -1;
+            let dayCount = 0; // Days since start
+            
+            // Add labels for each month that appears in the 365-day range
+            while (currentDate <= endDate) {
+              const month = currentDate.getMonth();
+              
+              // If month changed and we haven't added label yet
+              if (month !== lastMonth) {
+                // Calculate which week this month starts in (day count / 7)
+                const monthWeek = Math.floor(dayCount / 7);
+                labels.push({
+                  name: monthNames[month],
+                  weekIndex: monthWeek
+                });
+                lastMonth = month;
+              }
+              
+              currentDate.setDate(currentDate.getDate() + 1);
+              dayCount++;
+            }
+            
+            return labels;
+          });
+
+          const hoverTooltip = ref({ visible: false, x: 0, y: 0, text: '' });
+
+          const showCalendarTooltip = (event, tooltip) => {
+            const rect = event.target.getBoundingClientRect();
+            hoverTooltip.value = {
+              visible: true,
+              x: rect.left + rect.width / 2,
+              y: rect.top - 10,
+              text: tooltip
+            };
+          };
+
+          const hideCalendarTooltip = () => {
+            hoverTooltip.value.visible = false;
+          };
+
           // Lifecycle
           onMounted(async () => {
             await initializeApp();
@@ -3347,7 +3886,26 @@ Display:
             saveDailyGoal,
             completeTaskGoal,
             uncompleteTaskGoal,
-            getTaskProgressPercentage
+            getTaskProgressPercentage,
+            getDayStatus,
+            getDayStatusColor,
+            getDayTooltip,
+            contributionGraph,
+            monthLabels,
+            hoverTooltip,
+            showCalendarTooltip,
+            hideCalendarTooltip,
+            completedDays,
+            totalDays,
+            completionRate,
+            streakMessage,
+            completePercentage,
+            partialDays,
+            partialPercentage,
+            nonePercentage,
+            last30DaysTrend,
+            recentActivity,
+            getTrendDayTooltip
           };
         }
       });
