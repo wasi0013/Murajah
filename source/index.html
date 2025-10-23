@@ -779,7 +779,7 @@
       class MurajahDB {
         constructor() {
           this.dbName = 'murajah-db';
-          this.version = 1;
+          this.version = 2;
           this.db = null;
         }
 
@@ -1034,6 +1034,20 @@
       
       const audioRecorderModule = await import('./resources/js/utils/audioRecorder.js');
       const AudioRecorder = audioRecorderModule.default;
+      
+      const dailyGoalsManagerModule = await import('./resources/js/utils/dailyGoalsManager.js');
+      const {
+        initializeTodayGoals,
+        calculateReviewRange,
+        completeTask,
+        uncompleteTask,
+        calculateStreak,
+        checkAllTasksComplete,
+        getTaskCounts,
+        isNewDay,
+        getTodayDate,
+        getCompletionPercentage
+      } = dailyGoalsManagerModule;
 
       const app = createApp({
         template: `
@@ -1089,6 +1103,112 @@
                   <i class="fas fa-random"></i>
                   Random Page
                 </button>
+              </div>
+
+              <!-- Daily Goals Card -->
+              <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 rounded-lg shadow-lg p-6 border-2 border-amber-200 dark:border-amber-700 space-y-6">
+                <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
+                  <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
+                  <p class="text-gray-600 dark:text-gray-400">Loading daily goals...</p>
+                </div>
+                <template v-else>
+                <!-- Header with Streak Badge -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                      <i class="fas fa-target text-amber-500"></i>
+                      Today's Goals
+                    </h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ new Date(dailyGoalsStore.todayGoal.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+                  </div>
+                  
+                  <!-- Streak Badge -->
+                  <div class="flex flex-col items-center gap-2">
+                    <div class="bg-gradient-to-br from-red-500 to-orange-600 text-white rounded-full px-6 py-4 shadow-lg flex flex-col items-center min-w-[120px]">
+                      <div class="flex items-center gap-1 text-3xl font-bold">
+                        <i class="fas fa-fire"></i>
+                        {{ dailyGoalsStore.streak }}
+                      </div>
+                      <p class="text-xs font-semibold mt-1">DAY STREAK</p>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">Best: {{ dailyGoalsStore.longestStreak }}</p>
+                  </div>
+                </div>
+
+                <!-- Progress Ring and Task Count -->
+                <div class="flex items-center gap-8">
+                  <!-- Progress Bar and Stats -->
+                  <div class="flex-shrink-0 text-center">
+                    <div class="mb-4">
+                      <div class="text-4xl font-bold text-amber-600 dark:text-amber-400">{{ getTaskProgressPercentage() }}%</div>
+                      <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }} tasks</div>
+                    </div>
+                    <!-- Simple progress bar -->
+                    <div class="w-24 h-3 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-300"
+                        :style="{ width: getTaskProgressPercentage() + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- Tasks List -->
+                  <div class="flex-1 space-y-3">
+                    <div v-for="(task, taskName) in dailyGoalsStore.todayGoal.tasks" :key="taskName" class="flex items-start gap-3 p-3 bg-white dark:bg-gray-700 rounded-lg hover:shadow-md transition-shadow">
+                      <!-- Checkbox -->
+                      <button 
+                        @click="task.completed ? uncompleteTaskGoal(taskName) : completeTaskGoal(taskName)"
+                        :class="[
+                          'flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-all mt-0.5',
+                          task.completed 
+                            ? 'bg-green-500 border-green-500' 
+                            : 'border-gray-300 dark:border-gray-500 hover:border-green-400'
+                        ]"
+                      >
+                        <i v-if="task.completed" class="fas fa-check text-white text-sm"></i>
+                      </button>
+
+                      <!-- Task Info -->
+                      <div class="flex-1 min-w-0">
+                        <h4 :class="['font-semibold text-gray-900 dark:text-white transition-all', task.completed && 'line-through text-gray-500 dark:text-gray-400']">
+                          {{ task.name }}
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ task.description }}</p>
+                        
+                        <!-- Task-specific details -->
+                        <div v-if="taskName === 'reviewRange' && task.pages" class="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-gray-600 p-2 rounded">
+                          <i class="fas fa-book-open"></i> Pages: {{ task.pages.join(', ') }} ({{ task.pages.length }} pages)
+                        </div>
+                        <div v-if="taskName === 'memorizeDaily'" class="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-purple-50 dark:bg-gray-600 p-2 rounded">
+                          <i class="fas fa-target"></i> Target: {{ task.targetPages }} page{{ task.targetPages !== 1 ? 's' : '' }} today
+                        </div>
+                      </div>
+
+                      <!-- Completion indicator -->
+                      <div v-if="task.completed" class="flex-shrink-0">
+                        <p class="text-xs text-green-600 dark:text-green-400 font-semibold">
+                          <i class="fas fa-check-circle"></i> Done
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Motivational Message -->
+                <div v-if="getTaskProgressPercentage() === 100" class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 p-4 rounded">
+                  <p class="text-green-800 dark:text-green-100 font-semibold flex items-center gap-2">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    Excellent! You've completed all today's goals! Keep up the amazing work! 🎉
+                  </p>
+                </div>
+
+                <div v-else-if="getTaskProgressPercentage() >= 50" class="bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
+                  <p class="text-blue-800 dark:text-blue-100 font-semibold flex items-center gap-2">
+                    <i class="fas fa-arrow-up text-blue-500"></i>
+                    Great progress! Complete {{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }} more task{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length !== 1 ? 's' : '' }}.
+                  </p>
+                </div>
+                </template>
               </div>
 
               <!-- Status Indicators Row -->
@@ -1642,6 +1762,105 @@
                     </div>
                   </div>
 
+                  <!-- Daily Goals Settings -->
+                  <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <i class="fas fa-fire text-orange-500"></i>
+                      Daily Goals
+                    </h3>
+                    
+                    <!-- Streak Info -->
+                    <div class="p-4 bg-amber-50 dark:bg-gray-700 rounded-lg border-l-4 border-amber-500 space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Streak</span>
+                        <span class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          <i class="fas fa-fire"></i>
+                          {{ dailyGoalsStore.streak }} days
+                        </span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Best Streak</span>
+                        <span class="text-lg font-bold text-orange-500">{{ dailyGoalsStore.longestStreak }} days</span>
+                      </div>
+                      <div v-if="dailyGoalsStore.todayGoal && Object.values(dailyGoalsStore.todayGoal.tasks).some(t => t.completed)" class="flex items-center gap-2 text-green-700 dark:text-green-300 text-sm font-semibold mt-2">
+                        <i class="fas fa-check-circle"></i>
+                        Tasks completed today: {{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }}
+                      </div>
+                    </div>
+
+                    <!-- Task Selection -->
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Select which tasks count towards your streak:</label>
+                      <div class="space-y-2">
+                        <div class="flex items-center">
+                          <input 
+                            v-model="dailyGoalsStore.selectedTasks"
+                            @change="updateSettings"
+                            type="checkbox" 
+                            value="recordRandomPage" 
+                            id="task-record"
+                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                          <label for="task-record" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <i class="fas fa-microphone text-red-500"></i>
+                            Record Random Page
+                          </label>
+                        </div>
+
+                        <div class="flex items-center">
+                          <input 
+                            v-model="dailyGoalsStore.selectedTasks"
+                            @change="updateSettings"
+                            type="checkbox" 
+                            value="reviewRange" 
+                            id="task-review"
+                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                          <label for="task-review" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <i class="fas fa-book-open text-blue-500"></i>
+                            Review Range
+                          </label>
+                        </div>
+
+                        <div class="flex items-center">
+                          <input 
+                            v-model="dailyGoalsStore.selectedTasks"
+                            @change="updateSettings"
+                            type="checkbox" 
+                            value="memorizeDaily" 
+                            id="task-memorize"
+                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                          <label for="task-memorize" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <i class="fas fa-quran text-purple-500"></i>
+                            Memorize Daily
+                          </label>
+                        </div>
+
+                        <div class="flex items-center">
+                          <input 
+                            v-model="dailyGoalsStore.selectedTasks"
+                            @change="updateSettings"
+                            type="checkbox" 
+                            value="reciteAyahs" 
+                            id="task-recite"
+                            class="rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                          <label for="task-recite" class="ml-3 text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <i class="fas fa-volume-up text-green-500"></i>
+                            Recite 10 Ayahs
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Streak Info Note -->
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-sm text-blue-800 dark:text-blue-100">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      Streak breaks when no selected tasks are completed in a day. At least one completed task keeps the streak alive.
+                    </div>
+                  </div>
+
                   <!-- Data Management Section -->
                   <div class="border-t border-gray-300 dark:border-gray-700 pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -1781,6 +2000,15 @@
             lastUpdated: null
           });
 
+          const dailyGoalsStore = reactive({
+            todayGoal: null, // Current day's goal object
+            goalHistory: [], // Array of historical goal records
+            streak: 0, // Current streak
+            longestStreak: 0, // Best streak ever
+            selectedTasks: ['recordRandomPage', 'reviewRange', 'memorizeDaily'], // Default tasks
+            lastUpdated: null
+          });
+
           // Local state
           const isInitializing = ref(true);
           const quranData = ref(null);
@@ -1829,6 +2057,9 @@
               // Load stored data
               await loadStoredData();
               
+              // Initialize daily goals
+              await initializeDailyGoals();
+              
               console.log('[Murajah] App initialized successfully');
               appStore.successMessage = 'Murajah loaded successfully!';
               setTimeout(() => appStore.successMessage = '', 3000);
@@ -1866,7 +2097,13 @@
                     }
                   }
                 }
-                if (data.settings) Object.assign(settingsStore, data.settings);
+                if (data.settings) {
+                  Object.assign(settingsStore, data.settings);
+                  // Load selectedTasks for daily goals
+                  if (data.settings.selectedTasks) {
+                    dailyGoalsStore.selectedTasks = data.settings.selectedTasks;
+                  }
+                }
               } else {
                 // Fallback: Try localStorage for backward compatibility
                 const stored = localStorage.getItem('murajah-data');
@@ -1880,7 +2117,13 @@
                     mistakesStore.mistakes = new Map(Object.entries(data.mistakes).map(([k, v]) => [parseInt(k), new Set(v)]));
                   }
                   if (data.recordings) audioStore.recordings = data.recordings;
-                  if (data.settings) Object.assign(settingsStore, data.settings);
+                  if (data.settings) {
+                    Object.assign(settingsStore, data.settings);
+                    // Load selectedTasks for daily goals
+                    if (data.settings.selectedTasks) {
+                      dailyGoalsStore.selectedTasks = data.settings.selectedTasks;
+                    }
+                  }
                   
                   // Migrate to IndexedDB
                   await saveData();
@@ -1911,7 +2154,8 @@
               finishRevisionDays: settingsStore.finishRevisionDays,
               pagesPerDay: settingsStore.pagesPerDay,
               fontSize: settingsStore.fontSize,
-              tajweedEnabled: settingsStore.tajweedEnabled
+              tajweedEnabled: settingsStore.tajweedEnabled,
+              selectedTasks: dailyGoalsStore.selectedTasks
             };
 
             const data = {
@@ -1948,6 +2192,164 @@
           // Fire-and-forget wrapper for saveData (for non-critical saves)
           const saveDataBackground = () => {
             saveData().catch(console.error);
+          };
+
+          // ===== Daily Goals Functions =====
+          const initializeDailyGoals = async () => {
+            try {
+              const today = getTodayDate();
+              console.log('[Murajah] Initializing daily goals for', today, 'with memorized pages:', Array.from(memorizedStore.memorizedPages || []).slice(0, 5));
+              
+              try {
+                // Try to load today's goal from IndexedDB
+                const storedGoal = await murajahDB.loadDailyGoal(today);
+                
+                if (storedGoal) {
+                  // Today's goal already exists, just load it
+                  dailyGoalsStore.todayGoal = storedGoal;
+                  console.log('[Murajah] Today\'s goal loaded from IndexedDB', storedGoal);
+                  console.log('[Murajah] Loaded tasks:', Object.entries(storedGoal.tasks || {}).map(([k, v]) => `${k}: completed=${v.completed}`));
+                } else {
+                  // New day, initialize new goals
+                  const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
+                  dailyGoalsStore.todayGoal = newGoal;
+                  console.log('[Murajah] New goal created:', newGoal);
+                  
+                  // Save new goal to IndexedDB (use plain object conversion)
+                  const goalToSave = {
+                    date: newGoal.date,
+                    tasks: {},
+                    completedCount: newGoal.completedCount,
+                    lastUpdated: newGoal.lastUpdated
+                  };
+                  for (const [taskName, taskObj] of Object.entries(newGoal.tasks)) {
+                    const plainTask = {
+                      name: String(taskObj.name),
+                      description: String(taskObj.description),
+                      completed: Boolean(taskObj.completed),
+                      completedAt: taskObj.completedAt ? String(taskObj.completedAt) : null,
+                      recordingId: taskObj.recordingId ? String(taskObj.recordingId) : null,
+                      startPage: taskObj.startPage ? Number(taskObj.startPage) : null,
+                      endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
+                      pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
+                      targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
+                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                    };
+                    goalToSave.tasks[taskName] = plainTask;
+                  }
+                  await murajahDB.saveDailyGoal(goalToSave);
+                  console.log('[Murajah] New daily goal initialized and saved for', today);
+                }
+              } catch (dbError) {
+                console.warn('[Murajah] Database error, creating in-memory goal:', dbError);
+                // Fallback: Create goal in memory if database fails
+                const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, null);
+                dailyGoalsStore.todayGoal = newGoal;
+              }
+              
+              // Try to load goal history for streak calculation
+              try {
+                const history = await murajahDB.loadDailyGoalHistory(90);
+                dailyGoalsStore.goalHistory = history;
+              } catch (historyError) {
+                console.warn('[Murajah] Failed to load history, using empty:', historyError);
+                dailyGoalsStore.goalHistory = [];
+              }
+              
+              // Calculate streak
+              const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
+              dailyGoalsStore.streak = streakInfo.currentStreak;
+              dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+              
+              dailyGoalsStore.lastUpdated = new Date().toISOString();
+              console.log('[Murajah] Daily goals initialized - Streak:', dailyGoalsStore.streak, 'todayGoal:', dailyGoalsStore.todayGoal);
+            } catch (error) {
+              console.error('[Murajah] Failed to initialize daily goals:', error);
+              // Create a minimal in-memory goal so feature still works
+              const today = getTodayDate();
+              dailyGoalsStore.todayGoal = {
+                date: today,
+                tasks: {},
+                completedCount: 0,
+                lastUpdated: new Date().toISOString()
+              };
+              appStore.errorMessage = 'Daily goals working in memory only';
+              setTimeout(() => appStore.errorMessage = '', 3000);
+            }
+          };
+
+          const saveDailyGoal = async () => {
+            try {
+              // Convert Proxy object to plain object for IndexedDB serialization
+              const goalToSave = {
+                date: dailyGoalsStore.todayGoal.date,
+                tasks: {},
+                completedCount: dailyGoalsStore.todayGoal.completedCount,
+                lastUpdated: dailyGoalsStore.todayGoal.lastUpdated
+              };
+              
+              // Convert tasks object (Proxy) to plain object with plain arrays
+              for (const [taskName, taskObj] of Object.entries(dailyGoalsStore.todayGoal.tasks)) {
+                const plainTask = {
+                  name: String(taskObj.name),
+                  description: String(taskObj.description),
+                  completed: Boolean(taskObj.completed),
+                  completedAt: taskObj.completedAt ? String(taskObj.completedAt) : null,
+                  recordingId: taskObj.recordingId ? String(taskObj.recordingId) : null,
+                  startPage: taskObj.startPage ? Number(taskObj.startPage) : null,
+                  endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
+                  pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
+                  targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
+                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                };
+                goalToSave.tasks[taskName] = plainTask;
+              }
+              
+              console.log('[Murajah] Saving goal with tasks:', Object.keys(goalToSave.tasks).map(k => `${k}: pages=${goalToSave.tasks[k].pages ? goalToSave.tasks[k].pages.length : 0}`));
+              await murajahDB.saveDailyGoal(goalToSave);
+              console.log('[Murajah] Daily goal saved:', goalToSave);
+            } catch (error) {
+              console.error('[Murajah] Failed to save daily goal:', error);
+              appStore.errorMessage = 'Failed to save task - will save in memory';
+              setTimeout(() => appStore.errorMessage = '', 3000);
+            }
+          };
+
+          const completeTaskGoal = async (taskName, metadata = {}) => {
+            if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks[taskName]) {
+              console.warn(`[Murajah] Task ${taskName} not found in today's goal`);
+              return;
+            }
+            
+            completeTask(dailyGoalsStore.todayGoal, taskName, metadata);
+            await saveDailyGoal();
+            
+            // Recalculate streak
+            const history = [...dailyGoalsStore.goalHistory, dailyGoalsStore.todayGoal];
+            const streakInfo = calculateStreak(history, dailyGoalsStore.selectedTasks);
+            dailyGoalsStore.streak = streakInfo.currentStreak;
+            dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+            
+            appStore.successMessage = `Task "${taskName}" completed!`;
+            setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          const uncompleteTaskGoal = async (taskName) => {
+            if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks[taskName]) {
+              console.warn(`[Murajah] Task ${taskName} not found in today's goal`);
+              return;
+            }
+            
+            uncompleteTask(dailyGoalsStore.todayGoal, taskName);
+            await saveDailyGoal();
+            
+            appStore.successMessage = `Task "${taskName}" uncompleted`;
+            setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          const getTaskProgressPercentage = () => {
+            if (!dailyGoalsStore.todayGoal) return 0;
+            return getCompletionPercentage(dailyGoalsStore.todayGoal);
           };
 
           // Navigation functions
@@ -2875,6 +3277,7 @@ Display:
             mistakesStore,
             audioStore,
             perfectRevisionsStore,
+            dailyGoalsStore,
             isInitializing,
             quranData,
             gotoInput,
@@ -2939,7 +3342,12 @@ Display:
             loadPageFont,
             handleKeyboardShortcut,
             showKeyboardShortcutsHelp,
-            cleanupKeyboardListener
+            cleanupKeyboardListener,
+            initializeDailyGoals,
+            saveDailyGoal,
+            completeTaskGoal,
+            uncompleteTaskGoal,
+            getTaskProgressPercentage
           };
         }
       });
