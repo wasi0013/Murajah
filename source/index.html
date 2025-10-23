@@ -1073,11 +1073,6 @@
                 <div class="flex items-center gap-4">
  
                   
-                  <button @click="toggleTheme" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" :title="appStore.theme === 'light' ? 'Dark Mode' : 'Light Mode'">
-                    <span v-if="appStore.theme === 'light'" class="text-orange-500 text-xl">☀️</span>
-                    <span v-else class="text-yellow-500 text-xl">🌙</span>
-                  </button>
-
                   <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Settings">
                     <i class="fas fa-cog text-gray-700 dark:text-gray-200 text-xl"></i>
                   </button>
@@ -2723,35 +2718,21 @@
             return memorizedStore.memorizedPages.has(appStore.currentPage);
           });
 
-          // Theme functions
+          // Theme functions - Always use light mode
           const applyThemeToDOM = (theme) => {
-            if (theme === 'dark') {
-              // Add dark classes
-              document.documentElement.classList.add('dark');
-              document.documentElement.classList.add('dark-mode');
-              document.body.classList.add('dark-mode');
-              // Set inline styles as fallback
-              document.documentElement.style.backgroundColor = '#111827';
-              document.documentElement.style.color = '#f3f4f6';
-              console.log('[Murajah] Dark mode applied to DOM');
-            } else {
-              // Remove dark classes
-              document.documentElement.classList.remove('dark');
-              document.documentElement.classList.remove('dark-mode');
-              document.body.classList.remove('dark-mode');
-              // Reset inline styles
-              document.documentElement.style.backgroundColor = '#ffffff';
-              document.documentElement.style.color = '#111827';
-              console.log('[Murajah] Light mode applied to DOM');
-            }
+            // Always apply light mode
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('dark-mode');
+            document.body.classList.remove('dark-mode');
+            // Set inline styles
+            document.documentElement.style.backgroundColor = '#ffffff';
+            document.documentElement.style.color = '#111827';
+            console.log('[Murajah] Light mode applied to DOM');
           };
 
           const toggleTheme = () => {
-            appStore.theme = appStore.theme === 'light' ? 'dark' : 'light';
-            applyThemeToDOM(appStore.theme);
-            murajahDB.saveTheme(appStore.theme).catch(error => {
-              console.warn('[Murajah] Failed to save theme:', error);
-            });
+            // Theme toggle disabled - always use light mode
+            console.log('[Murajah] Theme toggle disabled - light mode is always active');
           };
 
           // Perfect Revision functions

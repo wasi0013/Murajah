@@ -535,10 +535,6 @@
                         <a href="./index.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Memorize</a>
                         <a href="./quiz.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Quiz</a>
                     </nav>
-                    <button @click="toggleDarkMode" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span v-if="isDarkMode" class="text-yellow-500">🌙</span>
-                        <span v-else class="text-orange-500">☀️</span>
-                    </button>
                 </div>
             </div>
         </header>
@@ -2551,12 +2547,9 @@
                     try {
                         await QuizDB.init()
                         
-                        // Load dark mode setting
-                        const darkModeSetting = await QuizDB.getSetting('darkMode')
-                        if (darkModeSetting) {
-                            isDarkMode.value = darkModeSetting.value
-                            applyThemeToDOM(isDarkMode.value ? 'dark' : 'light')
-                        }
+                        // Always use light mode
+                        isDarkMode.value = false
+                        applyThemeToDOM('light')
 
                         // Load last active tab
                         const lastTab = await QuizDB.getSetting('lastTab')
@@ -2572,40 +2565,23 @@
                     }
                 }
 
-                // Apply theme to DOM elements
+                // Apply theme to DOM elements - Always light mode
                 const applyThemeToDOM = (theme) => {
-                    if (theme === 'dark') {
-                        document.documentElement.classList.add('dark')
-                        document.documentElement.classList.add('dark-mode')
-                        document.body.classList.add('dark')
-                        document.body.classList.add('dark-mode')
-                        document.documentElement.style.backgroundColor = '#111827'
-                        document.documentElement.style.color = '#f3f4f6'
-                        document.body.style.backgroundColor = '#111827'
-                        document.body.style.color = '#f3f4f6'
-                        console.log('[Quiz] Dark mode applied to DOM')
-                    } else {
-                        document.documentElement.classList.remove('dark')
-                        document.documentElement.classList.remove('dark-mode')
-                        document.body.classList.remove('dark')
-                        document.body.classList.remove('dark-mode')
-                        document.documentElement.style.backgroundColor = '#ffffff'
-                        document.documentElement.style.color = '#111827'
-                        document.body.style.backgroundColor = '#ffffff'
-                        document.body.style.color = '#111827'
-                        console.log('[Quiz] Light mode applied to DOM')
-                    }
+                    // Always apply light mode
+                    document.documentElement.classList.remove('dark')
+                    document.documentElement.classList.remove('dark-mode')
+                    document.body.classList.remove('dark')
+                    document.body.classList.remove('dark-mode')
+                    document.documentElement.style.backgroundColor = '#ffffff'
+                    document.documentElement.style.color = '#111827'
+                    document.body.style.backgroundColor = '#ffffff'
+                    document.body.style.color = '#111827'
+                    console.log('[Quiz] Light mode applied to DOM')
                 }
 
-                // Toggle dark mode and save setting
+                // Toggle dark mode disabled - always use light mode
                 const toggleDarkMode = async () => {
-                    isDarkMode.value = !isDarkMode.value
-                    applyThemeToDOM(isDarkMode.value ? 'dark' : 'light')
-                    try {
-                        await QuizDB.setSetting('darkMode', isDarkMode.value)
-                    } catch (err) {
-                        console.error('Failed to save dark mode setting:', err)
-                    }
+                    console.log('[Quiz] Dark mode toggle disabled - light mode is always active')
                 }
 
                 // Handle tab changes and save last active tab
