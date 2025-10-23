@@ -15,7 +15,6 @@
     <style>
         :root {
             --primary: #3b82f6;
-            --primary-dark: #1e40af;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
@@ -23,7 +22,6 @@
             --light-text: #111827;
             --dark-bg: #111827;
             --dark-text: #f3f4f6;
-            --card-dark: #1f2937;
             --card-light: #ffffff;
             --color-primary: #2196f3;
             --color-secondary: #1976d2;
@@ -508,7 +506,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-950">
+<body class="bg-gray-50 ">
     <div id="app" class="min-h-screen">
         <!-- Loading Overlay -->
         <div v-if="isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -527,13 +525,13 @@
         </div>
 
         <!-- Header -->
-        <header class="bg-white shadow dark:bg-gray-800">
+        <header class="bg-white shadow ">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex justify-between items-center">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><img src="resources/logo-bg.png" width="80" style="border-radius:15%;"></h1>
+                    <h1 class="text-2xl font-bold text-gray-900 "><img src="resources/logo-bg.png" width="80" style="border-radius:15%;"></h1>
                     <nav class="flex items-center gap-6 mr-4">
-                        <a href="./index.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Memorize</a>
-                        <a href="./quiz.html" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">Quiz</a>
+                        <a href="./index.html" class="text-gray-700  hover:text-blue-600  font-medium transition-colors">Memorize</a>
+                        <a href="./quiz.html" class="text-gray-700  hover:text-blue-600  font-medium transition-colors">Quiz</a>
                     </nav>
                 </div>
             </div>
@@ -543,7 +541,7 @@
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Quiz Type Tabs -->
             <div class="mb-8">
-                <div class="border-b border-gray-200 dark:border-gray-700">
+                <div class="border-b border-gray-200 ">
                     <nav class="-mb-px flex space-x-8" aria-label="Quiz Types">
                         <button 
                             v-for="tab in tabs" 
@@ -552,7 +550,7 @@
                             :class="[
                                 currentTab === tab.id
                                     ? 'border-primary text-primary'
-                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
+                                    : 'border-transparent text-gray-500  hover:text-gray-700  hover:border-gray-300 ',
                                 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
                             ]"
                         >
@@ -563,17 +561,17 @@
             </div>
 
             <!-- Quiz Content Area -->
-            <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+            <div class="bg-white  rounded-lg shadow p-6">
                 <!-- Welcome/Tutorial Section (shown initially) -->
                 <div v-if="!selectedSurahs.length && currentTab !== 'config'" class="space-y-8">
                     <div class="text-center mb-8">
-                        <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Welcome to Murajah Quiz! 📖</h2>
-                        <p class="text-lg text-gray-600 dark:text-gray-400">Master the Qur'an through interactive quizzes</p>
+                        <h2 class="text-4xl font-bold text-gray-900  mb-2">Welcome to Murajah Quiz! 📖</h2>
+                        <p class="text-lg text-gray-600 ">Master the Qur'an through interactive quizzes</p>
                     </div>
 
-                    <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded mb-8">
-                        <h3 class="text-xl font-semibold text-blue-900 dark:text-blue-200 mb-2">🎯 Getting Started</h3>
-                        <p class="text-blue-800 dark:text-blue-300 mb-4">Before you start, please select the surahs you want to practice:</p>
+                    <div class="bg-blue-50  border-l-4 border-blue-500 p-6 rounded mb-8">
+                        <h3 class="text-xl font-semibold text-blue-900  mb-2">🎯 Getting Started</h3>
+                        <p class="text-blue-800  mb-4">Before you start, please select the surahs you want to practice:</p>
                         <button @click="currentTab = 'config'" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition">
                             ⚙️ Go to Settings
                         </button>
@@ -581,12 +579,12 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Lightning Round Card -->
-                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                        <div class="border-2 border-gray-200  rounded-lg p-6 hover:border-primary transition">
                             <h3 class="text-2xl font-bold text-primary mb-2">⚡ Lightning Round</h3>
-                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            <p class="text-gray-600  mb-4">
                                 Race against the clock! Select your time limit (60s to 5min) and difficulty level (Easy/Medium/Hard). Questions alternate between "Next/Previous Verse" and "Translation" to keep you sharp.
                             </p>
-                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                            <div class="bg-gray-100  p-4 rounded text-sm space-y-2">
                                 <p>⏱️ <strong>Timed Challenge:</strong> Beat the clock</p>
                                 <p>📊 <strong>Mixed Questions:</strong> Verse continuity + translation</p>
                                 <p>🎯 <strong>Difficulty Levels:</strong> Affects mistake limits</p>
@@ -594,12 +592,12 @@
                         </div>
 
                         <!-- Verse Completion Card -->
-                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                        <div class="border-2 border-gray-200  rounded-lg p-6 hover:border-primary transition">
                             <h3 class="text-2xl font-bold text-primary mb-2">📝 Verse Completion</h3>
-                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            <p class="text-gray-600  mb-4">
                                 Fill in the missing words! A verse appears with 2-5 words blanked out. Click on the correct words in sequence to fill the blanks.
                             </p>
-                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                            <div class="bg-gray-100  p-4 rounded text-sm space-y-2">
                                 <p>🎲 <strong>Random Blanks:</strong> 2-5 words per verse</p>
                                 <p>⬅️ <strong>Fill Right to Left:</strong> Select words to complete</p>
                                 <p>✅ <strong>Instant Feedback:</strong> Know if you're right</p>
@@ -607,12 +605,12 @@
                         </div>
 
                         <!-- Test Continuation Card -->
-                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                        <div class="border-2 border-gray-200  rounded-lg p-6 hover:border-primary transition">
                             <h3 class="text-2xl font-bold text-primary mb-2">🔗 Test Continuation</h3>
-                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            <p class="text-gray-600  mb-4">
                                 Know your verses! A verse is shown, and you must select either the NEXT or PREVIOUS verse from four options.
                             </p>
-                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                            <div class="bg-gray-100  p-4 rounded text-sm space-y-2">
                                 <p>⬇️⬆️ <strong>Next or Previous:</strong> Badge shows which one</p>
                                 <p>🎯 <strong>Multiple Choice:</strong> 4 options per question</p>
                                 <p>📈 <strong>Track Progress:</strong> Score and streak</p>
@@ -620,12 +618,12 @@
                         </div>
 
                         <!-- Translation Match Card -->
-                        <div class="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:border-primary transition">
+                        <div class="border-2 border-gray-200  rounded-lg p-6 hover:border-primary transition">
                             <h3 class="text-2xl font-bold text-primary mb-2">🌐 Translation Match</h3>
-                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            <p class="text-gray-600  mb-4">
                                 Match verses with meanings! A Qur'anic verse is shown in Arabic. Choose the correct English translation from four options.
                             </p>
-                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded text-sm space-y-2">
+                            <div class="bg-gray-100  p-4 rounded text-sm space-y-2">
                                 <p>📖 <strong>Arabic to English:</strong> Test your understanding</p>
                                 <p>🎯 <strong>Multiple Choice:</strong> 4 translation options</p>
                                 <p>🏆 <strong>Build Mastery:</strong> Learn meanings deeply</p>
@@ -633,8 +631,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded text-center">
-                        <p class="text-green-800 dark:text-green-300 text-lg font-semibold">
+                    <div class="bg-green-50  border-l-4 border-green-500 p-6 rounded text-center">
+                        <p class="text-green-800  text-lg font-semibold">
                             ✨ Select your surahs in Settings to begin your journey! ✨
                         </p>
                     </div>
@@ -646,7 +644,7 @@
                     <div v-if="!lightningIsActive && !lightningRoundEnded">
                         <div class="text-center mb-8">
                             <h2 class="text-3xl font-bold text-primary mb-2">⚡ Lightning Round</h2>
-                            <p class="text-gray-600 dark:text-gray-400 text-lg">Answer as many questions as you can before time runs out!</p>
+                            <p class="text-gray-600  text-lg">Answer as many questions as you can before time runs out!</p>
                         </div>
 
                         <!-- Time Selection -->
@@ -659,7 +657,7 @@
                                         'py-4 px-4 rounded-lg font-semibold text-lg transition-all border-2',
                                         lightningSelectedTime === time
                                             ? 'bg-primary text-white border-primary scale-105'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:border-primary'
+                                            : 'bg-gray-100  text-gray-700  border-gray-300  hover:border-primary'
                                     ]">
                                     {{ time === 60 ? '60s' : time === 120 ? '2 min' : time === 180 ? '3 min' : '5 min' }}
                                 </button>
@@ -676,7 +674,7 @@
                                         'py-4 px-4 rounded-lg font-semibold text-lg transition-all border-2',
                                         lightningSelectedDifficulty === diff
                                             ? 'bg-primary text-white border-primary scale-105'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:border-primary'
+                                            : 'bg-gray-100  text-gray-700  border-gray-300  hover:border-primary'
                                     ]">
                                     <span class="mr-2">
                                         {{ diff === 'easy' ? '🟢' : diff === 'medium' ? '🟡' : '🔴' }}
@@ -734,9 +732,9 @@
                             </div>
 
                             <!-- Question Text -->
-                            <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div class="p-6 bg-gray-50  rounded-lg">
                                 <p class="text-2xl text-right font-arabic" style="line-height: 2;">{{ lightningCurrentQuestion.text }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                <p class="text-sm text-gray-500  mt-2">
                                     Surah {{ lightningCurrentQuestion.chapter }}, Verse {{ lightningCurrentQuestion.verse }}
                                 </p>
                             </div>
@@ -750,9 +748,9 @@
                                         'p-4 rounded-lg text-left transition-all border-2',
                                         lightningAnswerRevealed
                                             ? (option.isCorrect 
-                                                ? 'bg-green-100 dark:bg-green-900 border-green-500 text-green-700 dark:text-green-200' 
-                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-300 text-gray-600 dark:text-gray-400')
-                                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                                ? 'bg-green-100  border-green-500 text-green-700 ' 
+                                                : 'bg-gray-100  border-gray-300 text-gray-600 ')
+                                            : 'bg-white  border-gray-300  hover:border-primary hover:bg-blue-50 '
                                     ]">
                                     <p class="font-medium text-right font-arabic" style="line-height: 1.6;">{{ option.text }}</p>
                                 </button>
@@ -772,24 +770,24 @@
 
                     <!-- Round End Summary -->
                     <div v-else-if="lightningRoundEnded" class="text-center space-y-6">
-                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Round Complete! 🎉</h2>
-                        <div class="bg-gradient-to-br from-primary/10 to-secondary/10 dark:from-primary/20 dark:to-secondary/20 rounded-lg p-8 space-y-4">
+                        <h2 class="text-3xl font-bold text-gray-900 ">Round Complete! 🎉</h2>
+                        <div class="bg-gradient-to-br from-primary/10 to-secondary/10   rounded-lg p-8 space-y-4">
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Final Score</p>
+                                    <p class="text-sm text-gray-600 ">Final Score</p>
                                     <p class="text-3xl font-bold text-primary">{{ lightningScore }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Questions</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ lightningAttempts }}</p>
+                                    <p class="text-sm text-gray-600 ">Questions</p>
+                                    <p class="text-3xl font-bold text-gray-900 ">{{ lightningAttempts }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Accuracy</p>
+                                    <p class="text-sm text-gray-600 ">Accuracy</p>
                                     <p class="text-3xl font-bold text-green-500">{{ lightningAttempts ? Math.round((lightningScore / lightningAttempts) * 100) : 0 }}%</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Difficulty</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ lightningSelectedDifficulty.toUpperCase() }}</p>
+                                    <p class="text-sm text-gray-600 ">Difficulty</p>
+                                    <p class="text-2xl font-bold text-gray-900 ">{{ lightningSelectedDifficulty.toUpperCase() }}</p>
                                 </div>
                             </div>
                         </div>
@@ -810,7 +808,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">📝 Verse Completion</h2>
-                            <p class="text-gray-600 dark:text-gray-400">Fill in the missing words to complete the verse</p>
+                            <p class="text-gray-600 ">Fill in the missing words to complete the verse</p>
                             <!-- Start Button -->
                             <div v-if="!completionVerse && !isLoading && selectedSurahs.length" class="mt-4">
                                 <button @click="generateCompletionQuestion" class="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-bold hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-105">
@@ -821,9 +819,9 @@
                         
                         <!-- Score Display -->
                         <div class="text-right">
-                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                            <div class="bg-gray-100  rounded-lg p-4">
                                 <div class="mb-2">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-sm text-gray-600 ">Score</p>
                                     <p class="text-2xl font-bold text-primary">
                                         {{ completionScore }}/{{ completionAttempts }}
                                         <span class="text-sm text-gray-500">
@@ -832,8 +830,8 @@
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
-                                    <p class="text-xl font-bold" :class="completionStreak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                    <p class="text-sm text-gray-600 ">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="completionStreak >= 5 ? 'text-green-500' : 'text-gray-700 '">
                                         {{ completionStreak }} 🔥
                                     </p>
                                 </div>
@@ -843,31 +841,31 @@
 
                     <!-- Tutorial Section (shown before quiz starts) -->
                     <div v-if="!completionVerse && !isLoading && selectedSurahs.length" class="space-y-6">
-                        <div class="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 border-2 border-pink-200 dark:border-pink-700 rounded-lg p-8">
-                            <h3 class="text-2xl font-bold text-pink-700 dark:text-pink-300 mb-4">How It Works 🎯</h3>
+                        <div class="bg-gradient-to-r from-pink-50 to-purple-50   border-2 border-pink-200  rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-pink-700  mb-4">How It Works 🎯</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">1️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">A Verse Appears</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">A Qur'anic verse is displayed with 2-5 random words blanked out (shown as yellow boxes).</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">A Verse Appears</h4>
+                                    <p class="text-sm text-gray-700 ">A Qur'anic verse is displayed with 2-5 random words blanked out (shown as yellow boxes).</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">2️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Select Words</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Click on the correct words from the options below, filling from <strong>right to left</strong>.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Select Words</h4>
+                                    <p class="text-sm text-gray-700 ">Click on the correct words from the options below, filling from <strong>right to left</strong>.</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">3️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Check Answer</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Click "Check Answer" to verify if the words are in the correct order.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Check Answer</h4>
+                                    <p class="text-sm text-gray-700 ">Click "Check Answer" to verify if the words are in the correct order.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-3">💡 Tips for Success</h4>
-                                <ul class="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+                            <div class="bg-blue-50  border-l-4 border-blue-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-blue-900  mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-blue-800 ">
                                     <li>✓ Read the context to guess missing words</li>
                                     <li>✓ Order matters - words must match exactly</li>
                                     <li>✓ Fill from left-to-right across the blanks</li>
@@ -875,9 +873,9 @@
                                 </ul>
                             </div>
 
-                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
-                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                            <div class="bg-green-50  border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900  mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 ">
                                     <li>✓ Verse memorization through word recognition</li>
                                     <li>✓ Understanding verse flow and meaning</li>
                                     <li>✓ Recall ability with contextual hints</li>
@@ -889,7 +887,7 @@
 
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
-                        <p class="text-gray-600 dark:text-gray-400">Please select some surahs from the configuration first</p>
+                        <p class="text-gray-600 ">Please select some surahs from the configuration first</p>
                         <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
                             Go to Configuration
                         </button>
@@ -897,22 +895,22 @@
 
                     <div v-else-if="!completionVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading question...</p>
+                        <p class="mt-4 text-gray-600 ">Loading question...</p>
                     </div>
 
                     <!-- Question Display -->
                     <div v-else-if="completionVerse" class="space-y-6">
                         <!-- Current Verse with Blanks -->
-                        <div class="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-4 border-blue-300 dark:border-blue-700 shadow-lg">
+                        <div class="p-8 bg-gradient-to-br from-blue-50 to-indigo-50   rounded-xl border-4 border-blue-300  shadow-lg">
                             <div class="mb-4">
-                                <p class="text-xs font-semibold text-blue-600 dark:text-blue-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
-                                <p class="text-sm text-blue-500 dark:text-blue-400 font-medium">
+                                <p class="text-xs font-semibold text-blue-600  uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-blue-500  font-medium">
                                     Surah {{ completionVerse.chapter }}, Verse {{ completionVerse.verse }}
                                 </p>
                             </div>
-                            <div class="text-2xl text-right font-arabic text-blue-900 dark:text-blue-100" style="line-height: 2.5;">
+                            <div class="text-2xl text-right font-arabic text-blue-900 " style="line-height: 2.5;">
                                 <span v-for="(word, index) in completionVerseDisplay || []" :key="index">
-                                    <span v-if="word.isBlank" class="inline-block bg-yellow-200 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold">
+                                    <span v-if="word.isBlank" class="inline-block bg-yellow-200  text-yellow-900  px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold">
                                         {{ getFilledWord(word.originalIndex) || '___' }}
                                     </span>
                                     <span v-else class="mx-1">
@@ -923,18 +921,18 @@
                         </div>
 
                         <!-- Progress -->
-                        <div v-if="!completionAnswerRevealed" class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                            <p class="text-sm text-blue-900 dark:text-blue-200">
+                        <div v-if="!completionAnswerRevealed" class="bg-blue-50  border border-blue-200  rounded-lg p-4">
+                            <p class="text-sm text-blue-900 ">
                                 Words filled: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}
                             </p>
-                            <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-2">
+                            <div class="w-full bg-blue-200  rounded-full h-2 mt-2">
                                 <div class="bg-blue-600 h-2 rounded-full transition-all" :style="{ width: (completionTotalMissing ? (completionSelectedWords.length / completionTotalMissing * 100) : 0) + '%' }"></div>
                             </div>
                         </div>
 
                         <!-- Word Options -->
                         <div class="space-y-4">
-                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Select the correct words in order (right to left):</p>
+                            <p class="text-sm font-medium text-gray-700 ">Select the correct words in order (right to left):</p>
                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                                 <button v-for="(option, index) in (completionOptions || [])" 
                                     v-show="!completionSelectedWords.includes(index) || completionAnswerRevealed"
@@ -944,10 +942,10 @@
                                     :class="[
                                         'p-3 rounded-lg font-arabic transition-colors border-2',
                                         completionSelectedWords.includes(index)
-                                            ? 'bg-gray-300 dark:bg-gray-600 border-gray-400 text-gray-600 dark:text-gray-400 cursor-not-allowed'
+                                            ? 'bg-gray-300  border-gray-400 text-gray-600  cursor-not-allowed'
                                             : completionAnswerRevealed
-                                                ? option?.isCorrect ? 'bg-green-100 dark:bg-green-900 border-green-500 text-green-700 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-800 border-gray-300'
-                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                                ? option?.isCorrect ? 'bg-green-100  border-green-500 text-green-700 ' : 'bg-gray-100  border-gray-300'
+                                                : 'bg-white  border-gray-200  hover:border-primary hover:bg-blue-50 '
                                     ]">
                                     <p class="text-lg" style="line-height: 1.5;">{{ option?.text || '?' }}</p>
                                 </button>
@@ -955,18 +953,18 @@
                         </div>
 
                         <!-- Selected Words Display -->
-                        <div v-if="completionSelectedWords.length > 0 && !completionAnswerRevealed" class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                        <div v-if="completionSelectedWords.length > 0 && !completionAnswerRevealed" class="bg-purple-50  border border-purple-200  rounded-lg p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-purple-900 dark:text-purple-200 mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}</p>
+                                    <p class="text-sm text-purple-900  mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}</p>
                                     <div class="flex flex-wrap gap-2">
-                                        <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 px-3 py-1 rounded-full text-sm">
+                                        <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200  text-purple-900  px-3 py-1 rounded-full text-sm">
                                             {{ position + 1 }}. {{ (completionOptions && completionOptions[wordIndex]) ? completionOptions[wordIndex].text : '?' }}
                                         </span>
                                     </div>
                                 </div>
                                 <div v-if="completionSelectedWords.length === completionTotalMissing" class="text-right">
-                                    <p class="text-sm text-purple-700 dark:text-purple-300 font-semibold animate-pulse">✓ Checking...</p>
+                                    <p class="text-sm text-purple-700  font-semibold animate-pulse">✓ Checking...</p>
                                 </div>
                                 <button v-else @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap">
                                     Check Answer
@@ -976,13 +974,13 @@
 
                         <!-- Result Display -->
                         <div v-if="completionAnswerRevealed" class="space-y-3">
-                            <div v-if="completionIsCorrect" class="bg-green-50 dark:bg-green-900/30 border border-green-500 rounded-lg p-4">
-                                <p class="text-green-700 dark:text-green-200 font-semibold text-lg">✅ Correct! All words in the right order!</p>
+                            <div v-if="completionIsCorrect" class="bg-green-50  border border-green-500 rounded-lg p-4">
+                                <p class="text-green-700  font-semibold text-lg">✅ Correct! All words in the right order!</p>
                             </div>
-                            <div v-else class="bg-red-50 dark:bg-red-900/30 border border-red-500 rounded-lg p-4">
-                                <p class="text-red-700 dark:text-red-200 font-semibold">❌ Incorrect order or words</p>
+                            <div v-else class="bg-red-50  border border-red-500 rounded-lg p-4">
+                                <p class="text-red-700  font-semibold">❌ Incorrect order or words</p>
                                 <div class="mt-3 text-right font-arabic">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Correct order:</p>
+                                    <p class="text-sm text-gray-600  mb-1">Correct order:</p>
                                     <p class="text-xl" style="line-height: 2;">{{ completionVerse.text }}</p>
                                 </div>
                             </div>
@@ -1000,7 +998,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">🔗 Test Continuation</h2>
-                            <p class="text-gray-600 dark:text-gray-400">Select the next or previous verse correctly</p>
+                            <p class="text-gray-600 ">Select the next or previous verse correctly</p>
                             <!-- Start Button -->
                             <div v-if="!continuationVerse && !isLoading && selectedSurahs.length" class="mt-4">
                                 <button @click="generateContinuationQuestion" class="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-bold hover:from-blue-600 hover:to-cyan-600 transition transform hover:scale-105">
@@ -1011,9 +1009,9 @@
                         
                         <!-- Score Display -->
                         <div class="text-right">
-                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                            <div class="bg-gray-100  rounded-lg p-4">
                                 <div class="mb-2">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-sm text-gray-600 ">Score</p>
                                     <p class="text-2xl font-bold text-primary">
                                         {{ continuationScore }}/{{ continuationAttempts }}
                                         <span class="text-sm text-gray-500">
@@ -1022,8 +1020,8 @@
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
-                                    <p class="text-xl font-bold" :class="continuationStreak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                    <p class="text-sm text-gray-600 ">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="continuationStreak >= 5 ? 'text-green-500' : 'text-gray-700 '">
                                         {{ continuationStreak }} 🔥
                                     </p>
                                 </div>
@@ -1033,31 +1031,31 @@
 
                     <!-- Tutorial Section (shown before quiz starts) -->
                     <div v-if="!continuationVerse && !isLoading && selectedSurahs.length" class="space-y-6">
-                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-8">
-                            <h3 class="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4">How It Works 🎯</h3>
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50   border-2 border-blue-200  rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-blue-700  mb-4">How It Works 🎯</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">1️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">See the Verse</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">A verse from the Qur'an is displayed with a badge showing if you need the <strong>Next</strong> or <strong>Previous</strong> verse.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">See the Verse</h4>
+                                    <p class="text-sm text-gray-700 ">A verse from the Qur'an is displayed with a badge showing if you need the <strong>Next</strong> or <strong>Previous</strong> verse.</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">2️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Choose Wisely</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Select from 4 options - one is correct, three are distractors from other verses.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Choose Wisely</h4>
+                                    <p class="text-sm text-gray-700 ">Select from 4 options - one is correct, three are distractors from other verses.</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">3️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Get Feedback</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Immediately see if you're correct and learn the verse order in the Qur'an.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Get Feedback</h4>
+                                    <p class="text-sm text-gray-700 ">Immediately see if you're correct and learn the verse order in the Qur'an.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-3">💡 Tips for Success</h4>
-                                <ul class="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+                            <div class="bg-blue-50  border-l-4 border-blue-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-blue-900  mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-blue-800 ">
                                     <li>✓ Pay attention to the badge (Next ⬇️ or Previous ⬆️)</li>
                                     <li>✓ Recognize verse themes to spot distractors</li>
                                     <li>✓ Build sequential memory of the Qur'an</li>
@@ -1065,9 +1063,9 @@
                                 </ul>
                             </div>
 
-                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
-                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                            <div class="bg-green-50  border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900  mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 ">
                                     <li>✓ Verse sequence and progression in surahs</li>
                                     <li>✓ Recognize verse boundaries and transitions</li>
                                     <li>✓ Build structural memory of the Qur'an</li>
@@ -1079,7 +1077,7 @@
 
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
-                        <p class="text-gray-600 dark:text-gray-400">Please select some surahs from the configuration first</p>
+                        <p class="text-gray-600 ">Please select some surahs from the configuration first</p>
                         <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
                             Go to Configuration
                         </button>
@@ -1087,7 +1085,7 @@
 
                     <div v-else-if="!continuationVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading question...</p>
+                        <p class="mt-4 text-gray-600 ">Loading question...</p>
                     </div>
 
                     <!-- Question Display -->
@@ -1103,14 +1101,14 @@
                         </div>
 
                         <!-- Current Verse -->
-                        <div class="p-8 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl border-4 border-cyan-300 dark:border-cyan-700 shadow-lg">
+                        <div class="p-8 bg-gradient-to-br from-cyan-50 to-blue-50   rounded-xl border-4 border-cyan-300  shadow-lg">
                             <div class="mb-4">
-                                <p class="text-xs font-semibold text-cyan-600 dark:text-cyan-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
-                                <p class="text-sm text-cyan-500 dark:text-cyan-400 font-medium">
+                                <p class="text-xs font-semibold text-cyan-600  uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-cyan-500  font-medium">
                                     Surah {{ continuationVerse.chapter }}, Verse {{ continuationVerse.verse }}
                                 </p>
                             </div>
-                            <p class="text-2xl text-right font-arabic text-cyan-900 dark:text-cyan-100" style="line-height: 2;">{{ continuationVerse.text }}</p>
+                            <p class="text-2xl text-right font-arabic text-cyan-900 " style="line-height: 2;">{{ continuationVerse.text }}</p>
                         </div>
 
                         <!-- Options -->
@@ -1119,25 +1117,25 @@
                                 <button v-for="(option, index) in continuationOptions" 
                                     :key="index"
                                     @click="checkContinuationAnswer(index)"
-                                    class="p-4 rounded-lg text-right font-arabic transition-colors border-2 bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary">
+                                    class="p-4 rounded-lg text-right font-arabic transition-colors border-2 bg-white border-gray-200 hover:border-primary   ">
                                     <p class="text-2xl" style="line-height: 2;">{{ option.text }}</p>
                                 </button>
                             </template>
                             <template v-else>
                                 <!-- After answer selection -->
-                                <div v-if="selectedWrongContinuation !== null" class="p-4 rounded-lg text-right font-arabic border-2 bg-red-50 border-red-500 dark:bg-red-900/30">
-                                    <p class="text-2xl text-red-600 dark:text-red-400" style="line-height: 2;">
+                                <div v-if="selectedWrongContinuation !== null" class="p-4 rounded-lg text-right font-arabic border-2 bg-red-50 border-red-500 ">
+                                    <p class="text-2xl text-red-600 " style="line-height: 2;">
                                         {{ continuationOptions[selectedWrongContinuation].text }}
                                     </p>
-                                    <p class="text-sm text-red-500 dark:text-red-400 mt-2">
+                                    <p class="text-sm text-red-500  mt-2">
                                         ❌ Incorrect Answer (Verse {{ continuationOptions[selectedWrongContinuation].verse }})
                                     </p>
                                 </div>
-                                <div class="p-6 rounded-lg text-right font-arabic border-2 bg-green-50 border-green-500 dark:bg-green-900/30">
-                                    <p class="text-2xl text-green-700 dark:text-green-400" style="line-height: 2;">
+                                <div class="p-6 rounded-lg text-right font-arabic border-2 bg-green-50 border-green-500 ">
+                                    <p class="text-2xl text-green-700 " style="line-height: 2;">
                                         {{ continuationOptions.find(opt => opt.isCorrect).text }}
                                     </p>
-                                    <p class="text-sm text-green-600 dark:text-green-500 mt-2">
+                                    <p class="text-sm text-green-600  mt-2">
                                         ✅ Correct Answer (Verse {{ continuationOptions.find(opt => opt.isCorrect).verse }})
                                     </p>
                                 </div>
@@ -1156,7 +1154,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <h2 class="text-3xl font-bold text-primary mb-1">🌐 Translation Match</h2>
-                            <p class="text-gray-600 dark:text-gray-400">Match Arabic verses to their English meanings</p>
+                            <p class="text-gray-600 ">Match Arabic verses to their English meanings</p>
                             <!-- Start Button -->
                             <div v-if="!currentVerse && !isLoading && selectedSurahs.length" class="mt-4">
                                 <button @click="generateNewQuestion" class="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition transform hover:scale-105">
@@ -1167,9 +1165,9 @@
                         
                         <!-- Score Display -->
                         <div class="text-right">
-                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                            <div class="bg-gray-100  rounded-lg p-4">
                                 <div class="mb-2">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Score</p>
+                                    <p class="text-sm text-gray-600 ">Score</p>
                                     <p class="text-2xl font-bold text-primary">
                                         {{ sessionScore }}/{{ sessionAttempts }}
                                         <span class="text-sm text-gray-500">
@@ -1178,8 +1176,8 @@
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
-                                    <p class="text-xl font-bold" :class="streak >= 5 ? 'text-green-500' : 'text-gray-700 dark:text-gray-300'">
+                                    <p class="text-sm text-gray-600 ">Current Streak</p>
+                                    <p class="text-xl font-bold" :class="streak >= 5 ? 'text-green-500' : 'text-gray-700 '">
                                         {{ streak }} 🔥
                                     </p>
                                 </div>
@@ -1189,31 +1187,31 @@
 
                     <!-- Tutorial Section (shown before quiz starts) -->
                     <div v-if="!currentVerse && !isLoading && selectedSurahs.length" class="space-y-6">
-                        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-200 dark:border-amber-700 rounded-lg p-8">
-                            <h3 class="text-2xl font-bold text-amber-700 dark:text-amber-300 mb-4">How It Works 🎯</h3>
+                        <div class="bg-gradient-to-r from-amber-50 to-orange-50   border-2 border-amber-200  rounded-lg p-8">
+                            <h3 class="text-2xl font-bold text-amber-700  mb-4">How It Works 🎯</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">1️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">See Arabic Verse</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">A Qur'anic verse is displayed in beautiful Arabic script for you to understand.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">See Arabic Verse</h4>
+                                    <p class="text-sm text-gray-700 ">A Qur'anic verse is displayed in beautiful Arabic script for you to understand.</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">2️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Choose Translation</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Select the correct English translation from 4 options - one correct, three distractors.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Choose Translation</h4>
+                                    <p class="text-sm text-gray-700 ">Select the correct English translation from 4 options - one correct, three distractors.</p>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-4xl mb-3">3️⃣</div>
-                                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Learn Meaning</h4>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">Build understanding of verse meanings and strengthen your knowledge of the Qur'an.</p>
+                                    <h4 class="font-semibold text-gray-900  mb-2">Learn Meaning</h4>
+                                    <p class="text-sm text-gray-700 ">Build understanding of verse meanings and strengthen your knowledge of the Qur'an.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-orange-900 dark:text-orange-200 mb-3">💡 Tips for Success</h4>
-                                <ul class="space-y-2 text-sm text-orange-800 dark:text-orange-300">
+                            <div class="bg-orange-50  border-l-4 border-orange-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-orange-900  mb-3">💡 Tips for Success</h4>
+                                <ul class="space-y-2 text-sm text-orange-800 ">
                                     <li>✓ Look for keywords and familiar themes</li>
                                     <li>✓ Pay attention to context clues in the verse</li>
                                     <li>✓ Note common translation phrases from the Qur'an</li>
@@ -1221,9 +1219,9 @@
                                 </ul>
                             </div>
 
-                            <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-6 rounded">
-                                <h4 class="text-lg font-bold text-green-900 dark:text-green-200 mb-3">🎯 What You'll Learn</h4>
-                                <ul class="space-y-2 text-sm text-green-800 dark:text-green-300">
+                            <div class="bg-green-50  border-l-4 border-green-500 p-6 rounded">
+                                <h4 class="text-lg font-bold text-green-900  mb-3">🎯 What You'll Learn</h4>
+                                <ul class="space-y-2 text-sm text-green-800 ">
                                     <li>✓ Qur'anic verse meanings and interpretations</li>
                                     <li>✓ Common translation vocabulary and phrases</li>
                                     <li>✓ Deeper understanding of Islamic teachings</li>
@@ -1242,7 +1240,7 @@
                     </div>
                     <!-- Quiz Container -->
                     <div v-if="!selectedSurahs.length" class="text-center py-12">
-                        <p class="text-gray-600 dark:text-gray-400">Please select some surahs from the configuration first</p>
+                        <p class="text-gray-600 ">Please select some surahs from the configuration first</p>
                         <button @click="currentTab = 'config'" class="mt-4 text-primary hover:underline">
                             Go to Configuration
                         </button>
@@ -1250,20 +1248,20 @@
 
                     <div v-else-if="!currentVerse && isLoading" class="text-center py-12">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading question...</p>
+                        <p class="mt-4 text-gray-600 ">Loading question...</p>
                     </div>
 
                     <!-- Question Display -->
                     <div v-else-if="currentVerse" class="space-y-6">
                         <!-- Verse -->
-                        <div class="p-8 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border-4 border-amber-300 dark:border-amber-700 shadow-lg">
+                        <div class="p-8 bg-gradient-to-br from-amber-50 to-orange-50   rounded-xl border-4 border-amber-300  shadow-lg">
                             <div class="mb-4">
-                                <p class="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-widest mb-2">📖 Current Verse</p>
-                                <p class="text-sm text-amber-500 dark:text-amber-400 font-medium">
+                                <p class="text-xs font-semibold text-amber-600  uppercase tracking-widest mb-2">📖 Current Verse</p>
+                                <p class="text-sm text-amber-500  font-medium">
                                     Surah {{ currentVerse.chapter }}, Verse {{ currentVerse.verse }}
                                 </p>
                             </div>
-                            <p class="text-2xl text-right font-arabic text-amber-900 dark:text-amber-100" style="line-height: 2;">{{ currentVerse.text }}</p>
+                            <p class="text-2xl text-right font-arabic text-amber-900 " style="line-height: 2;">{{ currentVerse.text }}</p>
                         </div>
 
                         <!-- Translation Options -->
@@ -1273,25 +1271,25 @@
                                 <button v-for="(option, index) in translationOptions" 
                                     :key="index"
                                     @click="checkAnswer(index)"
-                                    class="p-4 rounded-lg text-left transition-colors border-2 bg-white border-gray-200 hover:border-primary dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary">
+                                    class="p-4 rounded-lg text-left transition-colors border-2 bg-white border-gray-200 hover:border-primary   ">
                                     <p class="text-lg">{{ option.text }}</p>
                                 </button>
                             </template>
                             <template v-else>
                                 <!-- After answer selection -->
-                                <div v-if="selectedWrongAnswer !== null" class="p-4 rounded-lg text-left border-2 bg-red-50 border-red-500 dark:bg-red-900/30">
-                                    <p class="text-lg text-red-600 dark:text-red-400">
+                                <div v-if="selectedWrongAnswer !== null" class="p-4 rounded-lg text-left border-2 bg-red-50 border-red-500 ">
+                                    <p class="text-lg text-red-600 ">
                                         {{ translationOptions[selectedWrongAnswer].text }}
                                     </p>
-                                    <p class="text-sm text-red-500 dark:text-red-400 mt-2">
+                                    <p class="text-sm text-red-500  mt-2">
                                         ❌ Incorrect Answer
                                     </p>
                                 </div>
-                                <div class="p-6 rounded-lg text-left border-2 bg-green-50 border-green-500 dark:bg-green-900/30">
-                                    <p class="text-2xl font-medium text-green-700 dark:text-green-400">
+                                <div class="p-6 rounded-lg text-left border-2 bg-green-50 border-green-500 ">
+                                    <p class="text-2xl font-medium text-green-700 ">
                                         {{ translationOptions.find(opt => opt.isCorrect).text }}
                                     </p>
-                                    <p class="text-sm text-green-600 dark:text-green-500 mt-2">
+                                    <p class="text-sm text-green-600  mt-2">
                                         ✅ Correct Answer
                                     </p>
                                 </div>
@@ -1305,13 +1303,13 @@
                     <!-- Header -->
                     <div>
                         <h2 class="text-3xl font-bold text-primary mb-1">⚙️ Quiz Settings</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Customize your learning experience</p>
+                        <p class="text-gray-600 ">Customize your learning experience</p>
                     </div>
 
                     <!-- Default Settings Card -->
-                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-6">
-                        <h3 class="text-xl font-bold text-purple-900 dark:text-purple-200 mb-4">💾 Manage Defaults</h3>
-                        <p class="text-gray-700 dark:text-gray-300 mb-4">Save and load your favorite surah selections for quick access</p>
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50   border-2 border-purple-200  rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-purple-900  mb-4">💾 Manage Defaults</h3>
+                        <p class="text-gray-700  mb-4">Save and load your favorite surah selections for quick access</p>
                         <div class="flex flex-wrap gap-3">
                             <button @click="saveDefaultSettings" 
                                 class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition transform hover:scale-105">
@@ -1325,11 +1323,11 @@
                     </div>
 
                     <!-- Surah Selection Card -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6">
+                    <div class="bg-white  rounded-lg border-2 border-gray-200  p-6">
                         <div class="flex justify-between items-start mb-6">
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">📚 Select Surahs</h3>
-                                <p class="text-gray-600 dark:text-gray-400">Choose which surahs to practice. {{ selectedSurahs.length }} / {{ Object.keys(surahs).length }} selected</p>
+                                <h3 class="text-2xl font-bold text-gray-900  mb-1">📚 Select Surahs</h3>
+                                <p class="text-gray-600 ">Choose which surahs to practice. {{ selectedSurahs.length }} / {{ Object.keys(surahs).length }} selected</p>
                             </div>
                             <div class="bg-primary text-white rounded-lg px-4 py-2 text-center">
                                 <p class="text-xs text-white/80">Selection</p>
@@ -1342,8 +1340,8 @@
                             <button @click="toggleAllSurahs" 
                                 class="px-4 py-2 rounded-lg font-semibold transition transform hover:scale-105"
                                 :class="allSurahsSelected 
-                                    ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 hover:bg-red-200' 
-                                    : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 hover:bg-green-200'">
+                                    ? 'bg-red-100  text-red-700  hover:bg-red-200' 
+                                    : 'bg-green-100  text-green-700  hover:bg-green-200'">
                                 {{ allSurahsSelected ? '✗ Deselect All' : '✓ Select All' }}
                             </button>
                             <button @click="saveConfig" 
@@ -1360,7 +1358,7 @@
                                 class="p-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2"
                                 :class="selectedSurahs.includes(number) 
                                     ? 'bg-primary text-white border-primary shadow-lg' 
-                                    : 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600 hover:border-primary'">
+                                    : 'bg-gray-50  text-gray-900  border-gray-200  hover:border-primary'">
                                 <div class="text-center">
                                     <p class="font-bold text-lg">{{ number }}</p>
                                     <p class="font-arabic text-sm leading-tight">{{ name }}</p>
@@ -1370,9 +1368,9 @@
                     </div>
 
                     <!-- Info Box -->
-                    <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-6 rounded">
-                        <h4 class="text-lg font-bold text-blue-900 dark:text-blue-200 mb-2">📖 Tips</h4>
-                        <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                    <div class="bg-blue-50  border-l-4 border-blue-500 p-6 rounded">
+                        <h4 class="text-lg font-bold text-blue-900  mb-2">📖 Tips</h4>
+                        <ul class="text-sm text-blue-800  space-y-1">
                             <li>✓ Select surahs you're currently memorizing</li>
                             <li>✓ Start with a few surahs, then expand gradually</li>
                             <li>✓ Your selection is saved automatically</li>
@@ -1384,9 +1382,9 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+        <footer class="bg-white  border-t border-gray-200  mt-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <p class="text-center text-gray-500 dark:text-gray-400 text-sm">
+                <p class="text-center text-gray-500  text-sm">
                     Murajah Quiz © 2025
                 </p>
             </div>
