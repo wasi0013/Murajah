@@ -2287,6 +2287,7 @@
           const gotoInput = ref('');
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
+          const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -2316,6 +2317,7 @@
           const initializeApp = async () => {
             try {
               isInitializing.value = true;
+              isAppInitialized.value = false; // Prevent watch from triggering during init
               
               // Load theme from IndexedDB
               try {
@@ -2344,6 +2346,7 @@
               appStore.errorMessage = 'Failed to load Murajah. Please refresh.';
             } finally {
               isInitializing.value = false;
+              isAppInitialized.value = true; // Now allow watch to trigger
             }
           };
 
@@ -2508,9 +2511,32 @@
                 
                 if (storedGoal) {
                   // Today's goal already exists, just load it
-                  dailyGoalsStore.todayGoal = storedGoal;
+                  // Make sure it's properly converted back to Vue reactive format
+                  const tasksCopy = {};
+                  for (const [taskName, taskObj] of Object.entries(storedGoal.tasks || {})) {
+                    tasksCopy[taskName] = {
+                      name: taskObj.name || '',
+                      description: taskObj.description || '',
+                      completed: Boolean(taskObj.completed),
+                      completedAt: taskObj.completedAt || null,
+                      recordingId: taskObj.recordingId || null,
+                      startPage: taskObj.startPage || null,
+                      endPage: taskObj.endPage || null,
+                      pages: Array.isArray(taskObj.pages) ? taskObj.pages : [],
+                      targetPages: taskObj.targetPages || 0,
+                      pagesAddedToday: taskObj.pagesAddedToday || 0
+                    };
+                  }
+                  
+                  dailyGoalsStore.todayGoal = {
+                    date: storedGoal.date,
+                    tasks: tasksCopy,
+                    completedCount: storedGoal.completedCount || 0,
+                    lastUpdated: storedGoal.lastUpdated
+                  };
+                  
                   console.log('[Murajah] Today\'s goal loaded from IndexedDB', storedGoal);
-                  console.log('[Murajah] Loaded tasks:', Object.entries(storedGoal.tasks || {}).map(([k, v]) => `${k}: completed=${v.completed}`));
+                  console.log('[Murajah] Loaded tasks:', Object.entries(tasksCopy).map(([k, v]) => `${k}: completed=${v.completed}`));
                 } else {
                   // New day, initialize new goals
                   const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
@@ -2558,7 +2584,16 @@
                 dailyGoalsStore.goalHistory = [];
               }
               
-              // Calculate streak
+              // Ensure today's goal is in goalHistory for streak calculation
+              const todayDate = getTodayDate();
+              const todayInHistory = dailyGoalsStore.goalHistory.find(g => g.date === todayDate);
+              if (!todayInHistory && dailyGoalsStore.todayGoal) {
+                // Add today's goal to history for streak calculation
+                dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+                console.log('[Murajah] Added today\'s goal to history for streak calculation');
+              }
+              
+              // Calculate streak (now includes today's goal)
               const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
               dailyGoalsStore.streak = streakInfo.currentStreak;
               dailyGoalsStore.longestStreak = streakInfo.longestStreak;
@@ -2673,12 +2708,55 @@
             completeTask(dailyGoalsStore.todayGoal, taskName, metadata);
             await saveDailyGoal();
             
-            // Recalculate streak
-            const history = [...dailyGoalsStore.goalHistory, dailyGoalsStore.todayGoal];
-            const streakInfo = calculateStreak(history, dailyGoalsStore.selectedTasks);
+            // Update goalHistory with the updated todayGoal to reflect changes immediately
+            // First, remove today's goal from history if it already exists (to avoid duplicates)
+            const todayDate = getTodayDate();
+            dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
+            
+            // Add updated todayGoal to history for streak calculation
+            // This ensures the contribution graph and streak stay in sync
+            dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+            
+            // Recalculate streak with updated history
+            const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
             
+            // Save the updated goalHistory to persist changes across page refreshes
+            try {
+              for (const goal of dailyGoalsStore.goalHistory) {
+                // Convert goal to plain object to avoid DataCloneError with Proxy objects
+                const plainGoal = {
+                  date: goal.date,
+                  tasks: {},
+                  completedCount: goal.completedCount,
+                  lastUpdated: goal.lastUpdated
+                };
+                
+                // Serialize each task to plain object
+                for (const [taskName, taskObj] of Object.entries(goal.tasks)) {
+                  plainGoal.tasks[taskName] = {
+                    name: String(taskObj.name),
+                    description: String(taskObj.description),
+                    completed: Boolean(taskObj.completed),
+                    completedAt: taskObj.completedAt ? String(taskObj.completedAt) : null,
+                    recordingId: taskObj.recordingId ? String(taskObj.recordingId) : null,
+                    startPage: taskObj.startPage ? Number(taskObj.startPage) : null,
+                    endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
+                    pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
+                    targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
+                    pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                  };
+                }
+                
+                await murajahDB.saveDailyGoal(plainGoal);
+              }
+              console.log('[Murajah] Goal history persisted to IndexedDB');
+            } catch (error) {
+              console.error('[Murajah] Failed to persist goal history:', error);
+            }
+            
+            console.log('[Murajah] Task completed - streak updated:', dailyGoalsStore.streak, 'history length:', dailyGoalsStore.goalHistory.length);
             appStore.successMessage = `Task "${taskName}" completed!`;
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -2692,6 +2770,54 @@
             uncompleteTask(dailyGoalsStore.todayGoal, taskName);
             await saveDailyGoal();
             
+            // Update goalHistory with the updated todayGoal to reflect changes immediately
+            // First, remove today's goal from history if it already exists (to avoid duplicates)
+            const todayDate = getTodayDate();
+            dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
+            
+            // Add updated todayGoal to history for streak calculation
+            dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+            
+            // Recalculate streak with updated history
+            const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
+            dailyGoalsStore.streak = streakInfo.currentStreak;
+            dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+            
+            // Save the updated goalHistory to persist changes across page refreshes
+            try {
+              for (const goal of dailyGoalsStore.goalHistory) {
+                // Convert goal to plain object to avoid DataCloneError with Proxy objects
+                const plainGoal = {
+                  date: goal.date,
+                  tasks: {},
+                  completedCount: goal.completedCount,
+                  lastUpdated: goal.lastUpdated
+                };
+                
+                // Serialize each task to plain object
+                for (const [taskName, taskObj] of Object.entries(goal.tasks)) {
+                  plainGoal.tasks[taskName] = {
+                    name: String(taskObj.name),
+                    description: String(taskObj.description),
+                    completed: Boolean(taskObj.completed),
+                    completedAt: taskObj.completedAt ? String(taskObj.completedAt) : null,
+                    recordingId: taskObj.recordingId ? String(taskObj.recordingId) : null,
+                    startPage: taskObj.startPage ? Number(taskObj.startPage) : null,
+                    endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
+                    pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
+                    targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
+                    pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                  };
+                }
+                
+                await murajahDB.saveDailyGoal(plainGoal);
+              }
+              console.log('[Murajah] Goal history persisted to IndexedDB');
+            } catch (error) {
+              console.error('[Murajah] Failed to persist goal history:', error);
+            }
+            
+            console.log('[Murajah] Task uncompleted - streak updated:', dailyGoalsStore.streak);
             appStore.successMessage = `Task "${taskName}" uncompleted`;
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -3527,10 +3653,11 @@
             // For today, check todayGoal first
             if (date === todayStr && dailyGoalsStore.todayGoal) {
               const tasks = Object.values(dailyGoalsStore.todayGoal.tasks);
-              const totalSelected = dailyGoalsStore.selectedTasks.length;
+              // Use the number of tasks in todayGoal.tasks (the tasks that were created for today)
+              const totalTasksForToday = tasks.length;
               const completedCount = tasks.filter(t => t.completed).length;
               
-              if (completedCount === totalSelected && totalSelected > 0) return 'complete';
+              if (completedCount === totalTasksForToday && totalTasksForToday > 0) return 'complete';
               if (completedCount > 0) return 'partial';
               return 'none';
             }
@@ -3540,10 +3667,11 @@
             if (!goal) return 'none'; // No goal recorded
             
             const tasks = Object.values(goal.tasks);
-            const totalSelected = dailyGoalsStore.selectedTasks.length;
+            // Use the number of tasks that were created for that day (not current selectedTasks)
+            const totalTasksForDay = tasks.length;
             const completedCount = tasks.filter(t => t.completed).length;
             
-            if (completedCount === totalSelected && totalSelected > 0) return 'complete'; // All tasks done
+            if (completedCount === totalTasksForDay && totalTasksForDay > 0) return 'complete'; // All tasks done
             if (completedCount > 0) return 'partial'; // Some tasks done
             return 'none'; // No tasks done
           };
@@ -3862,7 +3990,12 @@
 
           // Watch settings that affect daily goals (finishRevisionDays and selectedTasks)
           watch(() => [settingsStore.finishRevisionDays, dailyGoalsStore.selectedTasks.length], async () => {
-            console.log('[Murajah] Settings changed, reinitializing daily goals');
+            // Only trigger reinitialize AFTER app is fully initialized
+            if (!isAppInitialized.value) {
+              console.log('[Murajah] Settings changed during initialization - skipping reinitialize');
+              return;
+            }
+            console.log('[Murajah] Settings changed after initialization, reinitializing daily goals');
             // Reinitialize today's goals with new settings
             await reinitializeDailyGoalsWithNewSettings();
           });
