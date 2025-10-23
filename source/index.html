@@ -704,6 +704,51 @@
     .dark-mode .hover\:bg-red-600:hover {
       color: white !important;
     }
+
+    /* ===== CUSTOM TOOLTIP STYLING ===== */
+    .word-tooltip {
+      position: fixed;
+      background-color: #fef3c7;
+      color: #1f2937;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      pointer-events: none;
+      z-index: 10000;
+      max-width: 300px;
+      word-wrap: break-word;
+      white-space: normal;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transform: translateX(-50%);
+      line-height: 1.5;
+      border: 1px solid #fde68a;
+    }
+
+    .dark-mode .word-tooltip {
+      background-color: #1f2937;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Arrow pointing down */
+    .word-tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid #fef3c7;
+    }
+
+    .dark-mode .word-tooltip::after {
+      border-top-color: #1f2937;
+    }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -1580,7 +1625,7 @@
             </div>
 
             <!-- Word Translation Tooltip -->
-            <div v-if="showTooltip" class="fixed bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-3 rounded-lg shadow-2xl border-2 border-blue-500 pointer-events-none text-base font-semibold whitespace-nowrap" style="z-index: 10000; max-width: 400px; word-wrap: break-word; white-space: normal;" :style="{ left: tooltipX + 'px', top: tooltipY + 'px' }">
+            <div v-if="showTooltip" class="word-tooltip" :style="{ left: tooltipX + 'px', top: (tooltipY - 50) + 'px' }">
               {{ tooltipText }}
             </div>
           </div>
@@ -2020,8 +2065,12 @@
             
             if (translation) {
               tooltipText.value = translation;
-              tooltipX.value = event.clientX + 18;
-              tooltipY.value = event.clientY + 18;
+              
+              // Position tooltip above the word
+              const rect = event.target.getBoundingClientRect();
+              tooltipX.value = rect.left + rect.width / 2; // Center horizontally above the word
+              tooltipY.value = rect.top; // Top of the word
+              
               showTooltip.value = true;
               console.log('[Murajah] Word tooltip shown:', key, translation);
             } else {
@@ -2032,8 +2081,10 @@
           };
 
           const updateTooltipPosition = (event) => {
-            tooltipX.value = event.clientX + 18;
-            tooltipY.value = event.clientY + 18;
+            // Position tooltip above the word instead of following mouse
+            const rect = event.target.getBoundingClientRect();
+            tooltipX.value = rect.left + rect.width / 2; // Center horizontally above the word
+            tooltipY.value = rect.top; // Top of the word
           };
 
           const hideWordTooltip = () => {
