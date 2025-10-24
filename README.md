@@ -1,3 +1,5 @@
+<p align="center"><img src="source/resources/logo-bg.png" alt="Hi" width=125></p>
+
 # Murajah - Quran Memorization & Revision Tool
 
 ## 📖 What is Murajah?
@@ -29,21 +31,19 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 
 - Overview of your memorization progress
 - Daily statistics and achievements
-- Quick access to recent sessions
 - Visual progress indicators
 
 ### 📖 Quran Page Viewer
 
 - Full Quran text with proper formatting and Tajweed rules highlighting
-- Page-by-page navigation matching the standard Quran (Mushaf)
+- Page-by-page navigation matching the standard Quran (Madinah Mushaf)
 - Word-by-word translation and meanings
 - Customizable text size (Small, Medium, Large)
-- Dark/Light mode support
 
 ### 🎙️ Audio Playlist
 
 - Record your recitations
-- Listen back to your recordings
+- Listen back to your recordings to identify mistakes
 - Manage multiple recordings
 
 ### 🎓 Quiz Mode
@@ -54,7 +54,7 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
   - Verse continuation
   - Verse Translation
   - Lightning modes
-- Real-time scoring and feedback
+- Real-time score
 
 ### 📝 Memorized Grid
 
@@ -222,7 +222,7 @@ Murajah/
 - **Styling**: Tailwind CSS
 - **Icons**: Line Awesome
 - **Data Format**: JSON
-- **Storage**: Browser LocalStorage (IndexDB)
+- **Storage**: Browser LocalStorage (IndexedDB)
 - **Fonts**: Custom Quran fonts for proper Tajweed display
 
 ## 📚 Features Deep Dive
@@ -282,5 +282,6 @@ For questions, issues, or suggestions:
 ## 🌟 Start Your Journey
 
 Start your memorization journey with Murajah today! Make review easy, systematic, and rewarding. 📖✨
+May Allah accept your efforts in memorizing and preserve **His Words** in your heart. 🤍
 
-May Allah bless all the contributors and resource providers. May Allah also accept your efforts in memorizing and preserving the noble Quran. 🤍
+> May Allah bless all the JSON resource providers and quran.com team.
