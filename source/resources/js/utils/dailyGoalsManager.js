@@ -183,8 +183,13 @@ export function uncompleteTask(todayGoal, taskName) {
  */
 export function calculateStreak(dailyGoalHistory, selectedTasks) {
   if (!dailyGoalHistory || dailyGoalHistory.length === 0) {
+    console.log('[calculateStreak] No history provided');
     return { currentStreak: 0, longestStreak: 0, lastCompletedDate: null };
   }
+
+  console.log('[calculateStreak] CALLED with:');
+  console.log('[calculateStreak]   - dailyGoalHistory length:', dailyGoalHistory.length);
+  console.log('[calculateStreak]   - Dates in history:', dailyGoalHistory.map(g => g.date).join(', '));
 
   let currentStreak = 0;
   let longestStreak = 0;
@@ -195,40 +200,77 @@ export function calculateStreak(dailyGoalHistory, selectedTasks) {
     new Date(a.date) - new Date(b.date)
   );
 
+  console.log('[calculateStreak] Sorted history dates:', sorted.map(g => `${g.date}`).join(', '));
+
+  // Helper function: Check if ALL tasks in a goal are complete
+  const isGoalComplete = (dayGoal) => {
+    const tasks = Object.values(dayGoal.tasks);
+    if (tasks.length === 0) {
+      console.log(`[calculateStreak]     - Goal has NO tasks, treating as incomplete`);
+      return false;
+    }
+    const allComplete = tasks.every(task => task.completed === true);
+    console.log(`[calculateStreak]     - Total tasks: ${tasks.length}, All complete: ${allComplete}`);
+    return allComplete;
+  };
+
+  // Count streak from oldest to newest
   for (let i = 0; i < sorted.length; i++) {
     const dayGoal = sorted[i];
     
-    // Check if at least one selected task was completed today
-    const tasksCompleted = Object.entries(dayGoal.tasks).filter(([taskName, task]) => {
-      return selectedTasks.includes(taskName) && task.completed;
-    }).length;
+    console.log(`[calculateStreak] Processing ${dayGoal.date}:`);
+    console.log(`[calculateStreak]   - Task names: ${Object.keys(dayGoal.tasks).join(', ')}`);
+    
+    // Check if ALL tasks for this day are complete
+    const goalComplete = isGoalComplete(dayGoal);
 
-    if (tasksCompleted > 0) {
+    if (goalComplete) {
       currentStreak++;
       lastCompletedDate = dayGoal.date;
-    } else {
-      // Streak breaks immediately
-      if (currentStreak > longestStreak) {
-        longestStreak = currentStreak;
-      }
-      currentStreak = 0;
-    }
+      console.log(`[calculateStreak] ${dayGoal.date} - ALL TASKS COMPLETE: currentStreak = ${currentStreak}`);
+    } 
   }
 
-  // Check if current streak should continue to today
+  // CRITICAL: Check if streak continues from yesterday to today
+  // If the most recent completed day is NOT yesterday, the streak is broken
   if (sorted.length > 0) {
-    const lastDate = new Date(sorted[sorted.length - 1].date);
+    const lastDateStr = sorted[sorted.length - 1].date;
     const today = new Date();
-    const isToday = lastDate.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Calculate yesterday's date
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    
+    const isYesterday = lastDateStr === yesterdayStr;
+    const isToday = lastDateStr === todayStr;
+    
+    console.log(`[calculateStreak] Checking continuity:`);
+    console.log(`[calculateStreak]   - Last complete date: ${lastDateStr}`);
+    console.log(`[calculateStreak]   - Yesterday: ${yesterdayStr}`);
+    console.log(`[calculateStreak]   - Today: ${todayStr}`);
+    console.log(`[calculateStreak]   - isYesterday: ${isYesterday}, isToday: ${isToday}`);
+    console.log(`[calculateStreak]   - currentStreak before continuity check: ${currentStreak}`);
 
-    // If last date is not today, streak is broken
-    if (!isToday) {
+    // Streak continues ONLY if:
+    // 1. Last completed day is yesterday (streak will continue into today even if today incomplete)
+    // 2. Last completed day is today (user completed today's goals)
+    // Otherwise, there's a gap and streak breaks
+    if (!isYesterday && !isToday) {
+      console.log(`[calculateStreak] STREAK BROKEN: Last completion is NOT today or yesterday (gap detected)`);
       if (currentStreak > longestStreak) {
         longestStreak = currentStreak;
       }
       currentStreak = 0;
+    } else if (isYesterday) {
+      console.log(`[calculateStreak] STREAK CONTINUES: Yesterday was complete, streak remains ${currentStreak}`);
+    } else if (isToday) {
+      console.log(`[calculateStreak] STREAK CONTINUES: Today is complete, streak is ${currentStreak}`);
     }
   }
+
+  console.log(`[calculateStreak] FINAL RESULT: currentStreak=${currentStreak}, longestStreak=${Math.max(longestStreak, currentStreak)}`);
 
   return {
     currentStreak,
@@ -275,7 +317,11 @@ export function isNewDay(lastDate) {
  * @returns {string} YYYY-MM-DD
  */
 export function getTodayDate() {
-  return new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**

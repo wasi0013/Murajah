@@ -2579,27 +2579,34 @@
               try {
                 const history = await murajahDB.loadDailyGoalHistory(90);
                 dailyGoalsStore.goalHistory = history;
+                console.log('[Murajah] Loaded history - count:', history.length, 'dates:', history.map(h => h.date).join(', '));
               } catch (historyError) {
                 console.warn('[Murajah] Failed to load history, using empty:', historyError);
                 dailyGoalsStore.goalHistory = [];
               }
               
-              // Ensure today's goal is in goalHistory for streak calculation
-              const todayDate = getTodayDate();
-              const todayInHistory = dailyGoalsStore.goalHistory.find(g => g.date === todayDate);
-              if (!todayInHistory && dailyGoalsStore.todayGoal) {
-                // Add today's goal to history for streak calculation
-                dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
-                console.log('[Murajah] Added today\'s goal to history for streak calculation');
-              }
+              // Debug selectedTasks before streak calculation
+              console.log('[Murajah] selectedTasks for streak calculation:', dailyGoalsStore.selectedTasks);
               
-              // Calculate streak (now includes today's goal)
+              // Calculate streak from HISTORY ONLY (excluding today until it's complete)
+              // This prevents showing 0 streak on new day when today's goal is incomplete
+              console.log('[Murajah] About to calculate streak with:', dailyGoalsStore.goalHistory.length, 'goals in history');
               const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
               dailyGoalsStore.streak = streakInfo.currentStreak;
               dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+              console.log('[Murajah] Streak calculation result - current:', dailyGoalsStore.streak, 'longest:', dailyGoalsStore.longestStreak);
+              
+              // Now ensure today's goal is in goalHistory for persistence
+              const todayDate = getTodayDate();
+              const todayInHistory = dailyGoalsStore.goalHistory.find(g => g.date === todayDate);
+              if (!todayInHistory && dailyGoalsStore.todayGoal) {
+                // Add today's goal to history for persistence
+                dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+                console.log('[Murajah] Added today\'s goal to history for persistence');
+              }
               
               dailyGoalsStore.lastUpdated = new Date().toISOString();
-              console.log('[Murajah] Daily goals initialized - Streak:', dailyGoalsStore.streak, 'todayGoal:', dailyGoalsStore.todayGoal);
+              console.log('[Murajah] Daily goals initialized - Streak:', dailyGoalsStore.streak, 'todayGoal date:', dailyGoalsStore.todayGoal?.date, 'All history dates:', dailyGoalsStore.goalHistory.map(g => g.date).join(', '));
             } catch (error) {
               console.error('[Murajah] Error initializing daily goals:', error);
               appStore.errorMessage = 'Failed to initialize daily goals';
@@ -2705,20 +2712,26 @@
               return;
             }
             
+            console.log(`[Murajah] Completing task: ${taskName}`);
             completeTask(dailyGoalsStore.todayGoal, taskName, metadata);
             await saveDailyGoal();
             
             // Update goalHistory with the updated todayGoal to reflect changes immediately
             // First, remove today's goal from history if it already exists (to avoid duplicates)
             const todayDate = getTodayDate();
+            console.log(`[Murajah] Before update - history length: ${dailyGoalsStore.goalHistory.length}, dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
+            console.log(`[Murajah] After filtering today - history length: ${dailyGoalsStore.goalHistory.length}`);
             
             // Add updated todayGoal to history for streak calculation
             // This ensures the contribution graph and streak stay in sync
             dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+            console.log(`[Murajah] After adding today's goal - history length: ${dailyGoalsStore.goalHistory.length}, dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             
             // Recalculate streak with updated history
+            console.log(`[Murajah] About to recalculate streak - history dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
+            console.log(`[Murajah] Streak recalculated after task completion - current: ${streakInfo.currentStreak}, longest: ${streakInfo.longestStreak}`);
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
             
@@ -2767,19 +2780,24 @@
               return;
             }
             
+            console.log(`[Murajah] Uncompleting task: ${taskName}`);
             uncompleteTask(dailyGoalsStore.todayGoal, taskName);
             await saveDailyGoal();
             
             // Update goalHistory with the updated todayGoal to reflect changes immediately
             // First, remove today's goal from history if it already exists (to avoid duplicates)
             const todayDate = getTodayDate();
+            console.log(`[Murajah] Before update - history length: ${dailyGoalsStore.goalHistory.length}`);
             dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
             
             // Add updated todayGoal to history for streak calculation
             dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
+            console.log(`[Murajah] After update - history length: ${dailyGoalsStore.goalHistory.length}`);
             
             // Recalculate streak with updated history
+            console.log(`[Murajah] About to recalculate streak after uncompleting task`);
             const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
+            console.log(`[Murajah] Streak recalculated after task uncompleted - current: ${streakInfo.currentStreak}`);
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
             
@@ -3647,8 +3665,10 @@
           const getDayStatus = (date) => {
             // Check if this is today's date
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayStr = today.toISOString().split('T')[0];
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
             
             // For today, check todayGoal first
             if (date === todayStr && dailyGoalsStore.todayGoal) {
@@ -3857,7 +3877,10 @@
           const contributionGraph = computed(() => {
             // Last 365 days ending with today
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
             const endDate = new Date(today);
             const startDate = new Date(today);
             startDate.setDate(startDate.getDate() - 364); // 365 days including today
@@ -3869,7 +3892,10 @@
             
             // Add all 365 days
             while (currentDate <= endDate) {
-              const dateStr = currentDate.toISOString().split('T')[0];
+              const dateYear = currentDate.getFullYear();
+              const dateMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+              const dateDay = String(currentDate.getDate()).padStart(2, '0');
+              const dateStr = `${dateYear}-${dateMonth}-${dateDay}`;
               const status = getDayStatus(dateStr);
               
               currentWeek.push({
