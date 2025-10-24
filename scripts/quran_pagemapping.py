@@ -4,7 +4,7 @@ from collections import defaultdict
 import re
 
 # Add resources directory to path
-resources_dir = Path(__file__).parent / "source" / "resources"
+resources_dir = Path(__file__).parent.parent / 'source' / "resources"
 
 def count_arabic_characters(text: str) -> int:
     """Count the number of base Arabic letters in the given text."""
