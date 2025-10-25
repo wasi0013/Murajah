@@ -2532,7 +2532,10 @@
                       endPage: taskObj.endPage || null,
                       pages: Array.isArray(taskObj.pages) ? taskObj.pages : [],
                       targetPages: taskObj.targetPages || 0,
-                      pagesAddedToday: taskObj.pagesAddedToday || 0
+                      pagesAddedToday: taskObj.pagesAddedToday || 0,
+                      rotationIndex: taskObj.rotationIndex || 0,
+                      chunkNumber: taskObj.chunkNumber || 1,
+                      totalChunks: taskObj.totalChunks || 1
                     };
                   }
                   
@@ -2569,7 +2572,10 @@
                       endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
                       pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
                       targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
-                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
+                      rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
+                      chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
+                      totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
                     };
                     goalToSave.tasks[taskName] = plainTask;
                   }
@@ -2699,7 +2705,10 @@
                   endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
                   pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
                   targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
-                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
+                  rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
+                  chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
+                  totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
                 };
                 goalToSave.tasks[taskName] = plainTask;
               }
