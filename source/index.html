@@ -1209,12 +1209,8 @@
                         </h4>
                         <p class="text-sm text-gray-600  mt-0.5">{{ task.description }}</p>
                         
-                        <!-- Task-specific details -->
-                        <div v-if="taskName === 'reviewRange' && task.pages" class="mt-2 text-xs text-gray-700  bg-blue-50  p-2 rounded">
-                          <i class="fas fa-book-open"></i> Pages: {{ task.pages.join(', ') }} ({{ task.pages.length }} pages)
-                        </div>
                         <div v-if="taskName === 'memorizeDaily'" class="mt-2 text-xs text-gray-700  bg-purple-50  p-2 rounded">
-                          <i class="fas fa-target"></i> Target: {{ task.targetPages }} page{{ task.targetPages !== 1 ? 's' : '' }} today
+                          <i class="fas fa-angle-double-right"></i> Target: {{ task.targetPages }} page{{ task.targetPages !== 1 ? 's' : '' }} today
                         </div>
                       </div>
 
@@ -1774,16 +1770,7 @@
                     </h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Pages Per Day</label>
-                        <input v-model.number="settingsStore.pagesPerDay" @change="updateSettings" type="number" min="1" max="604" class="w-full px-4 py-2 border border-gray-300  rounded-lg   ">
-                      </div>
-
-                      <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish Revision in (days)</label>
-                        <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300  rounded-lg   ">
-                      </div>
-
+                      
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">Font Size</label>
                         <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300  rounded-lg  ">
@@ -1807,6 +1794,42 @@
                       Daily Goals Settings
                     </h3>
                     
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Pages Per Day</label>
+                        <input 
+                          v-model.number="settingsStore.pagesPerDay" 
+                          @change="async () => { 
+                            console.log('[Murajah] Pages Per Day changed to:', settingsStore.pagesPerDay);
+                            updateSettings(); 
+                            console.log('[Murajah] About to reinitialize daily goals');
+                            await reinitializeDailyGoalsWithNewSettings(); 
+                            console.log('[Murajah] Daily goals reinitialized');
+                          }" 
+                          type="number" 
+                          min="1" 
+                          max="604" 
+                          class="w-full px-4 py-2 border border-gray-300  rounded-lg   "
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish Revision in (days)</label>
+                        <input 
+                          v-model.number="settingsStore.finishRevisionDays" 
+                          @change="async () => { 
+                            console.log('[Murajah] Finish Revision Days changed to:', settingsStore.finishRevisionDays);
+                            updateSettings(); 
+                            console.log('[Murajah] About to reinitialize daily goals');
+                            await reinitializeDailyGoalsWithNewSettings(); 
+                            console.log('[Murajah] Daily goals reinitialized');
+                          }" 
+                          type="number" 
+                          min="1" 
+                          max="365" 
+                          class="w-full px-4 py-2 border border-gray-300  rounded-lg   "
+                        >
+                    </div>
 
                     <!-- Task Selection -->
                     <div>
@@ -2601,6 +2624,8 @@
               const today = getTodayDate();
               console.log('[Murajah] Reinitializing daily goals with new settings');
               console.log('[Murajah] selectedTasks from store:', dailyGoalsStore.selectedTasks);
+              console.log('[Murajah] settingsStore.pagesPerDay:', settingsStore.pagesPerDay);
+              console.log('[Murajah] settingsStore.finishRevisionDays:', settingsStore.finishRevisionDays);
               
               // Create combined settings object that includes selectedTasks from dailyGoalsStore
               const combinedSettings = {
@@ -2609,20 +2634,42 @@
               };
               
               console.log('[Murajah] Combined settings:', combinedSettings);
+              console.log('[Murajah] Combined settings pagesPerDay:', combinedSettings.pagesPerDay);
               
               // Create a NEW goal with the updated settings (ignore the stored one)
               const newGoal = initializeTodayGoals(combinedSettings, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
               
               console.log('[Murajah] New goal tasks:', Object.keys(newGoal.tasks));
               
-              // Preserve completion status of tasks that still exist
+              // Preserve completion status and progress of tasks that still exist
               if (dailyGoalsStore.todayGoal && dailyGoalsStore.todayGoal.tasks) {
                 for (const [taskName, newTask] of Object.entries(newGoal.tasks)) {
                   if (dailyGoalsStore.todayGoal.tasks[taskName]) {
+                    const oldTask = dailyGoalsStore.todayGoal.tasks[taskName];
                     // Preserve the completion status
-                    newTask.completed = dailyGoalsStore.todayGoal.tasks[taskName].completed;
-                    newTask.completedAt = dailyGoalsStore.todayGoal.tasks[taskName].completedAt;
-                    console.log(`[Murajah] Preserved completion status for ${taskName}: ${newTask.completed}`);
+                    newTask.completed = oldTask.completed;
+                    newTask.completedAt = oldTask.completedAt || null;
+                    
+                    // Preserve progress on in-progress tasks
+                    if (taskName === 'memorizeDaily' && !newTask.completed) {
+                      // Preserve pages added today if not yet completed
+                      newTask.pagesAddedToday = oldTask.pagesAddedToday || 0;
+                    }
+                    if (taskName === 'recordRandomPage' && !newTask.completed) {
+                      // Preserve recording ID if not yet completed
+                      newTask.recordingId = oldTask.recordingId || null;
+                    }
+                    if (taskName === 'reviewRange' && !newTask.completed) {
+                      // Keep the old pages/range for review if not yet completed
+                      newTask.startPage = oldTask.startPage || newTask.startPage;
+                      newTask.endPage = oldTask.endPage || newTask.endPage;
+                      newTask.pages = oldTask.pages || newTask.pages;
+                      newTask.rotationIndex = oldTask.rotationIndex !== undefined ? oldTask.rotationIndex : newTask.rotationIndex;
+                      newTask.chunkNumber = oldTask.chunkNumber || newTask.chunkNumber;
+                      newTask.totalChunks = oldTask.totalChunks || newTask.totalChunks;
+                    }
+                    
+                    console.log(`[Murajah] Preserved task state for ${taskName}: completed=${newTask.completed}`);
                   }
                 }
               }

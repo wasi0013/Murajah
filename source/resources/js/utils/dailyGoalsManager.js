@@ -70,12 +70,14 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
     }
 
     if (taskName === 'memorizeDaily') {
+      const targetPages = settings.pagesPerDay || 1;
+      console.log('[initializeTodayGoals] Creating memorizeDaily task with pagesPerDay:', settings.pagesPerDay, 'targetPages:', targetPages);
       todayGoal.tasks.memorizeDaily = {
         name: 'Memorize new',
         description: `Complete your daily memorization target.`,
         completed: false,
         completedAt: null,
-        targetPages: settings.pagesPerDay || 1,
+        targetPages: targetPages,
         pagesAddedToday: 0
       };
     }
