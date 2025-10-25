@@ -1780,7 +1780,7 @@
                       </div>
 
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish in (days)</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish Revision in (days)</label>
                         <input v-model.number="settingsStore.finishRevisionDays" @change="updateSettings" type="number" min="1" max="365" class="w-full px-4 py-2 border border-gray-300  rounded-lg   ">
                       </div>
 
@@ -1804,31 +1804,13 @@
                   <div class="border-t border-gray-300  pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-fire text-orange-500"></i>
-                      Daily Goals
+                      Daily Goals Settings
                     </h3>
                     
-                    <!-- Streak Info -->
-                    <div class="p-4 bg-amber-50  rounded-lg border-l-4 border-amber-500 space-y-2">
-                      <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700 ">Current Streak</span>
-                        <span class="text-2xl font-bold text-orange-600 ">
-                          <i class="fas fa-fire"></i>
-                          {{ dailyGoalsStore.streak }} days
-                        </span>
-                      </div>
-                      <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700 ">Best Streak</span>
-                        <span class="text-lg font-bold text-orange-500">{{ dailyGoalsStore.longestStreak }} days</span>
-                      </div>
-                      <div v-if="dailyGoalsStore.todayGoal && Object.values(dailyGoalsStore.todayGoal.tasks).some(t => t.completed)" class="flex items-center gap-2 text-green-700  text-sm font-semibold mt-2">
-                        <i class="fas fa-check-circle"></i>
-                        Tasks completed today: {{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }}
-                      </div>
-                    </div>
 
                     <!-- Task Selection -->
                     <div>
-                      <label class="block text-sm font-semibold text-gray-700  mb-3">Select which tasks count towards your streak:</label>
+                      <label class="block text-sm font-semibold text-gray-700  mb-3">Select daily tasks:</label>
                       <div class="space-y-2">
                         <div class="flex items-center">
                           <input 
@@ -1895,7 +1877,7 @@
                     <!-- Streak Info Note -->
                     <div class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
                       <i class="fas fa-info-circle mr-2"></i>
-                      Streak breaks when no selected tasks are completed in a day. At least one completed task keeps the streak alive.
+                      Streak breaks when the above selected tasks are not completed in a day. New daily goal starts from midnight.
                     </div>
                   </div>
 
