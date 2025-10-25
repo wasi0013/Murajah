@@ -1110,6 +1110,9 @@
                 </nav>
                 <div class="flex items-center gap-4">
  
+                  <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="How to use Murajah">
+                    <i class="fas fa-info-circle text-gray-700  text-xl"></i>
+                  </button>
                   
                   <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
@@ -1973,6 +1976,180 @@
               </div>
             </div>
 
+            <!-- Help Modal -->
+            <div v-if="showHelpModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div class="bg-white  rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="sticky top-0 bg-white  border-b border-gray-200  px-6 py-4 flex items-center justify-between">
+                  <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-2">
+                    <i class="fas fa-book-open text-blue-600"></i>
+                    How to Use Murajah Effectively
+                  </h2>
+                  <button @click="showHelpModal = false" class="text-gray-500  hover:text-gray-700  transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                  </button>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="px-6 py-6 space-y-6">
+                  <!-- Make an intention Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-hourglass-start text-orange-500"></i>
+                      Make a solid intention
+                    </h3>
+                    <div class="bg-orange-50  rounded-lg p-4 border-l-4 border-orange-500 space-y-2">
+                      <p class="text-gray-700 "><span class="font-semibold">Make a lot of dua</span> - Ask Allah for help. Day and night keep supplicating to make it easy for you.</p>
+                      <p class="text-gray-700 "><span class="font-semibold">Do it for the sake of Allah</span> - Make a solid intention, Do it <strong>Only for the sake of Allah!</strong></p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Avoid major and minor sins. "Verily, knowledge is a light and the light of Allah is not given to a sinner".</p>
+                    </div>
+                  </div>
+                  <!-- Daily Goals Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-fire text-orange-500"></i>
+                      Daily Goals & Streaks
+                    </h3>
+                    <div class="bg-orange-50  rounded-lg p-4 border-l-4 border-orange-500 space-y-2">
+                      <p class="text-gray-700 "><span class="font-semibold">Complete daily goals</span> - Finish all your selected tasks every day to maintain your streak.</p>
+                      <p class="text-gray-700 "><span class="font-semibold">Beat your best streak</span> - Challenge yourself to set new personal records. Each day counts!</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Completing all daily tasks keeps your streak alive. Start small selecting one or two tasks and building momentum.</p>
+                    </div>
+                  </div>
+
+                  <!-- Quick Test Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-microphone text-red-500"></i>
+                      Use Quick Test Often
+                    </h3>
+                    <div class="bg-red-50  rounded-lg p-4 border-l-4 border-red-500 space-y-2">
+                      <p class="text-gray-700 ">Use the <span class="font-semibold">"Do a Quick Test"</span> task to strengthen your memorization. Recording yourself reciting from memory helps identify weak areas.</p>
+                      <p class="text-gray-700 ">After recording, listen back and mark any mistakes. This reinforces your memory and prevents regressions.</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Record yourself 3 times for each set of verses. Listen attentively and mark all mistakes.</p>
+                    </div>
+                  </div>
+
+                  <!-- Mistake Correction Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-exclamation-circle text-yellow-600"></i>
+                      Revise Pages with Mistakes
+                    </h3>
+                    <div class="bg-yellow-50  rounded-lg p-4 border-l-4 border-yellow-600 space-y-2">
+                      <p class="text-gray-700 ">After correcting a mistake in a verse, recite that verse <span class="font-semibold">20-50 times</span> to permanently fix it in your memory.</p>
+                      <p class="text-gray-700 ">Use the "Revise from Memory" task to systematically review your memorized pages and catch any errors.</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Spaced repetition is key. Review mistakes multiple times over several days for better retention.</p>
+                    </div>
+                  </div>
+
+                  <!-- Starting Small Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-check-circle text-green-600"></i>
+                      Start Small
+                    </h3>
+                    <div class="bg-green-50  rounded-lg p-4 border-l-4 border-green-600 space-y-2">
+                      <p class="text-gray-700 ">Begin with a small managable quantity, it could be as small as a single verse! But be consistent. Once comfortable you can increase it later.</p> 
+                      <p class="text-gray-700 ">For example, you can start with <span class="font-semibold">0.25 pages per day</span> (approximately 4 lines, not verses)</p>
+                      <p class="text-gray-700 ">Once this becomes comfortable, gradually increase your daily target. Building consistent habits matters more than speed.</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: You can configure your pages per day in Settings. Adjust it as you progress.</p>
+                    </div>
+                  </div>
+
+                  <!-- Consistently Review Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-headphones text-blue-600"></i>
+                      Don't miss your daily revision it's a must
+                    </h3>
+                    <div class="bg-blue-50  rounded-lg p-4 border-l-4 border-blue-600 space-y-2">
+                      <p class="text-gray-700 ">You must complete this one task daily to keep your hifz <span class="font-semibold">solid and mistake free</span>.</p>
+                      <p class="text-gray-700 ">Revising what you already know is more important than learning new verses. So, prioritize this task over the new memorization in busy days.</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Set a managable target (finish revision in X days) in settings to rotate revisions efficiently.</p>
+                    </div>
+                  </div>
+
+                  <!-- Pre-Memorization Listening Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-headphones text-blue-600"></i>
+                      Listen Before Memorizing
+                    </h3>
+                    <div class="bg-blue-50  rounded-lg p-4 border-l-4 border-blue-600 space-y-2">
+                      <p class="text-gray-700 ">Before starting memorization, listen to the target verses from your favorite reciter <span class="font-semibold">5-10 times</span>.</p>
+                      <p class="text-gray-700 ">This helps you avoid tajweed mistakes and familiarize yourself with the correct pronunciation and rhythm.</p>
+                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization.</p>
+                    </div>
+                  </div>
+
+                  <!-- Step-by-Step Memorization Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-list-ol text-purple-600"></i>
+                      Step-by-Step Memorization Process
+                    </h3>
+                    <div class="bg-purple-50  rounded-lg p-4 border-l-4 border-purple-600 space-y-3">
+                      <div class="space-y-2">
+                        <p class="text-gray-700 "><span class="font-semibold">Example: Memorizing 3 verses today</span></p>
+                        <ol class="list-decimal list-inside space-y-2 text-gray-700 ">
+                          <li><span class="font-semibold">Recite verse 1</span> from memory <strong>20 times</strong> without mistakes</li>
+                          <li><span class="font-semibold">Learn verse 2</span> and recite it <strong>20 times</strong> confidently</li>
+                          <li><span class="font-semibold">Combine verses 1 & 2</span> and recite together <strong>20 times</strong></li>
+                          <li><span class="font-semibold">Learn verse 3</span> and recite it <strong>20 times</strong> without mistakes</li>
+                          <li><span class="font-semibold">Recite all 3 verses</span> together <strong>20 times</strong></li>
+                          <li><span class="font-semibold">Record yourself</span> reciting this set <strong>3 times</strong></li>
+                          <li><span class="font-semibold">Listen attentively</span> to your recordings and mark any mistakes</li>
+                          <li><span class="font-semibold">Review mistakes</span> before moving to the next set</li>
+                          <li><span class="font-semibold">Mark page memorized</span> - Once finished, press the memorize button to mark the page as memorized</li>
+                          <li><span class="font-semibold">Record & verify</span> - Test your memorization by recording audio to check for any mistakes</li>
+                          <li><span class="font-semibold">Mark as perfect</span> - After successful recording with no mistakes, click the perfect button to track your hifz status</li>
+                          <li><span class="font-semibold">Track word mistakes</span> - Tap on any word you make a mistake on, it will automatically adjust your hifz status for that page</li>
+
+
+                        </ol>
+                      </div>
+                      <p class="text-xs text-gray-600  mt-3">💡 Some sheikhs/ustadhs recommend 50 times. This method makes your hifz (memorization) solid and long-lasting. Quality over quantity!</p>
+                    </div>
+                  </div>
+
+                  <!-- Quick Tips Section -->
+                  <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-lightbulb text-yellow-500"></i>
+                      Key Tips for Success
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div class="bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg p-3 border border-blue-200 ">
+                        <p class="font-semibold text-blue-900  mb-1">🎯 Focus on Quality</p>
+                        <p class="text-sm text-blue-800 ">Perfect memorization of 3 verses is better than weak memorization of 10.</p>
+                      </div>
+                      <div class="bg-gradient-to-br from-green-50 to-green-100   rounded-lg p-3 border border-green-200 ">
+                        <p class="font-semibold text-green-900  mb-1">📅 Consistency is Key</p>
+                        <p class="text-sm text-green-800 ">Complete your daily goals every day. Small daily efforts build lasting habits.</p>
+                      </div>
+                      <div class="bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg p-3 border border-purple-200 ">
+                        <p class="font-semibold text-purple-900  mb-1">🔄 Review Regularly</p>
+                        <p class="text-sm text-purple-800 ">Use the "Recite from Memory" task to review. Spaced repetition strengthens retention.</p>
+                      </div>
+                      <div class="bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg p-3 border border-orange-200 ">
+                        <p class="font-semibold text-orange-900  mb-1">📢 Record & Listen</p>
+                        <p class="text-sm text-orange-800 ">Recording yourself is a powerful tool. Mistakes are easier to spot in playback.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="sticky bottom-0 bg-gray-50  border-t border-gray-200  px-6 py-4 flex justify-end">
+                  <button @click="showHelpModal = false" class="px-4 py-2 bg-blue-600  text-white  rounded-lg hover:bg-blue-700  transition-colors font-medium">
+                    Got it!
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Analytics Dashboard -->
             <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
               <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
@@ -2300,6 +2477,7 @@
           const gotoInput = ref('');
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
+          const showHelpModal = ref(false);
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
           
           // Word interaction state
@@ -4207,6 +4385,7 @@ Display:
             quranData,
             gotoInput,
             showSettingsModal,
+            showHelpModal,
             statistics,
             recentRecordings,
             formattedCompletion,
