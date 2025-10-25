@@ -1835,13 +1835,28 @@
                             v-model="dailyGoalsStore.selectedTasks"
                             @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
                             type="checkbox" 
+                            value="reciteAyahs" 
+                            id="task-recite"
+                            class="rounded  "
+                          >
+                          <label for="task-recite" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
+                            <i class="fas fa-volume-up text-green-500"></i>
+                            Recite 10 verses
+                          </label>
+                        </div>
+
+                        <div class="flex items-center">
+                          <input 
+                            v-model="dailyGoalsStore.selectedTasks"
+                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
+                            type="checkbox" 
                             value="recordRandomPage" 
                             id="task-record"
                             class="rounded  "
                           >
                           <label for="task-record" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-microphone text-red-500"></i>
-                            Do a Quick test
+                            Do a quick test
                           </label>
                         </div>
 
@@ -1856,7 +1871,7 @@
                           >
                           <label for="task-review" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-book-open text-blue-500"></i>
-                            Review Range
+                            Recite from memory
                           </label>
                         </div>
 
@@ -1871,22 +1886,7 @@
                           >
                           <label for="task-memorize" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-quran text-purple-500"></i>
-                            Memorize Daily
-                          </label>
-                        </div>
-
-                        <div class="flex items-center">
-                          <input 
-                            v-model="dailyGoalsStore.selectedTasks"
-                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
-                            type="checkbox" 
-                            value="reciteAyahs" 
-                            id="task-recite"
-                            class="rounded  "
-                          >
-                          <label for="task-recite" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
-                            <i class="fas fa-volume-up text-green-500"></i>
-                            Recite 10 Ayahs
+                            Memorize new
                           </label>
                         </div>
                       </div>
@@ -2247,7 +2247,7 @@
             totalPages: 604,
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '2.0.0-beta',
+            appVersion: '25.10.24',
             errorMessage: '',
             successMessage: ''
           });
@@ -2285,7 +2285,7 @@
             goalHistory: [], // Array of historical goal records
             streak: 0, // Current streak
             longestStreak: 0, // Best streak ever
-            selectedTasks: ['recordRandomPage', 'reviewRange', 'memorizeDaily'], // Default tasks
+            selectedTasks: ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily'], // Default tasks in correct order
             lastUpdated: null
           });
 
@@ -2496,22 +2496,7 @@
               const hasReviewRangeTask = dailyGoalsStore.selectedTasks.includes('reviewRange');
               const hasRecordRandomPageTask = dailyGoalsStore.selectedTasks.includes('recordRandomPage');
               
-              if (isNewUser && (hasReviewRangeTask || hasRecordRandomPageTask)) {
-                // For new users with no memorized pages, remove tasks that require memorized pages
-                dailyGoalsStore.selectedTasks = dailyGoalsStore.selectedTasks.filter(
-                  task => task !== 'reviewRange' && task !== 'recordRandomPage'
-                );
-                
-                // Ensure new users have at least reciteAyahs and memorizeDaily
-                if (!dailyGoalsStore.selectedTasks.includes('reciteAyahs')) {
-                  dailyGoalsStore.selectedTasks.push('reciteAyahs');
-                }
-                if (!dailyGoalsStore.selectedTasks.includes('memorizeDaily')) {
-                  dailyGoalsStore.selectedTasks.push('memorizeDaily');
-                }
-                
-                console.log('[Murajah] New user detected (no memorized pages) - adjusted tasks to:', dailyGoalsStore.selectedTasks);
-              }
+            
               
               try {
                 // Try to load today's goal from IndexedDB

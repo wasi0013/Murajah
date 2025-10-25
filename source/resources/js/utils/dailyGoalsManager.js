@@ -21,54 +21,64 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
     lastUpdated: new Date().toISOString()
   };
 
-  // Only include tasks selected by user
-  const selectedTasks = settings.selectedTasks || ['recordRandomPage', 'reviewRange', 'memorizeDaily'];
+  // Only include tasks selected by user, in the correct order
+  const selectedTasks = settings.selectedTasks || ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily'];
+  
+  // Define the task order (this is the authoritative order)
+  const taskOrder = ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily'];
 
-  if (selectedTasks.includes('recordRandomPage')) {
-    todayGoal.tasks.recordRandomPage = {
-      name: 'Do a quick test',
-      description: 'Recite and record a random memorized page from memory and check mistakes.',
-      completed: false,
-      completedAt: null,
-      recordingId: null
-    };
-  }
+  // Create tasks in the correct order
+  for (const taskName of taskOrder) {
+    if (!selectedTasks.includes(taskName)) {
+      continue; // Skip if user didn't select this task
+    }
 
-  if (selectedTasks.includes('reviewRange')) {
-    const reviewRange = calculateReviewRange(
-      Array.from(memorizedPages).sort((a, b) => a - b),
-      settings.finishRevisionDays || 30,
-      lastDailyGoal
-    );
-    todayGoal.tasks.reviewRange = {
-      name: 'Recite from memory',
-      description: `Revise these pages today: ${reviewRange.pages.join(', ')}`,
-      completed: false,
-      completedAt: null,
-      startPage: reviewRange.startPage,
-      endPage: reviewRange.endPage,
-      pages: reviewRange.pages
-    };
-  }
+    if (taskName === 'reciteAyahs') {
+      todayGoal.tasks.reciteAyahs = {
+        name: 'Recite 10 verses',
+        description: 'Recite 10 ayahs from the quran.',
+        completed: false,
+        completedAt: null
+      };
+    }
 
-  if (selectedTasks.includes('memorizeDaily')) {
-    todayGoal.tasks.memorizeDaily = {
-      name: 'Memorize new',
-      description: `Complete your daily memorization target.`,
-      completed: false,
-      completedAt: null,
-      targetPages: settings.pagesPerDay || 1,
-      pagesAddedToday: 0
-    };
-  }
+    if (taskName === 'recordRandomPage') {
+      todayGoal.tasks.recordRandomPage = {
+        name: 'Do a quick test',
+        description: 'Recite and record a random memorized page from memory and check mistakes.',
+        completed: false,
+        completedAt: null,
+        recordingId: null
+      };
+    }
 
-  if (selectedTasks.includes('reciteAyahs')) {
-    todayGoal.tasks.reciteAyahs = {
-      name: 'Recite 10 Ayahs',
-      description: 'Recite 10 Ayahs from memory',
-      completed: false,
-      completedAt: null
-    };
+    if (taskName === 'reviewRange') {
+      const reviewRange = calculateReviewRange(
+        Array.from(memorizedPages).sort((a, b) => a - b),
+        settings.finishRevisionDays || 30,
+        lastDailyGoal
+      );
+      todayGoal.tasks.reviewRange = {
+        name: 'Recite from memory',
+        description: `Revise these pages today: ${reviewRange.pages.join(', ')}`,
+        completed: false,
+        completedAt: null,
+        startPage: reviewRange.startPage,
+        endPage: reviewRange.endPage,
+        pages: reviewRange.pages
+      };
+    }
+
+    if (taskName === 'memorizeDaily') {
+      todayGoal.tasks.memorizeDaily = {
+        name: 'Memorize new',
+        description: `Complete your daily memorization target.`,
+        completed: false,
+        completedAt: null,
+        targetPages: settings.pagesPerDay || 1,
+        pagesAddedToday: 0
+      };
+    }
   }
 
   return todayGoal;
