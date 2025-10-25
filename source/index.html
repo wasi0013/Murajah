@@ -1833,7 +1833,7 @@
                         <div class="flex items-center">
                           <input 
                             v-model="dailyGoalsStore.selectedTasks"
-                            @change="updateSettings"
+                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
                             type="checkbox" 
                             value="recordRandomPage" 
                             id="task-record"
@@ -1848,7 +1848,7 @@
                         <div class="flex items-center">
                           <input 
                             v-model="dailyGoalsStore.selectedTasks"
-                            @change="updateSettings"
+                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
                             type="checkbox" 
                             value="reviewRange" 
                             id="task-review"
@@ -1863,7 +1863,7 @@
                         <div class="flex items-center">
                           <input 
                             v-model="dailyGoalsStore.selectedTasks"
-                            @change="updateSettings"
+                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
                             type="checkbox" 
                             value="memorizeDaily" 
                             id="task-memorize"
@@ -1878,7 +1878,7 @@
                         <div class="flex items-center">
                           <input 
                             v-model="dailyGoalsStore.selectedTasks"
-                            @change="updateSettings"
+                            @change="async () => { updateSettings(); await reinitializeDailyGoalsWithNewSettings(); }"
                             type="checkbox" 
                             value="reciteAyahs" 
                             id="task-recite"
@@ -2528,14 +2528,14 @@
                       completed: Boolean(taskObj.completed),
                       completedAt: taskObj.completedAt || null,
                       recordingId: taskObj.recordingId || null,
-                      startPage: taskObj.startPage || null,
-                      endPage: taskObj.endPage || null,
-                      pages: Array.isArray(taskObj.pages) ? taskObj.pages : [],
-                      targetPages: taskObj.targetPages || 0,
-                      pagesAddedToday: taskObj.pagesAddedToday || 0,
-                      rotationIndex: taskObj.rotationIndex || 0,
-                      chunkNumber: taskObj.chunkNumber || 1,
-                      totalChunks: taskObj.totalChunks || 1
+                      startPage: taskObj.startPage ? Number(taskObj.startPage) : null,
+                      endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
+                      pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
+                      targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
+                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
+                      rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
+                      chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
+                      totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
                     };
                   }
                   
@@ -2633,9 +2633,20 @@
             try {
               const today = getTodayDate();
               console.log('[Murajah] Reinitializing daily goals with new settings');
+              console.log('[Murajah] selectedTasks from store:', dailyGoalsStore.selectedTasks);
+              
+              // Create combined settings object that includes selectedTasks from dailyGoalsStore
+              const combinedSettings = {
+                ...settingsStore,
+                selectedTasks: dailyGoalsStore.selectedTasks // Get from dailyGoalsStore, not settingsStore
+              };
+              
+              console.log('[Murajah] Combined settings:', combinedSettings);
               
               // Create a NEW goal with the updated settings (ignore the stored one)
-              const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
+              const newGoal = initializeTodayGoals(combinedSettings, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
+              
+              console.log('[Murajah] New goal tasks:', Object.keys(newGoal.tasks));
               
               // Preserve completion status of tasks that still exist
               if (dailyGoalsStore.todayGoal && dailyGoalsStore.todayGoal.tasks) {
@@ -2644,7 +2655,15 @@
                     // Preserve the completion status
                     newTask.completed = dailyGoalsStore.todayGoal.tasks[taskName].completed;
                     newTask.completedAt = dailyGoalsStore.todayGoal.tasks[taskName].completedAt;
+                    console.log(`[Murajah] Preserved completion status for ${taskName}: ${newTask.completed}`);
                   }
+                }
+              }
+              
+              // Remove tasks that are no longer selected
+              for (const [taskName, task] of Object.entries(dailyGoalsStore.todayGoal?.tasks || {})) {
+                if (!newGoal.tasks[taskName]) {
+                  console.log(`[Murajah] Removed task: ${taskName}`);
                 }
               }
               
@@ -2669,12 +2688,15 @@
                   endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
                   pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
                   targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
-                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
+                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
+                  rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
+                  chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
+                  totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
                 };
                 goalToSave.tasks[taskName] = plainTask;
               }
               await murajahDB.saveDailyGoal(goalToSave);
-              appStore.successMessage = 'Daily goals updated with new settings!';
+              appStore.successMessage = 'Daily goals updated!';
               setTimeout(() => appStore.successMessage = '', 2000);
             } catch (error) {
               console.error('[Murajah] Error reinitializing daily goals:', error);
@@ -4029,18 +4051,6 @@
           watch(() => settingsStore.fontSize, (newFontSize) => {
             console.log('[Murajah] Font size changed to:', newFontSize);
             saveDataBackground();
-          });
-
-          // Watch settings that affect daily goals (finishRevisionDays and selectedTasks)
-          watch(() => [settingsStore.finishRevisionDays, dailyGoalsStore.selectedTasks.length], async () => {
-            // Only trigger reinitialize AFTER app is fully initialized
-            if (!isAppInitialized.value) {
-              console.log('[Murajah] Settings changed during initialization - skipping reinitialize');
-              return;
-            }
-            console.log('[Murajah] Settings changed after initialization, reinitializing daily goals');
-            // Reinitialize today's goals with new settings
-            await reinitializeDailyGoalsWithNewSettings();
           });
 
           // Keyboard shortcuts handler
