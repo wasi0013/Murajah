@@ -10,6 +10,7 @@
  */
 
 import { computed, ref } from 'vue';
+import Logger from '../utils/logger.js';
 import { audioStore } from '../stores/audioStore.js';
 import { appStore } from '../stores/appStore.js';
 
@@ -225,7 +226,7 @@ export const AudioPlaylistComponent = {
       try {
         await audioStore.startCountdown();
       } catch (error) {
-        console.error('[Murajah] Recording error:', error);
+        Logger.error(Logger.MODULES.AUDIO, 'Failed to start recording', error);
         alert('Error starting recording: ' + error.message);
       }
     };
@@ -234,7 +235,7 @@ export const AudioPlaylistComponent = {
       try {
         await audioStore.stopRecording(appStore.currentPage);
       } catch (error) {
-        console.error('[Murajah] Stop recording error:', error);
+        Logger.error(Logger.MODULES.AUDIO, 'Failed to stop recording', error);
         alert('Error stopping recording: ' + error.message);
       }
     };
@@ -243,7 +244,7 @@ export const AudioPlaylistComponent = {
       try {
         audioStore.playAudio(recordingId);
       } catch (error) {
-        console.error('[Murajah] Playback error:', error);
+        Logger.error(Logger.MODULES.AUDIO, 'Playback failed', error);
         alert('Error playing audio: ' + error.message);
       }
     };
@@ -253,7 +254,7 @@ export const AudioPlaylistComponent = {
         try {
           await audioStore.deleteAudio(recordingId);
         } catch (error) {
-          console.error('[Murajah] Delete error:', error);
+          Logger.error(Logger.MODULES.AUDIO, 'Failed to delete recording', error);
           alert('Error deleting recording: ' + error.message);
         }
       }
@@ -264,7 +265,7 @@ export const AudioPlaylistComponent = {
         try {
           await audioStore.clearAllRecordings();
         } catch (error) {
-          console.error('[Murajah] Clear all error:', error);
+          Logger.error(Logger.MODULES.AUDIO, 'Failed to clear all recordings', error);
           alert('Error clearing recordings: ' + error.message);
         }
       }

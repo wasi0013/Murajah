@@ -1438,11 +1438,11 @@
                     <span class="text-gray-600 ">/604</span>
                   </div>
 
-                  <input v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300  rounded-lg    text-center text-sm" placeholder="Go">
+                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300  rounded-lg    text-center text-sm" placeholder="Go">
                   <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
 
                   <!-- Surah Navigator -->
-                  <select @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
+                  <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
                     <option value="">📖 Surahs (114)</option>
                     <option value="1">1. الفاتحة</option>
                     <option value="2">2. البقرة</option>
@@ -1776,7 +1776,7 @@
                       
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">Font Size</label>
-                        <select v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300  rounded-lg  ">
+                        <select id="fontSizeSelect" name="fontSize" v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300  rounded-lg  ">
                           <option value="small">Small</option>
                           <option value="medium">Medium</option>
                           <option value="large">Large</option>
@@ -1801,13 +1801,13 @@
                     <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">Pages Per Day</label>
                         <input 
+                          id="pagesPerDayInput" 
+                          name="pagesPerDay"
                           v-model.number="settingsStore.pagesPerDay" 
                           @change="async () => { 
-                            console.log('[Murajah] Pages Per Day changed to:', settingsStore.pagesPerDay);
                             updateSettings(); 
-                            console.log('[Murajah] About to reinitialize daily goals');
                             await reinitializeDailyGoalsWithNewSettings(); 
-                            console.log('[Murajah] Daily goals reinitialized');
+                            console.log('[Murajah] Settings changed | Pages per day: ' + settingsStore.pagesPerDay);
                           }" 
                           type="number" 
                           min="1" 
@@ -1819,13 +1819,13 @@
                     <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish Revision in (days)</label>
                         <input 
+                          id="finishRevisionDaysInput" 
+                          name="finishRevisionDays"
                           v-model.number="settingsStore.finishRevisionDays" 
                           @change="async () => { 
-                            console.log('[Murajah] Finish Revision Days changed to:', settingsStore.finishRevisionDays);
                             updateSettings(); 
-                            console.log('[Murajah] About to reinitialize daily goals');
                             await reinitializeDailyGoalsWithNewSettings(); 
-                            console.log('[Murajah] Daily goals reinitialized');
+                            console.log('[Murajah] Settings changed | Revision days: ' + settingsStore.finishRevisionDays);
                           }" 
                           type="number" 
                           min="1" 
@@ -1844,6 +1844,8 @@
                       </div>
                       <div class="flex items-center gap-3">
                         <input 
+                          id="adjustRevisionChunkSlider" 
+                          name="adjustRevisionChunk"
                           v-model.number="settingsStore.adjustRevisionChunk" 
                           @change="applyRevisionChunkAdjustment"
                           type="range" 
@@ -1965,11 +1967,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">Start Page</label>
-                        <input v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">End Page</label>
-                        <input v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div class="flex items-end">
                         <button 
@@ -2543,8 +2545,6 @@
               
               // Load Quran data
               quranData.value = await loadAllQuranData();
-              console.log('[Murajah] QuranData loaded, surahNames sample:', Object.keys(quranData.value.surahNames || {}).slice(0, 3), quranData.value.surahNames);
-              console.log('[Murajah] Translations sample:', Object.keys(quranData.value.translations || {}).slice(0, 5), 'Total translations:', Object.keys(quranData.value.translations || {}).length);
               
               // Load stored data
               await loadStoredData();
@@ -2552,7 +2552,7 @@
               // Initialize daily goals
               await initializeDailyGoals();
               
-              console.log('[Murajah] App initialized successfully');
+              console.log('[Murajah] App initialized | Memorized pages: ' + memorizedStore.memorizedPages.size);
               appStore.successMessage = 'Murajah loaded successfully!';
               setTimeout(() => appStore.successMessage = '', 3000);
             } catch (error) {
@@ -2587,10 +2587,6 @@
                         if (recordingWithBlob.duration !== undefined && recordingWithBlob.duration !== null) {
                           recordingWithBlob.duration = Number(recordingWithBlob.duration);
                         }
-                        console.log('[Murajah] Loaded recording from IndexedDB:', { 
-                          pageNumber: recordingWithBlob.pageNumber, 
-                          duration: recordingWithBlob.duration 
-                        });
                         audioStore.recordings.push(recordingWithBlob);
                       }
                     } catch (error) {
@@ -2649,7 +2645,6 @@
               duration: Number(r.duration) || 0, // Ensure duration is a number
               timestamp: r.timestamp
             }));
-            console.log('[Murajah] recordingsMetadata:', recordingsMetadata);
 
             // Extract plain objects from reactive stores (Proxy objects can't be cloned by IndexedDB)
             const plainSettings = {
@@ -2704,7 +2699,6 @@
           const initializeDailyGoals = async () => {
             try {
               const today = getTodayDate();
-              console.log('[Murajah] Initializing daily goals for', today, 'with memorized pages:', Array.from(memorizedStore.memorizedPages || []).slice(0, 5));
               
               // Check if this is a new user (no memorized pages) and adjust tasks accordingly
               const isNewUser = memorizedStore.memorizedPages.size === 0;
@@ -2748,15 +2742,10 @@
                     chunkNumber: storedGoal.chunkNumber ? Number(storedGoal.chunkNumber) : 1,
                     totalChunks: storedGoal.totalChunks ? Number(storedGoal.totalChunks) : 1
                   };
-                  
-                  console.log('[Murajah] Today\'s goal loaded from IndexedDB', storedGoal);
-                  console.log('[Murajah] Loaded tasks:', Object.entries(tasksCopy).map(([k, v]) => `${k}: completed=${v.completed}`));
-                  console.log('[Murajah] Loaded rotationIndex:', dailyGoalsStore.todayGoal.rotationIndex);
                 } else {
                   // New day, initialize new goals
                   const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
                   dailyGoalsStore.todayGoal = newGoal;
-                  console.log('[Murajah] New goal created:', newGoal);
                   
                   // Save new goal to IndexedDB (use plain object conversion)
                   const goalToSave = {
@@ -2784,7 +2773,6 @@
                     goalToSave.tasks[taskName] = plainTask;
                   }
                   await murajahDB.saveDailyGoal(goalToSave);
-                  console.log('[Murajah] New daily goal initialized and saved for', today, 'with rotationIndex:', goalToSave.rotationIndex);
                 }
               } catch (dbError) {
                 console.warn('[Murajah] Database error, creating in-memory goal:', dbError);
@@ -2797,22 +2785,16 @@
               try {
                 const history = await murajahDB.loadDailyGoalHistory(90);
                 dailyGoalsStore.goalHistory = history;
-                console.log('[Murajah] Loaded history - count:', history.length, 'dates:', history.map(h => h.date).join(', '));
               } catch (historyError) {
                 console.warn('[Murajah] Failed to load history, using empty:', historyError);
                 dailyGoalsStore.goalHistory = [];
               }
               
-              // Debug selectedTasks before streak calculation
-              console.log('[Murajah] selectedTasks for streak calculation:', dailyGoalsStore.selectedTasks);
-              
               // Calculate streak from HISTORY ONLY (excluding today until it's complete)
               // This prevents showing 0 streak on new day when today's goal is incomplete
-              console.log('[Murajah] About to calculate streak with:', dailyGoalsStore.goalHistory.length, 'goals in history');
               const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
               dailyGoalsStore.streak = streakInfo.currentStreak;
               dailyGoalsStore.longestStreak = streakInfo.longestStreak;
-              console.log('[Murajah] Streak calculation result - current:', dailyGoalsStore.streak, 'longest:', dailyGoalsStore.longestStreak);
               
               // Now ensure today's goal is in goalHistory for persistence
               const todayDate = getTodayDate();
@@ -2820,11 +2802,10 @@
               if (!todayInHistory && dailyGoalsStore.todayGoal) {
                 // Add today's goal to history for persistence
                 dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
-                console.log('[Murajah] Added today\'s goal to history for persistence');
               }
               
               dailyGoalsStore.lastUpdated = new Date().toISOString();
-              console.log('[Murajah] Daily goals initialized - Streak:', dailyGoalsStore.streak, 'todayGoal date:', dailyGoalsStore.todayGoal?.date, 'All history dates:', dailyGoalsStore.goalHistory.map(g => g.date).join(', '));
+              console.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
             } catch (error) {
               console.error('[Murajah] Error initializing daily goals:', error);
               appStore.errorMessage = 'Failed to initialize daily goals';
@@ -2837,9 +2818,6 @@
             try {
               const today = getTodayDate();
               console.log('[Murajah] Reinitializing daily goals with new settings');
-              console.log('[Murajah] selectedTasks from store:', dailyGoalsStore.selectedTasks);
-              console.log('[Murajah] settingsStore.pagesPerDay:', settingsStore.pagesPerDay);
-              console.log('[Murajah] settingsStore.finishRevisionDays:', settingsStore.finishRevisionDays);
               
               // Create combined settings object that includes selectedTasks from dailyGoalsStore
               const combinedSettings = {
@@ -2847,13 +2825,8 @@
                 selectedTasks: dailyGoalsStore.selectedTasks // Get from dailyGoalsStore, not settingsStore
               };
               
-              console.log('[Murajah] Combined settings:', combinedSettings);
-              console.log('[Murajah] Combined settings pagesPerDay:', combinedSettings.pagesPerDay);
-              
               // Create a NEW goal with the updated settings (ignore the stored one)
               const newGoal = initializeTodayGoals(combinedSettings, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
-              
-              console.log('[Murajah] New goal tasks:', Object.keys(newGoal.tasks));
               
               // Preserve completion status and progress of tasks that still exist
               if (dailyGoalsStore.todayGoal && dailyGoalsStore.todayGoal.tasks) {
@@ -2882,21 +2855,11 @@
                       newTask.chunkNumber = oldTask.chunkNumber || newTask.chunkNumber;
                       newTask.totalChunks = oldTask.totalChunks || newTask.totalChunks;
                     }
-                    
-                    console.log(`[Murajah] Preserved task state for ${taskName}: completed=${newTask.completed}`);
                   }
                 }
               }
               
-              // Remove tasks that are no longer selected
-              for (const [taskName, task] of Object.entries(dailyGoalsStore.todayGoal?.tasks || {})) {
-                if (!newGoal.tasks[taskName]) {
-                  console.log(`[Murajah] Removed task: ${taskName}`);
-                }
-              }
-              
               dailyGoalsStore.todayGoal = newGoal;
-              console.log('[Murajah] Daily goals reinitialized with new settings:', newGoal);
               
               // Save the updated goal to IndexedDB
               const goalToSave = {
@@ -2924,6 +2887,7 @@
                 goalToSave.tasks[taskName] = plainTask;
               }
               await murajahDB.saveDailyGoal(goalToSave);
+              console.log('[Murajah] Daily goals updated | Tasks: ' + Object.keys(newGoal.tasks).length);
               appStore.successMessage = 'Daily goals updated!';
               setTimeout(() => appStore.successMessage = '', 2000);
             } catch (error) {
@@ -2963,9 +2927,7 @@
                 goalToSave.tasks[taskName] = plainTask;
               }
               
-              console.log('[Murajah] Saving goal with rotationIndex:', goalToSave.rotationIndex, 'tasks:', Object.keys(goalToSave.tasks).map(k => `${k}: pages=${goalToSave.tasks[k].pages ? goalToSave.tasks[k].pages.length : 0}`));
               await murajahDB.saveDailyGoal(goalToSave);
-              console.log('[Murajah] Daily goal saved:', goalToSave);
             } catch (error) {
               console.error('[Murajah] Failed to save daily goal:', error);
               appStore.errorMessage = 'Failed to save task - will save in memory';
@@ -2975,32 +2937,24 @@
 
           const completeTaskGoal = async (taskName, metadata = {}) => {
             if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks[taskName]) {
-              console.warn(`[Murajah] Task ${taskName} not found in today's goal`);
+              console.warn(`[Murajah] Task '${taskName}' not found`);
               return;
             }
             
-            console.log(`[Murajah] Completing task: ${taskName}`);
             completeTask(dailyGoalsStore.todayGoal, taskName, metadata);
             await saveDailyGoal();
             
             // Update goalHistory with the updated todayGoal to reflect changes immediately
-            // First, remove today's goal from history if it already exists (to avoid duplicates)
             const todayDate = getTodayDate();
-            console.log(`[Murajah] Before update - history length: ${dailyGoalsStore.goalHistory.length}, dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
-            console.log(`[Murajah] After filtering today - history length: ${dailyGoalsStore.goalHistory.length}`);
-            
-            // Add updated todayGoal to history for streak calculation
-            // This ensures the contribution graph and streak stay in sync
             dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
-            console.log(`[Murajah] After adding today's goal - history length: ${dailyGoalsStore.goalHistory.length}, dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             
             // Recalculate streak with updated history
-            console.log(`[Murajah] About to recalculate streak - history dates: ${dailyGoalsStore.goalHistory.map(g => g.date).join(', ')}`);
             const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
-            console.log(`[Murajah] Streak recalculated after task completion - current: ${streakInfo.currentStreak}, longest: ${streakInfo.longestStreak}`);
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+            
+            console.log(`[Murajah] Task '${taskName}' completed | Streak: ${streakInfo.currentStreak}`);
             
             // Save the updated goalHistory to persist changes across page refreshes
             try {
@@ -3034,12 +2988,10 @@
                 
                 await murajahDB.saveDailyGoal(plainGoal);
               }
-              console.log('[Murajah] Goal history persisted to IndexedDB');
             } catch (error) {
               console.error('[Murajah] Failed to persist goal history:', error);
             }
             
-            console.log('[Murajah] Task completed - streak updated:', dailyGoalsStore.streak, 'history length:', dailyGoalsStore.goalHistory.length);
             appStore.successMessage = `Task "${taskName}" completed!`;
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -3050,26 +3002,20 @@
               return;
             }
             
-            console.log(`[Murajah] Uncompleting task: ${taskName}`);
             uncompleteTask(dailyGoalsStore.todayGoal, taskName);
             await saveDailyGoal();
             
             // Update goalHistory with the updated todayGoal to reflect changes immediately
-            // First, remove today's goal from history if it already exists (to avoid duplicates)
             const todayDate = getTodayDate();
-            console.log(`[Murajah] Before update - history length: ${dailyGoalsStore.goalHistory.length}`);
             dailyGoalsStore.goalHistory = dailyGoalsStore.goalHistory.filter(g => g.date !== todayDate);
-            
-            // Add updated todayGoal to history for streak calculation
             dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
-            console.log(`[Murajah] After update - history length: ${dailyGoalsStore.goalHistory.length}`);
             
             // Recalculate streak with updated history
-            console.log(`[Murajah] About to recalculate streak after uncompleting task`);
             const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
-            console.log(`[Murajah] Streak recalculated after task uncompleted - current: ${streakInfo.currentStreak}`);
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
+            
+            console.log(`[Murajah] Task '${taskName}' uncompleted | Streak: ${streakInfo.currentStreak}`);
             
             // Save the updated goalHistory to persist changes across page refreshes
             try {
@@ -3103,12 +3049,10 @@
                 
                 await murajahDB.saveDailyGoal(plainGoal);
               }
-              console.log('[Murajah] Goal history persisted to IndexedDB');
             } catch (error) {
               console.error('[Murajah] Failed to persist goal history:', error);
             }
             
-            console.log('[Murajah] Task uncompleted - streak updated:', dailyGoalsStore.streak);
             appStore.successMessage = `Task "${taskName}" uncompleted`;
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -3216,12 +3160,10 @@
             // Set inline styles
             document.documentElement.style.backgroundColor = '#ffffff';
             document.documentElement.style.color = '#111827';
-            console.log('[Murajah] Light mode applied to DOM');
           };
 
           const toggleTheme = () => {
             // Theme toggle disabled - always use light mode
-            console.log('[Murajah] Theme toggle disabled - light mode is always active');
           };
 
           // Perfect Revision functions
@@ -3269,20 +3211,15 @@
 
           // Get Arabic surah name from surah number
           const getSurahNameArabic = (surahNum) => {
-            // console.log(`[getSurahNameArabic] Called with surahNum:`, surahNum, 'type:', typeof surahNum);
             if (!surahNum || !quranData.value || !quranData.value.surahNames) {
-              console.log(`[getSurahNameArabic] Failed guard check - surahNum:`, surahNum, 'quranData exists:', !!quranData.value, 'surahNames exists:', !!(quranData.value && quranData.value.surahNames));
               return 'Quran Content';
             }
             const surahNames = quranData.value.surahNames;
-            console.log(`[getSurahNameArabic] Looking up surahNames[${surahNum}]`, surahNames[surahNum]);
             // The surahNames object has numeric keys (1, 2, 3, etc.) from the loaded JSON
             let surahName = surahNames[surahNum];
             if (surahName) {
-              // console.log(`[Murajah] Got surah name for ${surahNum}:`, surahName);
               return surahName;
             }
-            console.warn(`[Murajah] Surah name not found for:`, surahNum);
             return `Surah ${surahNum}`;
           };
 
@@ -3647,15 +3584,11 @@
 
           const startRecording = async () => {
             try {
-              console.log('[Murajah] startRecording called');
-              // Simple approach: skip countdown for now, just start recording immediately
               // Start the recording directly without countdown
               await audioRecorder.startRecording();
               
-              console.log('[Murajah] audioRecorder.startRecording() completed');
               audioStore.isRecording = true;
               recordingStartTime.value = Date.now();
-              console.log('[Murajah] Set recordingStartTime.value to:', recordingStartTime.value);
 
               recordingTimer = setInterval(() => {
                 const elapsed = Date.now() - recordingStartTime.value;
@@ -3670,6 +3603,8 @@
               if (quranSection) {
                 quranSection.classList.add('blur-recording');
               }
+              
+              console.log('[Murajah] Recording started | Page: ' + appStore.currentPage);
             } catch (error) {
               // Remove blur if recording fails
               const quranSection = document.getElementById('quran-text-section');
@@ -3687,8 +3622,6 @@
               if (recordingTimer) clearInterval(recordingTimer);
               
               const result = await audioRecorder.stopRecording();
-              console.log('[Murajah] stopRecording received result:', result);
-              console.log('[Murajah] result.duration type:', typeof result?.duration, 'value:', result?.duration);
               
               if (result) {
                 const recording = {
@@ -3704,13 +3637,6 @@
                   timestamp: Date.now()
                 };
 
-                console.log('[Murajah] Final recording object to be stored:', { 
-                  pageNumber: recording.pageNumber, 
-                  duration: recording.duration,
-                  durationType: typeof recording.duration,
-                  recordedAt: recording.recordedAt 
-                });
-
                 audioStore.recordings.push(recording);
                 audioStore.isRecording = false;
                 recordingStartTime.value = null;
@@ -3723,6 +3649,7 @@
                 }
 
                 saveDataBackground();
+                console.log(`[Murajah] Recording saved | Page: ${recording.pageNumber} | Duration: ${AudioRecorder.formatDuration(result.duration)}`);
                 appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
                 setTimeout(() => appStore.successMessage = '', 3000);
               }
@@ -3790,10 +3717,7 @@
           };
 
           const formatAudioDuration = (ms) => {
-            console.log('[Murajah] formatAudioDuration called with:', ms, 'type:', typeof ms);
-            const result = AudioRecorder.formatDuration(ms);
-            console.log('[Murajah] formatAudioDuration returning:', result);
-            return result;
+            return AudioRecorder.formatDuration(ms);
           };
 
           const exportData = () => {
@@ -4468,18 +4392,15 @@
           // Watch theme changes and apply to document
           watch(() => appStore.theme, (newTheme) => {
             applyThemeToDOM(newTheme);
-            console.log('[Murajah] Theme changed to:', newTheme);
           });
 
           // Watch tajweed setting and reload font when toggled
           watch(() => settingsStore.tajweedEnabled, () => {
             loadPageFont(appStore.currentPage);
-            console.log('[Murajah] Tajweed setting changed, font reloaded');
           });
 
           // Watch fontSize setting and save changes
           watch(() => settingsStore.fontSize, (newFontSize) => {
-            console.log('[Murajah] Font size changed to:', newFontSize);
             saveDataBackground();
           });
 
@@ -4504,35 +4425,30 @@
               updateSettings();
               appStore.successMessage = `Tajweed ${settingsStore.tajweedEnabled ? 'enabled' : 'disabled'}`;
               setTimeout(() => appStore.successMessage = '', 2000);
-              console.log('[Murajah] Tajweed toggled via keyboard:', settingsStore.tajweedEnabled);
             }
             
             // Left Arrow - Previous Page
             if (event.key === 'ArrowLeft') {
               event.preventDefault();
               previousPage();
-              console.log('[Murajah] Previous page via keyboard');
             }
             
             // Right Arrow - Next Page
             if (event.key === 'ArrowRight') {
               event.preventDefault();
               nextPage();
-              console.log('[Murajah] Next page via keyboard');
             }
             
             // M - Toggle Memorized
             if (key === 'm') {
               event.preventDefault();
               toggleMemorized();
-              console.log('[Murajah] Memorized toggled via keyboard');
             }
             
             // P - Perfect Revision
             if (key === 'p') {
               event.preventDefault();
               incrementPerfectRevision(appStore.currentPage);
-              console.log('[Murajah] Perfect revision via keyboard');
             }
             
             // D - Toggle Dark Mode
@@ -4541,14 +4457,12 @@
               toggleTheme();
               appStore.successMessage = `${appStore.theme === 'dark' ? 'Dark' : 'Light'} mode`;
               setTimeout(() => appStore.successMessage = '', 2000);
-              console.log('[Murajah] Theme toggled via keyboard:', appStore.theme);
             }
             
             // R - Random Page
             if (key === 'r') {
               event.preventDefault();
               selectRandomPage();
-              console.log('[Murajah] Random page selected via keyboard');
             }
             
             // G - Go to page (with prompt)
@@ -4565,7 +4479,6 @@
                   setTimeout(() => appStore.errorMessage = '', 2000);
                 }
               }
-              console.log('[Murajah] Go to page via keyboard');
             }
             
             // ? or H - Show Help (keyboard shortcuts)

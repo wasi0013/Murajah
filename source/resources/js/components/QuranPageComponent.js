@@ -12,6 +12,7 @@
  */
 
 import { computed, ref } from 'vue';
+import Logger from '../utils/logger.js';
 import { appStore } from '../stores/appStore.js';
 import { quranStore } from '../stores/quranStore.js';
 import { memorizedStore } from '../stores/memorizedStore.js';
@@ -241,9 +242,9 @@ export const QuranPageComponent = {
     const toggleMistake = (word) => {
       try {
         mistakesStore.toggleMistake(appStore.currentPage, word.id);
-        console.log('[Murajah] Toggled mistake for word:', word.id);
+        Logger.debug(Logger.MODULES.UI, `Toggled mistake for word ${word.id}`);
       } catch (error) {
-        console.error('[Murajah] Error toggling mistake:', error);
+        Logger.error(Logger.MODULES.UI, 'Error toggling mistake', error);
       }
     };
 
@@ -252,7 +253,7 @@ export const QuranPageComponent = {
       try {
         return quranStore.getWordTranslation(word.id) || 'No translation';
       } catch (error) {
-        console.error('[Murajah] Error getting translation:', error);
+        Logger.error(Logger.MODULES.UI, 'Error getting translation', error);
         return 'Translation unavailable';
       }
     };

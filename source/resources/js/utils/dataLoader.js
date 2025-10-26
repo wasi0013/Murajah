@@ -3,6 +3,8 @@
  * Handles loading and parsing all Quran data from JSON files
  */
 
+import Logger from './logger.js';
+
 const dataCache = {
   layout: null,
   words: null,
@@ -17,17 +19,19 @@ const dataCache = {
  */
 export const loadAllQuranData = async () => {
   if (dataCache.isLoaded) {
+    Logger.debug(Logger.MODULES.DATA, 'Returning cached Quran data');
     return {
       layout: dataCache.layout,
       words: dataCache.words,
       surahNames: dataCache.surahNames,
       translations: dataCache.translations,
-      pageLines: [] // Empty initially, load on demand
+      pageLines: []
     };
   }
 
   try {
-    console.log('[Murajah] Loading Quran data...');
+    Logger.info(Logger.MODULES.DATA, 'Loading Quran data files...');
+    const startTime = performance.now();
     
     const [layoutData, wordsData, surahNamesData, translationsData] = await Promise.all([
       fetch('./resources/qpc-v2-15-lines.json').then(r => r.json()),
@@ -42,19 +46,23 @@ export const loadAllQuranData = async () => {
     dataCache.translations = translationsData;
     dataCache.isLoaded = true;
 
-    console.log('[Murajah] All Quran data loaded successfully');
-    console.log(`[Murajah] Layout pages: ${layoutData.pages.length}`);
-    console.log(`[Murajah] Words count: ${Object.keys(wordsData).length}`);
+    const duration = performance.now() - startTime;
+    Logger.info(Logger.MODULES.DATA, 'Quran data loaded successfully', {
+      duration: `${duration.toFixed(2)}ms`,
+      pages: layoutData.pages.length,
+      words: Object.keys(wordsData).length,
+      surahs: Object.keys(surahNamesData).length
+    });
     
     return {
       layout: layoutData,
       words: wordsData,
       surahNames: surahNamesData,
       translations: translationsData,
-      pageLines: [] // Empty initially, load on demand
+      pageLines: []
     };
   } catch (error) {
-    console.error('[Murajah] Failed to load Quran data:', error);
+    Logger.error(Logger.MODULES.DATA, 'Failed to load Quran data', error);
     throw error;
   }
 };
@@ -68,6 +76,7 @@ export const loadAllQuranData = async () => {
  */
 export const getPageText = (pageNum, layoutData, wordsData) => {
   if (!layoutData || !layoutData.pages || !wordsData) {
+    Logger.warn(Logger.MODULES.DATA, `Missing data for page ${pageNum}`);
     return [];
   }
 
@@ -104,7 +113,7 @@ export const getPageText = (pageNum, layoutData, wordsData) => {
     
     return pageText;
   } catch (error) {
-    console.error(`[Murajah] Error getting page ${pageNum}:`, error);
+    Logger.error(Logger.MODULES.DATA, `Error loading page text for page ${pageNum}`, error);
     return [];
   }
 };
@@ -137,6 +146,7 @@ export const getPageLines = (pageNum, layoutData) => {
  */
 export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
   if (!layoutData || !layoutData.pages || !wordsData) {
+    Logger.warn(Logger.MODULES.DATA, `Missing data for page ${pageNum} detailed words`);
     return [];
   }
 
@@ -194,7 +204,7 @@ export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
     
     return pageWords;
   } catch (error) {
-    console.error(`[Murajah] Error getting page words for page ${pageNum}:`, error);
+    Logger.error(Logger.MODULES.DATA, `Error loading detailed words for page ${pageNum}`, error);
     return [];
   }
 };
@@ -230,16 +240,13 @@ export const getWordTranslation = (ayahKey, translationsData) => {
   return translationsData[ayahKey].translation || '';
 };
 
-/**
- * Clear cache (for testing or data refresh)
- */
 export const clearDataCache = () => {
   dataCache.layout = null;
   dataCache.words = null;
   dataCache.surahNames = null;
   dataCache.translations = null;
   dataCache.isLoaded = false;
-  console.log('[Murajah] Data cache cleared');
+  Logger.info(Logger.MODULES.DATA, 'Data cache cleared');
 };
 
 /**

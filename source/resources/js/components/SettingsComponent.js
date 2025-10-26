@@ -10,6 +10,7 @@
  */
 
 import { ref } from 'vue';
+import Logger from '../utils/logger.js';
 import { appStore } from '../stores/appStore.js';
 import { settingsStore } from '../stores/settingsStore.js';
 import { memorizedStore } from '../stores/memorizedStore.js';
@@ -319,9 +320,10 @@ export const SettingsComponent = {
           if (data.settings.theme) appStore.setTheme(data.settings.theme);
         }
 
+        Logger.info(Logger.MODULES.CORE, 'Data imported successfully');
         alert('Data imported successfully! Please refresh the page.');
       } catch (error) {
-        console.error('[Murajah] Import error:', error);
+        Logger.error(Logger.MODULES.CORE, 'Import failed', error);
         alert('Error importing data: ' + error.message);
       }
 
@@ -338,10 +340,11 @@ export const SettingsComponent = {
           memorizedStore.clearAllMemorized();
           mistakesStore.clearAllMistakes();
           audioStore.clearAllRecordings();
+          Logger.info(Logger.MODULES.CORE, 'All data reset by user');
           alert('All data has been reset.');
           window.location.reload();
         } catch (error) {
-          console.error('[Murajah] Reset error:', error);
+          Logger.error(Logger.MODULES.CORE, 'Reset failed', error);
           alert('Error resetting data: ' + error.message);
         }
       }

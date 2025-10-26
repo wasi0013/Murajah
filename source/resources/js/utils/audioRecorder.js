@@ -3,13 +3,15 @@
  * Handles audio recording, playback, and blob management
  */
 
+import Logger from './logger.js';
+
 export class AudioRecorder {
   constructor() {
     this.mediaRecorder = null;
     this.audioChunks = [];
     this.audioStream = null;
     this.isRecording = false;
-    this.recordingStartTime = null; // Track when recording actually started
+    this.recordingStartTime = null;
   }
 
   /**
@@ -29,12 +31,12 @@ export class AudioRecorder {
    */
   async startRecording() {
     if (this.isRecording) {
-      console.warn('[Murajah] Already recording');
+      Logger.warn(Logger.MODULES.AUDIO, 'Attempt to start recording while already recording');
       return;
     }
 
     try {
-      console.log('[Murajah] Requesting microphone access...');
+      Logger.info(Logger.MODULES.AUDIO, 'Requesting microphone access');
       
       this.audioStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -52,12 +54,12 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start();
-      this.recordingStartTime = Date.now(); // Capture start time when recording actually begins
+      this.recordingStartTime = Date.now();
       this.isRecording = true;
-      const capturedTime = this.recordingStartTime; // Double-check it was captured
-      console.log('[Murajah] Recording started. recordingStartTime:', this.recordingStartTime, 'verified:', capturedTime, 'type:', typeof this.recordingStartTime);
+      
+      Logger.debug(Logger.MODULES.AUDIO, 'Recording started');
     } catch (error) {
-      console.error('[Murajah] Failed to start recording:', error);
+      Logger.error(Logger.MODULES.AUDIO, 'Failed to start recording', error);
       throw new Error(`Recording failed: ${error.message}`);
     }
   }
@@ -68,26 +70,14 @@ export class AudioRecorder {
    */
   async stopRecording() {
     if (!this.isRecording) {
-      console.warn('[Murajah] No recording in progress');
+      Logger.warn(Logger.MODULES.AUDIO, 'Attempt to stop recording when not recording');
       return null;
     }
 
     return new Promise((resolve, reject) => {
       try {
-        if (!this.recordingStartTime) {
-          console.error('[Murajah] ERROR: recordingStartTime is not set!', {
-            isRecording: this.isRecording,
-            recordingStartTime: this.recordingStartTime,
-            mediaRecorder: !!this.mediaRecorder
-          });
-        }
-
-        // Calculate duration from when recording actually started
         const duration = Date.now() - (this.recordingStartTime || Date.now());
-        console.log('[Murajah] stopRecording - recordingStartTime:', this.recordingStartTime);
-        console.log('[Murajah] stopRecording - current time:', Date.now());
-        console.log('[Murajah] stopRecording - calculated duration (ms):', duration);
-
+        
         this.mediaRecorder.onstop = () => {
           const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
 
@@ -100,22 +90,22 @@ export class AudioRecorder {
           this.audioStream = null;
           this.recordingStartTime = null;
 
-          console.log('[Murajah] Recording stopped. Duration:', duration, 'ms');
-          console.log('[Murajah] Returning result:', { blob: audioBlob, duration: duration });
+          Logger.info(Logger.MODULES.AUDIO, 'Recording stopped', {
+            duration: `${duration}ms`,
+            size: `${(audioBlob.size / 1024).toFixed(2)}KB`
+          });
+          
           resolve({ blob: audioBlob, duration });
         };
 
         this.mediaRecorder.stop();
       } catch (error) {
-        console.error('[Murajah] Failed to stop recording:', error);
+        Logger.error(Logger.MODULES.AUDIO, 'Failed to stop recording', error);
         reject(error);
       }
     });
   }
 
-  /**
-   * Cancel recording without saving
-   */
   cancelRecording() {
     if (this.mediaRecorder && this.isRecording) {
       this.mediaRecorder.stop();
@@ -123,15 +113,10 @@ export class AudioRecorder {
       this.isRecording = false;
       this.audioChunks = [];
       this.recordingStartTime = null;
-      console.log('[Murajah] Recording cancelled');
+      Logger.info(Logger.MODULES.AUDIO, 'Recording cancelled by user');
     }
   }
 
-  /**
-   * Play audio blob
-   * @param {Blob} audioBlob - Audio blob to play
-   * @returns {Promise<void>}
-   */
   static playAudio(audioBlob) {
     return new Promise((resolve, reject) => {
       try {
@@ -140,6 +125,7 @@ export class AudioRecorder {
 
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl);
+          Logger.debug(Logger.MODULES.AUDIO, 'Audio playback finished');
           resolve();
         };
 
@@ -148,9 +134,10 @@ export class AudioRecorder {
           reject(error);
         };
 
+        Logger.debug(Logger.MODULES.AUDIO, 'Audio playback started');
         audio.play().catch(reject);
       } catch (error) {
-        console.error('[Murajah] Failed to play audio:', error);
+        Logger.error(Logger.MODULES.AUDIO, 'Failed to play audio', error);
         reject(error);
       }
     });

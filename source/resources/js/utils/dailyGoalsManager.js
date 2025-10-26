@@ -4,6 +4,8 @@
  * Simple, maintainable utility functions
  */
 
+import Logger from './logger.js';
+
 /**
  * Initialize today's goals based on user settings and memorized pages
  * @param {Object} settings - User settings (selectedTasks, finishRevisionDays, pagesPerDay)
@@ -79,7 +81,10 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 
     if (taskName === 'memorizeDaily') {
       const targetPages = settings.pagesPerDay || 1;
-      console.log('[initializeTodayGoals] Creating memorizeDaily task with pagesPerDay:', settings.pagesPerDay, 'targetPages:', targetPages);
+      Logger.debug(Logger.MODULES.DAILY_GOALS, 'Creating memorizeDaily task', { 
+        pagesPerDay: settings.pagesPerDay, 
+        targetPages 
+      });
       todayGoal.tasks.memorizeDaily = {
         name: 'Memorize new',
         description: `Complete your daily memorization target.`,
@@ -133,13 +138,18 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
     // Rotate to next chunk, wrapping around if we exceed totalChunks
     rotationIndex = (lastRotationIndex + 1) % totalChunks;
     
-    console.log('[calculateReviewRange] Rotation logic:');
-    console.log('  - lastDate:', lastDate, 'today:', today);
-    console.log('  - lastRotationIndex:', lastRotationIndex, 'newRotationIndex:', rotationIndex);
-    console.log('  - totalChunks:', totalChunks, 'totalPages:', totalPages);
-    console.log('  - baseChunkSize:', baseChunkSize, 'remainder:', remainder);
+    Logger.debug(Logger.MODULES.DAILY_GOALS, 'Rotation logic (new day)', {
+      lastDate,
+      today,
+      lastRotationIndex,
+      newRotationIndex: rotationIndex,
+      totalChunks,
+      totalPages,
+      baseChunkSize,
+      remainder
+    });
   } else {
-    console.log('[calculateReviewRange] First time or same day - starting at chunk 0');
+    Logger.debug(Logger.MODULES.DAILY_GOALS, 'First time or same day - starting at chunk 0');
   }
 
   // Calculate start index by summing sizes of all previous chunks
@@ -152,10 +162,12 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
   const endIdx = Math.min(startIdx + currentChunkSize, totalPages);
   const pagesForReview = sortedMemorisedPages.slice(startIdx, endIdx);
 
-  console.log('[calculateReviewRange] Review range calculated:');
-  console.log('  - rotationIndex:', rotationIndex, 'chunkNumber:', rotationIndex + 1, 'of', totalChunks);
-  console.log('  - chunkSize for this chunk:', currentChunkSize);
-  console.log('  - pages:', pagesForReview.join(', '));
+  Logger.debug(Logger.MODULES.DAILY_GOALS, 'Review range calculated', {
+    rotationIndex,
+    chunkNumber: `${rotationIndex + 1}/${totalChunks}`,
+    chunkSize: currentChunkSize,
+    pagesCount: pagesForReview.length
+  });
 
   return {
     startPage: pagesForReview[0] || 0,
@@ -176,7 +188,7 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
  */
 export function completeTask(todayGoal, taskName, metadata = {}) {
   if (!todayGoal.tasks[taskName]) {
-    console.warn(`[DailyGoalsManager] Task ${taskName} not found`);
+    Logger.warn(Logger.MODULES.DAILY_GOALS, `Task '${taskName}' not found`);
     return todayGoal;
   }
 
@@ -196,6 +208,8 @@ export function completeTask(todayGoal, taskName, metadata = {}) {
   todayGoal.completedCount = Object.values(todayGoal.tasks).filter(t => t.completed).length;
   todayGoal.lastUpdated = new Date().toISOString();
 
+  Logger.debug(Logger.MODULES.DAILY_GOALS, `Task completed: '${taskName}'`);
+
   return todayGoal;
 }
 
@@ -207,7 +221,7 @@ export function completeTask(todayGoal, taskName, metadata = {}) {
  */
 export function uncompleteTask(todayGoal, taskName) {
   if (!todayGoal.tasks[taskName]) {
-    console.warn(`[DailyGoalsManager] Task ${taskName} not found`);
+    Logger.warn(Logger.MODULES.DAILY_GOALS, `Task '${taskName}' not found`);
     return todayGoal;
   }
 
@@ -218,6 +232,8 @@ export function uncompleteTask(todayGoal, taskName) {
   // Update completed count
   todayGoal.completedCount = Object.values(todayGoal.tasks).filter(t => t.completed).length;
   todayGoal.lastUpdated = new Date().toISOString();
+
+  Logger.debug(Logger.MODULES.DAILY_GOALS, `Task uncompleted: '${taskName}'`);
 
   return todayGoal;
 }
@@ -232,13 +248,8 @@ export function uncompleteTask(todayGoal, taskName) {
  */
 export function calculateStreak(dailyGoalHistory, selectedTasks) {
   if (!dailyGoalHistory || dailyGoalHistory.length === 0) {
-    console.log('[calculateStreak] No history provided');
     return { currentStreak: 0, longestStreak: 0, lastCompletedDate: null };
   }
-
-  console.log('[calculateStreak] CALLED with:');
-  console.log('[calculateStreak]   - dailyGoalHistory length:', dailyGoalHistory.length);
-  console.log('[calculateStreak]   - Dates in history:', dailyGoalHistory.map(g => g.date).join(', '));
 
   let currentStreak = 0;
   let longestStreak = 0;
@@ -249,38 +260,24 @@ export function calculateStreak(dailyGoalHistory, selectedTasks) {
     new Date(a.date) - new Date(b.date)
   );
 
-  console.log('[calculateStreak] Sorted history dates:', sorted.map(g => `${g.date}`).join(', '));
-
   // Helper function: Check if ALL tasks in a goal are complete
   const isGoalComplete = (dayGoal) => {
     const tasks = Object.values(dayGoal.tasks);
-    if (tasks.length === 0) {
-      console.log(`[calculateStreak]     - Goal has NO tasks, treating as incomplete`);
-      return false;
-    }
-    const allComplete = tasks.every(task => task.completed === true);
-    console.log(`[calculateStreak]     - Total tasks: ${tasks.length}, All complete: ${allComplete}`);
-    return allComplete;
+    if (tasks.length === 0) return false;
+    return tasks.every(task => task.completed === true);
   };
 
   // Count streak from oldest to newest
   for (let i = 0; i < sorted.length; i++) {
     const dayGoal = sorted[i];
     
-    console.log(`[calculateStreak] Processing ${dayGoal.date}:`);
-    console.log(`[calculateStreak]   - Task names: ${Object.keys(dayGoal.tasks).join(', ')}`);
-    
-    // Check if ALL tasks for this day are complete
-    const goalComplete = isGoalComplete(dayGoal);
-
-    if (goalComplete) {
+    if (isGoalComplete(dayGoal)) {
       currentStreak++;
       lastCompletedDate = dayGoal.date;
-      console.log(`[calculateStreak] ${dayGoal.date} - ALL TASKS COMPLETE: currentStreak = ${currentStreak}`);
     } 
   }
 
-  // CRITICAL: Check if streak continues from yesterday to today
+  // Check if streak continues from yesterday to today
   // If the most recent completed day is NOT yesterday, the streak is broken
   if (sorted.length > 0) {
     const lastDateStr = sorted[sorted.length - 1].date;
@@ -294,32 +291,24 @@ export function calculateStreak(dailyGoalHistory, selectedTasks) {
     
     const isYesterday = lastDateStr === yesterdayStr;
     const isToday = lastDateStr === todayStr;
-    
-    console.log(`[calculateStreak] Checking continuity:`);
-    console.log(`[calculateStreak]   - Last complete date: ${lastDateStr}`);
-    console.log(`[calculateStreak]   - Yesterday: ${yesterdayStr}`);
-    console.log(`[calculateStreak]   - Today: ${todayStr}`);
-    console.log(`[calculateStreak]   - isYesterday: ${isYesterday}, isToday: ${isToday}`);
-    console.log(`[calculateStreak]   - currentStreak before continuity check: ${currentStreak}`);
 
     // Streak continues ONLY if:
     // 1. Last completed day is yesterday (streak will continue into today even if today incomplete)
     // 2. Last completed day is today (user completed today's goals)
     // Otherwise, there's a gap and streak breaks
     if (!isYesterday && !isToday) {
-      console.log(`[calculateStreak] STREAK BROKEN: Last completion is NOT today or yesterday (gap detected)`);
+      Logger.debug(Logger.MODULES.DAILY_GOALS, 'Streak broken - gap detected', {
+        lastCompletion: lastDateStr,
+        yesterday: yesterdayStr,
+        today: todayStr,
+        streak: currentStreak
+      });
       if (currentStreak > longestStreak) {
         longestStreak = currentStreak;
       }
       currentStreak = 0;
-    } else if (isYesterday) {
-      console.log(`[calculateStreak] STREAK CONTINUES: Yesterday was complete, streak remains ${currentStreak}`);
-    } else if (isToday) {
-      console.log(`[calculateStreak] STREAK CONTINUES: Today is complete, streak is ${currentStreak}`);
     }
   }
-
-  console.log(`[calculateStreak] FINAL RESULT: currentStreak=${currentStreak}, longestStreak=${Math.max(longestStreak, currentStreak)}`);
 
   return {
     currentStreak,
