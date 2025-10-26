@@ -2,12 +2,12 @@
 
 # Murajah - Quran Memorization & Revision Tool
 
-[![launch](https://img.shields.io/badge/click%20to-launch_website-purple?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
-[![version](https://img.shields.io/badge/Version-v25.10.26-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
+[![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
+[![version](https://img.shields.io/badge/V-25.10.26-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
 [![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
 [![Author](https://img.shields.io/badge/Author-Wasi-brightgreen?style=for-the-badge)](https://github.com/wasi0013)
-[![Opensource](https://img.shields.io/badge/Open%20Source-Yes-lightgray?style=for-the-badge)](./LICENSE)
-![JavaScript](https://img.shields.io/badge/Written%20using-Vue%20JS-yellow?style=for-the-badge)
+[![Free](https://img.shields.io/badge/Opensource-yes-lightgray?style=for-the-badge)](./LICENSE)
+![JavaScript](https://img.shields.io/badge/Framework-Vue%20JS-yellow?style=for-the-badge)
 
 
 <p align="center"><img src="screenshots/daily_goal.jpg" alt="Hi" width=720 alt="Daily Goal Screenshot"></p>
