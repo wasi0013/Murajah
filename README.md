@@ -2,6 +2,10 @@
 
 # Murajah - Quran Memorization & Revision Tool
 
+[![Author](https://img.shields.io/badge/Author-Wasi-brightgreen?style=for-the-badge)](https://github.com/wasi0013)
+[![Opensource](https://img.shields.io/badge/Open%20Source-Yes-blue?style=for-the-badge)](./LICENSE)
+![JavaScript](https://img.shields.io/badge/Written%20using-Vue%20JS-purple?style=for-the-badge)
+
 <p align="center"><img src="screenshots/daily_goal.jpg" alt="Hi" width=720 alt="Daily Goal Screenshot"></p>
 <p align="center"><img src="screenshots/quran_viewer.jpg" alt="Hi" width=720 alt="quran page viewer"></p>
 <p align="center"><img src="screenshots/analytics.jpg" alt="Hi" width=720 alt="analytics"></p>
