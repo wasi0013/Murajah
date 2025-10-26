@@ -2711,11 +2711,15 @@
                     date: storedGoal.date,
                     tasks: tasksCopy,
                     completedCount: storedGoal.completedCount || 0,
-                    lastUpdated: storedGoal.lastUpdated
+                    lastUpdated: storedGoal.lastUpdated,
+                    rotationIndex: storedGoal.rotationIndex !== undefined ? Number(storedGoal.rotationIndex) : 0,
+                    chunkNumber: storedGoal.chunkNumber ? Number(storedGoal.chunkNumber) : 1,
+                    totalChunks: storedGoal.totalChunks ? Number(storedGoal.totalChunks) : 1
                   };
                   
                   console.log('[Murajah] Today\'s goal loaded from IndexedDB', storedGoal);
                   console.log('[Murajah] Loaded tasks:', Object.entries(tasksCopy).map(([k, v]) => `${k}: completed=${v.completed}`));
+                  console.log('[Murajah] Loaded rotationIndex:', dailyGoalsStore.todayGoal.rotationIndex);
                 } else {
                   // New day, initialize new goals
                   const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
@@ -2727,7 +2731,10 @@
                     date: newGoal.date,
                     tasks: {},
                     completedCount: newGoal.completedCount,
-                    lastUpdated: newGoal.lastUpdated
+                    lastUpdated: newGoal.lastUpdated,
+                    rotationIndex: newGoal.rotationIndex !== undefined ? Number(newGoal.rotationIndex) : 0,
+                    chunkNumber: newGoal.chunkNumber ? Number(newGoal.chunkNumber) : 1,
+                    totalChunks: newGoal.totalChunks ? Number(newGoal.totalChunks) : 1
                   };
                   for (const [taskName, taskObj] of Object.entries(newGoal.tasks)) {
                     const plainTask = {
@@ -2740,15 +2747,12 @@
                       endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
                       pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
                       targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
-                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
-                      rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
-                      chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
-                      totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
+                      pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
                     };
                     goalToSave.tasks[taskName] = plainTask;
                   }
                   await murajahDB.saveDailyGoal(goalToSave);
-                  console.log('[Murajah] New daily goal initialized and saved for', today);
+                  console.log('[Murajah] New daily goal initialized and saved for', today, 'with rotationIndex:', goalToSave.rotationIndex);
                 }
               } catch (dbError) {
                 console.warn('[Murajah] Database error, creating in-memory goal:', dbError);
@@ -2904,7 +2908,10 @@
                 date: dailyGoalsStore.todayGoal.date,
                 tasks: {},
                 completedCount: dailyGoalsStore.todayGoal.completedCount,
-                lastUpdated: dailyGoalsStore.todayGoal.lastUpdated
+                lastUpdated: dailyGoalsStore.todayGoal.lastUpdated,
+                rotationIndex: dailyGoalsStore.todayGoal.rotationIndex !== undefined ? Number(dailyGoalsStore.todayGoal.rotationIndex) : 0,
+                chunkNumber: dailyGoalsStore.todayGoal.chunkNumber ? Number(dailyGoalsStore.todayGoal.chunkNumber) : 1,
+                totalChunks: dailyGoalsStore.todayGoal.totalChunks ? Number(dailyGoalsStore.todayGoal.totalChunks) : 1
               };
               
               // Convert tasks object (Proxy) to plain object with plain arrays
@@ -2919,15 +2926,12 @@
                   endPage: taskObj.endPage ? Number(taskObj.endPage) : null,
                   pages: Array.isArray(taskObj.pages) ? taskObj.pages.map(p => Number(p)) : [],
                   targetPages: taskObj.targetPages ? Number(taskObj.targetPages) : 0,
-                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0,
-                  rotationIndex: taskObj.rotationIndex ? Number(taskObj.rotationIndex) : 0,
-                  chunkNumber: taskObj.chunkNumber ? Number(taskObj.chunkNumber) : 1,
-                  totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
+                  pagesAddedToday: taskObj.pagesAddedToday ? Number(taskObj.pagesAddedToday) : 0
                 };
                 goalToSave.tasks[taskName] = plainTask;
               }
               
-              console.log('[Murajah] Saving goal with tasks:', Object.keys(goalToSave.tasks).map(k => `${k}: pages=${goalToSave.tasks[k].pages ? goalToSave.tasks[k].pages.length : 0}`));
+              console.log('[Murajah] Saving goal with rotationIndex:', goalToSave.rotationIndex, 'tasks:', Object.keys(goalToSave.tasks).map(k => `${k}: pages=${goalToSave.tasks[k].pages ? goalToSave.tasks[k].pages.length : 0}`));
               await murajahDB.saveDailyGoal(goalToSave);
               console.log('[Murajah] Daily goal saved:', goalToSave);
             } catch (error) {
@@ -2974,7 +2978,10 @@
                   date: goal.date,
                   tasks: {},
                   completedCount: goal.completedCount,
-                  lastUpdated: goal.lastUpdated
+                  lastUpdated: goal.lastUpdated,
+                  rotationIndex: goal.rotationIndex !== undefined ? Number(goal.rotationIndex) : 0,
+                  chunkNumber: goal.chunkNumber ? Number(goal.chunkNumber) : 1,
+                  totalChunks: goal.totalChunks ? Number(goal.totalChunks) : 1
                 };
                 
                 // Serialize each task to plain object
@@ -3040,7 +3047,10 @@
                   date: goal.date,
                   tasks: {},
                   completedCount: goal.completedCount,
-                  lastUpdated: goal.lastUpdated
+                  lastUpdated: goal.lastUpdated,
+                  rotationIndex: goal.rotationIndex !== undefined ? Number(goal.rotationIndex) : 0,
+                  chunkNumber: goal.chunkNumber ? Number(goal.chunkNumber) : 1,
+                  totalChunks: goal.totalChunks ? Number(goal.totalChunks) : 1
                 };
                 
                 // Serialize each task to plain object

@@ -18,7 +18,10 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
     date: today,
     tasks: {},
     completedCount: 0,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
+    rotationIndex: 0, // Track rotation index at goal level for next day's calculation
+    chunkNumber: 1,
+    totalChunks: 1
   };
 
   // Only include tasks selected by user, in the correct order
@@ -67,6 +70,11 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
         endPage: reviewRange.endPage,
         pages: reviewRange.pages
       };
+      
+      // Store rotation info at goal level for next day's calculation
+      todayGoal.rotationIndex = reviewRange.rotationIndex;
+      todayGoal.chunkNumber = reviewRange.chunkNumber;
+      todayGoal.totalChunks = reviewRange.totalChunks;
     }
 
     if (taskName === 'memorizeDaily') {
@@ -88,31 +96,40 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 
 /**
  * Calculate review range for today based on rotation
- * Divides memorized pages into chunks (3-4 pages each) and rotates through them
+ * Divides memorized pages into chunks based on finishRevisionDays and rotates through them
  * @param {Array} sortedMemorisedPages - Sorted array of memorized page numbers
- * @param {number} finishRevisionDays - Days to complete one full cycle
+ * @param {number} finishRevisionDays - Days to complete one full cycle (determines number of chunks)
  * @param {Object} lastDailyGoal - Last day's goal to get rotation index
- * @returns {Object} { startPage, endPage, pages: [] }
+ * @returns {Object} { startPage, endPage, pages: [], rotationIndex, chunkNumber, totalChunks }
  */
 export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, lastDailyGoal) {
   if (!sortedMemorisedPages || sortedMemorisedPages.length === 0) {
-    return { startPage: 0, endPage: 0, pages: [] };
+    return { startPage: 0, endPage: 0, pages: [], rotationIndex: 0, chunkNumber: 1, totalChunks: 1 };
   }
 
   const today = new Date().toISOString().split('T')[0];
   const lastDate = lastDailyGoal?.date;
 
-  // Calculate chunk size: 3-4 pages per chunk based on total pages and finish days
+  // Total number of chunks = finishRevisionDays (each chunk represents one day's review)
   const totalPages = sortedMemorisedPages.length;
-  const chunkSize = Math.ceil(totalPages / finishRevisionDays);
+  const totalChunks = finishRevisionDays;
+  const chunkSize = Math.ceil(totalPages / totalChunks);
 
   // Get current rotation index
   let rotationIndex = 0;
 
   if (lastDate && lastDate !== today) {
-    // Get last rotation index and increment for next chunk
-    const lastRotationIndex = lastDailyGoal?.rotationIndex || 0;
-    rotationIndex = (lastRotationIndex + 1) % Math.ceil(totalPages / chunkSize);
+    // Get last rotation index and increment to next chunk
+    const lastRotationIndex = lastDailyGoal?.rotationIndex !== undefined ? lastDailyGoal.rotationIndex : 0;
+    // Rotate to next chunk, wrapping around if we exceed totalChunks
+    rotationIndex = (lastRotationIndex + 1) % totalChunks;
+    
+    console.log('[calculateReviewRange] Rotation logic:');
+    console.log('  - lastDate:', lastDate, 'today:', today);
+    console.log('  - lastRotationIndex:', lastRotationIndex, 'newRotationIndex:', rotationIndex);
+    console.log('  - totalChunks:', totalChunks, 'totalPages:', totalPages, 'chunkSize:', chunkSize);
+  } else {
+    console.log('[calculateReviewRange] First time or same day - starting at chunk 0');
   }
 
   // Extract pages for this chunk
@@ -120,13 +137,17 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
   const endIdx = Math.min(startIdx + chunkSize, totalPages);
   const pagesForReview = sortedMemorisedPages.slice(startIdx, endIdx);
 
+  console.log('[calculateReviewRange] Review range calculated:');
+  console.log('  - rotationIndex:', rotationIndex, 'chunkNumber:', rotationIndex + 1, 'of', totalChunks);
+  console.log('  - pages:', pagesForReview.join(', '));
+
   return {
     startPage: pagesForReview[0] || 0,
     endPage: pagesForReview[pagesForReview.length - 1] || 0,
     pages: pagesForReview,
     rotationIndex: rotationIndex,
     chunkNumber: rotationIndex + 1,
-    totalChunks: Math.ceil(totalPages / chunkSize)
+    totalChunks: totalChunks
   };
 }
 
