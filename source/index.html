@@ -3808,8 +3808,20 @@
                 Array.from(mistakesStore.mistakes).map(([key, val]) => [key, Array.from(val)])
               ),
               settings: settingsStore,
-              recordings: audioStore.recordings
+              recordings: audioStore.recordings.map(r => ({
+                pageNumber: r.pageNumber,
+                recordedAt: r.recordedAt,
+                duration: r.duration,
+                timestamp: r.timestamp
+              }))
             };
+
+            console.log('[Murajah] Exporting data:', {
+              memorizedCount: data.memorized.length,
+              perfectRevisionsCount: Object.keys(data.perfectRevisions).length,
+              mistakesCount: Object.keys(data.mistakes).length,
+              recordingsCount: data.recordings.length
+            });
 
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -3832,15 +3844,73 @@
                 const text = await file.text();
                 const data = JSON.parse(text);
 
-                if (data.version === '2.0.0') {
-                  if (data.memorized) memorizedStore.memorizedPages = new Set(data.memorized);
-                  if (data.settings) Object.assign(settingsStore, data.settings);
-                  await saveData();
-                  appStore.successMessage = 'Data imported successfully!';
-                  setTimeout(() => location.reload(), 2000);
+                // Validate version
+                if (!data.version || data.version !== '2.0.0') {
+                  appStore.errorMessage = `Invalid backup version: ${data.version || 'unknown'}. Expected v2.0.0`;
+                  console.error('[Murajah] Import failed - version mismatch:', data.version);
+                  return;
                 }
+
+                console.log('[Murajah] Starting data import from backup');
+
+                // Import memorized pages
+                if (data.memorized && Array.isArray(data.memorized)) {
+                  memorizedStore.memorizedPages = new Set(data.memorized);
+                  console.log(`[Murajah] Imported ${data.memorized.length} memorized pages`);
+                } else {
+                  console.warn('[Murajah] No memorized pages found in backup');
+                }
+
+                // Import perfect revisions
+                if (data.perfectRevisions && typeof data.perfectRevisions === 'object') {
+                  perfectRevisionsStore.perfectRevisions = new Map(
+                    Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), Number(v)])
+                  );
+                  console.log(`[Murajah] Imported ${perfectRevisionsStore.perfectRevisions.size} pages with revision tracking`);
+                } else {
+                  console.warn('[Murajah] No perfect revisions found in backup');
+                }
+
+                // Import mistakes
+                if (data.mistakes && typeof data.mistakes === 'object') {
+                  mistakesStore.mistakes = new Map(
+                    Object.entries(data.mistakes).map(([k, v]) => [
+                      parseInt(k), 
+                      new Set(Array.isArray(v) ? v.map(word => Number(word)) : [])
+                    ])
+                  );
+                  console.log(`[Murajah] Imported mistake data for ${mistakesStore.mistakes.size} pages`);
+                } else {
+                  console.warn('[Murajah] No mistakes found in backup');
+                }
+
+                // Import settings
+                if (data.settings && typeof data.settings === 'object') {
+                  Object.assign(settingsStore, data.settings);
+                  // Validate critical settings
+                  if (typeof settingsStore.finishRevisionDays !== 'number' || settingsStore.finishRevisionDays < 1) {
+                    settingsStore.finishRevisionDays = 30;
+                  }
+                  if (typeof settingsStore.pagesPerDay !== 'number' || settingsStore.pagesPerDay < 0.1) {
+                    settingsStore.pagesPerDay = 1;
+                  }
+                  if (!['small', 'medium', 'large'].includes(settingsStore.fontSize)) {
+                    settingsStore.fontSize = 'medium';
+                  }
+                  console.log('[Murajah] Imported settings');
+                } else {
+                  console.warn('[Murajah] No settings found in backup');
+                }
+
+                // Save imported data to IndexedDB
+                await saveData();
+                console.log('[Murajah] Data saved to IndexedDB');
+
+                appStore.successMessage = 'Data imported successfully! Reloading...';
+                setTimeout(() => location.reload(), 2000);
               } catch (error) {
-                appStore.errorMessage = 'Invalid backup file';
+                console.error('[Murajah] Import error:', error);
+                appStore.errorMessage = `Import failed: ${error.message || 'Invalid backup file'}`;
               }
             };
             input.click();
