@@ -2,6 +2,10 @@
 
 # Murajah - Quran Memorization & Revision Tool
 
+<p align="center"><img src="screenshots/daily_goal.jpg" alt="Hi" width=720 alt="Daily Goal Screenshot"></p>
+<p align="center"><img src="screenshots/quran_viewer.jpg" alt="Hi" width=720 alt="quran page viewer"></p>
+<p align="center"><img src="screenshots/analytics.jpg" alt="Hi" width=720 alt="analytics"></p>
+
 ## 📖 What is Murajah?
 
 **Murajah** (مراجعة) is a comprehensive application designed to help Quran students memorize and maintain their memorization through systematic review and practice.
@@ -69,6 +73,7 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 - Statistics on mistakes
 
 ### ⚙️ Settings
+<p align="center"><img src="screenshots/settings.jpg" alt="Hi" width=720 alt="settings"></p>
 
 - Text size preferences
 - Tajweed rules display toggle
