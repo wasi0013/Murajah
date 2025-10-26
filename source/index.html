@@ -3813,14 +3813,24 @@
                 recordedAt: r.recordedAt,
                 duration: r.duration,
                 timestamp: r.timestamp
-              }))
+              })),
+              dailyGoals: {
+                todayGoal: dailyGoalsStore.todayGoal,
+                goalHistory: dailyGoalsStore.goalHistory,
+                streak: dailyGoalsStore.streak,
+                longestStreak: dailyGoalsStore.longestStreak,
+                selectedTasks: dailyGoalsStore.selectedTasks
+              }
             };
 
             console.log('[Murajah] Exporting data:', {
               memorizedCount: data.memorized.length,
               perfectRevisionsCount: Object.keys(data.perfectRevisions).length,
               mistakesCount: Object.keys(data.mistakes).length,
-              recordingsCount: data.recordings.length
+              recordingsCount: data.recordings.length,
+              dailyGoalsHistoryCount: data.dailyGoals.goalHistory.length,
+              currentStreak: data.dailyGoals.streak,
+              longestStreak: data.dailyGoals.longestStreak
             });
 
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -3900,6 +3910,56 @@
                   console.log('[Murajah] Imported settings');
                 } else {
                   console.warn('[Murajah] No settings found in backup');
+                }
+
+                // Import daily goals history
+                if (data.dailyGoals && typeof data.dailyGoals === 'object') {
+                  if (data.dailyGoals.todayGoal) {
+                    dailyGoalsStore.todayGoal = data.dailyGoals.todayGoal;
+                  }
+                  if (Array.isArray(data.dailyGoals.goalHistory)) {
+                    dailyGoalsStore.goalHistory = data.dailyGoals.goalHistory;
+                  }
+                  if (typeof data.dailyGoals.streak === 'number') {
+                    dailyGoalsStore.streak = data.dailyGoals.streak;
+                  }
+                  if (typeof data.dailyGoals.longestStreak === 'number') {
+                    dailyGoalsStore.longestStreak = data.dailyGoals.longestStreak;
+                  }
+                  if (Array.isArray(data.dailyGoals.selectedTasks)) {
+                    dailyGoalsStore.selectedTasks = data.dailyGoals.selectedTasks;
+                  }
+                  console.log(`[Murajah] Imported daily goals - streak: ${dailyGoalsStore.streak}, history: ${dailyGoalsStore.goalHistory.length} days, longest streak: ${dailyGoalsStore.longestStreak}`);
+                  
+                  // Save daily goals to IndexedDB
+                  console.log('[Murajah] Saving imported daily goals to database...');
+                  let savedGoalsCount = 0;
+                  
+                  // Save todayGoal if present
+                  if (data.dailyGoals.todayGoal) {
+                    try {
+                      await murajahDB.saveDailyGoal(data.dailyGoals.todayGoal);
+                      savedGoalsCount++;
+                      console.log(`[Murajah] Saved todayGoal for ${data.dailyGoals.todayGoal.date}`);
+                    } catch (error) {
+                      console.error('[Murajah] Failed to save todayGoal:', error);
+                    }
+                  }
+                  
+                  // Save goal history
+                  if (Array.isArray(data.dailyGoals.goalHistory)) {
+                    for (const goal of data.dailyGoals.goalHistory) {
+                      try {
+                        await murajahDB.saveDailyGoal(goal);
+                        savedGoalsCount++;
+                      } catch (error) {
+                        console.error(`[Murajah] Failed to save goal for ${goal.date}:`, error);
+                      }
+                    }
+                    console.log(`[Murajah] Saved ${savedGoalsCount} daily goals to database`);
+                  }
+                } else {
+                  console.warn('[Murajah] No daily goals found in backup');
                 }
 
                 // Save imported data to IndexedDB
