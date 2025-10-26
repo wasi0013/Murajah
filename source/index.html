@@ -1617,7 +1617,7 @@
                       <div class="flex-1 min-w-0">
                         <p class="font-medium text-gray-900 ">Page {{ recording.pageNumber }}</p>
                         <p class="text-xs text-gray-600 ">{{ recording.recordedAt }}</p>
-                        <p class="text-xs text-gray-600 " v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }}</p>
+                        <p class="text-xs text-gray-600 " v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }} <!-- Debug: raw={{ recording.duration }} --></p>
                       </div>
                       <div class="flex items-center gap-2">
                         <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600  " :title="'Play recording for page ' + recording.pageNumber">
@@ -2583,6 +2583,14 @@
                     try {
                       const recordingWithBlob = await murajahDB.loadRecording(i);
                       if (recordingWithBlob) {
+                        // Ensure duration is a number
+                        if (recordingWithBlob.duration !== undefined && recordingWithBlob.duration !== null) {
+                          recordingWithBlob.duration = Number(recordingWithBlob.duration);
+                        }
+                        console.log('[Murajah] Loaded recording from IndexedDB:', { 
+                          pageNumber: recordingWithBlob.pageNumber, 
+                          duration: recordingWithBlob.duration 
+                        });
                         audioStore.recordings.push(recordingWithBlob);
                       }
                     } catch (error) {
@@ -2638,9 +2646,10 @@
             const recordingsMetadata = audioStore.recordings.map(r => ({
               pageNumber: r.pageNumber,
               recordedAt: r.recordedAt,
-              duration: r.duration,
+              duration: Number(r.duration) || 0, // Ensure duration is a number
               timestamp: r.timestamp
             }));
+            console.log('[Murajah] recordingsMetadata:', recordingsMetadata);
 
             // Extract plain objects from reactive stores (Proxy objects can't be cloned by IndexedDB)
             const plainSettings = {
@@ -3260,7 +3269,7 @@
 
           // Get Arabic surah name from surah number
           const getSurahNameArabic = (surahNum) => {
-            console.log(`[getSurahNameArabic] Called with surahNum:`, surahNum, 'type:', typeof surahNum);
+            // console.log(`[getSurahNameArabic] Called with surahNum:`, surahNum, 'type:', typeof surahNum);
             if (!surahNum || !quranData.value || !quranData.value.surahNames) {
               console.log(`[getSurahNameArabic] Failed guard check - surahNum:`, surahNum, 'quranData exists:', !!quranData.value, 'surahNames exists:', !!(quranData.value && quranData.value.surahNames));
               return 'Quran Content';
@@ -3270,7 +3279,7 @@
             // The surahNames object has numeric keys (1, 2, 3, etc.) from the loaded JSON
             let surahName = surahNames[surahNum];
             if (surahName) {
-              console.log(`[Murajah] Got surah name for ${surahNum}:`, surahName);
+              // console.log(`[Murajah] Got surah name for ${surahNum}:`, surahName);
               return surahName;
             }
             console.warn(`[Murajah] Surah name not found for:`, surahNum);
@@ -3638,61 +3647,38 @@
 
           const startRecording = async () => {
             try {
-              // Start countdown
-              recordingCountdown.value = 3;
+              console.log('[Murajah] startRecording called');
+              // Simple approach: skip countdown for now, just start recording immediately
+              // Start the recording directly without countdown
+              await audioRecorder.startRecording();
               
+              console.log('[Murajah] audioRecorder.startRecording() completed');
+              audioStore.isRecording = true;
+              recordingStartTime.value = Date.now();
+              console.log('[Murajah] Set recordingStartTime.value to:', recordingStartTime.value);
+
+              recordingTimer = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime.value;
+                recordingDuration.value = AudioRecorder.formatDuration(elapsed);
+              }, 100);
+
+              appStore.successMessage = 'Recording in progress...';
+              setTimeout(() => appStore.successMessage = '', 2000);
+
               // Blur the Quran text section
               const quranSection = document.getElementById('quran-text-section');
               if (quranSection) {
                 quranSection.classList.add('blur-recording');
               }
-
-              // Countdown logic
-              countdownTimer = setInterval(() => {
-                if (recordingCountdown.value > 0) {
-                  recordingCountdown.value--;
-                } else {
-                  // Countdown finished, start actual recording
-                  clearInterval(countdownTimer);
-                  countdownTimer = null;
-                  recordingCountdown.value = null;
-
-                  // Start the actual recording
-                  audioRecorder.startRecording().then(() => {
-                    audioStore.isRecording = true;
-                    recordingStartTime.value = Date.now();
-
-                    recordingTimer = setInterval(() => {
-                      const elapsed = Date.now() - recordingStartTime.value;
-                      recordingDuration.value = AudioRecorder.formatDuration(elapsed);
-                    }, 100);
-
-                    appStore.successMessage = 'Recording in progress...';
-                    setTimeout(() => appStore.successMessage = '', 2000);
-                  }).catch((error) => {
-                    // Remove blur if recording fails
-                    const quranSection = document.getElementById('quran-text-section');
-                    if (quranSection) {
-                      quranSection.classList.remove('blur-recording');
-                    }
-                    recordingCountdown.value = null;
-                    audioStore.isRecording = false;
-                    console.error('[Murajah] Recording error:', error);
-                    appStore.errorMessage = 'Failed to start recording: ' + error.message;
-                  });
-                }
-              }, 1000);
-
             } catch (error) {
-              // Remove blur if there's an error
+              // Remove blur if recording fails
               const quranSection = document.getElementById('quran-text-section');
               if (quranSection) {
                 quranSection.classList.remove('blur-recording');
               }
-              recordingCountdown.value = null;
-              console.error('[Murajah] Recording setup error:', error);
-              appStore.errorMessage = 'Failed to prepare recording: ' + error.message;
               audioStore.isRecording = false;
+              console.error('[Murajah] Recording error:', error);
+              appStore.errorMessage = 'Failed to start recording: ' + error.message;
             }
           };
 
@@ -3701,6 +3687,8 @@
               if (recordingTimer) clearInterval(recordingTimer);
               
               const result = await audioRecorder.stopRecording();
+              console.log('[Murajah] stopRecording received result:', result);
+              console.log('[Murajah] result.duration type:', typeof result?.duration, 'value:', result?.duration);
               
               if (result) {
                 const recording = {
@@ -3711,10 +3699,17 @@
                     hour: '2-digit', 
                     minute: '2-digit' 
                   }),
-                  duration: result.duration,
+                  duration: Number(result.duration) || 0, // Ensure it's a number
                   blob: result.blob,
                   timestamp: Date.now()
                 };
+
+                console.log('[Murajah] Final recording object to be stored:', { 
+                  pageNumber: recording.pageNumber, 
+                  duration: recording.duration,
+                  durationType: typeof recording.duration,
+                  recordedAt: recording.recordedAt 
+                });
 
                 audioStore.recordings.push(recording);
                 audioStore.isRecording = false;
@@ -3795,7 +3790,10 @@
           };
 
           const formatAudioDuration = (ms) => {
-            return AudioRecorder.formatDuration(ms);
+            console.log('[Murajah] formatAudioDuration called with:', ms, 'type:', typeof ms);
+            const result = AudioRecorder.formatDuration(ms);
+            console.log('[Murajah] formatAudioDuration returning:', result);
+            return result;
           };
 
           const exportData = () => {
@@ -4060,7 +4058,13 @@
           });
 
           const recentRecordings = computed(() => {
-            return audioStore.recordings.slice(-5).reverse();
+            const recent = audioStore.recordings.slice(-5).reverse();
+            console.log('[Murajah] recentRecordings computed, returning:', recent.map(r => ({
+              pageNumber: r.pageNumber,
+              duration: r.duration,
+              durationType: typeof r.duration
+            })));
+            return recent;
           });
 
           const formattedCompletion = computed(() => {

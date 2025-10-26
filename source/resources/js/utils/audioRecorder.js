@@ -9,6 +9,7 @@ export class AudioRecorder {
     this.audioChunks = [];
     this.audioStream = null;
     this.isRecording = false;
+    this.recordingStartTime = null; // Track when recording actually started
   }
 
   /**
@@ -51,8 +52,10 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start();
+      this.recordingStartTime = Date.now(); // Capture start time when recording actually begins
       this.isRecording = true;
-      console.log('[Murajah] Recording started');
+      const capturedTime = this.recordingStartTime; // Double-check it was captured
+      console.log('[Murajah] Recording started. recordingStartTime:', this.recordingStartTime, 'verified:', capturedTime, 'type:', typeof this.recordingStartTime);
     } catch (error) {
       console.error('[Murajah] Failed to start recording:', error);
       throw new Error(`Recording failed: ${error.message}`);
@@ -71,11 +74,22 @@ export class AudioRecorder {
 
     return new Promise((resolve, reject) => {
       try {
-        const startTime = Date.now();
+        if (!this.recordingStartTime) {
+          console.error('[Murajah] ERROR: recordingStartTime is not set!', {
+            isRecording: this.isRecording,
+            recordingStartTime: this.recordingStartTime,
+            mediaRecorder: !!this.mediaRecorder
+          });
+        }
+
+        // Calculate duration from when recording actually started
+        const duration = Date.now() - (this.recordingStartTime || Date.now());
+        console.log('[Murajah] stopRecording - recordingStartTime:', this.recordingStartTime);
+        console.log('[Murajah] stopRecording - current time:', Date.now());
+        console.log('[Murajah] stopRecording - calculated duration (ms):', duration);
 
         this.mediaRecorder.onstop = () => {
           const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-          const duration = Date.now() - startTime;
 
           // Stop all audio tracks
           this.audioStream?.getTracks().forEach(track => track.stop());
@@ -84,8 +98,10 @@ export class AudioRecorder {
           this.audioChunks = [];
           this.mediaRecorder = null;
           this.audioStream = null;
+          this.recordingStartTime = null;
 
           console.log('[Murajah] Recording stopped. Duration:', duration, 'ms');
+          console.log('[Murajah] Returning result:', { blob: audioBlob, duration: duration });
           resolve({ blob: audioBlob, duration });
         };
 
@@ -106,6 +122,7 @@ export class AudioRecorder {
       this.audioStream?.getTracks().forEach(track => track.stop());
       this.isRecording = false;
       this.audioChunks = [];
+      this.recordingStartTime = null;
       console.log('[Murajah] Recording cancelled');
     }
   }
