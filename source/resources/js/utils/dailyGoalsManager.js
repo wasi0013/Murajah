@@ -97,6 +97,7 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 /**
  * Calculate review range for today based on rotation
  * Divides memorized pages into chunks based on finishRevisionDays and rotates through them
+ * Fair distribution: if remainder exists, first chunks get +1 page
  * @param {Array} sortedMemorisedPages - Sorted array of memorized page numbers
  * @param {number} finishRevisionDays - Days to complete one full cycle (determines number of chunks)
  * @param {Object} lastDailyGoal - Last day's goal to get rotation index
@@ -113,7 +114,15 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
   // Total number of chunks = finishRevisionDays (each chunk represents one day's review)
   const totalPages = sortedMemorisedPages.length;
   const totalChunks = finishRevisionDays;
-  const chunkSize = Math.ceil(totalPages / totalChunks);
+  
+  // Fair distribution: base chunk size + distribute remainder to first chunks
+  const baseChunkSize = Math.floor(totalPages / totalChunks);
+  const remainder = totalPages % totalChunks;
+  
+  // Helper function to get chunk size for a given chunk index
+  const getChunkSize = (chunkIdx) => {
+    return chunkIdx < remainder ? baseChunkSize + 1 : baseChunkSize;
+  };
 
   // Get current rotation index
   let rotationIndex = 0;
@@ -127,18 +136,25 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
     console.log('[calculateReviewRange] Rotation logic:');
     console.log('  - lastDate:', lastDate, 'today:', today);
     console.log('  - lastRotationIndex:', lastRotationIndex, 'newRotationIndex:', rotationIndex);
-    console.log('  - totalChunks:', totalChunks, 'totalPages:', totalPages, 'chunkSize:', chunkSize);
+    console.log('  - totalChunks:', totalChunks, 'totalPages:', totalPages);
+    console.log('  - baseChunkSize:', baseChunkSize, 'remainder:', remainder);
   } else {
     console.log('[calculateReviewRange] First time or same day - starting at chunk 0');
   }
 
-  // Extract pages for this chunk
-  const startIdx = rotationIndex * chunkSize;
-  const endIdx = Math.min(startIdx + chunkSize, totalPages);
+  // Calculate start index by summing sizes of all previous chunks
+  let startIdx = 0;
+  for (let i = 0; i < rotationIndex; i++) {
+    startIdx += getChunkSize(i);
+  }
+  
+  const currentChunkSize = getChunkSize(rotationIndex);
+  const endIdx = Math.min(startIdx + currentChunkSize, totalPages);
   const pagesForReview = sortedMemorisedPages.slice(startIdx, endIdx);
 
   console.log('[calculateReviewRange] Review range calculated:');
   console.log('  - rotationIndex:', rotationIndex, 'chunkNumber:', rotationIndex + 1, 'of', totalChunks);
+  console.log('  - chunkSize for this chunk:', currentChunkSize);
   console.log('  - pages:', pagesForReview.join(', '));
 
   return {

@@ -1114,7 +1114,7 @@
                     <i class="fas fa-info-circle text-gray-700  text-xl"></i>
                   </button>
                   
-                  <button @click="showSettingsModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
+                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
                   </button>
                 </div>
@@ -1834,6 +1834,28 @@
                         >
                     </div>
 
+                    <!-- Adjust Revision Chunk Slider -->
+                    <div>
+                      <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700 ">Adjust revision</label>
+                        <span class="text-sm font-semibold text-blue-600">
+                          day {{ settingsStore.adjustRevisionChunk + 1 }}/{{ dailyGoalsStore.todayGoal?.totalChunks || 1 }}
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <input 
+                          v-model.number="settingsStore.adjustRevisionChunk" 
+                          @change="applyRevisionChunkAdjustment"
+                          type="range" 
+                          :min="0" 
+                          :max="Math.max(0, (dailyGoalsStore.todayGoal?.totalChunks || 1) - 1)"
+                          class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        >
+                        <span class="text-sm font-medium text-gray-700 min-w-[2rem]">{{ settingsStore.adjustRevisionChunk + 1 }}</span>
+                      </div>
+                      <p class="text-xs text-gray-500 mt-1">Manually select which chunk of pages to review today</p>
+                    </div>
+
                     <!-- Task Selection -->
                     <div>
                       <label class="block text-sm font-semibold text-gray-700  mb-3">Select daily tasks:</label>
@@ -2438,7 +2460,8 @@
             finishRevisionDays: 30,
             pagesPerDay: 1,
             fontSize: 'medium',
-            tajweedEnabled: true
+            tajweedEnabled: true,
+            adjustRevisionChunk: 0  // NEW: Manual adjustment to rotation index (0 = no adjustment)
           });
 
           const memorizedStore = reactive({
@@ -3345,6 +3368,77 @@
             saveDataBackground(); // Save to IndexedDB
             appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          const openSettingsModal = () => {
+            // Initialize the slider to the current rotation index when modal opens
+            if (dailyGoalsStore.todayGoal) {
+              settingsStore.adjustRevisionChunk = dailyGoalsStore.todayGoal.rotationIndex || 0;
+            }
+            showSettingsModal.value = true;
+          };
+
+          // Apply manual rotation adjustment to today's daily goal
+          const applyRevisionChunkAdjustment = () => {
+            if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks.reviewRange) {
+              console.warn('[Murajah] Cannot apply revision chunk adjustment - no today goal or reviewRange task');
+              return;
+            }
+
+            const adjustment = Number(settingsStore.adjustRevisionChunk) || 0;
+            const totalChunks = dailyGoalsStore.todayGoal.totalChunks || 1;
+            
+            // Ensure adjustment is within valid range
+            const newRotationIndex = Math.min(adjustment, totalChunks - 1);
+            
+            console.log('[Murajah] Applying revision chunk adjustment:', {
+              adjustment: adjustment,
+              totalChunks: totalChunks,
+              currentRotationIndex: dailyGoalsStore.todayGoal.rotationIndex,
+              newRotationIndex: newRotationIndex
+            });
+
+            // Recalculate the review range with fair distribution
+            const memorizedArray = Array.from(memorizedStore.memorizedPages || []).sort((a, b) => a - b);
+            if (memorizedArray.length === 0) {
+              console.warn('[Murajah] No memorized pages to adjust rotation');
+              return;
+            }
+
+            const totalPages = memorizedArray.length;
+            const baseChunkSize = Math.floor(totalPages / totalChunks);
+            const remainder = totalPages % totalChunks;
+            
+            // Helper function to get chunk size for a given chunk index
+            const getChunkSize = (chunkIdx) => {
+              return chunkIdx < remainder ? baseChunkSize + 1 : baseChunkSize;
+            };
+
+            // Calculate start index by summing sizes of all previous chunks
+            let startIdx = 0;
+            for (let i = 0; i < newRotationIndex; i++) {
+              startIdx += getChunkSize(i);
+            }
+            
+            const currentChunkSize = getChunkSize(newRotationIndex);
+            const endIdx = Math.min(startIdx + currentChunkSize, totalPages);
+            const pagesForReview = memorizedArray.slice(startIdx, endIdx);
+
+            // Update the goal with new rotation info
+            dailyGoalsStore.todayGoal.rotationIndex = newRotationIndex;
+            dailyGoalsStore.todayGoal.chunkNumber = newRotationIndex + 1;
+            dailyGoalsStore.todayGoal.tasks.reviewRange.pages = pagesForReview;
+            dailyGoalsStore.todayGoal.tasks.reviewRange.startPage = pagesForReview[0] || 0;
+            dailyGoalsStore.todayGoal.tasks.reviewRange.endPage = pagesForReview[pagesForReview.length - 1] || 0;
+            dailyGoalsStore.todayGoal.tasks.reviewRange.description = `Revise these pages today: ${pagesForReview.join(', ')}`;
+
+            console.log('[Murajah] Revision chunk adjusted - new pages:', pagesForReview.join(', '));
+            
+            // Save the updated goal
+            saveDailyGoal();
+            
+            appStore.successMessage = `Revision chunk adjusted to: Chunk ${newRotationIndex + 1}/${totalChunks}`;
+            setTimeout(() => appStore.successMessage = '', 3000);
           };
 
           const clearPageMistakes = () => {
@@ -4441,7 +4535,9 @@ Display:
             hideWordTooltip,
             getSurahNameArabic,
             updateSettings,
+            openSettingsModal,
             clearPageMistakes,
+            applyRevisionChunkAdjustment,
             bulkMemorize,
             bulkMemorizePreset,
             playAudio,
