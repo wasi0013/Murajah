@@ -51,6 +51,62 @@ export const QuranAudioPlayerComponent = {
           <span>{{ formatTime(duration) }}</span>
         </div>
 
+        <!-- Spaced Repetition Controls -->
+        <div class="border-t pt-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <button 
+                @click="useSpacedRepetition = !useSpacedRepetition"
+                class="p-2 rounded-full transition"
+                :class="[
+                  useSpacedRepetition 
+                    ? 'bg-purple-100 text-purple-600' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                ]"
+                title="Toggle Spaced Repetition"
+              >
+                <i class="fas fa-brain"></i>
+              </button>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-gray-900">Spaced Repetition</p>
+                <p class="text-xs text-gray-500">Learn with intelligent repetition</p>
+              </div>
+            </div>
+            <span v-if="useSpacedRepetition" class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold">
+              ACTIVE
+            </span>
+          </div>
+
+          <!-- Repeat count input -->
+          <div v-if="useSpacedRepetition" class="flex items-center gap-3 bg-purple-50 p-3 rounded-lg">
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Repeat each:</label>
+            <input 
+              v-model.number="repeatCount" 
+              type="number" 
+              min="1" 
+              max="10"
+              @change="generateSpacedPlaylist"
+              class="w-16 px-2 py-1 border border-purple-300 rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+            <span class="text-sm text-gray-600">times</span>
+            <span v-if="spacedPlaylist.length > 0" class="text-xs text-purple-600 font-semibold ml-auto">
+              {{ spacedPlaylist.length }} plays total
+            </span>
+          </div>
+
+          <!-- Spaced repetition info -->
+          <div v-if="useSpacedRepetition && spacedPlaylist.length > 0" class="text-xs text-purple-700 bg-purple-50 p-2 rounded">
+            <i class="fas fa-lightbulb mr-1"></i>
+            Cumulative learning: Each verse builds on previous ones
+          </div>
+        </div>
+
+        <!-- Playback time -->
+        <div class="flex justify-between text-xs text-gray-500">
+          <span>{{ formatTime(currentTime) }}</span>
+          <span>{{ formatTime(duration) }}</span>
+        </div>
+
         <!-- Control buttons -->
         <div class="flex items-center justify-center gap-3">
           <button 
@@ -151,7 +207,16 @@ export const QuranAudioPlayerComponent = {
       duration: 0,
       autoPlayNext: true,
       showPlaylist: false,
-      audioElement: null
+      audioElement: null,
+      // Spaced repetition feature
+      useSpacedRepetition: false,
+      repeatCount: 3,
+      spacedPlaylist: [], // Generated playlist with repetitions
+      currentPlaylistIndex: 0, // Track position in spaced playlist
+      currentSequenceIndices: [], // Verses in current sequence
+      currentSequencePosition: 0, // Which verse in sequence
+      currentSequenceRepeatCount: 1, // How many times to repeat the sequence
+      currentSequenceRepeatPosition: 0 // Which repeat we're on
     };
   },
 
@@ -238,11 +303,163 @@ export const QuranAudioPlayerComponent = {
       this.currentTime = 0;
       this.duration = 0;
       this.isPlaying = false;
+      this.currentSequenceIndices = []; // Track current sequence being played
+      this.currentSequencePosition = 0; // Track position within sequence
+
+      // Generate spaced repetition playlist if enabled
+      if (this.useSpacedRepetition) {
+        this.generateSpacedPlaylist();
+      }
     },
 
     /**
-     * Get audio URL for a verse with fallback
+     * Generate spaced repetition playlist
+     * Sequence: V1 x N, V2 x N, (V1+V2) x N, V3 x N, (V1+V2+V3) x N, V4 x N, (V1+V2+V3+V4) x N, etc.
+     * 
+     * Each playlist item contains:
+     * - verseIndices: array of verse indices to play in sequence
+     * - repeatCount: how many times to repeat this entire sequence
+     * - label: display name
      */
+    generateSpacedPlaylist() {
+      if (this.pageVerses.length === 0) {
+        this.spacedPlaylist = [];
+        return;
+      }
+
+      this.spacedPlaylist = [];
+      const repeatCount = this.repeatCount || 1;
+
+      // Build the spaced repetition sequence
+      for (let i = 0; i < this.pageVerses.length; i++) {
+        // Add individual verse with N repetitions
+        this.spacedPlaylist.push({
+          verseIndices: [i], // Just this verse
+          repeatCount: repeatCount,
+          label: `V${i + 1} (x${repeatCount})`
+        });
+
+        // Add cumulative verses with N repetitions (all verses up to current)
+        const indices = Array.from({ length: i + 1 }, (_, idx) => idx);
+        this.spacedPlaylist.push({
+          verseIndices: indices, // All verses from 0 to i
+          repeatCount: repeatCount,
+          label: `V1-V${i + 1} (x${repeatCount})`
+        });
+      }
+
+      console.log('[Murajah-Audio] Generated spaced playlist with', this.spacedPlaylist.length, 'items');
+    },
+
+    /**
+     * Play a verse or sequence from spaced playlist
+     */
+    playSpacedItem(playlistIndex) {
+      if (!this.spacedPlaylist || playlistIndex >= this.spacedPlaylist.length) {
+        console.warn('[Murajah-Audio] Invalid playlist index:', playlistIndex);
+        return;
+      }
+
+      const item = this.spacedPlaylist[playlistIndex];
+      
+      console.log('[Murajah-Audio] playSpacedItem:', {
+        playlistIndex,
+        label: item.label,
+        verseIndices: item.verseIndices,
+        repeatCount: item.repeatCount
+      });
+      
+      // Store the current playlist item info
+      this.currentPlaylistIndex = playlistIndex;
+      this.currentSequenceIndices = item.verseIndices;
+      this.currentSequencePosition = 0;
+      this.currentSequenceRepeatCount = item.repeatCount || 1;
+      this.currentSequenceRepeatPosition = 0;
+
+      // Start playing the sequence from the beginning
+      this.playNextVerseInSequence();
+    },
+
+    /**
+     * Play next verse in current sequence
+     */
+    playNextVerseInSequence() {
+      if (!this.currentSequenceIndices || this.currentSequenceIndices.length === 0) {
+        console.warn('[Murajah-Audio] No sequence indices set');
+        return;
+      }
+
+      const verseIndex = this.currentSequenceIndices[this.currentSequencePosition];
+      this.currentVerseIndex = verseIndex;
+      
+      const verse = this.pageVerses[verseIndex];
+      
+      console.log('[Murajah-Audio] playNextVerseInSequence:', {
+        sequencePosition: this.currentSequencePosition,
+        sequenceRepeat: this.currentSequenceRepeatPosition + 1,
+        totalRepeats: this.currentSequenceRepeatCount,
+        verseIndex,
+        chapter: verse.chapter,
+        verse: verse.verse,
+        sequenceIndices: this.currentSequenceIndices
+      });
+      
+      const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
+
+      this.audioElement.src = primaryUrl;
+      this.audioElement.onloadstart = () => {
+        this.audioElement.addEventListener('error', () => {
+          console.log('[Murajah-Audio] Primary URL failed, trying fallback');
+          this.audioElement.src = fallbackUrl;
+        }, { once: true });
+      };
+
+      this.audioElement.play().catch(error => {
+        console.error('[Murajah] Audio playback error:', error);
+      });
+
+      this.isPlaying = true;
+    },
+
+    /**
+     * Play a sequence of verses back-to-back (DEPRECATED - use playSpacedItem instead)
+     */
+    playVerseSequence(verseIndices) {
+      if (!verseIndices || verseIndices.length === 0) {
+        return;
+      }
+
+      // Store the sequence and reset position
+      this.currentSequenceIndices = verseIndices;
+      this.currentSequencePosition = 0;
+      this.currentSequenceRepeatCount = 1;
+      this.currentSequenceRepeatPosition = 0;
+
+      // Start with the first verse in the sequence
+      const firstVerseIndex = verseIndices[0];
+      this.currentVerseIndex = firstVerseIndex;
+      this.currentPlaylistIndex = this.spacedPlaylist.findIndex(
+        item => item.verseIndices[0] === verseIndices[0] && 
+                 item.verseIndices.length === verseIndices.length
+      );
+
+      const verse = this.pageVerses[firstVerseIndex];
+      const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
+
+      this.audioElement.src = primaryUrl;
+      this.audioElement.onloadstart = () => {
+        this.audioElement.addEventListener('error', () => {
+          this.audioElement.src = fallbackUrl;
+        }, { once: true });
+      };
+
+      this.audioElement.play().catch(error => {
+        console.error('[Murajah] Audio playback error:', error);
+      });
+
+      this.isPlaying = true;
+    },
+
     getAudioUrl(verse) {
       const surah = verse.chapter;
       const ayah = verse.verse;
@@ -294,7 +511,12 @@ export const QuranAudioPlayerComponent = {
         this.isPlaying = false;
       } else {
         if (this.audioElement.src === '') {
-          this.playVerse(this.currentVerseIndex);
+          // Start playback
+          if (this.useSpacedRepetition && this.spacedPlaylist.length > 0) {
+            this.playSpacedItem(0); // Start from first spaced item
+          } else {
+            this.playVerse(this.currentVerseIndex);
+          }
         } else {
           this.audioElement.play().catch(error => {
             console.error('[Murajah] Audio playback error:', error);
@@ -308,8 +530,16 @@ export const QuranAudioPlayerComponent = {
      * Play next verse
      */
     nextVerse() {
-      if (this.currentVerseIndex < this.pageVerses.length - 1) {
-        this.playVerse(this.currentVerseIndex + 1);
+      if (this.useSpacedRepetition && this.spacedPlaylist.length > 0) {
+        // Move to next item in spaced playlist
+        if (this.currentPlaylistIndex < this.spacedPlaylist.length - 1) {
+          this.playSpacedItem(this.currentPlaylistIndex + 1);
+        }
+      } else {
+        // Normal sequential playback
+        if (this.currentVerseIndex < this.pageVerses.length - 1) {
+          this.playVerse(this.currentVerseIndex + 1);
+        }
       }
     },
 
@@ -367,10 +597,62 @@ export const QuranAudioPlayerComponent = {
      * Handle audio end
      */
     onAudioEnded() {
-      if (this.autoPlayNext && this.currentVerseIndex < this.pageVerses.length - 1) {
-        this.nextVerse();
-      } else {
+      console.log('[Murajah-Audio] onAudioEnded called', {
+        autoPlayNext: this.autoPlayNext,
+        useSpacedRepetition: this.useSpacedRepetition,
+        spacedPlaylistLength: this.spacedPlaylist.length,
+        currentSequencePosition: this.currentSequencePosition,
+        currentSequenceIndicesLength: this.currentSequenceIndices?.length || 0,
+        currentSequenceRepeatPosition: this.currentSequenceRepeatPosition,
+        currentSequenceRepeatCount: this.currentSequenceRepeatCount,
+        currentPlaylistIndex: this.currentPlaylistIndex
+      });
+
+      if (!this.autoPlayNext) {
         this.isPlaying = false;
+        console.log('[Murajah-Audio] AutoPlay disabled, stopping');
+        return;
+      }
+
+      if (this.useSpacedRepetition && this.spacedPlaylist.length > 0) {
+        // In spaced repetition mode
+        
+        // Check if there are more verses in the current sequence to play
+        if (this.currentSequencePosition < this.currentSequenceIndices.length - 1) {
+          // Move to next verse in the current sequence
+          console.log('[Murajah-Audio] Moving to next verse in sequence');
+          this.currentSequencePosition++;
+          this.playNextVerseInSequence();
+        } else if (this.currentSequenceRepeatPosition < this.currentSequenceRepeatCount - 1) {
+          // Current sequence finished, but need to repeat it again
+          console.log('[Murajah-Audio] Repeating sequence:', {
+            from: this.currentSequenceRepeatPosition + 1,
+            to: this.currentSequenceRepeatPosition + 2,
+            total: this.currentSequenceRepeatCount
+          });
+          this.currentSequenceRepeatPosition++;
+          this.currentSequencePosition = 0; // Reset to start of sequence
+          this.playNextVerseInSequence();
+        } else {
+          // Finished all repetitions of current sequence, move to next playlist item
+          console.log('[Murajah-Audio] Sequence complete, moving to next playlist item', {
+            current: this.currentPlaylistIndex,
+            total: this.spacedPlaylist.length
+          });
+          if (this.currentPlaylistIndex < this.spacedPlaylist.length - 1) {
+            this.playSpacedItem(this.currentPlaylistIndex + 1);
+          } else {
+            this.isPlaying = false;
+            console.log('[Murajah-Audio] Spaced repetition completed!');
+          }
+        }
+      } else {
+        // Normal sequential playback
+        if (this.currentVerseIndex < this.pageVerses.length - 1) {
+          this.nextVerse();
+        } else {
+          this.isPlaying = false;
+        }
       }
     },
 
@@ -414,6 +696,55 @@ export const QuranAudioPlayerComponent = {
     },
     quranData() {
       this.loadPageVerses();
+    },
+    useSpacedRepetition(newVal) {
+      console.log('[Murajah-Audio] useSpacedRepetition changed to:', newVal);
+      
+      // Stop current playback
+      this.audioElement.pause();
+      this.isPlaying = false;
+      this.audioElement.currentTime = 0;
+      
+      // Reset playback state
+      this.currentVerseIndex = 0;
+      this.currentTime = 0;
+      this.currentPlaylistIndex = 0;
+      this.currentSequenceIndices = [];
+      this.currentSequencePosition = 0;
+      this.currentSequenceRepeatCount = 0;
+      this.currentSequenceRepeatPosition = 0;
+      
+      // Generate or clear playlist
+      if (newVal && this.pageVerses.length > 0) {
+        this.generateSpacedPlaylist();
+        console.log('[Murajah-Audio] Spaced repetition enabled, generated playlist with', this.spacedPlaylist.length, 'items');
+      } else {
+        this.spacedPlaylist = [];
+        console.log('[Murajah-Audio] Spaced repetition disabled');
+      }
+    },
+    repeatCount(newVal, oldVal) {
+      console.log('[Murajah-Audio] repeatCount changed from', oldVal, 'to', newVal);
+      
+      if (this.useSpacedRepetition && this.pageVerses.length > 0) {
+        // Stop current playback
+        this.audioElement.pause();
+        this.isPlaying = false;
+        this.audioElement.currentTime = 0;
+        
+        // Reset playback state
+        this.currentVerseIndex = 0;
+        this.currentTime = 0;
+        this.currentPlaylistIndex = 0;
+        this.currentSequenceIndices = [];
+        this.currentSequencePosition = 0;
+        this.currentSequenceRepeatCount = 0;
+        this.currentSequenceRepeatPosition = 0;
+        
+        // Regenerate playlist with new repeat count
+        this.generateSpacedPlaylist();
+        console.log('[Murajah-Audio] Playlist regenerated with', this.spacedPlaylist.length, 'items');
+      }
     }
   },
 
