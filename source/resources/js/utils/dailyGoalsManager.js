@@ -251,70 +251,94 @@ export function calculateStreak(dailyGoalHistory, selectedTasks) {
     return { currentStreak: 0, longestStreak: 0, lastCompletedDate: null };
   }
 
-  let currentStreak = 0;
-  let longestStreak = 0;
+  // Helper: format Date -> YYYY-MM-DD
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const addDays = (dateStr, delta) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    return fmt(d);
+  };
+
+  // Create a set of completed dates for O(1) lookup
+  const completedDates = new Set();
   let lastCompletedDate = null;
 
   // Sort by date (oldest first)
-  const sorted = [...dailyGoalHistory].sort((a, b) => 
-    new Date(a.date) - new Date(b.date)
-  );
+  const sorted = [...dailyGoalHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // Helper function: Check if ALL tasks in a goal are complete
   const isGoalComplete = (dayGoal) => {
     const tasks = Object.values(dayGoal.tasks);
     if (tasks.length === 0) return false;
-    return tasks.every(task => task.completed === true);
+    return tasks.every((t) => t.completed === true);
   };
 
-  // Count streak from oldest to newest
-  for (let i = 0; i < sorted.length; i++) {
-    const dayGoal = sorted[i];
-    
+  for (const dayGoal of sorted) {
     if (isGoalComplete(dayGoal)) {
-      currentStreak++;
+      completedDates.add(dayGoal.date);
       lastCompletedDate = dayGoal.date;
-    } 
+    }
   }
 
-  // Check if streak continues from yesterday to today
-  // If the most recent completed day is NOT yesterday, the streak is broken
-  if (sorted.length > 0) {
-    const lastDateStr = sorted[sorted.length - 1].date;
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    // Calculate yesterday's date
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-    
-    const isYesterday = lastDateStr === yesterdayStr;
-    const isToday = lastDateStr === todayStr;
+  // Compute current streak: count consecutive completed days ending at anchor date
+  // Anchor is today if today is complete; otherwise anchor is yesterday
+  const today = new Date();
+  const todayStr = fmt(today);
+  const yesterdayStr = addDays(todayStr, -1);
 
-    // Streak continues ONLY if:
-    // 1. Last completed day is yesterday (streak will continue into today even if today incomplete)
-    // 2. Last completed day is today (user completed today's goals)
-    // Otherwise, there's a gap and streak breaks
-    if (!isYesterday && !isToday) {
-      Logger.debug(Logger.MODULES.DAILY_GOALS, 'Streak broken - gap detected', {
-        lastCompletion: lastDateStr,
-        yesterday: yesterdayStr,
-        today: todayStr,
-        streak: currentStreak
-      });
-      if (currentStreak > longestStreak) {
-        longestStreak = currentStreak;
-      }
-      currentStreak = 0;
-    }
+  const todayComplete = completedDates.has(todayStr);
+  let anchor = todayComplete ? todayStr : yesterdayStr;
+
+  // If yesterday wasn't complete and today isn't complete, streak must be 0 (matches expectation)
+  // If yesterday wasn't complete but today is complete, typical logic would return 1.
+  // The product requirement says: if previous day wasn't complete, streak resets to 0.
+  // We'll implement: non-zero streak requires yesterday to be complete unless today itself is the first day.
+  // To match the example precisely, if yesterday is incomplete, return 0 regardless of today.
+  if (!completedDates.has(yesterdayStr)) {
+    Logger.debug(Logger.MODULES.DAILY_GOALS, 'Streak reset: previous day incomplete', { yesterdayStr });
+    return { currentStreak: 0, longestStreak: computeLongestStreak(completedDates), lastCompletedDate };
+  }
+
+  let currentStreak = 0;
+  while (completedDates.has(anchor)) {
+    currentStreak += 1;
+    anchor = addDays(anchor, -1);
   }
 
   return {
     currentStreak,
-    longestStreak: Math.max(longestStreak, currentStreak),
-    lastCompletedDate
+    longestStreak: computeLongestStreak(completedDates),
+    lastCompletedDate,
   };
+}
+
+// Compute the longest streak across all completed dates
+function computeLongestStreak(completedDatesSet) {
+  if (!completedDatesSet || completedDatesSet.size === 0) return 0;
+
+  // Convert set to sorted array
+  const dates = Array.from(completedDatesSet).sort((a, b) => new Date(a) - new Date(b));
+
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const addDays = (dateStr, delta) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    return fmt(d);
+  };
+
+  let longest = 0;
+  let current = 0;
+  let prev = null;
+  for (const dateStr of dates) {
+    if (!prev || dateStr === addDays(prev, 1)) {
+      current += 1;
+    } else {
+      longest = Math.max(longest, current);
+      current = 1;
+    }
+    prev = dateStr;
+  }
+  longest = Math.max(longest, current);
+  return longest;
 }
 
 /**
@@ -386,7 +410,7 @@ export function generateDaySummary(dailyGoal) {
   return {
     date: dailyGoal.date,
     completionPercentage,
-    tasksCounts,
+    taskCounts,
     completedAllTasks: completionPercentage === 100,
     completedAt: dailyGoal.completedAt || null,
     tasks: dailyGoal.tasks
