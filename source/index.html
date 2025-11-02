@@ -1299,6 +1299,12 @@
         getCompletionPercentage
       } = dailyGoalsManagerModule;
 
+      const audioLoaderModule = await import('./resources/js/utils/audioLoader.js');
+      const { getVerseAudioUrl, getPageVerses, preloadAudio } = audioLoaderModule;
+
+      const audioPlayerComponentModule = await import('./resources/js/components/QuranAudioPlayerComponent.js');
+      const { QuranAudioPlayerComponent } = audioPlayerComponentModule;
+
       const app = createApp({
         template: `
           <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white text-gray-900">
@@ -1674,7 +1680,13 @@
                   Chunk {{ dailyGoalsStore.todayGoal.chunkNumber }}/{{ dailyGoalsStore.todayGoal.totalChunks }}
                 </p>
               </div>
-
+              
+              <!-- Quran Audio Player -->
+              <quran-audio-player-component 
+                v-if="quranData && quranData.quranWithPages"
+                :current-page="appStore.currentPage"
+                :quran-data="quranData.quranWithPages"
+              ></quran-audio-player-component>
                 <!-- Page Navigation -->
               <div class="bg-white  rounded-lg shadow-lg p-4 space-y-3">
                 <!-- Navigation Controls -->
@@ -2072,6 +2084,7 @@
                   </div>
                 </div>
               </div>
+
 
             <!-- Settings Modal -->
             <div v-if="showSettingsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -2871,6 +2884,22 @@
               
               // Load Quran data
               quranData.value = await loadAllQuranData();
+              
+              // Load quran.json for audio player (contains surah, verse, page mapping)
+              try {
+                const quranJsonResponse = await fetch('./resources/quran.json');
+                const quranJson = await quranJsonResponse.json();
+                // Store it in quranData for use by the audio player component
+                quranData.value.quranWithPages = quranJson;
+                console.log('[Murajah] Loaded quran.json for audio player', {
+                  type: typeof quranJson,
+                  isArray: Array.isArray(quranJson),
+                  keys: Object.keys(quranJson).length,
+                  stored: !!quranData.value.quranWithPages
+                });
+              } catch (error) {
+                console.error('[Murajah] Failed to load quran.json for audio player:', error);
+              }
               
               // Load stored data
               await loadStoredData();
@@ -5052,6 +5081,9 @@ Display:
           };
         }
       });
+
+      // Register components
+      app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
 
       app.mount('#app');
     })();
