@@ -562,7 +562,7 @@ export const QuranAudioPlayerComponent = {
         default:
           // Default to Shuraim
           primaryUrl = `https://wasi0013.github.io/Murajah/recitations/sheikh_shuraim/${surahPadded}${ayahPadded}.mp3`;
-          fallbackUrl = `https://wasi0013.github.io/Murajah/recitations/sheikh_shuraim/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
       }
 
       return { primaryUrl, fallbackUrl };
