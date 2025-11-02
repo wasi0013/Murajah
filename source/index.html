@@ -884,6 +884,126 @@
       background: rgba(255, 255, 255, 0.4);
     }
 
+    /* Analytics Tabs */
+    .analytics-tabs {
+      display: flex;
+      gap: 2rem;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 1.5rem;
+    }
+
+    .dark-mode .analytics-tabs {
+      border-bottom-color: #374151;
+    }
+
+    .analytics-tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 0;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #9ca3af;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    .analytics-tab-btn:hover {
+      color: #3b82f6;
+    }
+
+    .analytics-tab-btn.active {
+      color: #3b82f6;
+    }
+
+    .analytics-tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #3b82f6;
+    }
+
+    .dark-mode .analytics-tab-btn {
+      color: #6b7280;
+    }
+
+    .dark-mode .analytics-tab-btn:hover {
+      color: #60a5fa;
+    }
+
+    .dark-mode .analytics-tab-btn.active {
+      color: #60a5fa;
+    }
+
+    .dark-mode .analytics-tab-btn.active::after {
+      background: #60a5fa;
+    }
+
+    /* Page Dots Visualization */
+    .page-dots-visualization {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .page-dots-visualization {
+        display: none;
+      }
+    }
+
+    .juz-box {
+      background: #f9fafb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .dark-mode .juz-box {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
+    .juz-box-header {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #3b82f6;
+      margin-bottom: 0.75rem;
+      text-align: center;
+    }
+
+    .dark-mode .juz-box-header {
+      color: #60a5fa;
+    }
+
+    .page-dots-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+    }
+
+    .page-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .page-dot:hover {
+      transform: scale(1.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .dark-mode .page-dot {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     /* Blur effect for Quran text section during recording */
     #quran-text-section.blur-recording {
       filter: blur(8px);
@@ -1847,51 +1967,102 @@
                   Analytics & Progress
                 </h2>
 
-                <!-- Juz Progress Grid -->
-                <div>
-                  <h3 class="text-lg font-bold mb-4 text-gray-900 ">Progress by Juz</h3>
-                  <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                    <button 
-                      v-for="juzNum in 30" 
-                      :key="juzNum"
-                      @click="goToPageNumber(getJuzRange(juzNum)[0])"
-                      :class="[
-                        'px-3 py-2 rounded-lg font-bold text-sm transition-colors',
-                        juzMemorizedCount(juzNum) === (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1)
-                          ? 'bg-green-500 text-white hover:bg-green-600' 
-                          : juzMemorizedCount(juzNum) > 0
-                            ? 'text-gray-900 hover:opacity-90'
-                            : 'bg-gray-200  text-gray-700  hover:bg-gray-300 '
-                      ]"
-                      :style="juzMemorizedCount(juzNum) > 0 && juzMemorizedCount(juzNum) < (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) ? getJuzGradientStyle(juzNum) : {}"
-                      :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
-                    >
-                      {{ juzNum }}
-                    </button>
-                  </div>
-                  <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 ">
-                    <span><span class="text-green-600  font-semibold">Completed</span></span>|
-                    <span><span class="text-yellow-500  font-semibold">Partial</span></span>|
-                    <span><span class="text-gray-400  font-semibold">Not started</span></span>
-                  </p>
+                <!-- Tab Navigation -->
+                <div class="analytics-tabs">
+                  <button 
+                    class="analytics-tab-btn" 
+                    :class="{ active: analyticsActiveTab === 1 }"
+                    @click="analyticsActiveTab = 1">
+                    Juz Progress
+                  </button>
+                  <button 
+                    class="analytics-tab-btn" 
+                    :class="{ active: analyticsActiveTab === 2 }"
+                    @click="analyticsActiveTab = 2">
+                    Page by Page
+                  </button>
                 </div>
 
-                <!-- Completion Estimate -->
-                <div class="border-t border-gray-300  pt-6">
-                  <h3 class="text-lg font-bold mb-4 text-gray-900 ">Completion Estimate</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50  rounded-lg border border-blue-200 ">
-                      <p class="text-sm text-gray-600 ">Estimated Completion Date</p>
-                      <p class="text-2xl font-bold text-blue-600 ">{{ formattedCompletion }}</p>
+                <!-- Tab 1: Juz Progress Grid -->
+                <div v-if="analyticsActiveTab === 1" class="space-y-6">
+                  <div>
+                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">Progress by Juz</h3>
+                    <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                      <button 
+                        v-for="juzNum in 30" 
+                        :key="juzNum"
+                        @click="goToPageNumber(getJuzRange(juzNum)[0])"
+                        :class="[
+                          'px-3 py-2 rounded-lg font-bold text-sm transition-colors',
+                          juzMemorizedCount(juzNum) === (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1)
+                            ? 'bg-green-500 text-white hover:bg-green-600' 
+                            : juzMemorizedCount(juzNum) > 0
+                              ? 'text-gray-900 hover:opacity-90'
+                              : 'bg-gray-200  text-gray-700  hover:bg-gray-300 '
+                        ]"
+                        :style="juzMemorizedCount(juzNum) > 0 && juzMemorizedCount(juzNum) < (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) ? getJuzGradientStyle(juzNum) : {}"
+                        :title="'Juz ' + juzNum + ': ' + juzMemorizedCount(juzNum) + '/' + (getJuzRange(juzNum)[1] - getJuzRange(juzNum)[0] + 1) + ' pages'"
+                      >
+                        {{ juzNum }}
+                      </button>
                     </div>
-                    <div class="p-4 bg-purple-50  rounded-lg border border-purple-200 ">
-                      <p class="text-sm text-gray-600 ">Days Remaining</p>
-                      <p class="text-2xl font-bold text-purple-600 ">{{ daysRemaining }}</p>
+                    <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 ">
+                      <span><span class="text-green-600  font-semibold">Completed</span></span>|
+                      <span><span class="text-yellow-500  font-semibold">Partial</span></span>|
+                      <span><span class="text-gray-400  font-semibold">Not started</span></span>
+                    </p>
+                  </div>
+
+                  <!-- Completion Estimate -->
+                  <div class="border-t border-gray-300  pt-6">
+                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">Completion Estimate</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="p-4 bg-blue-50  rounded-lg border border-blue-200 ">
+                        <p class="text-sm text-gray-600 ">Estimated Completion Date</p>
+                        <p class="text-2xl font-bold text-blue-600 ">{{ formattedCompletion }}</p>
+                      </div>
+                      <div class="p-4 bg-purple-50  rounded-lg border border-purple-200 ">
+                        <p class="text-sm text-gray-600 ">Days Remaining</p>
+                        <p class="text-2xl font-bold text-purple-600 ">{{ daysRemaining }}</p>
+                      </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-gray-100  rounded-lg text-gray-700  text-sm border border-gray-300 ">
+                      <p>
+                        Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
+                      </p>
                     </div>
                   </div>
-                  <div class="mt-4 p-4 bg-gray-100  rounded-lg text-gray-700  text-sm border border-gray-300 ">
-                    <p>
-                      Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
+                </div>
+
+                <!-- Tab 2: Page-by-Page Visualization -->
+                <div v-if="analyticsActiveTab === 2" class="space-y-4">
+                  <div class="mb-4 p-4 bg-blue-50  rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-700 ">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      Each box represents one Juz. Each dot represents one page. Green shades indicate higher perfect revision counts. Click any dot to navigate to that page.
+                    </p>
+                  </div>
+                  <div class="page-dots-visualization">
+                    <div v-for="juzBox in pageDotsVisualization" :key="juzBox.juzNum" class="juz-box">
+                      <div class="juz-box-header">Juz {{ juzBox.juzNum }}</div>
+                      <div class="page-dots-grid">
+                        <div 
+                          v-for="page in juzBox.pages" 
+                          :key="page.pageNum"
+                          class="page-dot"
+                          :style="{ backgroundColor: page.gradientColor }"
+                          :title="'Page ' + page.pageNum + ' - ' + (page.perfectCount > 0 ? page.perfectCount + ' perfect revisions' : 'Not started')"
+                          @click="goToPageNumber(page.pageNum)"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-4 p-4 bg-gray-50  rounded-lg border border-gray-200">
+                    <p class="text-xs text-gray-600 ">
+                      <span class="font-semibold">Legend:</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #d1d5db; border: 1px solid rgba(0,0,0,0.1);"></span> Not started</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #a7f3d0; border: 1px solid rgba(0,0,0,0.1);"></span> 1 revision</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #10b981; border: 1px solid rgba(0,0,0,0.1);"></span> 4+ revisions</span>
                     </p>
                   </div>
                 </div>
@@ -2653,6 +2824,7 @@
           const showHelpModal = ref(false);
           const showReviewPagesOverlay = ref(true); // Show review pages overlay by default
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
+          const analyticsActiveTab = ref(1); // 1 = Juz Progress, 2 = Page-by-Page
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -4141,6 +4313,45 @@
             }));
           });
 
+          // Get page dots visualization data for Tab 2 (page-by-page view)
+          const pageDotsVisualization = computed(() => {
+            const juzBoxes = [];
+            for (let juzNum = 1; juzNum <= 30; juzNum++) {
+              const [startPage, endPage] = getJuzRange(juzNum);
+              const pages = [];
+              for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+                const perfectCount = getPerfectCount(pageNum);
+                pages.push({
+                  pageNum,
+                  perfectCount,
+                  gradientColor: getPageDotColor(perfectCount)
+                });
+              }
+              juzBoxes.push({
+                juzNum,
+                pages,
+                totalPages: endPage - startPage + 1
+              });
+            }
+            return juzBoxes;
+          });
+
+          // Get gradient color for page dot based on perfect count (light gray to green)
+          const getPageDotColor = (perfectCount) => {
+            // 0 = light gray, 1-3 = light green shades, 4+ = full green
+            if (perfectCount === 0) {
+              return '#d1d5db'; // Light gray
+            } else if (perfectCount === 1) {
+              return '#a7f3d0'; // Light green
+            } else if (perfectCount === 2) {
+              return '#6ee7b7'; // Medium-light green
+            } else if (perfectCount === 3) {
+              return '#34d399'; // Medium green
+            } else {
+              return '#10b981'; // Full green
+            }
+          };
+
           const recentRecordings = computed(() => {
             const recent = audioStore.recordings.slice(-5).reverse();
             console.log('[Murajah] recentRecordings computed, returning:', recent.map(r => ({
@@ -4698,8 +4909,11 @@ Display:
             showSettingsModal,
             showHelpModal,
             showReviewPagesOverlay,
+            analyticsActiveTab,
             statistics,
             pagesWithMistakes,
+            pageDotsVisualization,
+            getPageDotColor,
             recentRecordings,
             formattedCompletion,
             currentJuzProgress,
