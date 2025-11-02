@@ -1624,7 +1624,59 @@
                 </div>
               </div>
 
-              <!-- Dashboard Stats Grid -->
+              <!-- Mistake Bubble Grid -->
+              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                  <i class="fas fa-exclamation-circle text-red-600 "></i>
+                  Mistakes on Page {{ appStore.currentPage }}
+                </h3>
+                <p class="text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
+                
+                <!-- Mistake Bubbles Grid -->
+                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  <button 
+                    v-for="wordId in currentPageMistakes" 
+                    :key="wordId"
+                    @click="highlightWord({ id: wordId })"
+                    class="p-3 rounded-full bg-red-200  text-red-700  font-bold text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
+                    :title="'Mistake: Word ' + wordId"
+                  >
+                    {{ wordId }}
+                  </button>
+                </div>
+                
+                <button 
+                  @click="clearPageMistakes"
+                  class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Clear All Mistakes
+                </button>
+              </div>
+
+              <!-- Pages with Mistakes (Full Width) -->
+              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                  <i class="fas fa-exclamation-circle text-red-600 "></i>
+                  Pages with Mistakes
+                </h3>
+                <div v-if="pagesWithMistakes.length > 0" class="space-y-2 max-h-48 overflow-y-auto">
+                  <div v-for="page in pagesWithMistakes" :key="page.pageNumber" @click="goToPageNumber(page.pageNumber)" class="p-3 bg-red-50  rounded-lg flex items-center justify-between gap-3 cursor-pointer hover:bg-red-100 transition-colors">
+                    <div class="flex-1 min-w-0">
+                      <p class="font-medium text-gray-900 ">Page {{ page.pageNumber }}</p>
+                      <p class="text-xs text-red-600 ">{{ page.mistakeCount }} {{ page.mistakeCount === 1 ? 'mistake' : 'mistakes' }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block px-2 py-1 bg-red-200  text-red-800 text-xs font-semibold rounded">{{ page.mistakeCount }}</span>
+                      <i class="fas fa-chevron-right text-gray-400 "></i>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-gray-600  text-sm">
+                  <i class="fas fa-circle-check mr-2 text-green-600 "></i> No mistakes recorded!
+                </div>
+              </div>
+
+              <!-- Dashboard Stats Grid (2 Columns) -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Recent Recordings -->
                 <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
@@ -1681,35 +1733,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Mistake Bubble Grid -->
-              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
-                  <i class="fas fa-exclamation-circle text-red-600 "></i>
-                  Mistakes on Page {{ appStore.currentPage }}
-                </h3>
-                <p class="text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
-                
-                <!-- Mistake Bubbles Grid -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                  <button 
-                    v-for="wordId in currentPageMistakes" 
-                    :key="wordId"
-                    @click="highlightWord({ id: wordId })"
-                    class="p-3 rounded-full bg-red-200  text-red-700  font-bold text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
-                    :title="'Mistake: Word ' + wordId"
-                  >
-                    {{ wordId }}
-                  </button>
-                </div>
-                
-                <button 
-                  @click="clearPageMistakes"
-                  class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Clear All Mistakes
-                </button>
               </div>
 
               <!-- Advanced Analytics Section -->
@@ -4001,6 +4024,17 @@
             });
           });
 
+          const pagesWithMistakes = computed(() => {
+            // Get all pages that have mistakes (with count > 0), sorted by page number
+            const pages = Array.from(mistakesStore.mistakes.keys())
+              .filter(pageNum => mistakesStore.mistakes.get(pageNum).size > 0)
+              .sort((a, b) => a - b);
+            return pages.map(pageNum => ({
+              pageNumber: pageNum,
+              mistakeCount: mistakesStore.mistakes.get(pageNum).size
+            }));
+          });
+
           const recentRecordings = computed(() => {
             const recent = audioStore.recordings.slice(-5).reverse();
             console.log('[Murajah] recentRecordings computed, returning:', recent.map(r => ({
@@ -4558,6 +4592,7 @@ Display:
             showSettingsModal,
             showHelpModal,
             statistics,
+            pagesWithMistakes,
             recentRecordings,
             formattedCompletion,
             currentJuzProgress,
