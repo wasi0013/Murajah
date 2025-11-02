@@ -3,6 +3,8 @@
  * Helper functions for statistics, progress calculations, and data transformations
  */
 
+import { PAGE_HASANAH_VALUES, getPageHasanah } from './pageHasanah.js';
+
 /**
  * Calculate memorization percentage
  * @param {number} memorized - Count of memorized pages
@@ -225,6 +227,37 @@ export const generateMemorizedGrid = (memorizedSet) => {
 };
 
 /**
+ * Calculate score for a memorized page
+ * Formula: page_hasanah * perfect_revision_count
+ * 
+ * @param {number} pageNum - Page number (1-604)
+ * @param {number} perfectRevisionCount - Number of perfect revisions for the page
+ * @returns {number} Total score for the page
+ */
+export const calculatePageScore = (pageNum, perfectRevisionCount = 0) => {
+  if (perfectRevisionCount <= 0) return 0;
+  const hasanah = getPageHasanah(pageNum);
+  return hasanah * perfectRevisionCount;
+};
+
+/**
+ * Calculate total score from perfect revisions data
+ * 
+ * @param {Object} perfectRevisionsData - Object mapping { pageNum: revisionCount }
+ * @returns {number} Total score
+ */
+export const calculateTotalScore = (perfectRevisionsData = {}) => {
+  let total = 0;
+  for (const [pageNumStr, count] of Object.entries(perfectRevisionsData)) {
+    const pageNum = parseInt(pageNumStr, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= 604) {
+      total += calculatePageScore(pageNum, count);
+    }
+  }
+  return total;
+};
+
+/**
  * Calculate statistics object
  * @param {Object} params - { memorized, mistakes, audios, perfectRevisions }
  * @returns {Object} Statistics object
@@ -303,6 +336,8 @@ export default {
   sortByMistakeCount,
   generateMistakeBubbles,
   generateMemorizedGrid,
+  calculatePageScore,
+  calculateTotalScore,
   calculateStatistics,
   parsePageNumber,
   isValidPageRange,

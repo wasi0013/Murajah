@@ -13,6 +13,7 @@ import { memorizedStore } from '../stores/memorizedStore.js';
 import { mistakesStore } from '../stores/mistakesStore.js';
 import { settingsStore } from '../stores/settingsStore.js';
 import { appStore } from '../stores/appStore.js';
+import { formatScore } from '../utils/scoreFormatter.js';
 
 export const DashboardComponent = {
   template: `
@@ -91,11 +92,11 @@ export const DashboardComponent = {
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600 dark:text-gray-400">Total Points</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ settingsStore.totalPerfectRevisionsPoints }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ formattedTotalPoints }}</span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600 dark:text-gray-400">Average Score</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ averageScore }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ formattedAverageScore }}</span>
               </div>
             </div>
           </div>
@@ -211,6 +212,15 @@ export const DashboardComponent = {
       ).toFixed(1);
     });
 
+    const formattedTotalPoints = computed(() => {
+      return formatScore(settingsStore.totalPerfectRevisionsPoints);
+    });
+
+    const formattedAverageScore = computed(() => {
+      const avgScore = parseFloat(averageScore.value) || 0;
+      return formatScore(avgScore);
+    });
+
     const mistakesPerPage = computed(() => {
       if (mistakesStore.pagesWithMistakesCount === 0) return 0;
       return (
@@ -309,6 +319,8 @@ export const DashboardComponent = {
       overallProgress,
       remainingCount,
       averageScore,
+      formattedTotalPoints,
+      formattedAverageScore,
       mistakesPerPage,
       daysRemaining,
       estimatedCompletionDate,

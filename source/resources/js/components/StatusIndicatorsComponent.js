@@ -13,6 +13,7 @@ import { memorizedStore } from '../stores/memorizedStore.js';
 import { mistakesStore } from '../stores/mistakesStore.js';
 import { settingsStore } from '../stores/settingsStore.js';
 import { appStore } from '../stores/appStore.js';
+import { formatScore } from '../utils/scoreFormatter.js';
 
 export const StatusIndicatorsComponent = {
   template: `
@@ -58,11 +59,11 @@ export const StatusIndicatorsComponent = {
             <span class="text-xl">★</span>
           </div>
           <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ settingsStore.perfectRevisionsCount }}</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ perfectScore }} points</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ formattedScore }} points</p>
           <div class="w-full bg-purple-300 dark:bg-purple-800 rounded-full h-1.5 mt-2 overflow-hidden">
             <div
               class="bg-purple-600 dark:bg-purple-400 h-full transition-all duration-500"
-              :style="{ width: Math.min(perfectScore / 100 * 100, 100) + '%' }"
+              :style="{ width: Math.min(Math.min(perfectScore / 1000, 100), 100) + '%' }"
             ></div>
           </div>
         </div>
@@ -100,7 +101,7 @@ export const StatusIndicatorsComponent = {
         </div>
         <div class="bg-gray-50 dark:bg-gray-800 rounded p-3">
           <p class="text-gray-600 dark:text-gray-400 font-semibold mb-1">TOTAL POINTS</p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ settingsStore.totalPerfectRevisionsPoints }}</p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white">{{ formattedScore }}</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-800 rounded p-3">
           <p class="text-gray-600 dark:text-gray-400 font-semibold mb-1">DAYS/TARGET</p>
@@ -159,6 +160,10 @@ export const StatusIndicatorsComponent = {
 
     const perfectScore = computed(() => {
       return settingsStore.totalPerfectRevisionsPoints;
+    });
+
+    const formattedScore = computed(() => {
+      return formatScore(settingsStore.totalPerfectRevisionsPoints);
     });
 
     const currentJuz = computed(() => {
@@ -249,6 +254,7 @@ export const StatusIndicatorsComponent = {
       pagesWithMistakes,
       mistakeRatio,
       perfectScore,
+      formattedScore,
       currentJuz,
       memorizedJuzs,
       juzProgress,

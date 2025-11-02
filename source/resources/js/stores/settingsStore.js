@@ -3,6 +3,7 @@
  */
 
 import { reactive, computed } from 'vue';
+import { calculateTotalScore } from '../utils/calculations.js';
 
 export const settingsStore = reactive({
     finishRevisionDays: 30,
@@ -203,11 +204,7 @@ export const perfectRevisionsCount = computed(() =>
 );
 
 export const totalPerfectRevisionsPoints = computed(() => {
-    let total = 0;
-    for (const count of Object.values(settingsStore.perfectRevisions)) {
-        total += count;
-    }
-    return total;
+    return calculateTotalScore(settingsStore.perfectRevisions);
 });
 
 export const averagePerfectCount = computed(() => {

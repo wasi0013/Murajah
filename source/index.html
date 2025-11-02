@@ -1274,8 +1274,13 @@
         estimateCompletionDate,
         formatDate,
         getScoreColor,
-        generatePageRange
+        generatePageRange,
+        calculatePageScore,
+        calculateTotalScore
       } = calculationsModule;
+      
+      const scoreFormatterModule = await import('./resources/js/utils/scoreFormatter.js');
+      const { formatScore } = scoreFormatterModule;
       
       const audioRecorderModule = await import('./resources/js/utils/audioRecorder.js');
       const AudioRecorder = audioRecorderModule.default;
@@ -1487,9 +1492,9 @@
                 <div class="bg-purple-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Total Scores</p>
-                      <p class="text-3xl font-bold">{{ statistics.perfectRevisions }}</p>
-                      <p class="text-xs opacity-75">10 points to each page with no mistakes.</p>
+                      <p class="text-sm opacity-90">Total Hasanah</p>
+                      <p class="text-3xl font-bold">{{ formattedTotalScore }}</p>
+                      <p class="text-xs opacity-75">for reciting {{ perfectRevisionsCount }} pages with no mistakes.</p>
                     </div>
                     <i class="fas fa-star text-4xl opacity-30"></i>
                   </div>
@@ -1954,7 +1959,7 @@
                     </div>
                     <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">Points</p>
-                      <p class="text-2xl font-bold text-orange-600 ">{{ statistics.totalPoints }}</p>
+                      <p class="text-2xl font-bold text-orange-600 ">{{ formattedTotalScore }}</p>
                     </div>
                   </div>
                 </div>
@@ -4293,12 +4298,28 @@
             return 'Quran Content';
           });
 
+          // Calculate total score from perfect revisions using hasanah values
+          const totalPerfectRevisionsPoints = computed(() => {
+            const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
+            return calculateTotalScore(perfectRevisionsData);
+          });
+
+          // Format the total score for display
+          const formattedTotalScore = computed(() => {
+            return formatScore(totalPerfectRevisionsPoints.value);
+          });
+
+          const perfectRevisionsCount = computed(() => {
+            return perfectRevisionsStore.perfectRevisions.size;
+          });
+
           const statistics = computed(() => {
             return calculateStatistics({
               memorized: memorizedStore.memorizedPages.size,
               mistakes: Array.from(mistakesStore.mistakes.values()).reduce((sum, set) => sum + set.size, 0),
               audios: audioStore.recordings.length,
-              perfectRevisions: Array.from(perfectRevisionsStore.perfectRevisions.values()).reduce((sum, count) => sum + count, 0)
+              perfectRevisions: perfectRevisionsCount.value,
+              totalPoints: totalPerfectRevisionsPoints.value
             });
           });
 
@@ -4934,6 +4955,9 @@ Display:
             showReviewPagesOverlay,
             analyticsActiveTab,
             statistics,
+            totalPerfectRevisionsPoints,
+            formattedTotalScore,
+            perfectRevisionsCount,
             pagesWithMistakes,
             pageDotsVisualization,
             getPageDotColor,
