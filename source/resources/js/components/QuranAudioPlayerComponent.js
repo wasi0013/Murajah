@@ -90,7 +90,7 @@ export const QuranAudioPlayerComponent = {
             >
             <span class="text-sm text-gray-600">times</span>
             <span v-if="spacedPlaylist.length > 0" class="text-xs text-purple-600 font-semibold ml-auto">
-              {{ spacedPlaylist.length }} plays total
+              {{ totalSpacedRepetitionPlays }} plays total
             </span>
           </div>
 
@@ -230,6 +230,23 @@ export const QuranAudioPlayerComponent = {
     progressPercentage() {
       if (this.duration === 0) return 0;
       return (this.currentTime / this.duration) * 100;
+    },
+
+    totalSpacedRepetitionPlays() {
+      // Calculate total number of audio files that will play
+      // Each item in spacedPlaylist has:
+      // - verseIndices: array of verse indices
+      // - repeatCount: how many times to repeat the sequence
+      // Total plays = sum of (verseIndices.length * repeatCount) for each item
+      
+      if (this.spacedPlaylist.length === 0) return 0;
+      
+      let totalPlays = 0;
+      for (let item of this.spacedPlaylist) {
+        // Each verse in the sequence plays once per repeat
+        totalPlays += item.verseIndices.length * item.repeatCount;
+      }
+      return totalPlays;
     }
   },
 
@@ -333,19 +350,21 @@ export const QuranAudioPlayerComponent = {
       // Build the spaced repetition sequence
       for (let i = 0; i < this.pageVerses.length; i++) {
         // Add individual verse with N repetitions
-        this.spacedPlaylist.push({
+        const individualItem = {
           verseIndices: [i], // Just this verse
           repeatCount: repeatCount,
           label: `V${i + 1} (x${repeatCount})`
-        });
+        };
+        this.spacedPlaylist.push(individualItem);
 
         // Add cumulative verses with N repetitions (all verses up to current)
         const indices = Array.from({ length: i + 1 }, (_, idx) => idx);
-        this.spacedPlaylist.push({
+        const cumulativeItem = {
           verseIndices: indices, // All verses from 0 to i
           repeatCount: repeatCount,
           label: `V1-V${i + 1} (x${repeatCount})`
-        });
+        };
+        this.spacedPlaylist.push(cumulativeItem);
       }
 
       console.log('[Murajah-Audio] Generated spaced playlist with', this.spacedPlaylist.length, 'items');
@@ -698,8 +717,6 @@ export const QuranAudioPlayerComponent = {
       this.loadPageVerses();
     },
     useSpacedRepetition(newVal) {
-      console.log('[Murajah-Audio] useSpacedRepetition changed to:', newVal);
-      
       // Stop current playback
       this.audioElement.pause();
       this.isPlaying = false;
