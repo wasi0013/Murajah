@@ -51,6 +51,21 @@ export const QuranAudioPlayerComponent = {
           <span>{{ formatTime(duration) }}</span>
         </div>
 
+        <!-- Reciter Selection -->
+        <div class="border-t pt-4">
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Reciter:</label>
+            <select 
+              v-model="selectedReciter" 
+              class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option v-for="reciter in availableReciters" :key="reciter.id" :value="reciter.id">
+                {{ reciter.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
         <!-- Spaced Repetition Controls -->
         <div class="border-t pt-4 space-y-3">
           <div class="flex items-center justify-between">
@@ -208,6 +223,20 @@ export const QuranAudioPlayerComponent = {
       autoPlayNext: true,
       showPlaylist: false,
       audioElement: null,
+      // Reciter selection
+      selectedReciter: 'shuraim', // Default reciter
+      availableReciters: [
+        { id: 'shuraim', name: 'Sheikh Shuraim' },
+        { id: 'ali_jaber', name: 'Ali Jaber' },
+        { id: 'minshawy', name: 'Muhammad Siddiq Al-Minshawy' },
+        { id: 'ayyoub', name: 'Muhammad Ayyoub' },
+        { id: 'abdul_basit', name: 'Abdul Basit Abd El-Samad' },
+        { id: 'alafasy', name: 'Mishary Rashid Al Afasy' },
+        { id: 'abu_bakr', name: 'Abu Bakr Al Shatri' },
+        { id: 'nasser', name: 'Nasser Al Qatami' },
+        { id: 'yasser', name: 'Yasser Al Dosari' },
+        { id: 'hani', name: 'Hani Ar Rifai' }
+      ],
       // Spaced repetition feature
       useSpacedRepetition: false,
       repeatCount: 3,
@@ -485,10 +514,56 @@ export const QuranAudioPlayerComponent = {
       const surahPadded = String(surah).padStart(3, '0');
       const ayahPadded = String(ayah).padStart(3, '0');
 
-      // Primary URL
-      const primaryUrl = `https://the-quran-project.github.io/Quran-Audio/Data/1/${surah}_${ayah}.mp3`;
-      // Fallback URL
-      const fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${surahPadded}${ayahPadded}.mp3`;
+      let primaryUrl = '';
+      let fallbackUrl = '';
+
+      // Set URLs based on selected reciter
+      switch (this.selectedReciter) {
+        case 'shuraim':
+          primaryUrl = `https://wasi0013.github.io/Murajah/recitations/sheikh_shuraim/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'ali_jaber':
+          primaryUrl = `https://wasi0013.github.io/Murajah/recitations/ali_jaber/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'minshawy':
+          primaryUrl = `https://everyayah.com/data/Minshawy_Murattal_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'ayyoub':
+          primaryUrl = `https://everyayah.com/data/Muhammad_Ayyoub_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'abdul_basit':
+          primaryUrl = `https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'alafasy':
+          primaryUrl = `https://the-quran-project.github.io/Quran-Audio/Data/1/${surah}_${ayah}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Alafasy_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'abu_bakr':
+          primaryUrl = `https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'nasser':
+          primaryUrl = `https://everyayah.com/data/Nasser_Alqatami_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'yasser':
+          primaryUrl = `https://everyayah.com/data/Yasser_Ad-Dussary_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'hani':
+          primaryUrl = `https://everyayah.com/data/Hani_Rifai_192kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        default:
+          // Default to Shuraim
+          primaryUrl = `https://wasi0013.github.io/Murajah/recitations/sheikh_shuraim/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://wasi0013.github.io/Murajah/recitations/sheikh_shuraim/${surahPadded}${ayahPadded}.mp3`;
+      }
 
       return { primaryUrl, fallbackUrl };
     },
