@@ -4336,19 +4336,42 @@
             return juzBoxes;
           });
 
-          // Get gradient color for page dot based on perfect count (light gray to green)
+          // Get gradient color for page dot based on perfect count
+          // 0 = light gray, 1-39 = light to dark green gradient, 40+ = darkest green
           const getPageDotColor = (perfectCount) => {
-            // 0 = light gray, 1-3 = light green shades, 4+ = full green
             if (perfectCount === 0) {
-              return '#d1d5db'; // Light gray
-            } else if (perfectCount === 1) {
-              return '#a7f3d0'; // Light green
-            } else if (perfectCount === 2) {
-              return '#6ee7b7'; // Medium-light green
-            } else if (perfectCount === 3) {
-              return '#34d399'; // Medium green
+              return '#d1d5db'; // Light gray - no progress
+            }
+            
+            // Scale from 1-100 to gradient
+            // For 1-39: light green to medium green
+            // For 40-100: medium green to darkest green
+            const score = Math.min(perfectCount, 100); // Cap at 100
+            
+            if (score < 40) {
+              // Light green to medium green (1-39)
+              // Interpolate between #a7f3d0 (light green) and #34d399 (medium green)
+              const ratio = score / 40;
+              const r = Math.round(167 - (167 - 52) * ratio); // 167 to 52
+              const g = Math.round(243 - (243 - 211) * ratio); // 243 to 211
+              const b = Math.round(208 - (208 - 153) * ratio); // 208 to 153
+              return `rgb(${r}, ${g}, ${b})`;
+            } else if (score < 70) {
+              // Medium green to darker green (40-69)
+              // Interpolate between #34d399 (medium green) and #059669 (darker green)
+              const ratio = (score - 40) / 30;
+              const r = Math.round(52 - (52 - 5) * ratio); // 52 to 5
+              const g = Math.round(211 - (211 - 150) * ratio); // 211 to 150
+              const b = Math.round(153 - (153 - 105) * ratio); // 153 to 105
+              return `rgb(${r}, ${g}, ${b})`;
             } else {
-              return '#10b981'; // Full green
+              // Darker green to darkest green (70-100)
+              // Interpolate between #059669 (darker green) and #065f46 (darkest green)
+              const ratio = (score - 70) / 30;
+              const r = Math.round(5 - (5 - 6) * ratio); // 5 to 6
+              const g = Math.round(150 - (150 - 95) * ratio); // 150 to 95
+              const b = Math.round(105 - (105 - 70) * ratio); // 105 to 70
+              return `rgb(${r}, ${g}, ${b})`;
             }
           };
 
