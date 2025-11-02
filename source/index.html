@@ -797,6 +797,93 @@
       }
     }
 
+    /* Review Pages Overlay */
+    .review-pages-overlay {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(96, 165, 250, 0.95));
+      border-radius: 0.75rem;
+      padding: 1rem;
+      max-width: 350px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(8px);
+      animation: slideInUp 0.3s ease-out;
+      z-index: 30;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    @keyframes slideInUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .review-pages-overlay h4 {
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin: 0 0 0.75rem 0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .review-pages-overlay .pages-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .review-pages-overlay .page-tag {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .review-pages-overlay .page-tag:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .review-pages-overlay .page-tag:active {
+      transform: translateY(0);
+    }
+
+    .review-pages-overlay .close-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: white;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .review-pages-overlay .close-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
     /* Blur effect for Quran text section during recording */
     #quran-text-section.blur-recording {
       filter: blur(8px);
@@ -1443,6 +1530,24 @@
                   </button>
                   <div v-else class="w-12"></div>
                 </div>
+              </div>
+
+              <!-- Review Pages Overlay -->
+              <div v-if="showReviewPagesOverlay && dailyGoalsStore.todayGoal && dailyGoalsStore.todayGoal.tasks.reviewRange && dailyGoalsStore.todayGoal.tasks.reviewRange.pages.length > 0" class="review-pages-overlay">
+                <button @click="showReviewPagesOverlay = false" class="close-btn" title="Dismiss">
+                  <i class="fas fa-times"></i>
+                </button>
+                <h4>
+                  <i class="fas fa-book-open mr-2"></i>Recite these pages today
+                </h4>
+                <div class="pages-list">
+                  <span v-for="page in dailyGoalsStore.todayGoal.tasks.reviewRange.pages" :key="page" @click="goToPageNumber(page)" class="page-tag">
+                    {{ page }}
+                  </span>
+                </div>
+                <p style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); margin: 0; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
+                  Chunk {{ dailyGoalsStore.todayGoal.chunkNumber }}/{{ dailyGoalsStore.todayGoal.totalChunks }}
+                </p>
               </div>
 
                 <!-- Page Navigation -->
@@ -2546,6 +2651,7 @@
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
           const showHelpModal = ref(false);
+          const showReviewPagesOverlay = ref(true); // Show review pages overlay by default
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
           
           // Word interaction state
@@ -4591,6 +4697,7 @@ Display:
             gotoInput,
             showSettingsModal,
             showHelpModal,
+            showReviewPagesOverlay,
             statistics,
             pagesWithMistakes,
             recentRecordings,
