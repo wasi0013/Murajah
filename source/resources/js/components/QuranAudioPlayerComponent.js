@@ -10,7 +10,7 @@ export const QuranAudioPlayerComponent = {
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <i class="fas fa-music text-blue-600 text-xl"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Listen audio
+          <h3 class="text-lg font-semibold text-gray-900">Audio of Page {{ currentPage }}
             <span v-if="pageVerses.length > 0" class="text-sm font-normal text-gray-500">
               ({{ pageVerses.length }} verse{{ pageVerses.length !== 1 ? 's' : '' }})
             </span>
