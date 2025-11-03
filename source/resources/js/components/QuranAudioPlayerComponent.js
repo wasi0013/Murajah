@@ -51,50 +51,92 @@ export const QuranAudioPlayerComponent = {
           <span>{{ formatTime(duration) }}</span>
         </div>
 
-        <!-- Reciter Selection -->
-        <div class="border-t pt-4">
-          <div class="flex items-center gap-3">
-            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Reciter:</label>
-            <select 
-              v-model="selectedReciter" 
-              class="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <!-- Control buttons row with reciter selector and spaced repetition -->
+        <div class="flex items-center justify-between gap-4">
+          <!-- Left side: Playback controls -->
+          <div class="flex items-center justify-center gap-3">
+            <button 
+              @click="previousVerse" 
+              class="p-2 rounded-full hover:bg-gray-100 transition"
+              :disabled="currentVerseIndex === 0"
+              :class="{ 'opacity-50 cursor-not-allowed': currentVerseIndex === 0 }"
             >
-              <option v-for="reciter in availableReciters" :key="reciter.id" :value="reciter.id">
-                {{ reciter.name }}
-              </option>
-            </select>
+              <i class="fas fa-step-backward text-gray-600"></i>
+            </button>
+
+            <button 
+              @click="togglePlayPause" 
+              class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 transition text-white"
+            >
+              <i :class="['fas', isPlaying ? 'fa-pause' : 'fa-play']"></i>
+            </button>
+
+            <button 
+              @click="nextVerse" 
+              class="p-2 rounded-full hover:bg-gray-100 transition"
+              :disabled="currentVerseIndex >= pageVerses.length - 1"
+              :class="{ 'opacity-50 cursor-not-allowed': currentVerseIndex >= pageVerses.length - 1 }"
+            >
+              <i class="fas fa-step-forward text-gray-600"></i>
+            </button>
+
+            <button 
+              @click="toggleAutoPlay" 
+              class="p-2 rounded-full transition"
+              :class="[
+                autoPlayNext 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              ]"
+              title="Auto-play next verse"
+            >
+              <i class="fas fa-long-arrow-alt-right"></i>
+            </button>
+
+            <button 
+              @click="stopAudio" 
+              class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600"
+            >
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
+
+          <!-- Right side: Reciter selector and Spaced Repetition button -->
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <!-- Reciter selector -->
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Reciter:</label>
+              <select 
+                v-model="selectedReciter" 
+                class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option v-for="reciter in availableReciters" :key="reciter.id" :value="reciter.id">
+                  {{ reciter.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Spaced Repetition Toggle Button -->
+            <button 
+              @click="useSpacedRepetition = !useSpacedRepetition"
+              class="p-2 rounded-full transition flex-shrink-0"
+              :class="[
+                useSpacedRepetition 
+                  ? 'bg-purple-100 text-purple-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              ]"
+              title="Toggle Spaced Repetition"
+            >
+              <i class="fas fa-sync-alt"></i> Repeat
+            </button>
           </div>
         </div>
 
-        <!-- Spaced Repetition Controls -->
-        <div class="border-t pt-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <button 
-                @click="useSpacedRepetition = !useSpacedRepetition"
-                class="p-2 rounded-full transition"
-                :class="[
-                  useSpacedRepetition 
-                    ? 'bg-purple-100 text-purple-600' 
-                    : 'hover:bg-gray-100 text-gray-600'
-                ]"
-                title="Toggle Spaced Repetition"
-              >
-                <i class="fas fa-brain"></i>
-              </button>
-              <div class="flex-1">
-                <p class="text-sm font-semibold text-gray-900">Spaced Repetition</p>
-                <p class="text-xs text-gray-500">Learn with intelligent repetition</p>
-              </div>
-            </div>
-            <span v-if="useSpacedRepetition" class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold">
-              ACTIVE
-            </span>
-          </div>
-
+        <!-- Spaced Repetition Controls (Details) -->
+        <div v-if="useSpacedRepetition" class="border-t pt-4 space-y-3">
           <!-- Repeat count input -->
-          <div v-if="useSpacedRepetition" class="flex items-center gap-3 bg-purple-50 p-3 rounded-lg">
-            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Repeat each:</label>
+          <div class="flex items-center gap-3 bg-purple-50 p-3 rounded-lg">
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Repeat each verses:</label>
             <input 
               v-model.number="repeatCount" 
               type="number" 
@@ -110,64 +152,10 @@ export const QuranAudioPlayerComponent = {
           </div>
 
           <!-- Spaced repetition info -->
-          <div v-if="useSpacedRepetition && spacedPlaylist.length > 0" class="text-xs text-purple-700 bg-purple-50 p-2 rounded">
+          <div v-if="spacedPlaylist.length > 0" class="text-xs text-purple-700 bg-purple-50 p-2 rounded">
             <i class="fas fa-lightbulb mr-1"></i>
             Cumulative learning: Each verse builds on previous ones
           </div>
-        </div>
-
-        <!-- Playback time -->
-        <div class="flex justify-between text-xs text-gray-500">
-          <span>{{ formatTime(currentTime) }}</span>
-          <span>{{ formatTime(duration) }}</span>
-        </div>
-
-        <!-- Control buttons -->
-        <div class="flex items-center justify-center gap-3">
-          <button 
-            @click="previousVerse" 
-            class="p-2 rounded-full hover:bg-gray-100 transition"
-            :disabled="currentVerseIndex === 0"
-            :class="{ 'opacity-50 cursor-not-allowed': currentVerseIndex === 0 }"
-          >
-            <i class="fas fa-step-backward text-gray-600"></i>
-          </button>
-
-          <button 
-            @click="togglePlayPause" 
-            class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 transition text-white"
-          >
-            <i :class="['fas', isPlaying ? 'fa-pause' : 'fa-play']"></i>
-          </button>
-
-          <button 
-            @click="nextVerse" 
-            class="p-2 rounded-full hover:bg-gray-100 transition"
-            :disabled="currentVerseIndex >= pageVerses.length - 1"
-            :class="{ 'opacity-50 cursor-not-allowed': currentVerseIndex >= pageVerses.length - 1 }"
-          >
-            <i class="fas fa-step-forward text-gray-600"></i>
-          </button>
-
-          <button 
-            @click="toggleAutoPlay" 
-            class="p-2 rounded-full transition"
-            :class="[
-              autoPlayNext 
-                ? 'bg-blue-100 text-blue-600' 
-                : 'hover:bg-gray-100 text-gray-600'
-            ]"
-            title="Auto-play next verse"
-          >
-            <i class="fas fa-sync-alt"></i>
-          </button>
-
-          <button 
-            @click="stopAudio" 
-            class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600"
-          >
-            <i class="fas fa-stop"></i>
-          </button>
         </div>
 
         <!-- Playlist -->

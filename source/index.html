@@ -1681,12 +1681,7 @@
                 </p>
               </div>
               
-              <!-- Quran Audio Player -->
-              <quran-audio-player-component 
-                v-if="quranData && quranData.quranWithPages"
-                :current-page="appStore.currentPage"
-                :quran-data="quranData.quranWithPages"
-              ></quran-audio-player-component>
+             
                 <!-- Page Navigation -->
               <div class="bg-white  rounded-lg shadow-lg p-4 space-y-3">
                 <!-- Navigation Controls -->
@@ -1865,6 +1860,13 @@
                   </button>
                 </div>
               </div>
+
+               <!-- Quran Audio Player -->
+              <quran-audio-player-component 
+                v-if="quranData && quranData.quranWithPages"
+                :current-page="appStore.currentPage"
+                :quran-data="quranData.quranWithPages"
+              ></quran-audio-player-component>
 
               <!-- Mistake Bubble Grid -->
               <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
