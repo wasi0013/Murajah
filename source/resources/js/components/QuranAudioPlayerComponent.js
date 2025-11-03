@@ -94,6 +94,19 @@ export const QuranAudioPlayerComponent = {
             </button>
 
             <button 
+              @click="toggleRepeatPlaylist" 
+              class="p-2 rounded-full transition"
+              :class="[
+                repeatPlaylist 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              ]"
+              title="Repeat entire playlist"
+            >
+              <i class="fas fa-retweet"></i>
+            </button>
+
+            <button 
               @click="stopAudio" 
               class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600"
             >
@@ -209,6 +222,7 @@ export const QuranAudioPlayerComponent = {
       currentTime: 0,
       duration: 0,
       autoPlayNext: true,
+      repeatPlaylist: false,
       showPlaylist: false,
       audioElement: null,
       // Reciter selection
@@ -649,6 +663,24 @@ export const QuranAudioPlayerComponent = {
      */
     toggleAutoPlay() {
       this.autoPlayNext = !this.autoPlayNext;
+      // Automatically enable auto-play when repeat is enabled
+      if (this.repeatPlaylist && !this.autoPlayNext) {
+        this.repeatPlaylist = false;
+        console.log('[Murajah-Audio] Disabled repeat playlist with auto play toggle');
+      }
+    },
+
+    /**
+     * Toggle repeat entire playlist
+     */
+    toggleRepeatPlaylist() {
+      this.repeatPlaylist = !this.repeatPlaylist;
+      
+      // Automatically enable auto-play when repeat is enabled
+      if (this.repeatPlaylist && !this.autoPlayNext) {
+        this.autoPlayNext = true;
+        console.log('[Murajah-Audio] Auto-play enabled with repeat playlist');
+      }
     },
 
     /**
@@ -733,7 +765,14 @@ export const QuranAudioPlayerComponent = {
         if (this.currentVerseIndex < this.pageVerses.length - 1) {
           this.nextVerse();
         } else {
-          this.isPlaying = false;
+          // Reached end of playlist
+          if (this.repeatPlaylist) {
+            // Restart from beginning
+            console.log('[Murajah-Audio] Restarting playlist from beginning');
+            this.playVerse(0);
+          } else {
+            this.isPlaying = false;
+          }
         }
       }
     },
