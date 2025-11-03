@@ -237,7 +237,9 @@ export const QuranAudioPlayerComponent = {
         { id: 'abu_bakr', name: 'Abu Bakr Al Shatri' },
         { id: 'nasser', name: 'Nasser Al Qatami' },
         { id: 'yasser', name: 'Yasser Al Dosari' },
-        { id: 'hani', name: 'Hani Ar Rifai' }
+        { id: 'hani', name: 'Hani Ar Rifai' },
+        { id: 'ghamdi', name: 'Saad Al Ghamdi' },
+        { id: 'hudhaify', name: 'Hudhaify' }
       ],
       // Spaced repetition feature
       useSpacedRepetition: false,
@@ -559,6 +561,14 @@ export const QuranAudioPlayerComponent = {
           break;
         case 'hani':
           primaryUrl = `https://everyayah.com/data/Hani_Rifai_192kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'ghamdi':
+          primaryUrl = `https://everyayah.com/data/Ghamadi_40kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'hudhaify':
+          primaryUrl = `https://everyayah.com/data/Hudhaify_128kbps/${surahPadded}${ayahPadded}.mp3`;
           fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
           break;
         default:
