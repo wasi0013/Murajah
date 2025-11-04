@@ -686,10 +686,10 @@ export const QuranAudioPlayerComponent = {
      * Play a specific verse by index
      */
     playVerse(index) {
-      if (index < 0 || index >= this.pageVerses.length) return;
+      if (index < 0 || index >= this.versesToPlay.length) return;
 
       this.currentVerseIndex = index;
-      const verse = this.pageVerses[index];
+      const verse = this.versesToPlay[index];
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
       // Try primary URL first, fallback to fallback URL
