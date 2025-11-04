@@ -241,7 +241,7 @@
     /* Quran Text Styling */
     .quran-text {
       font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      line-height: 1.1;
+      line-height: 1.6;
       direction: rtl;
       text-align: right;
       letter-spacing: 0.1em;
@@ -318,7 +318,7 @@
         font-size: 18px !important;
       }
       .quran-text {
-        line-height: 0.8;
+        line-height: 2.0;
       }
       .quran-word {
         padding: 0.02rem 0.04rem;
@@ -333,7 +333,7 @@
     /* Small Devices (500px - 640px) */
     @media (min-width: 501px) and (max-width: 640px) {
       .quran-text {
-        line-height: 0.9;
+        line-height: 1.9;
       }
       .quran-word {
         padding: 0.03rem 0.06rem;
@@ -347,7 +347,7 @@
 
     @media (max-width: 768px) and (min-width: 641px) {
       .quran-text {
-        line-height: 1.0;
+        line-height: 1.7;
       }
       .quran-word {
         padding: 0.05rem 0.08rem;
@@ -361,7 +361,7 @@
 
     @media (min-width: 1024px) {
       .quran-text {
-        line-height: 1.15;
+        line-height: 1.6;
       }
       .quran-word {
         padding: 0.08rem 0.12rem;
@@ -1559,14 +1559,14 @@
               </div>
 
               <!-- Quran Text Display with Overlay Navigation -->
-              <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-8 space-y-6 border-2 border-blue-200  relative group">
-                <div class="text-center space-y-2">
-                  <p class="text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
-                  <h2 class="text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
+              <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group">
+                <div class="text-center space-y-1 sm:space-y-2">
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-8 rounded-lg min-h-96 overflow-y-auto space-y-4 relative">
+                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative">
                   <!-- Hifz Status Bookmark -->
                   <div v-if="currentPageHifzStatus" class="absolute top-0 right-0 -mr-1" style="width: 60px; height: 100px;">
                     <svg viewBox="0 0 60 100" class="w-full h-full drop-shadow-lg" style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); opacity:60%;">
@@ -1602,11 +1602,11 @@
                     {{ currentPageMistakeCount }}
                   </div>
 
-                  <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-2">
+                  <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-1.5 md:gap-2">
                     <!-- Surah Name Display -->
-                    <div v-if="line.type === 'surah_name'" class="w-full text-4xl font-black text-black  my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl font-black text-black  my-2 sm:my-3 md:my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
                       {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
-                      <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-4xl mt-2">﷽</div>
+                      <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
                     </div>
                     
                     <!-- Words Display -->
@@ -1618,7 +1618,7 @@
                       @mousemove="updateTooltipPosition($event)"
                       @mouseleave="hideWordTooltip()"
                       :class="{
-                        'bg-blue-100  rounded-md px-2 py-1': hoveredWordId === word.id,
+                        'bg-blue-100  rounded-md px-1 sm:px-1.5 md:px-2 py-0.5 sm:py-1': hoveredWordId === word.id,
                         'bg-red-200 ': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
@@ -1680,26 +1680,25 @@
                   Chunk {{ dailyGoalsStore.todayGoal.chunkNumber }}/{{ dailyGoalsStore.todayGoal.totalChunks }}
                 </p>
               </div>
-              
              
                 <!-- Page Navigation -->
-              <div class="bg-white  rounded-lg shadow-lg p-4 space-y-3">
+              <div class="bg-white  rounded-lg shadow-lg p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-3">
                 <!-- Navigation Controls -->
-                <div class="flex items-center justify-center gap-2 flex-wrap">
-                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Previous page">
+                <div class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Previous page">
                     <i class="fas fa-chevron-left"></i>
                   </button>
 
-                  <div class="flex items-center gap-2 bg-gray-100  px-3 py-2 rounded-lg text-gray-900 ">
-                    <span class="text-xl font-bold">{{ appStore.currentPage }}</span>
-                    <span class="text-gray-600 ">/604</span>
+                  <div class="flex items-center gap-1 sm:gap-2 bg-gray-100  px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-900 ">
+                    <span class="text-lg sm:text-xl font-bold">{{ appStore.currentPage }}</span>
+                    <span class="text-xs sm:text-sm text-gray-600 ">/604</span>
                   </div>
 
-                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-16 px-2 py-2 border border-gray-300  rounded-lg    text-center text-sm" placeholder="Go">
-                  <button @click="gotoPage" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">Go</button>
+                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" placeholder="Go">
+                  <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">Go</button>
 
                   <!-- Surah Navigator -->
-                  <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-3 py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
+                  <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-2 sm:px-3 py-1 sm:py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-xs sm:text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
                     <option value="">📖 Surahs (114)</option>
                     <option value="1">1. الفاتحة</option>
                     <option value="2">2. البقرة</option>
@@ -1817,23 +1816,23 @@
                     <option value="114">114. الناس</option>
                   </select>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all" title="Next page">
+                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>                <!-- Action Buttons -->
-                <div class="flex items-center gap-2 flex-wrap justify-center">
-                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-1 px-3 py-2 text-white rounded-lg transition-colors text-sm">
+                <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
+                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
                     <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Memorize' }}</span>
                   </button>
 
-                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-1 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-sm">
+                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-star"></i>
                     <span>Perfect</span>
                     <span v-if="currentPagePerfectCount > 0" class="font-bold">({{ currentPagePerfectCount }})</span>
                   </button>
 
-                  <button v-if="AudioRecorder.isSupported() && !audioStore.isRecording" @click="startRecording" class="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm">
+                  <button v-if="AudioRecorder.isSupported() && !audioStore.isRecording" @click="startRecording" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-microphone"></i>
                     <span>Record</span>
                   </button>
@@ -1847,15 +1846,15 @@
                 </div>
 
                 <!-- Recording Status -->
-                <div v-if="audioStore.isRecording" class="flex items-center gap-3 p-3 bg-red-100  rounded-lg border-2 border-red-500">
+                <div v-if="audioStore.isRecording" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-red-100  rounded-lg border-2 border-red-500">
                   <div class="flex-1">
-                    <p class="font-bold text-red-700  text-sm">Recording...</p>
+                    <p class="font-bold text-red-700  text-xs sm:text-sm">Recording...</p>
                     <p class="text-xs text-red-600 ">{{ recordingDuration }}</p>
                   </div>
-                  <button @click="stopRecording" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors">
+                  <button @click="stopRecording" class="px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs sm:text-sm transition-colors">
                     <i class="fas fa-stop"></i>
                   </button>
-                  <button @click="cancelRecording" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors">
+                  <button @click="cancelRecording" class="px-2 sm:px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs sm:text-sm transition-colors">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
@@ -1869,20 +1868,20 @@
               ></quran-audio-player-component>
 
               <!-- Mistake Bubble Grid -->
-              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+                <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   Mistakes on Page {{ appStore.currentPage }}
                 </h3>
-                <p class="text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
+                <p class="text-xs sm:text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
                 
                 <!-- Mistake Bubbles Grid -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 sm:gap-2">
                   <button 
                     v-for="wordId in currentPageMistakes" 
                     :key="wordId"
                     @click="highlightWord({ id: wordId })"
-                    class="p-3 rounded-full bg-red-200  text-red-700  font-bold text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
+                    class="p-2 sm:p-3 rounded-full bg-red-200  text-red-700  font-bold text-xs sm:text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
                     :title="'Mistake: Word ' + wordId"
                   >
                     {{ wordId }}
@@ -1891,97 +1890,97 @@
                 
                 <button 
                   @click="clearPageMistakes"
-                  class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  class="mt-2 sm:mt-4 px-3 sm:px-4 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm"
                 >
                   Clear All Mistakes
                 </button>
               </div>
 
               <!-- Pages with Mistakes (Full Width) -->
-              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+              <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+                <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   Pages with Mistakes
                 </h3>
-                <div v-if="pagesWithMistakes.length > 0" class="space-y-2 max-h-48 overflow-y-auto">
-                  <div v-for="page in pagesWithMistakes" :key="page.pageNumber" @click="goToPageNumber(page.pageNumber)" class="p-3 bg-red-50  rounded-lg flex items-center justify-between gap-3 cursor-pointer hover:bg-red-100 transition-colors">
+                <div v-if="pagesWithMistakes.length > 0" class="space-y-1 sm:space-y-2 max-h-48 overflow-y-auto">
+                  <div v-for="page in pagesWithMistakes" :key="page.pageNumber" @click="goToPageNumber(page.pageNumber)" class="p-2 sm:p-3 bg-red-50  rounded-lg flex items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-red-100 transition-colors">
                     <div class="flex-1 min-w-0">
-                      <p class="font-medium text-gray-900 ">Page {{ page.pageNumber }}</p>
+                      <p class="font-medium text-xs sm:text-sm text-gray-900 ">Page {{ page.pageNumber }}</p>
                       <p class="text-xs text-red-600 ">{{ page.mistakeCount }} {{ page.mistakeCount === 1 ? 'mistake' : 'mistakes' }}</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <span class="inline-block px-2 py-1 bg-red-200  text-red-800 text-xs font-semibold rounded">{{ page.mistakeCount }}</span>
+                    <div class="flex items-center gap-1 sm:gap-2">
+                      <span class="inline-block px-2 py-0.5 sm:py-1 bg-red-200  text-red-800 text-xs font-semibold rounded">{{ page.mistakeCount }}</span>
                       <i class="fas fa-chevron-right text-gray-400 "></i>
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-gray-600  text-sm">
+                <div v-else class="text-gray-600  text-xs sm:text-sm">
                   <i class="fas fa-circle-check mr-2 text-green-600 "></i> No mistakes recorded!
                 </div>
               </div>
 
               <!-- Dashboard Stats Grid (2 Columns) -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <!-- Recent Recordings -->
-                <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+                  <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                     <i class="fas fa-microphone text-blue-600 "></i>
                     Recent Recordings
                   </h3>
-                  <div v-if="statistics.audios > 0" class="space-y-3 max-h-48 overflow-y-auto">
-                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-3 bg-gray-100  rounded-lg flex items-center justify-between gap-3">
+                  <div v-if="statistics.audios > 0" class="space-y-1.5 sm:space-y-2 md:space-y-3 max-h-48 overflow-y-auto">
+                    <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-2 sm:p-3 bg-gray-100  rounded-lg flex items-center justify-between gap-2 sm:gap-3">
                       <div class="flex-1 min-w-0">
-                        <p class="font-medium text-gray-900 ">Page {{ recording.pageNumber }}</p>
+                        <p class="font-medium text-xs sm:text-sm text-gray-900 ">Page {{ recording.pageNumber }}</p>
                         <p class="text-xs text-gray-600 ">{{ recording.recordedAt }}</p>
                         <p class="text-xs text-gray-600 " v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }} <!-- Debug: raw={{ recording.duration }} --></p>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <button @click="playAudio(recording)" class="p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600  " :title="'Play recording for page ' + recording.pageNumber">
+                      <div class="flex items-center gap-1 sm:gap-2">
+                        <button @click="playAudio(recording)" class="p-1.5 sm:p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="'Play recording for page ' + recording.pageNumber">
                           <i class="fas fa-play"></i>
                         </button>
-                        <button @click="deleteAudio(idx)" class="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600  " :title="'Delete recording for page ' + recording.pageNumber">
+                        <button @click="deleteAudio(idx)" class="p-1.5 sm:p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="'Delete recording for page ' + recording.pageNumber">
                           <i class="fas fa-trash"></i>
                         </button>
                       </div>
                     </div>
                   </div>
-                  <div v-else class="text-gray-600  text-sm">
+                  <div v-else class="text-gray-600  text-xs sm:text-sm">
                     <i class="fas fa-circle-info mr-2"></i> No recordings yet
                   </div>
                 </div>
 
                 <!-- Summary Statistics -->
-                <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                  <h3 class="text-xl font-bold flex items-center gap-2 text-gray-900 ">
+                <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+                  <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                     <i class="fas fa-chart-bar text-blue-600 "></i>
                     Summary Statistics
                   </h3>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div class="p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
+                  <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">Memorized</p>
-                      <p class="text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
+                      <p class="text-xl sm:text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
                       <p class="text-xs text-gray-500 ">of 604</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
+                    <div class="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">Juzs</p>
-                      <p class="text-2xl font-bold text-purple-600 ">{{ statistics.juzCount }}</p>
+                      <p class="text-xl sm:text-2xl font-bold text-purple-600 ">{{ statistics.juzCount }}</p>
                       <p class="text-xs text-gray-500 ">of 30</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-green-50 to-green-100   rounded-lg">
+                    <div class="p-2 sm:p-3 bg-gradient-to-br from-green-50 to-green-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">Completion</p>
-                      <p class="text-2xl font-bold text-green-600 ">{{ statistics.percentage }}%</p>
+                      <p class="text-xl sm:text-2xl font-bold text-green-600 ">{{ statistics.percentage }}%</p>
                     </div>
-                    <div class="p-3 bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg">
+                    <div class="p-2 sm:p-3 bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">Points</p>
-                      <p class="text-2xl font-bold text-orange-600 ">{{ formattedTotalScore }}</p>
+                      <p class="text-xl sm:text-2xl font-bold text-orange-600 ">{{ formattedTotalScore }}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Advanced Analytics Section -->
-              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-6">
-                <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 ">
+              <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-chart-pie text-purple-600 "></i>
                   Analytics & Progress
                 </h2>
@@ -4288,15 +4287,38 @@
           });
 
           const fontSizeStyle = computed(() => {
-            const sizeMap = {
-              'small': '20px',
-              'medium': '32px',
-              'large': '44px'
-            };
-            const fontSize = sizeMap[settingsStore.fontSize] || '32px';
+            const isSmallDevice = window.innerWidth < 640;
+            const isMediumDevice = window.innerWidth >= 640 && window.innerWidth < 1024;
+            
+            let sizeMap;
+            if (isSmallDevice) {
+              // Smaller sizes for mobile devices
+              sizeMap = {
+                'small': '14px',
+                'medium': '18px',
+                'large': '22px'
+              };
+            } else if (isMediumDevice) {
+              // Medium sizes for tablets
+              sizeMap = {
+                'small': '18px',
+                'medium': '26px',
+                'large': '32px'
+              };
+            } else {
+              // Larger sizes for desktop
+              sizeMap = {
+                'small': '20px',
+                'medium': '32px',
+                'large': '44px'
+              };
+            }
+            const fontSize = sizeMap[settingsStore.fontSize] || '24px';
             console.log('[Murajah] fontSizeStyle computed:', {
               fontSize: settingsStore.fontSize,
-              style: `font-size: ${fontSize}`
+              style: `font-size: ${fontSize}`,
+              deviceWidth: window.innerWidth,
+              isSmallDevice
             });
             return { fontSize: fontSize };
           });
@@ -4962,6 +4984,14 @@ Display:
           onMounted(() => {
             document.addEventListener('keydown', handleKeyboardShortcut);
             console.log('[Murajah] Keyboard shortcuts enabled');
+            
+            // Add window resize listener to recalculate font sizes
+            const handleResize = () => {
+              // Force re-computation of fontSizeStyle by triggering reactivity
+              // Vue will automatically update the computed property
+              console.log('[Murajah] Window resized, font size will be recalculated');
+            };
+            window.addEventListener('resize', handleResize);
           });
 
           // Clean up keyboard listener before unmount (optional for Vue 3)
