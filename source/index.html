@@ -11,13 +11,13 @@
   <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
   
   <!-- Tailwind CSS -->
-  <script src="./resources/js/tailwind.3.4.7.js"></script>
+  <script src="./resources/js/vendor/tailwind.3.4.7.js"></script>
   
   <!-- Line Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Vue 3 -->
-  <script src="./resources/js/vue.global.js"></script>
+  <script src="./resources/js/vendor/vue.global.js"></script>
 
   <style>
     :root {
@@ -40,7 +40,7 @@
     /* Surah Names Font */
     @font-face {
       font-family: 'SurahNames';
-      src: url('./resources/surah_names.woff2') format('woff2');
+      src: url('./resources/styles/fonts/surah_names.woff2') format('woff2');
       font-weight: normal;
       font-style: normal;
       unicode-range: U+0600-U+06FF;
@@ -1320,7 +1320,7 @@
             <header class="bg-white shadow">
               <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <img src="./resources/logo-bg.png" alt="Murajah" class="h-25 w-auto" style="border-radius: 15%;">
+                  <img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-25 w-auto" style="border-radius: 15%;">
                 </div>
                 <nav class="flex items-center gap-6">
                   <a href="./index.html#quran-text-section" class="text-gray-700  hover:text-blue-600  font-medium transition-colors">Memorize</a>
@@ -2889,7 +2889,7 @@
               
               // Load quran.json for audio player (contains surah, verse, page mapping)
               try {
-                const quranJsonResponse = await fetch('./resources/quran.json');
+                const quranJsonResponse = await fetch('./resources/data/quran/quran.json');
                 const quranJson = await quranJsonResponse.json();
                 // Store it in quranData for use by the audio player component
                 quranData.value.quranWithPages = quranJson;
@@ -4490,9 +4490,9 @@
             
             let src;
             if (tajweed) {
-              src = `src: url('./resources/tajweed/p${pageNum}.woff2') format('woff2')`;
+              src = `src: url('./resources/styles/fonts/tajweed/p${pageNum}.woff2') format('woff2')`;
             } else {
-              src = `src: url('./resources/font/p${pageNum}.woff2') format('woff2')`;
+              src = `src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2')`;
             }
             
             styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;

@@ -34,10 +34,10 @@ export const loadAllQuranData = async () => {
     const startTime = performance.now();
     
     const [layoutData, wordsData, surahNamesData, translationsData] = await Promise.all([
-      fetch('./resources/qpc-v2-15-lines.json').then(r => r.json()),
-      fetch('./resources/qpc-v2-word-by-word.json').then(r => r.json()),
-      fetch('./resources/surah-names.json').then(r => r.json()),
-      fetch('./resources/english-wbw-translation.json').then(r => r.json())
+      fetch('./resources/data/quran/qpc-v2-15-lines.json').then(r => r.json()),
+      fetch('./resources/data/quran/qpc-v2-word-by-word.json').then(r => r.json()),
+      fetch('./resources/data/quran/surah-names.json').then(r => r.json()),
+      fetch('./resources/data/quran/english-wbw-translation.json').then(r => r.json())
     ]);
 
     dataCache.layout = layoutData;
