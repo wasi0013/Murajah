@@ -1560,16 +1560,13 @@
 
               <!-- Quran Text Display with Overlay Navigation -->
               <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group">
-                <div class="text-center space-y-1 sm:space-y-2">
+                <div class="text-center space-y-1 sm:space-y-2 relative">
                   <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
                   <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
-                </div>
-
-                <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative">
-                  <!-- Hifz Status Bookmark -->
-                  <div v-if="currentPageHifzStatus" class="absolute top-0 right-0 -mr-1" style="width: 60px; height: 100px;">
-                    <svg viewBox="0 0 60 100" class="w-full h-full drop-shadow-lg" style="filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); opacity:60%;">
+                  
+                  <!-- Hifz Status Bookmark - Moved to header -->
+                  <div v-if="currentPageHifzStatus" class="absolute -top-4 -right-4 sm:top-0 sm:right-2" style="width: 50px; height: 80px;">
+                    <svg viewBox="0 0 60 100" class="w-full h-full drop-shadow-lg" style="filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)); opacity:70%;">
                       <!-- Bookmark shape -->
                       <defs>
                         <linearGradient id="bookmarkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1579,9 +1576,9 @@
                       </defs>
                       <path d="M 0 0 L 60 0 L 60 75 L 30 60 L 0 75 Z" fill="url(#bookmarkGradient)" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
                       <!-- Icon in center -->
-                      <g transform="translate(30, 20)">
-                        <circle cx="0" cy="0" r="16" fill="white" opacity="0.75"/>
-                        <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" class="text-lg font-bold" fill="currentColor" :style="{ fill: currentPageHifzStatus.bg, fontSize: '20px' }">
+                      <g transform="translate(30, 18)">
+                        <circle cx="0" cy="0" r="14" fill="white" opacity="0.75"/>
+                        <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" class="text-lg font-bold" fill="currentColor" :style="{ fill: currentPageHifzStatus.bg, fontSize: '16px' }">
                           <tspan v-if="currentPageHifzStatus.icon === 'la-star'">★</tspan>
                           <tspan v-else-if="currentPageHifzStatus.icon === 'la-check-circle'">✓</tspan>
                           <tspan v-else-if="currentPageHifzStatus.icon === 'la-thumbs-up'">👍</tspan>
@@ -1591,11 +1588,15 @@
                         </text>
                       </g>
                       <!-- Score label -->
-                      <text x="30" y="55" text-anchor="middle" font-size="10" font-weight="bold" fill="white">
+                      <text x="30" y="52" text-anchor="middle" font-size="9" font-weight="bold" fill="white">
                         {{ currentPageHifzStatus.label }}
                       </text>
                     </svg>
                   </div>
+                </div>
+
+                <!-- Quran Text Content - Word by Word Display -->
+                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
