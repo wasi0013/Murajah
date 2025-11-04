@@ -1697,9 +1697,14 @@
                   <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" placeholder="Go">
                   <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">Go</button>
 
+                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>                <!-- Action Buttons -->
+                <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                   <!-- Surah Navigator -->
                   <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-2 sm:px-3 py-1 sm:py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-xs sm:text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
-                    <option value="">📖 Surahs (114)</option>
+                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + currentSurahName) : '📖 Surahs (114)' }}</option>
                     <option value="1">1. الفاتحة</option>
                     <option value="2">2. البقرة</option>
                     <option value="3">3. آل عمران</option>
@@ -1816,11 +1821,6 @@
                     <option value="114">114. الناس</option>
                   </select>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
-                    <i class="fas fa-chevron-right"></i>
-                  </button>
-                </div>                <!-- Action Buttons -->
-                <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                   <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
                     <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Memorize' }}</span>
@@ -4351,6 +4351,24 @@
             return 'Quran Content';
           });
 
+          const currentSurahNumber = computed(() => {
+            if (!quranData.value || !currentPageWords.value || currentPageWords.value.length === 0) {
+              return null;
+            }
+            
+            // Extract surah number from the first word of current page
+            for (const line of currentPageWords.value) {
+              if (line.words && line.words.length > 0) {
+                const firstWord = line.words[0];
+                if (firstWord && firstWord.surah) {
+                  return firstWord.surah;
+                }
+              }
+            }
+            
+            return null;
+          });
+
           // Calculate total score from perfect revisions using hasanah values
           const totalPerfectRevisionsPoints = computed(() => {
             const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
@@ -5050,6 +5068,7 @@ Display:
             currentPageMistakeCount,
             currentPageMistakes,
             currentSurahName,
+            currentSurahNumber,
             recordingDuration,
             recordingCountdown,
             previousPage,
