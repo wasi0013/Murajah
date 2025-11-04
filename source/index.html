@@ -368,7 +368,31 @@
       }
     }
 
-    /* Surah Name Styling */
+    /* Contribution Graph - Small Device Responsive */
+    @media (max-width: 640px) {
+      /* Add horizontal scroll only on small devices */
+      .contribution-graph-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Smaller squares and labels for mobile */
+      .contribution-graph-container .inline-block button {
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        min-height: 14px !important;
+      }
+      
+      .contribution-graph-container .inline-block > div:first-child > div:last-child > div:first-child > div {
+        width: 20px !important;
+      }
+      
+      .contribution-graph-container .inline-block > div:first-child > div:first-child > div {
+        width: 28px !important;
+        margin-left: 15px !important;
+      }
+    }    /* Surah Name Styling */
     .quran-text .surah-name {
       font-family: 'SurahNames', 'Traditional Arabic', serif;
       color: #000 !important;
@@ -2663,7 +2687,7 @@
                     <i class="fas fa-fire text-orange-500"></i>
                     Timeline
                   </h3>
-                  <div class="flex gap-3 text-xs">
+                  <div class="flex flex-wrap gap-2 sm:gap-3 text-xs">
                     <div class="flex items-center gap-1">
                       <div class="w-3 h-3 rounded-sm bg-gray-200  "></div>
                       <span class="text-gray-600  ">None</span>
@@ -2680,7 +2704,7 @@
                 </div>
 
                 <!-- GitHub-style Contribution Graph -->
-                <div class="">
+                <div class="contribution-graph-container">
                   <div class="inline-block p-2">
                     <!-- Month Labels Row -->
                     <div class="flex gap-0.5 mb-2 ml-6">
