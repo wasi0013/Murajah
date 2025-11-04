@@ -52,9 +52,9 @@ export const QuranAudioPlayerComponent = {
         </div>
 
         <!-- Control buttons row with reciter selector and spaced repetition -->
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <!-- Left side: Playback controls -->
-          <div class="flex items-center justify-center gap-3">
+          <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
             <button 
               @click="previousVerse" 
               class="p-2 rounded-full hover:bg-gray-100 transition"
@@ -115,13 +115,13 @@ export const QuranAudioPlayerComponent = {
           </div>
 
           <!-- Right side: Reciter selector and Spaced Repetition button -->
-          <div class="flex items-center gap-3 flex-shrink-0">
+          <div class="flex items-center gap-2 sm:gap-3 w-full lg:w-auto flex-wrap lg:flex-nowrap justify-between lg:justify-end">
             <!-- Reciter selector -->
-            <div class="flex items-center gap-2">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Reciter:</label>
+            <div class="flex items-center gap-2 min-w-0">
+              <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">Reciter:</label>
               <select 
                 v-model="selectedReciter" 
-                class="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option v-for="reciter in availableReciters" :key="reciter.id" :value="reciter.id">
                   {{ reciter.name }}
@@ -140,7 +140,7 @@ export const QuranAudioPlayerComponent = {
               ]"
               title="Toggle Spaced Repetition"
             >
-              <i class="fas fa-sync-alt"></i> Repeat
+              <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Repeat</span>
             </button>
           </div>
         </div>
