@@ -10,9 +10,12 @@ export const QuranAudioPlayerComponent = {
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <i class="fas fa-music text-blue-600 text-xl"></i>
-          <h3 class="text-lg font-semibold text-gray-900">Audio of Page {{ currentPage }}
-            <span v-if="pageVerses.length > 0" class="text-sm font-normal text-gray-500">
-              ({{ pageVerses.length }} verse{{ pageVerses.length !== 1 ? 's' : '' }})
+          <h3 class="text-lg font-semibold text-gray-900">
+            <span v-if="selectedSurahForAudio">{{ selectedSurahName }} ({{ selectedSurahVerses.length }} verses)</span>
+            <span v-else>Audio of Page {{ currentPage }}
+              <span v-if="pageVerses.length > 0" class="text-sm font-normal text-gray-500">
+                ({{ pageVerses.length }} verse{{ pageVerses.length !== 1 ? 's' : '' }})
+              </span>
             </span>
           </h3>
         </div>
@@ -26,9 +29,9 @@ export const QuranAudioPlayerComponent = {
       </div>
 
       <!-- No verses message -->
-      <div v-if="pageVerses.length === 0" class="text-center py-4 text-gray-500">
+      <div v-if="versesToPlay.length === 0" class="text-center py-4 text-gray-500">
         <i class="fas fa-info-circle mr-2"></i>
-        No verses available for this page
+        No verses available
       </div>
 
       <!-- Player Controls -->
@@ -42,7 +45,7 @@ export const QuranAudioPlayerComponent = {
               :style="{ width: progressPercentage + '%' }"
             ></div>
           </div>
-          <span class="text-xs font-medium text-gray-600 w-10 text-right">{{ pageVerses.length }}</span>
+          <span class="text-xs font-medium text-gray-600 w-10 text-right">{{ versesToPlay.length }}</span>
         </div>
 
         <!-- Playback time -->
@@ -114,8 +117,22 @@ export const QuranAudioPlayerComponent = {
             </button>
           </div>
 
-          <!-- Right side: Reciter selector and Spaced Repetition button -->
+          <!-- Right side: Reciter selector, Surah selector, and Spaced Repetition button -->
           <div class="flex items-center gap-2 sm:gap-3 w-full lg:w-auto flex-wrap lg:flex-nowrap justify-between lg:justify-end">
+            <!-- Surah selector -->
+            <div class="flex items-center gap-2 min-w-0">
+              <select 
+                v-model="selectedSurahForAudio" 
+                @change="loadSurahVerses"
+                class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">▶️ Full Surah</option>
+                <option v-for="(name, num) in availableSurahs" :key="num" :value="num">
+                  {{ num }}. {{ name }}
+                </option>
+              </select>
+            </div>
+
             <!-- Reciter selector -->
             <div class="flex items-center gap-2 min-w-0">
               <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">Reciter:</label>
@@ -175,7 +192,7 @@ export const QuranAudioPlayerComponent = {
         <div v-if="showPlaylist" class="mt-4 border-t pt-4">
           <div class="max-h-48 overflow-y-auto space-y-1">
             <button
-              v-for="(v, idx) in pageVerses"
+              v-for="(v, idx) in versesToPlay"
               :key="'verse_' + v.chapter + '_' + v.verse"
               @click="playVerse(idx)"
               class="w-full text-left px-3 py-2 rounded transition text-sm"
@@ -211,6 +228,10 @@ export const QuranAudioPlayerComponent = {
     quranData: {
       type: Array,
       required: true
+    },
+    surahNames: {
+      type: Object,
+      default: () => ({})
     }
   },
 
@@ -225,6 +246,10 @@ export const QuranAudioPlayerComponent = {
       repeatPlaylist: false,
       showPlaylist: false,
       audioElement: null,
+      // Surah selection for audio player
+      selectedSurahForAudio: '', // Empty = use page verses
+      selectedSurahVerses: [], // Verses of selected surah
+      availableSurahs: {}, // Map of surah number to name
       // Reciter selection
       selectedReciter: 'shuraim', // Default reciter
       availableReciters: [
@@ -254,9 +279,24 @@ export const QuranAudioPlayerComponent = {
   },
 
   computed: {
+    versesToPlay() {
+      // Return surah verses if surah is selected, otherwise page verses
+      return this.selectedSurahForAudio ? this.selectedSurahVerses : this.pageVerses;
+    },
+
+    selectedSurahName() {
+      // Get the surah name from the availableSurahs map using the selected surah number
+      // Format: "7. الأعراف"
+      if (!this.selectedSurahForAudio || !this.availableSurahs) {
+        return '';
+      }
+      const name = this.availableSurahs[this.selectedSurahForAudio] || `Surah ${this.selectedSurahForAudio}`;
+      return `${this.selectedSurahForAudio}. ${name}`;
+    },
+
     currentVerseName() {
-      if (this.pageVerses.length === 0) return '-';
-      const verse = this.pageVerses[this.currentVerseIndex];
+      if (this.versesToPlay.length === 0) return '-';
+      const verse = this.versesToPlay[this.currentVerseIndex];
       return `${verse.chapter}:${verse.verse}`;
     },
 
@@ -355,6 +395,68 @@ export const QuranAudioPlayerComponent = {
       this.isPlaying = false;
       this.currentSequenceIndices = []; // Track current sequence being played
       this.currentSequencePosition = 0; // Track position within sequence
+
+      // Generate spaced repetition playlist if enabled
+      if (this.useSpacedRepetition) {
+        this.generateSpacedPlaylist();
+      }
+    },
+
+    /**
+     * Load all verses for a selected surah
+     */
+    loadSurahVerses() {
+      if (!this.selectedSurahForAudio) {
+        // User switched back to page verses mode
+        this.selectedSurahVerses = [];
+        this.currentVerseIndex = 0;
+        this.currentTime = 0;
+        this.isPlaying = false;
+        return;
+      }
+
+      if (!this.quranData) {
+        console.warn('[Murajah-Audio] Missing quran data for surah selection');
+        this.selectedSurahVerses = [];
+        return;
+      }
+
+      // Get all verses and filter by surah number
+      let allVerses = [];
+      
+      if (Array.isArray(this.quranData)) {
+        allVerses = this.quranData;
+      } else if (typeof this.quranData === 'object') {
+        Object.values(this.quranData).forEach((surahVerses) => {
+          if (Array.isArray(surahVerses)) {
+            allVerses.push(...surahVerses);
+          }
+        });
+      }
+
+      // Filter verses by surah number and sort by verse number
+      // Convert to number - selectedSurahForAudio comes as string from select element
+      const surahNum = Number(this.selectedSurahForAudio);
+      
+      console.log('[Murajah-Audio] loadSurahVerses called with:', {
+        selectedSurahForAudio: this.selectedSurahForAudio,
+        surahNum,
+        totalVerses: allVerses.length,
+        sampleVerse: allVerses[0] ? `Surah ${allVerses[0].chapter}:${allVerses[0].verse}` : 'N/A'
+      });
+
+      this.selectedSurahVerses = allVerses
+        .filter(verse => verse && verse.chapter === surahNum)
+        .sort((a, b) => a.verse - b.verse);
+
+      console.log(`[Murajah-Audio] Loaded ${this.selectedSurahVerses.length} verses for surah ${surahNum}`);
+
+      // Reset playback state
+      this.currentVerseIndex = 0;
+      this.currentTime = 0;
+      this.isPlaying = false;
+      this.currentSequenceIndices = [];
+      this.currentSequencePosition = 0;
 
       // Generate spaced repetition playlist if enabled
       if (this.useSpacedRepetition) {
@@ -818,6 +920,43 @@ export const QuranAudioPlayerComponent = {
      */
     togglePlaylist() {
       this.showPlaylist = !this.showPlaylist;
+    },
+
+    /**
+     * Populate available surahs from quran data
+     */
+    populateAvailableSurahs() {
+      if (!this.quranData) {
+        this.availableSurahs = {};
+        return;
+      }
+
+      // Get all verses and extract unique surahs
+      let allVerses = [];
+      
+      if (Array.isArray(this.quranData)) {
+        allVerses = this.quranData;
+      } else if (typeof this.quranData === 'object') {
+        Object.values(this.quranData).forEach((surahVerses) => {
+          if (Array.isArray(surahVerses)) {
+            allVerses.push(...surahVerses);
+          }
+        });
+      }
+
+      // Extract unique surahs and build map using surahNames prop
+      const surahMap = {};
+      for (const verse of allVerses) {
+        if (verse && verse.chapter && !surahMap[verse.chapter]) {
+          // Use surah name from props, which contains the Arabic names
+          surahMap[verse.chapter] = this.surahNames && this.surahNames[verse.chapter] 
+            ? this.surahNames[verse.chapter] 
+            : `Surah ${verse.chapter}`;
+        }
+      }
+
+      this.availableSurahs = surahMap;
+      console.log('[Murajah-Audio] Populated', Object.keys(this.availableSurahs).length, 'surahs', surahMap);
     }
   },
 
@@ -827,6 +966,8 @@ export const QuranAudioPlayerComponent = {
     },
     quranData() {
       this.loadPageVerses();
+      // Also populate available surahs when quran data changes
+      this.populateAvailableSurahs();
     },
     useSpacedRepetition(newVal) {
       // Stop current playback
@@ -874,18 +1015,24 @@ export const QuranAudioPlayerComponent = {
         this.generateSpacedPlaylist();
         console.log('[Murajah-Audio] Playlist regenerated with', this.spacedPlaylist.length, 'items');
       }
+    },
+    selectedSurahForAudio() {
+      // When surah selection changes, load the verses for that surah
+      this.loadSurahVerses();
     }
   },
 
   mounted() {
     this.audioElement = this.$refs.audioElement;
     this.loadPageVerses();
+    this.populateAvailableSurahs();
     console.log('[Murajah] Audio player component mounted', {
       currentPage: this.currentPage,
       quranDataType: typeof this.quranData,
       quranDataIsArray: Array.isArray(this.quranData),
       quranDataKeys: this.quranData && typeof this.quranData === 'object' ? Object.keys(this.quranData).length : 'N/A',
-      pageVerses: this.pageVerses.length
+      pageVerses: this.pageVerses.length,
+      availableSurahs: Object.keys(this.availableSurahs).length
     });
   }
 };
