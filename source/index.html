@@ -3085,18 +3085,38 @@
           const initializeDailyGoals = async () => {
             try {
               const today = getTodayDate();
-              
+
               // Check if this is a new user (no memorized pages) and adjust tasks accordingly
               const isNewUser = memorizedStore.memorizedPages.size === 0;
               const hasReviewRangeTask = dailyGoalsStore.selectedTasks.includes('reviewRange');
               const hasRecordRandomPageTask = dailyGoalsStore.selectedTasks.includes('recordRandomPage');
-              
-            
-              
+
+              // Load recent history upfront so we can determine the previous rotation
+              let history = [];
+              try {
+                history = await murajahDB.loadDailyGoalHistory(90);
+              } catch (historyError) {
+                console.warn('[Murajah] Failed to load history, using empty:', historyError);
+                history = [];
+              }
+
+              const getPreviousGoal = () => {
+                if (!history || history.length === 0) {
+                  return dailyGoalsStore.todayGoal;
+                }
+                const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+                for (let i = sorted.length - 1; i >= 0; i--) {
+                  if (sorted[i].date < today) {
+                    return sorted[i];
+                  }
+                }
+                return dailyGoalsStore.todayGoal;
+              };
+
               try {
                 // Try to load today's goal from IndexedDB
                 const storedGoal = await murajahDB.loadDailyGoal(today);
-                
+
                 if (storedGoal) {
                   // Today's goal already exists, just load it
                   // Make sure it's properly converted back to Vue reactive format
@@ -3118,7 +3138,7 @@
                       totalChunks: taskObj.totalChunks ? Number(taskObj.totalChunks) : 1
                     };
                   }
-                  
+
                   dailyGoalsStore.todayGoal = {
                     date: storedGoal.date,
                     tasks: tasksCopy,
@@ -3129,10 +3149,11 @@
                     totalChunks: storedGoal.totalChunks ? Number(storedGoal.totalChunks) : 1
                   };
                 } else {
-                  // New day, initialize new goals
-                  const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, dailyGoalsStore.todayGoal);
+                  // New day, initialize new goals using the most recent saved rotation
+                  const previousGoal = getPreviousGoal();
+                  const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, previousGoal || null);
                   dailyGoalsStore.todayGoal = newGoal;
-                  
+
                   // Save new goal to IndexedDB (use plain object conversion)
                   const goalToSave = {
                     date: newGoal.date,
@@ -3163,33 +3184,31 @@
               } catch (dbError) {
                 console.warn('[Murajah] Database error, creating in-memory goal:', dbError);
                 // Fallback: Create goal in memory if database fails
-                const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, null);
+                const previousGoal = getPreviousGoal();
+                const newGoal = initializeTodayGoals(settingsStore, memorizedStore.memorizedPages, previousGoal || null);
                 dailyGoalsStore.todayGoal = newGoal;
               }
-              
-              // Try to load goal history for streak calculation
-              try {
-                const history = await murajahDB.loadDailyGoalHistory(90);
-                dailyGoalsStore.goalHistory = history;
-              } catch (historyError) {
-                console.warn('[Murajah] Failed to load history, using empty:', historyError);
-                dailyGoalsStore.goalHistory = [];
+
+              // Ensure today's goal is reflected in history for streak calculations
+              if (dailyGoalsStore.todayGoal) {
+                const snapshot = JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal));
+                const existingIndex = history.findIndex(goal => goal.date === snapshot.date);
+                if (existingIndex >= 0) {
+                  history.splice(existingIndex, 1, snapshot);
+                } else {
+                  history.push(snapshot);
+                }
+                history.sort((a, b) => new Date(a.date) - new Date(b.date));
               }
-              
+
+              dailyGoalsStore.goalHistory = history;
+
               // Calculate streak from HISTORY ONLY (excluding today until it's complete)
               // This prevents showing 0 streak on new day when today's goal is incomplete
               const streakInfo = calculateStreak(dailyGoalsStore.goalHistory, dailyGoalsStore.selectedTasks);
               dailyGoalsStore.streak = streakInfo.currentStreak;
               dailyGoalsStore.longestStreak = streakInfo.longestStreak;
-              
-              // Now ensure today's goal is in goalHistory for persistence
-              const todayDate = getTodayDate();
-              const todayInHistory = dailyGoalsStore.goalHistory.find(g => g.date === todayDate);
-              if (!todayInHistory && dailyGoalsStore.todayGoal) {
-                // Add today's goal to history for persistence
-                dailyGoalsStore.goalHistory.push(JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal)));
-              }
-              
+
               dailyGoalsStore.lastUpdated = new Date().toISOString();
               console.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
             } catch (error) {
@@ -3711,7 +3730,7 @@
           };
 
           // Apply manual rotation adjustment to today's daily goal
-          const applyRevisionChunkAdjustment = () => {
+          const applyRevisionChunkAdjustment = async () => {
             if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks.reviewRange) {
               console.warn('[Murajah] Cannot apply revision chunk adjustment - no today goal or reviewRange task');
               return;
@@ -3766,8 +3785,21 @@
 
             console.log('[Murajah] Revision chunk adjusted - new pages:', pagesForReview.join(', '));
             
-            // Save the updated goal
-            saveDailyGoal();
+            // Persist the updated goal so tomorrow's rotation starts from this chunk
+            await saveDailyGoal();
+
+            // Keep the in-memory history aligned with the saved rotation
+            if (dailyGoalsStore.goalHistory) {
+              const today = getTodayDate();
+              const goalSnapshot = JSON.parse(JSON.stringify(dailyGoalsStore.todayGoal));
+              const historyIndex = dailyGoalsStore.goalHistory.findIndex(goal => goal.date === today);
+              if (historyIndex >= 0) {
+                dailyGoalsStore.goalHistory.splice(historyIndex, 1, goalSnapshot);
+              } else {
+                dailyGoalsStore.goalHistory.push(goalSnapshot);
+              }
+              dailyGoalsStore.goalHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+            }
             
             appStore.successMessage = `Revision chunk adjusted to: Chunk ${newRotationIndex + 1}/${totalChunks}`;
             setTimeout(() => appStore.successMessage = '', 3000);
