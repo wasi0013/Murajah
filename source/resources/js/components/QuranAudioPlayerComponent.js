@@ -255,6 +255,8 @@ export const QuranAudioPlayerComponent = {
       availableReciters: [
         { id: 'shuraim', name: 'Sheikh Shuraim' },
         { id: 'ali_jaber', name: 'Ali Jaber' },
+        { id: 'khalifa_al_tunaiji', name: 'Khalifa Al Tunaiji' },
+        { id: 'abdur_rahman_as_sudais', name: 'Abdur Rahman As Sudais' },
         { id: 'minshawy', name: 'Muhammad Siddiq Al-Minshawy' },
         { id: 'ayyoub', name: 'Muhammad Ayyoub' },
         { id: 'abdul_basit', name: 'Abdul Basit Abd El-Samad' },
@@ -631,6 +633,14 @@ export const QuranAudioPlayerComponent = {
           break;
         case 'ali_jaber':
           primaryUrl = `https://wasi0013.github.io/Murajah/recitations/ali_jaber/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'khalifa_al_tunaiji':
+          primaryUrl = `https://everyayah.com/data/khalefa_al_tunaiji_64kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'abdur_rahman_as_sudais':
+          primaryUrl = `https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps/${surahPadded}${ayahPadded}.mp3`;
           fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
           break;
         case 'minshawy':
