@@ -264,7 +264,7 @@ Found a bug or have a feature request? Feel free to:
 
 ## 📄 License
 
-This project is open-source and available for personal use. Please check the LICENSE file for detailed terms.
+This project is open-source and available for personal use. Please check the [LICENSE](/LICENSE) file for detailed terms.
 
 ## 📞 Support
 
