@@ -4,10 +4,14 @@
 
 [![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
 [![version](https://img.shields.io/badge/V-25.11.04-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
+
+[![Playstore Link](https://img.shields.io/badge/Download%20App-black?logo=Google%20Play&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
 [![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
 [![Author](https://img.shields.io/badge/Author-Wasi-brightgreen?style=for-the-badge)](https://github.com/wasi0013)
 [![Free](https://img.shields.io/badge/Opensource-yes-lightgray?style=for-the-badge)](./LICENSE)
 ![JavaScript](https://img.shields.io/badge/Framework-Vue%20JS-yellow?style=for-the-badge)
+
+<p align='center'><a href="https://play.google.com/store/apps/details?id=com.murajah.webview"><img src="screenshots/playstore.png" alt="Murajah Logo" width=500></a></p>
 
 ## 📖 What is Murajah?
 
