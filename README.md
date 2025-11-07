@@ -74,13 +74,12 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 - Quick access to any memorized content
 - Progress overview at a glance
 
-### ❌ Mistake Tracker
+### ‼️ Mistake Tracker
 
 - Mark mistakes
 - Statistics on mistakes
 
 ### ⚙️ Settings
-<p align="center"><img src="screenshots/settings.jpg" alt="Hi" width=720 alt="settings"></p>
 
 - Text size preferences
 - Tajweed rules display toggle
@@ -266,15 +265,6 @@ Found a bug or have a feature request? Feel free to:
 ## 📄 License
 
 This project is open-source and available for personal use. Please check the LICENSE file for detailed terms.
-
-## 🤖 AI Development Disclosure
-
-**Important Note**: This project in its entirety is developed and debugged using **Agentic Coding**:
-
-- **Claude Haiku 3.5**
-- **Claude Sonnet 3.5**
-
-The application was built using advanced AI models to plan, design, implement, debug, optimize, and refine the codebase.
 
 ## 📞 Support
 
