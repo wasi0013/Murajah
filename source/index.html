@@ -20,6 +20,9 @@
   <!-- Vue 3 -->
   <script src="./resources/js/vendor/vue.global.js"></script>
 
+  <!-- Confetti Library (for achievement animations) -->
+  <script src="https://cdn.jsdelivr.net/npm/confetti-js@0.0.18/dist/index.min.js"></script>
+
   <style>
     :root {
       --primary: #3b82f6;
@@ -1034,7 +1037,7 @@
 
   <script type="module">
     // Access Vue from global scope since it's loaded as a script tag
-    const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+  const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
 
     // IIFE to handle async imports
     (async () => {
@@ -1323,6 +1326,28 @@
       const audioPlayerComponentModule = await import('./resources/js/components/QuranAudioPlayerComponent.js');
       const { QuranAudioPlayerComponent } = audioPlayerComponentModule;
 
+      // Import Achievement System
+      const achievementStoreModule = await import('./resources/js/stores/achievementStore.js');
+      const { 
+        achievementStore, 
+        loadBadgesData, 
+        loadUnlockedBadges, 
+        unlockBadge, 
+        saveUnlockedBadges 
+      } = achievementStoreModule;
+
+      const achievementLogicModule = await import('./resources/js/utils/achievementLogic.js');
+      const { checkBadgeUnlock, checkAllBadges, getBadgeUnlockMessage } = achievementLogicModule;
+
+      const achievementNavbarComponentModule = await import('./resources/js/components/AchievementNavbarComponent.js');
+      const AchievementNavbarComponent = achievementNavbarComponentModule.default;
+
+      const achievementGridComponentModule = await import('./resources/js/components/AchievementGridComponent.js');
+      const AchievementGridComponent = achievementGridComponentModule.default;
+
+      const achievementDetailComponentModule = await import('./resources/js/components/AchievementDetailComponent.js');
+      const AchievementDetailComponent = achievementDetailComponentModule.default;
+
       const app = createApp({
         template: `
           <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white text-gray-900">
@@ -1353,6 +1378,9 @@
                   <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="How to use Murajah">
                     <i class="fas fa-info-circle text-gray-700  text-xl"></i>
                   </button>
+
+                  <!-- Achievement Icon (NEW) -->
+                  <achievement-navbar-component></achievement-navbar-component>
                   
                   <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
@@ -2351,6 +2379,72 @@
                       {{ bulkWarning }}
                     </div>
                   </div>
+
+                  <!-- Achievements Section -->
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900  flex items-center gap-2">
+                      <i class="fas fa-trophy text-yellow-500"></i>
+                      Achievements
+                    </h3>
+
+                    <!-- Achievement Stats -->
+                    <div class="grid grid-cols-2 gap-4">
+                      <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="text-sm font-medium text-gray-600 mb-1">Badges Unlocked</div>
+                        <div class="text-3xl font-bold text-purple-600">{{ achievementStore.totalUnlocked }}/100</div>
+                        <div class="text-xs text-gray-600 mt-2">{{ achievementStore.completionPercentage }}% Complete</div>
+                      </div>
+                      <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="text-sm font-medium text-gray-600 mb-1">Completion</div>
+                        <div class="w-full bg-gray-300 rounded-full h-2 mt-3">
+                          <div 
+                            class="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                            :style="{ width: achievementStore.completionPercentage + '%' }"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Achievement Actions -->
+                    <div class="space-y-2">
+                      <button 
+                        @click="showAchievementsModal = true; showSettingsModal = false"
+                        class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <i class="fas fa-medal"></i>
+                        <span>View All Achievements</span>
+                      </button>
+
+                      <!-- Sync Badges Button -->
+                      <button 
+                        @click="syncAchievementsWithData"
+                        :disabled="syncInProgress"
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <i :class="syncInProgress ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
+                        <span>{{ syncInProgress ? 'Syncing...' : 'Sync Badges with Data' }}</span>
+                      </button>
+
+                      <!-- Debug Options (only in dev) -->
+                      <div v-if="isDevMode" class="space-y-2 pt-2 border-t border-gray-200">
+                        <div class="text-xs font-semibold text-gray-600 uppercase">Developer Tools</div>
+                        <button 
+                          @click="unlockAllBadges"
+                          class="w-full px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                        >
+                          <i class="fas fa-flask mr-2"></i>
+                          Unlock All Badges (Debug)
+                        </button>
+                        <button 
+                          @click="clearAllAchievements"
+                          class="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                        >
+                          <i class="fas fa-trash mr-2"></i>
+                          Clear All Achievements
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Modal Footer -->
@@ -2533,6 +2627,51 @@
                     Got it!
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Achievements Modal (NEW) -->
+            <div v-if="showAchievementsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div class="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+                <!-- Modal Header -->
+                <div class="sticky top-0 flex items-center justify-between p-6 border-b dark:border-gray-700 bg-gradient-to-r from-amber-50 dark:from-gray-700 to-orange-50 dark:to-gray-700 z-10 shadow-sm">
+                  <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                    <i class="fas fa-trophy text-amber-600"></i>
+                    Achievements ({{ totalUnlockedBadges }}/100)
+                  </h2>
+                  <button @click="showAchievementsModal = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Grid and Detail View Container -->
+                <div class="flex flex-col lg:flex-row gap-6 p-6 overflow-hidden h-[calc(90vh-80px)]">
+                  <!-- Achievement Grid (left side) -->
+                  <div class="flex-1 overflow-y-auto">
+                    <achievement-grid-component @badge-selected="selectAchievementBadge"></achievement-grid-component>
+                  </div>
+
+                  <!-- Achievement Detail (right side - desktop only) -->
+                  <div v-if="selectedAchievementBadge && viewportWidth >= 1024" class="w-96 flex-shrink-0 border-l dark:border-gray-700 pl-6 overflow-y-auto">
+                    <achievement-detail-component 
+                      :badge="selectedAchievementBadge"
+                      :is-unlocked="achievementStore.unlockedBadges.has(selectedAchievementBadge.id)"
+                      @close="selectedAchievementBadge = null"
+                      @share="shareBadge"
+                    ></achievement-detail-component>
+                  </div>
+                </div>
+
+                <!-- Mobile Detail Modal Overlay -->
+                <achievement-detail-component 
+                  v-if="selectedAchievementBadge && viewportWidth < 1024"
+                  :badge="selectedAchievementBadge"
+                  :is-unlocked="achievementStore.unlockedBadges.has(selectedAchievementBadge.id)"
+                  @close="selectedAchievementBadge = null"
+                  @share="shareBadge"
+                ></achievement-detail-component>
               </div>
             </div>
 
@@ -2865,9 +3004,14 @@
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
           const showHelpModal = ref(false);
+          const showAchievementsModal = ref(false); // NEW: Achievements modal visibility
+          const selectedAchievementBadge = ref(null); // NEW: Currently selected badge in achievements
           const showReviewPagesOverlay = ref(true); // Show review pages overlay by default
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
+          const syncInProgress = ref(false); // Flag for badge sync in progress
           const analyticsActiveTab = ref(1); // 1 = Juz Progress, 2 = Page-by-Page
+          const isDevMode = ref(false); // Developer mode toggle for achievement debugging
+          const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -2878,6 +3022,25 @@
           const tooltipX = ref(0);
           const tooltipY = ref(0);
           const tooltipText = ref('');
+
+          const updateViewportWidth = () => {
+            if (typeof window !== 'undefined') {
+              viewportWidth.value = window.innerWidth;
+            }
+          };
+
+          onMounted(() => {
+            updateViewportWidth();
+            if (typeof window !== 'undefined') {
+              window.addEventListener('resize', updateViewportWidth);
+            }
+          });
+
+          onUnmounted(() => {
+            if (typeof window !== 'undefined') {
+              window.removeEventListener('resize', updateViewportWidth);
+            }
+          });
 
           // Recording countdown state
           const recordingCountdown = ref(null); // null, 3, 2, 1, 0 = recording started
@@ -3393,6 +3556,9 @@
             
             appStore.successMessage = `Task "${taskName}" completed!`;
             setTimeout(() => appStore.successMessage = '', 2000);
+            
+            // Check for achievement unlocks (NEW)
+            checkForBadgeUnlocks();
           };
 
           const uncompleteTaskGoal = async (taskName) => {
@@ -3544,6 +3710,9 @@
             }
             setTimeout(() => appStore.successMessage = '', 2000);
             saveDataBackground();
+            
+            // Check for achievement unlocks (NEW)
+            checkForBadgeUnlocks();
           };
 
           const isCurrentPageMemorized = computed(() => {
@@ -3577,6 +3746,9 @@
             appStore.successMessage = `Page ${pageNum} marked perfect! (+1)`;
             setTimeout(() => appStore.successMessage = '', 2000);
             saveDataBackground();
+            
+            // Check for achievement unlocks (NEW)
+            checkForBadgeUnlocks();
           };
 
           const currentPagePerfectCount = computed(() => {
@@ -3805,6 +3977,9 @@
               saveDataBackground();
               appStore.successMessage = 'Mistakes cleared!';
               setTimeout(() => appStore.successMessage = '', 2000);
+              
+              // Check for achievement unlocks (NEW)
+              checkForBadgeUnlocks();
             }
           };
 
@@ -3980,6 +4155,118 @@
             }
           };
 
+          // ===== ACHIEVEMENT MANAGEMENT FUNCTIONS =====
+          
+          const unlockAllBadges = async () => {
+            if (!confirm('Unlock all 100 badges? This is for development/testing only.')) {
+              return;
+            }
+            
+            try {
+              // Unlock all badges
+              for (let i = 1; i <= 100; i++) {
+                if (!achievementStore.unlockedBadges.has(i)) {
+                  unlockBadge(i);
+                }
+              }
+              
+              // Save to IndexedDB
+              await saveUnlockedBadges(murajahDB);
+              
+              appStore.successMessage = '🎉 All 100 badges unlocked!';
+              setTimeout(() => appStore.successMessage = '', 3000);
+              console.log('[Murajah] All badges unlocked for testing');
+            } catch (error) {
+              console.error('[Murajah] Failed to unlock all badges:', error);
+              appStore.errorMessage = 'Failed to unlock all badges';
+            }
+          };
+
+          const clearAllAchievements = async () => {
+            if (!confirm('Clear all unlocked achievements? This cannot be undone.')) {
+              return;
+            }
+            
+            try {
+              achievementStore.unlockedBadges.clear();
+              achievementStore.totalUnlocked = 0;
+              achievementStore.completionPercentage = 0;
+              achievementStore.lastUnlockedBadgeId = null;
+              
+              // Save to IndexedDB
+              await saveUnlockedBadges(murajahDB);
+              
+              appStore.successMessage = '✓ All achievements cleared';
+              setTimeout(() => appStore.successMessage = '', 3000);
+              console.log('[Murajah] All achievements cleared');
+            } catch (error) {
+              console.error('[Murajah] Failed to clear achievements:', error);
+              appStore.errorMessage = 'Failed to clear achievements';
+            }
+          };
+
+          const syncAchievementsWithData = async () => {
+            syncInProgress.value = true;
+            
+            try {
+              console.log('[Murajah] Starting achievement sync with current data...');
+              
+              // Get all stored badge definitions
+              if (achievementStore.badgesData.size === 0) {
+                await loadBadgesData();
+              }
+              
+              const stores = {
+                memorizedStore,
+                mistakesStore,
+                audioStore,
+                dailyGoalsStore,
+                settingsStore,
+                perfectRevisionsStore
+              };
+              
+              let newUnlocks = 0;
+              const unlockedBadges = Array.from(achievementStore.badgesData.values());
+              
+              // Check each badge to see if unlock conditions are met
+              for (const badge of unlockedBadges) {
+                // Skip if already unlocked
+                if (achievementStore.unlockedBadges.has(badge.id)) {
+                  continue;
+                }
+                
+                // Check if conditions are met
+                if (checkBadgeUnlock(badge, stores)) {
+                  unlockBadge(badge.id);
+                  newUnlocks++;
+                  console.log(`[Murajah] Synced unlock: Badge #${badge.id} "${badge.name}"`);
+                }
+              }
+              
+              // Save all changes to IndexedDB
+              if (newUnlocks > 0) {
+                await saveUnlockedBadges(murajahDB);
+              }
+              
+              let message = `✓ Sync complete`;
+              if (newUnlocks > 0) {
+                message += `: ${newUnlocks} badge(s) unlocked`;
+              } else {
+                message += `: No new badges to unlock`;
+              }
+              
+              appStore.successMessage = message;
+              setTimeout(() => appStore.successMessage = '', 4000);
+              console.log(`[Murajah] Achievement sync complete: ${newUnlocks} badges unlocked`);
+              
+            } catch (error) {
+              console.error('[Murajah] Achievement sync failed:', error);
+              appStore.errorMessage = 'Failed to sync achievements. Check console for details.';
+            } finally {
+              syncInProgress.value = false;
+            }
+          };
+
           // Audio functions
           const playAudio = async (recording) => {
             try {
@@ -4064,6 +4351,9 @@
                 console.log(`[Murajah] Recording saved | Page: ${recording.pageNumber} | Duration: ${AudioRecorder.formatDuration(result.duration)}`);
                 appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
                 setTimeout(() => appStore.successMessage = '', 3000);
+                
+                // Check for achievement unlocks (NEW)
+                checkForBadgeUnlocks();
               }
             } catch (error) {
               console.error('[Murajah] Stop recording error:', error);
@@ -4448,6 +4738,17 @@
               perfectRevisions: perfectRevisionsCount.value,
               totalPoints: totalPerfectRevisionsPoints.value
             });
+          });
+
+          // Compute total unlocked badges for navbar and modal header
+          const totalUnlockedBadges = computed(() => {
+            return achievementStore.unlockedBadges.size;
+          });
+
+          // Compute completion percentage for modal header
+          const achievementCompletionPercentage = computed(() => {
+            const total = totalUnlockedBadges.value;
+            return Math.round((total / 100) * 100);
           });
 
           const pagesWithMistakes = computed(() => {
@@ -4953,6 +5254,16 @@
               return;
             }
 
+            // Special handling for Ctrl+Shift+D (dev mode)
+            if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+              event.preventDefault();
+              isDevMode.value = !isDevMode.value;
+              appStore.successMessage = `Developer Mode ${isDevMode.value ? 'enabled ⚙️' : 'disabled'}`;
+              setTimeout(() => appStore.successMessage = '', 2000);
+              console.log(`[Murajah] Developer mode ${isDevMode.value ? 'enabled' : 'disabled'}`);
+              return;
+            }
+
             // Don't trigger shortcuts if Ctrl, Cmd, or Alt are pressed (let browser handle these)
             if (event.ctrlKey || event.metaKey || event.altKey) {
               return;
@@ -5055,9 +5366,18 @@ Display:
           };
 
           // Add keyboard event listener on mount
-          onMounted(() => {
+          onMounted(async () => {
             document.addEventListener('keydown', handleKeyboardShortcut);
             console.log('[Murajah] Keyboard shortcuts enabled');
+            
+            // Initialize achievements
+            await initializeAchievements();
+            
+            // Listen for achievements modal open event
+            document.addEventListener('open-achievements-modal', () => {
+              showAchievementsModal.value = true;
+              console.log('[Murajah] Achievements modal opened');
+            });
             
             // Add window resize listener to recalculate font sizes
             const handleResize = () => {
@@ -5074,6 +5394,104 @@ Display:
             console.log('[Murajah] Keyboard shortcuts disabled');
           };
 
+          // ===== ACHIEVEMENT SYSTEM FUNCTIONS (NEW) =====
+
+          // Initialize achievements
+          const initializeAchievements = async () => {
+            try {
+              console.log('[Murajah] initializeAchievements: Starting...');
+              await loadBadgesData();
+              console.log('[Murajah] initializeAchievements: Badge definitions loaded');
+              await loadUnlockedBadges(murajahDB);
+              console.log('[Murajah] Achievements initialized', {
+                totalUnlocked: achievementStore.totalUnlocked,
+                completionPercentage: achievementStore.completionPercentage,
+                setSize: achievementStore.unlockedBadges.size,
+                setContents: Array.from(achievementStore.unlockedBadges)
+              });
+              // Force a tick to ensure components re-evaluate
+              if (Vue && Vue.nextTick) {
+                Vue.nextTick(() => {
+                  achievementStore.lastUpdated = Date.now();
+                  console.log('[Murajah] Forced nextTick after achievements init.');
+                });
+              }
+            } catch (error) {
+              console.error('[Murajah] Failed to initialize achievements:', error);
+            }
+          };
+
+          // Check for badge unlocks after game actions
+          const checkForBadgeUnlocks = async () => {
+            try {
+              const stores = {
+                memorizedStore,
+                mistakesStore,
+                audioStore,
+                perfectRevisionsStore,
+                dailyGoalsStore,
+                settingsStore
+              };
+
+              const newlyUnlockedBadges = checkAllBadges(stores, achievementStore.badgesData);
+              
+              if (newlyUnlockedBadges.length > 0) {
+                for (const badgeId of newlyUnlockedBadges) {
+                  if (!achievementStore.unlockedBadges.has(badgeId)) {
+                    const badge = achievementStore.badgesData.get(badgeId);
+                    unlockBadge(badgeId);
+                    await saveUnlockedBadges(murajahDB);
+                    
+                    // Show notification
+                    appStore.successMessage = `🏆 Achievement Unlocked: ${badge.name}!`;
+                    setTimeout(() => appStore.successMessage = '', 4000);
+                    
+                    // Trigger confetti (if available)
+                    if (window.confetti) {
+                      window.confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                      });
+                    }
+                    
+                    console.log('[Murajah] Badge unlocked:', badge.name);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('[Murajah] Error checking for badge unlocks:', error);
+            }
+          };
+
+          // Select achievement badge for detail view
+          const selectAchievementBadge = (badgeData) => {
+            selectedAchievementBadge.value = badgeData.badge;
+          };
+
+          // Share badge
+          const shareBadge = (shareData) => {
+            const { badge, isUnlocked } = shareData;
+            if (!badge) return;
+
+            const shareText = `🏆 I unlocked the "${badge.name}" achievement on Murajah!
+            
+${badge.backstory}
+
+Check out Murajah for Quran memorization: https://murajah.pages.dev`;
+            
+            if (navigator.share) {
+              navigator.share({
+                title: 'Murajah Achievement',
+                text: shareText
+              });
+            } else {
+              navigator.clipboard.writeText(shareText);
+              appStore.successMessage = 'Achievement shared to clipboard!';
+              setTimeout(() => appStore.successMessage = '', 3000);
+            }
+          };
+
           return {
             appStore,
             settingsStore,
@@ -5087,6 +5505,8 @@ Display:
             gotoInput,
             showSettingsModal,
             showHelpModal,
+            showAchievementsModal,
+            selectedAchievementBadge,
             showReviewPagesOverlay,
             analyticsActiveTab,
             statistics,
@@ -5184,13 +5604,29 @@ Display:
             nonePercentage,
             last30DaysTrend,
             recentActivity,
-            getTrendDayTooltip
+            getTrendDayTooltip,
+            achievementStore,
+            initializeAchievements,
+            checkForBadgeUnlocks,
+            selectAchievementBadge,
+            shareBadge,
+            unlockAllBadges,
+            clearAllAchievements,
+            syncAchievementsWithData,
+            syncInProgress,
+            viewportWidth,
+            isDevMode,
+            totalUnlockedBadges,
+            achievementCompletionPercentage
           };
         }
       });
 
       // Register components
       app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
+      app.component('achievement-navbar-component', AchievementNavbarComponent);
+      app.component('achievement-grid-component', AchievementGridComponent);
+      app.component('achievement-detail-component', AchievementDetailComponent);
 
       app.mount('#app');
     })();

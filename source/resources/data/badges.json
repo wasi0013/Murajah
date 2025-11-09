@@ -1,0 +1,1255 @@
+{
+  "badges": [
+    {
+      "id": 1,
+      "name": "First Step",
+      "category": "General",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 1,
+        "description": "Memorize your first page"
+      },
+      "backstory": "وَاقْرَأْ بِاسْمِ رَبِّكَ - 'Read in the name of your Lord' - Every master was once a beginner. Your journey to memorizing the Quran starts here with your first page. May Allah bless your efforts.",
+      "hadithReference": "Al-Bukhari: The best among you are those who learn the Quran and teach it."
+    },
+    {
+      "id": 2,
+      "name": "Quarter Quran",
+      "category": "General",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 151,
+        "description": "Memorize 151 pages"
+      },
+      "backstory": "You have reached a quarter of the Quran. This milestone shows your determination and consistency. Continue steadfastly, for the best deed is one done consistently, even if small."
+    },
+    {
+      "id": 3,
+      "name": "Halfway There",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 302,
+        "description": "Memorize 302 pages (15 Juz)"
+      },
+      "backstory": "Half the Quran is now in your heart. You have traveled through 15 Juzs with dedication. The second half awaits your continued commitment. Allah is with those who are patient."
+    },
+    {
+      "id": 4,
+      "name": "Three Quarters",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 453,
+        "description": "Memorize 453 pages (22-23 Juz)"
+      },
+      "backstory": "You are in the final stretch. Three quarters of the Quran are now memorized. Finish strong, for the reward is greatest at the end of the journey."
+    },
+    {
+      "id": 5,
+      "name": "Hafiz Al-Quran",
+      "category": "General",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 604,
+        "description": "Memorize all 604 pages"
+      },
+      "backstory": "May Allah accept from you. You have completed the noble journey of memorizing the entire Quran (30 Juz). This is one of the greatest achievements a Muslim can attain. Your heart is now a treasury of Allah's words.",
+      "hadithReference": "Tirmidhi: The best among you are those who learn the Quran and teach it."
+    },
+    {
+      "id": 6,
+      "name": "Page Master",
+      "category": "General",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 5,
+        "description": "Memorize 5 pages"
+      },
+      "backstory": "Five pages committed to memory. You are building momentum on your journey."
+    },
+    {
+      "id": 7,
+      "name": "Surah Student",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 20,
+        "description": "Memorize 20 pages"
+      },
+      "backstory": "Twenty pages now rest in your memory. You are becoming a devoted student of the Quran."
+    },
+    {
+      "id": 8,
+      "name": "Juz Journeyer",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 50,
+        "description": "Memorize 50 pages (approx 2.5 Juz)"
+      },
+      "backstory": "You have memorized enough to cover multiple Juzs. Your dedication is evident."
+    },
+    {
+      "id": 9,
+      "name": "Century Achiever",
+      "category": "General",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 100,
+        "description": "Memorize 100 pages"
+      },
+      "backstory": "One hundred pages - a significant milestone! You are a quarter way through the great journey. Every page brings you closer to becoming a Hafiz."
+    },
+    {
+      "id": 10,
+      "name": "Juz Guardian",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 200,
+        "description": "Memorize 200 pages"
+      },
+      "backstory": "Two hundred pages in your heart. You are a true guardian of Allah's words."
+    },
+    {
+      "id": 11,
+      "name": "Consistency Keeper",
+      "category": "Progress",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 7,
+        "description": "Maintain a 7-day streak"
+      },
+      "backstory": "One week of unbroken consistency. Like the Prophet Muhammad (ﷺ) and his companions, consistency in practice is the foundation of mastery."
+    },
+    {
+      "id": 12,
+      "name": "Steadfast Soul",
+      "category": "Progress",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 14,
+        "description": "Maintain a 14-day streak"
+      },
+      "backstory": "Inspired by Surah Al-Asr, patience and time combined with righteous action. Two weeks of steadfast dedication - you are becoming unstoppable."
+    },
+    {
+      "id": 13,
+      "name": "Month of Mercy",
+      "category": "Progress",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 30,
+        "description": "Maintain a 30-day streak"
+      },
+      "backstory": "A full month of daily dedication. This is a remarkable achievement. Your commitment to Allah's words grows stronger with each passing day."
+    },
+    {
+      "id": 14,
+      "name": "Forty Days & Nights",
+      "category": "Progress",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 40,
+        "description": "Maintain a 40-day streak"
+      },
+      "backstory": "Forty days - a sacred number in Islamic tradition. Just as Prophet Musa (ﷺ) spent 40 days receiving the Torah, you have committed 40 days to the Quran. Your heart is becoming a fortress of memory."
+    },
+    {
+      "id": 15,
+      "name": "Ramadan Champion",
+      "category": "Progress",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 30,
+        "description": "Maintain a 30-day streak in Ramadan (special trigger)"
+      },
+      "backstory": "Throughout the holy month of Ramadan, you maintained perfect daily devotion. The gates of heaven were open, and you took full advantage. May your reward be multiplied sevenfold."
+    },
+    {
+      "id": 16,
+      "name": "Patient Warrior",
+      "category": "Progress",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 50,
+        "description": "Maintain a 50-day streak"
+      },
+      "backstory": "Fifty days of unwavering commitment. Your persistence is legendary among those who seek knowledge."
+    },
+    {
+      "id": 17,
+      "name": "Century Streaker",
+      "category": "Progress",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 100,
+        "description": "Maintain a 100-day streak"
+      },
+      "backstory": "One hundred consecutive days! This is a monumental achievement that few can claim. You have proven that discipline and determination know no limits. SubhanAllah!"
+    },
+    {
+      "id": 18,
+      "name": "Year-Long Companion",
+      "category": "Progress",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 365,
+        "description": "Maintain a 365-day streak"
+      },
+      "backstory": "A full year of daily devotion to the Quran. Every single day for 365 days you have kept your commitment. This is a testament to your unwavering faith and determination. You are truly blessed by Allah."
+    },
+    {
+      "id": 19,
+      "name": "Error Corrector",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 10,
+        "description": "Mark and correct 10 mistakes"
+      },
+      "backstory": "A seeker of perfection. By identifying and correcting mistakes, you strengthen your memorization. Each correction is a step towards flawless recall of Allah's words."
+    },
+    {
+      "id": 20,
+      "name": "Master Reviser",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 25,
+        "description": "Mark and correct 25 mistakes"
+      },
+      "backstory": "Twenty-five mistakes identified and corrected. Your dedication to accuracy ensures that your memorization is solid and reliable."
+    },
+    {
+      "id": 21,
+      "name": "Perfection Seeker",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 50,
+        "description": "Mark and correct 50 mistakes"
+      },
+      "backstory": "Fifty mistakes corrected. You are meticulous in your pursuit of precision. This level of correction shows extraordinary dedication to preserving the Quran accurately."
+    },
+    {
+      "id": 22,
+      "name": "Flawless Page",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 1,
+        "description": "Recite 1 page perfectly with 100+ score"
+      },
+      "backstory": "One page memorized and recited with perfect accuracy. This shows true mastery of that page. May Allah accept this perfection from you."
+    },
+    {
+      "id": 23,
+      "name": "Home Protector — Al-Baqarah",
+      "category": "Hadith-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 2,
+        "description": "Memorize Surah Al-Baqarah"
+      },
+      "backstory": "Based on hadith narrations noting the protective virtue of Al-Baqarah for homes. When this Surah is recited in a household, Satan flees from it. Memorizing this 286-verse chapter is a shield for your home and heart.",
+      "hadithReference": "Sahih Muslim: Al-Baqarah protects a household from Satan."
+    },
+    {
+      "id": 24,
+      "name": "Clouds of Shade",
+      "category": "Hadith-Based",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "surahPairMemorization",
+        "surahNumbers": [2, 3],
+        "description": "Memorize both Al-Baqarah and Aal-'Imran"
+      },
+      "backstory": "According to traditions, those who memorize Al-Baqarah and Aal-'Imran will be shaded by clouds of light on the Day of Judgment. These two intertwined surahs are pillars of knowledge and mercy.",
+      "hadithReference": "Hadith Qudsi: 'Al-Baqarah and Aal-'Imran will come as two clouds...'"
+    },
+    {
+      "id": 25,
+      "name": "Night Guardian — Al-Mulk",
+      "category": "Hadith-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 67,
+        "description": "Memorize Surah Al-Mulk"
+      },
+      "backstory": "Surah Al-Mulk (The Dominion) is reported to protect the faithful from torment in the grave. Reciting it nightly carries tremendous reward. Memorize this surah and become a night guardian of divine protection.",
+      "hadithReference": "Tirmidhi: 'Al-Mulk protects from punishment in the grave.'"
+    },
+    {
+      "id": 26,
+      "name": "Bearer of Throne Verse",
+      "category": "Hadith-Based",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "verseMemorization",
+        "verseRef": "2:255",
+        "description": "Memorize Ayat al-Kursi (Verse of the Throne)"
+      },
+      "backstory": "Ayat al-Kursi is the greatest verse in the Quran. Its magnificence encompasses the heavens and earth. Those who memorize this verse before sleep are protected throughout the night.",
+      "hadithReference": "At-Tabarani: 'Ayat al-Kursi is the greatest verse in the Quran.'"
+    },
+    {
+      "id": 27,
+      "name": "Heart of the Quran",
+      "category": "Hadith-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 36,
+        "description": "Memorize Surah Ya-Seen"
+      },
+      "backstory": "Surah Ya-Seen is called the heart of the Quran. To recite it is like reciting the entire Quran ten times. Memorize this 83-verse surah and carry the heart of revelation in your memory.",
+      "hadithReference": "Tirmidhi: 'Ya-Seen is the heart of the Quran.'"
+    },
+    {
+      "id": 28,
+      "name": "Companions of the Cave",
+      "category": "Story-Based",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 18,
+        "description": "Memorize Surah Al-Kahf"
+      },
+      "backstory": "Surah Al-Kahf contains the story of the Companions of the Cave (Ashab al-Kahf) and their miraculous escape. Reciting this surah on Friday grants protection from Dajjal. Memorize this chapter of miracles and divine protection.",
+      "hadithReference": "Muslim: 'Whoever recites Al-Kahf on Friday is protected from Dajjal.'"
+    },
+    {
+      "id": 29,
+      "name": "Friday Reader — Ya-Seen",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "fridayRecitationStreak",
+        "surahNumber": 36,
+        "days": 4,
+        "description": "Recite Ya-Seen on 4 consecutive Fridays"
+      },
+      "backstory": "A beautiful practice is to recite Ya-Seen every Friday morning. This ritual brings barakah (blessing) to your week and deepens your connection to the Quran. Build this habit and receive spiritual rewards.",
+      "hadithReference": "Islamic Tradition: Friday recitation of Ya-Seen carries special reward."
+    },
+    {
+      "id": 30,
+      "name": "Golden Calf Finder",
+      "category": "Story-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "storyMemorization",
+        "storyName": "Golden Calf",
+        "surahRange": [2, 7],
+        "description": "Memorize passages containing the Golden Calf story"
+      },
+      "backstory": "The story of the Golden Calf tests the heart's understanding of idolatry and faith. By memorizing these passages, you learn the consequences of straying from Allah's path and the importance of holding firm to truth.",
+      "hadithReference": "Quran: Surahs Al-Baqarah (2:51-56) and Al-Araf (7:148-156)"
+    },
+    {
+      "id": 31,
+      "name": "Talut & Jalut — Faith Over Might",
+      "category": "Story-Based",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "storyMemorization",
+        "storyName": "Talut and Jalut",
+        "surahRange": [2],
+        "description": "Memorize the story of Prophet Talut (King Saul) and Jalut (Goliath)"
+      },
+      "backstory": "This powerful story in Surah Al-Baqarah teaches that victory comes from faith in Allah, not from numbers or strength. Young Dawood defeats the giant Jalut with slingshot and stone. Memorize this testament to faith over might.",
+      "hadithReference": "Quran: Surah Al-Baqarah (2:248-251)"
+    },
+    {
+      "id": 32,
+      "name": "Pharaoh Passages",
+      "category": "Story-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "storyMemorization",
+        "storyName": "Pharaoh",
+        "surahRange": [7, 10, 20, 28],
+        "description": "Memorize passages about Pharaoh and Prophet Musa"
+      },
+      "backstory": "The saga of Pharaoh and Prophet Musa spans multiple surahs, illustrating the eternal struggle between pride and humility, tyranny and justice. Memorize these passages and learn from history's most famous power struggle.",
+      "hadithReference": "Quran: Multiple surahs detail this foundational story."
+    },
+    {
+      "id": 33,
+      "name": "Loqman's Wisdom",
+      "category": "Story-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 31,
+        "description": "Memorize Surah Luqman"
+      },
+      "backstory": "Surah Luqman contains timeless moral teachings conveyed through a father's advice to his son. These verses offer guidance on parenting, ethics, and faith. Memorize this surah and become a keeper of wisdom.",
+      "hadithReference": "Islamic tradition values Surah Luqman for its moral guidance."
+    },
+    {
+      "id": 34,
+      "name": "Jonah's Whale — Journey of Return",
+      "category": "Story-Based",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 10,
+        "description": "Memorize Surah Yunus (Jonah)"
+      },
+      "backstory": "Surah Yunus tells of Prophet Jonah's miraculous escape from the whale's belly through sincere repentance. This surah is a source of hope for those seeking Allah's mercy and forgiveness. Memorize the journey of return.",
+      "hadithReference": "Quran: Surah Yunus details this profound account of faith and redemption."
+    },
+    {
+      "id": 35,
+      "name": "Consistent Scholar",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "dailyConsistency",
+        "days": 30,
+        "description": "Maintain 30-day consistent memorization (1+ page daily)"
+      },
+      "backstory": "Consistency is the foundation of all mastery. For thirty days, you have dedicated yourself to daily learning. This steady approach mirrors the teaching methods of great Islamic scholars throughout history."
+    },
+    {
+      "id": 36,
+      "name": "Reviser's Dedication",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "revisionConsistency",
+        "days": 30,
+        "description": "Complete revision task daily for 30 consecutive days"
+      },
+      "backstory": "Revision is the jewel of knowledge. For thirty days, you have faithfully reviewed your memorization. This dedication ensures that what you learn becomes a permanent treasure in your heart."
+    },
+    {
+      "id": 37,
+      "name": "Accuracy Focus",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "accuracyStreak",
+        "perfectPages": 20,
+        "consecutiveDays": 7,
+        "description": "Recite 20+ pages perfectly with no mistakes for 7 consecutive days"
+      },
+      "backstory": "Precision in recitation is a hallmark of true scholars. Your focused commitment to accuracy over these seven days demonstrates mastery and respect for Allah's words."
+    },
+    {
+      "id": 38,
+      "name": "Balanced Learner",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "balancedProgress",
+        "newPages": 50,
+        "revisionDays": 30,
+        "description": "Memorize 50+ pages while maintaining 30+ days of revision"
+      },
+      "backstory": "The wisest approach combines new learning with diligent revision. You have struck this balance, proving yourself a true scholar who understands that memorization requires both growth and consolidation."
+    },
+    {
+      "id": 39,
+      "name": "Recovery Warrior",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "streakRecovery",
+        "newStreak": 60,
+        "description": "Break a streak and rebuild to 60+ days"
+      },
+      "backstory": "Falling is not failure; rising is mastery. After breaking a streak, you have demonstrated the determination to rebuild and exceed your previous record. This resilience is the mark of true warriors of faith."
+    },
+    {
+      "id": 40,
+      "name": "Humility in Progress",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakeLearning",
+        "pages": 50,
+        "mistakesMarked": 15,
+        "description": "Mark 15+ mistakes across 50+ pages"
+      },
+      "backstory": "True humility lies in acknowledging mistakes and learning from them. Your willingness to identify errors across many pages shows a scholar's humble approach to mastery."
+    },
+    {
+      "id": 41,
+      "name": "Protector's Wisdom — The Trifecta",
+      "category": "Hadith-Based",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "protectionTriad",
+        "surahNumbers": [2, 3, 67],
+        "description": "Memorize Al-Baqarah, Aal-'Imran, AND Al-Mulk"
+      },
+      "backstory": "These three surahs form the ultimate protective trinity. Al-Baqarah guards your home, Aal-'Imran brings divine shade, and Al-Mulk protects your grave. Together they form a fortress of divine protection around the faithful believer.",
+      "hadithReference": "Hadith traditions combine these three for maximum spiritual protection."
+    },
+    {
+      "id": 42,
+      "name": "Flawless Five",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 5,
+        "description": "Recite 5 pages perfectly"
+      },
+      "backstory": "Five pages memorized without error. You are building a strong foundation of accurate memorization."
+    },
+    {
+      "id": 43,
+      "name": "Ten Times Perfect",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 10,
+        "description": "Recite 10 pages perfectly"
+      },
+      "backstory": "Ten pages of perfect memorization. This is a remarkable achievement that shows your dedication to accuracy and excellence."
+    },
+    {
+      "id": 44,
+      "name": "Twenty Perfect",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 20,
+        "description": "Recite 20 pages perfectly"
+      },
+      "backstory": "Twenty pages recited with perfect accuracy. You are a master of precision and recall."
+    },
+    {
+      "id": 45,
+      "name": "Hundred Perfect",
+      "category": "Performance",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 100,
+        "description": "Recite 100 pages perfectly"
+      },
+      "backstory": "One hundred pages of perfect memorization! This is an extraordinary achievement. Your commitment to excellence has resulted in an exceptional level of Quranic retention."
+    },
+    {
+      "id": 46,
+      "name": "Defender of the Quran",
+      "category": "Performance",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 100,
+        "description": "Mark and correct 100 mistakes"
+      },
+      "backstory": "One hundred mistakes identified and corrected. You are a master of precision, ensuring that every letter of Allah's words is preserved perfectly in your heart."
+    },
+    {
+      "id": 47,
+      "name": "Memory Fortress",
+      "category": "General",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 500,
+        "description": "Memorize 500 pages"
+      },
+      "backstory": "Five hundred pages! You have built a fortress of memory that stands as a testament to your unwavering dedication. The final chapter of your Hafiz journey awaits."
+    },
+    {
+      "id": 48,
+      "name": "Unbreakable Spirit",
+      "category": "Progress",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 150,
+        "description": "Maintain a 150-day streak"
+      },
+      "backstory": "One hundred fifty consecutive days! Your spirit is truly unbreakable. No obstacle can deter you from your sacred mission to memorize and preserve Allah's final revelation."
+    },
+    {
+      "id": 49,
+      "name": "The Humble",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakeCorrectionStreak",
+        "days": 14,
+        "description": "Correct mistakes daily for 14 consecutive days"
+      },
+      "backstory": "Humility is shown through acknowledging and correcting mistakes daily. Your willingness to improve shows true humility before Allah and dedication to perfection."
+    },
+    {
+      "id": 50,
+      "name": "Five Juz Master",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 100,
+        "description": "Memorize approximately 5 Juz (100 pages)"
+      },
+      "backstory": "Five Juzs now dwell in your memory. You are well on your way through the Quran. Keep going!"
+    },
+    {
+      "id": 51,
+      "name": "Verse Keeper",
+      "category": "Virtue",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 10,
+        "description": "Memorize 10 pages"
+      },
+      "backstory": "Ten pages of the Quran are now safe in your heart. You are a keeper of verses, a guardian of the words of Allah."
+    },
+    {
+      "id": 52,
+      "name": "The Diligent",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "dailyTaskCompletion",
+        "threshold": 14,
+        "description": "Complete 14 daily goals"
+      },
+      "backstory": "Your diligence is evident. Day after day, you complete what you set out to do. This consistency is the hallmark of success in all endeavors."
+    },
+    {
+      "id": 53,
+      "name": "Second Quarter",
+      "category": "General",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 300,
+        "description": "Memorize 300 pages (halfway plus 50)"
+      },
+      "backstory": "You have crossed into the territory of the second half of the Quran. Your journey is well underway, and you are among the dedicated few."
+    },
+    {
+      "id": 54,
+      "name": "Milestone Seeker",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 75,
+        "description": "Memorize 75 pages"
+      },
+      "backstory": "Seventy-five pages memorized. Each milestone is a testament to your growing mastery of the Quran."
+    },
+    {
+      "id": 55,
+      "name": "The Committed",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "streakDays",
+        "threshold": 75,
+        "description": "Maintain a 75-day streak"
+      },
+      "backstory": "Seventy-five days of commitment without pause. You have proven that dedication to the Quran is not a sprint but a marathon. Your reward is with Allah."
+    },
+    {
+      "id": 56,
+      "name": "Legacy Builder",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "hafizWithConsistency",
+        "pages": 604,
+        "consecutiveRevisionDays": 30,
+        "perfectRevisions": 25,
+        "description": "Memorize 604 pages AND maintain 30-day perfect revision streak AND achieve 25+ perfect revisions"
+      },
+      "backstory": "You have not only memorized the entire Quran but also proven that you can maintain perfect recitation consistently. You are building a lasting legacy of Quranic mastery that will inspire generations."
+    },
+    {
+      "id": 57,
+      "name": "Three Strikes",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 3,
+        "description": "Mark and correct 3 mistakes"
+      },
+      "backstory": "Three mistakes corrected. You are using focused attention to identify and learn from errors in your recitation."
+    },
+    {
+      "id": 58,
+      "name": "The Brave",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "consecutiveNewMemorization",
+        "days": 30,
+        "description": "Memorize new content for 30 consecutive days"
+      },
+      "backstory": "Bravery is shown in consistently pushing forward, memorizing new verses every single day without stopping. Your fearless approach to learning makes you a true warrior of knowledge."
+    },
+    {
+      "id": 59,
+      "name": "Precision Master",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 75,
+        "description": "Mark and correct 75 mistakes"
+      },
+      "backstory": "Seventy-five mistakes identified and corrected. You are a master of precision, ensuring that every letter is perfect."
+    },
+    {
+      "id": 60,
+      "name": "Surah Scholar",
+      "category": "General",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 250,
+        "description": "Memorize 250 pages"
+      },
+      "backstory": "Two hundred fifty pages - you are becoming a scholar of the Quran. Your knowledge is growing deeper with each page."
+    },
+    {
+      "id": 61,
+      "name": "Five Hundred Strong",
+      "category": "General",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 500,
+        "description": "Memorize 500 pages"
+      },
+      "backstory": "Five hundred pages! You are in the final stretch toward becoming a Hafiz. Your achievement is monumental and your dedication inspiring."
+    },
+    {
+      "id": 62,
+      "name": "Fifty Pages Perfect",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 50,
+        "description": "Recite 50 pages perfectly"
+      },
+      "backstory": "Fifty pages recited with flawless accuracy. You are a beacon of excellence in Quranic memorization."
+    },
+    {
+      "id": 63,
+      "name": "Thirty Perfect",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 30,
+        "description": "Recite 30 pages perfectly"
+      },
+      "backstory": "Thirty pages of perfect memorization. Your mastery is becoming evident to all who know you."
+    },
+    {
+      "id": 64,
+      "name": "Seven Juz",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 140,
+        "description": "Memorize approximately 7 Juz (140 pages)"
+      },
+      "backstory": "Seven Juzs in your memory! You are making exceptional progress. The quarter mark is behind you."
+    },
+    {
+      "id": 65,
+      "name": "Ten Juz",
+      "category": "General",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 200,
+        "description": "Memorize approximately 10 Juz (200 pages)"
+      },
+      "backstory": "One-third of the Quran is now in your heart. Your journey is accelerating, and your achievements are mounting."
+    },
+    {
+      "id": 66,
+      "name": "Correction Champion",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "mistakesMarked",
+        "threshold": 15,
+        "description": "Mark and correct 15 mistakes"
+      },
+      "backstory": "Fifteen mistakes corrected. You are a champion of accuracy and improvement."
+    },
+    {
+      "id": 67,
+      "name": "The Persistent",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "persistenceAfterMistakes",
+        "description": "Correct 5+ mistakes and maintain streak for 7 consecutive days"
+      },
+      "backstory": "Persistence in the face of mistakes is a virtue. You have proven that setbacks do not deter you. You are persistent like a river cutting through stone."
+    },
+    {
+      "id": 68,
+      "name": "Revision Ritual",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "revisionStreak",
+        "days": 14,
+        "description": "Complete revision task for 14 consecutive days"
+      },
+      "backstory": "You have made revision a ritual, a sacred part of your daily routine. This ritual ensures your memorization remains fresh and accurate."
+    },
+    {
+      "id": 69,
+      "name": "Twenty Juz",
+      "category": "General",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 400,
+        "description": "Memorize approximately 20 Juz (400 pages)"
+      },
+      "backstory": "Two-thirds of the Quran are now memorized. You are truly approaching the finish line. The final ten Juzs await your arrival."
+    },
+    {
+      "id": 70,
+      "name": "The Reverent",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "dedicationMilestone",
+        "pages": 100,
+        "streakDays": 30,
+        "description": "Combine 100+ pages memorized AND 30-day streak"
+      },
+      "backstory": "Your reverence for the Quran is evident in both the quantity you have memorized and the consistency with which you pursue it. You are truly devoted."
+    },
+    {
+      "id": 71,
+      "name": "Forty Perfect",
+      "category": "Performance",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 40,
+        "description": "Recite 40 pages perfectly"
+      },
+      "backstory": "Forty pages of perfect recitation. You are approaching mastery of a significant portion of the Quran."
+    },
+    {
+      "id": 72,
+      "name": "The Learner",
+      "category": "Virtue",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "firstAchievement",
+        "description": "Unlock any achievement"
+      },
+      "backstory": "You have taken your first step on the path of achievement. The Quran teaches us to 'Read in the name of your Lord.' You are beginning this noble journey."
+    },
+    {
+      "id": 73,
+      "name": "Fifteen Pages Perfect",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 15,
+        "description": "Recite 15 pages perfectly"
+      },
+      "backstory": "Fifteen pages of flawless recitation. You are building an impressive record of accurate memorization."
+    },
+    {
+      "id": 74,
+      "name": "The Humble Servant",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "humilityInProgress",
+        "description": "Acknowledge and correct 5 mistakes within one day"
+      },
+      "backstory": "Humility is the quality of admitting mistakes and working to correct them. You have shown this humility in abundance, marking multiple errors in a single session."
+    },
+    {
+      "id": 75,
+      "name": "The Seeker of Knowledge",
+      "category": "Virtue",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "continuousLearning",
+        "days": 30,
+        "description": "Memorize new content and complete revision tasks for 30 consecutive days"
+      },
+      "backstory": "You are a true seeker of knowledge, always learning new content while reinforcing what you have already learned. This balance is the mark of wisdom."
+    },
+    {
+      "id": 76,
+      "name": "Six Juz",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 120,
+        "description": "Memorize approximately 6 Juz (120 pages)"
+      },
+      "backstory": "Six Juzs are now part of your memory. You are building momentum toward your goal of becoming a Hafiz."
+    },
+    {
+      "id": 77,
+      "name": "Nine Juz",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 180,
+        "description": "Memorize approximately 9 Juz (180 pages)"
+      },
+      "backstory": "Nine Juzs memorized! You are nearly at a third of the Quran. Your progress is remarkable."
+    },
+    {
+      "id": 78,
+      "name": "Eight Juz",
+      "category": "General",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "memorizedPageCount",
+        "threshold": 160,
+        "description": "Memorize approximately 8 Juz (160 pages)"
+      },
+      "backstory": "Eight Juzs in your heart. Each Juz brings you closer to your dream of becoming a Hafiz."
+    },
+    {
+      "id": 79,
+      "name": "Perfect Pair",
+      "category": "Performance",
+      "rarity": "common",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 2,
+        "description": "Recite 2 pages perfectly"
+      },
+      "backstory": "Two pages of perfect recitation. You are on your way to mastering more."
+    },
+    {
+      "id": 80,
+      "name": "Five Pages Perfect",
+      "category": "Performance",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "perfectRevisions",
+        "threshold": 5,
+        "description": "Recite 5 pages perfectly (duplicate)"
+      },
+      "backstory": "Five pages of flawless memorization. You are proving that perfection is achievable."
+    },
+    {
+      "id": 81,
+      "name": "The Determined One",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "determinationMilestone",
+        "pages": 200,
+        "streakDays": 50,
+        "description": "200+ pages memorized AND 50-day streak"
+      },
+      "backstory": "Your determination is unshakeable. You have proven through both quantity and consistency that you will succeed in your goal to memorize the Quran."
+    },
+    {
+      "id": 82,
+      "name": "The Faithful",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "faithfulJourney",
+        "streakDays": 200,
+        "description": "Maintain 200-day streak"
+      },
+      "backstory": "Two hundred days of unwavering faith and dedication. You are among the most faithful of all memorizers. Your reward is with Allah the Most Merciful."
+    },
+    {
+      "id": 83,
+      "name": "The Unbroken",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "unbrokenDevotion",
+        "pages": 500,
+        "streakDays": 200,
+        "description": "500+ pages memorized AND 200-day streak"
+      },
+      "backstory": "Your devotion is unbroken, unshaken, and unmatched. You are truly an inspiration to all who know you. May Allah bless your journey and accept from you."
+    },
+    {
+      "id": 84,
+      "name": "The Faithful Guardian",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "faithfulGuardian",
+        "pages": 250,
+        "streakDays": 60,
+        "perfectRevisions": 15,
+        "description": "250+ pages memorized AND 60-day streak AND 15+ perfect revisions"
+      },
+      "backstory": "You have become a guardian of the Quran, combining memorization, consistency, and accuracy. Your faith is evident in every aspect of your journey toward Hafiz."
+    },
+    {
+      "id": 85,
+      "name": "The Devoted Preserver",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "devotedPreserver",
+        "pages": 400,
+        "streakDays": 90,
+        "perfectRevisions": 25,
+        "description": "400+ pages memorized AND 90-day streak AND 25+ perfect revisions"
+      },
+      "backstory": "You have become a devoted preserver of Allah's words, maintaining 400 pages with consistency spanning three months and exemplary accuracy. You are on the threshold of ultimate mastery."
+    },
+    {
+      "id": 86,
+      "name": "The Reverent One",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "reverentMastery",
+        "pages": 500,
+        "streakDays": 120,
+        "perfectRevisions": 35,
+        "description": "500+ pages memorized AND 120-day streak AND 35+ perfect revisions"
+      },
+      "backstory": "Your reverence reaches the highest levels. Five hundred pages, four months of unwavering commitment, and exceptional accuracy. You are in the final stretch toward legendary mastery."
+    },
+    {
+      "id": 87,
+      "name": "The Complete Master",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "completeMaster",
+        "pages": 604,
+        "streakDays": 50,
+        "perfectRevisions": 25,
+        "description": "Memorize 604 pages AND maintain 50-day streak AND achieve 25+ perfect revisions"
+      },
+      "backstory": "You have achieved the complete mastery of the Quran. Full memorization combined with consistency and accuracy makes you a true Hafiz in the fullest sense. May Allah accept this monumental achievement."
+    },
+    {
+      "id": 88,
+      "name": "The Hidden Blessing",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "cumulativeBlessing",
+        "achievementsUnlocked": 58,
+        "description": "Unlock 58 other badges"
+      },
+      "backstory": "A hidden blessing reveals itself when you have demonstrated mastery across nearly all achievement categories. This badge acknowledges the breadth and depth of your dedication to the Quranic journey."
+    },
+    {
+      "id": 89,
+      "name": "The Triumphant Heart",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "triumphantHeart",
+        "pages": 604,
+        "streakDays": 80,
+        "perfectRevisions": 40,
+        "description": "Complete Quran AND maintain 80-day streak AND achieve 40+ perfect revisions"
+      },
+      "backstory": "Your heart is triumphant with the joy of complete memorization, steadfast dedication spanning nearly three months, and the perfection of recitation. This is the victory of faith and discipline."
+    },
+    {
+      "id": 90,
+      "name": "Surah Thinker — Al-Dukhan",
+      "category": "Hadith-Based",
+      "rarity": "uncommon",
+      "unlockCondition": {
+        "type": "surahMemorization",
+        "surahNumber": 44,
+        "description": "Memorize Surah Ad-Dukhan (The Smoke)"
+      },
+      "backstory": "Surah Ad-Dukhan contains powerful Quranic narratives and is a frequent subject of scholarly reflection. Memorize this surah and join the ranks of thoughtful students of the Quran.",
+      "hadithReference": "Islamic scholarly tradition highlights Ad-Dukhan's importance in understanding divine narratives."
+    },
+    {
+      "id": 91,
+      "name": "The Discerning Scholar",
+      "category": "Virtue",
+      "rarity": "rare",
+      "unlockCondition": {
+        "type": "discerningProgress",
+        "memorizedPages": 350,
+        "perfectRevisions": 30,
+        "mistakesMarked": 40,
+        "description": "Achieve 350+ pages memorized AND 30+ perfect revisions AND 40+ mistakes corrected"
+      },
+      "backstory": "True scholarship lies in balancing growth, accuracy, and the willingness to learn from errors. You have shown all three, marking you as a discerning scholar of the Quran."
+    },
+    {
+      "id": 92,
+      "name": "Fortress of Faith",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "fortressOfFaith",
+        "pages": 300,
+        "streakDays": 100,
+        "description": "300+ pages memorized AND 100-day streak"
+      },
+      "backstory": "Your heart has become a fortress of faith. Three hundred pages combined with one hundred days of unbroken dedication create an impregnable stronghold of Quranic knowledge."
+    },
+    {
+      "id": 93,
+      "name": "The Protector",
+      "category": "Hadith-Based",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "protectorBadge",
+        "surahNumbers": [2, 3, 18, 36, 67],
+        "description": "Memorize Al-Baqarah, Aal-'Imran, Al-Kahf, Ya-Seen, and Al-Mulk"
+      },
+      "backstory": "These five surahs together form the ultimate protection for the believer: home protection, divine shade, escape from trials, heart of the Quran, and grave protection. You are The Protector.",
+      "hadithReference": "Combined hadith traditions highlighting the protective virtues of these surahs."
+    },
+    {
+      "id": 94,
+      "name": "Keeper of Stories",
+      "category": "Story-Based",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "storyKeeper",
+        "storySurahs": [7, 10, 12, 18, 28],
+        "description": "Memorize 5 Quranic narrative surahs (Al-Araf, Yunus, Yusuf, Al-Kahf, Al-Qasas)"
+      },
+      "backstory": "You are a keeper of Quranic stories - the ultimate lessons and moral guidance conveyed through narrative. These five surahs contain humanity's most important spiritual narratives."
+    },
+    {
+      "id": 95,
+      "name": "Virtue Embodied",
+      "category": "Virtue",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "virtueEmbodied",
+        "streakDays": 90,
+        "perfectRevisions": 50,
+        "mistakesMarked": 50,
+        "dailyGoalsCompleted": 30,
+        "description": "90-day streak AND 50+ perfect revisions AND 50+ mistakes corrected AND 30 daily goals completed"
+      },
+      "backstory": "You embody all the virtues: consistency, accuracy, humility, and dedication. This rare alignment of achievement categories marks you as truly exceptional in your Quranic pursuit."
+    },
+    {
+      "id": 96,
+      "name": "The Inspired",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "inspiredJourney",
+        "pages": 450,
+        "streakDays": 180,
+        "description": "450+ pages memorized AND 180-day streak"
+      },
+      "backstory": "You are truly inspired on your journey. Four hundred fifty pages combined with six months of unwavering commitment shows an inspiration that transcends ordinary motivation."
+    },
+    {
+      "id": 97,
+      "name": "Path of the Prophet",
+      "category": "Hadith-Based",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "prophetPath",
+        "surahNumbers": [20, 26],
+        "description": "Memorize Surah Ta-Ha and Surah Ash-Shu'ara (Surahs of two great prophets)"
+      },
+      "backstory": "These surahs detail the profound journeys of Prophet Musa and Prophet Isa, as well as the challenges faced by all prophets. Walking this path, you follow in the footsteps of the greatest guides.",
+      "hadithReference": "Quran: These surahs are rich in prophetic guidance and divine wisdom."
+    },
+    {
+      "id": 98,
+      "name": "The Manifest Victory",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "manifestVictory",
+        "pages": 604,
+        "streakDays": 100,
+        "perfectRevisions": 50,
+        "accuracyRate": 85,
+        "description": "Complete all pages AND maintain 100-day streak AND achieve 50+ perfect revisions with 85%+ overall accuracy"
+      },
+      "backstory": "Your victory is manifest and complete. Full Quran memorization, four months of consistency, exceptional accuracy - this is the ultimate triumph of dedication and faith."
+    },
+    {
+      "id": 99,
+      "name": "Echo of the Divine",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "echoOfDivine",
+        "achievementsUnlocked": 85,
+        "description": "Unlock 85 badges"
+      },
+      "backstory": "When you have achieved mastery across almost all categories, you become an echo of the divine message itself. Few reach this pinnacle of comprehensive Quranic devotion."
+    },
+    {
+      "id": 100,
+      "name": "Supreme Master — Hafiz Al-Quran",
+      "category": "Special",
+      "rarity": "legendary",
+      "unlockCondition": {
+        "type": "supremeMastery",
+        "pages": 604,
+        "streakDays": 150,
+        "perfectRevisions": 60,
+        "mistakesMarked": 100,
+        "achievementsUnlocked": 90,
+        "description": "604 pages AND 150-day streak AND 60+ perfect revisions AND 100+ mistakes corrected AND 90+ badges unlocked"
+      },
+      "backstory": "You have transcended to the ultimate level of mastery. Every aspect of achievement has been maximized: complete memorization, unwavering consistency spanning five months, exceptional precision, humble learning from mistakes, and comprehensive badge collection. You are the Supreme Master of the Quran. May Allah preserve your knowledge and bless you eternally."
+    }
+  ]
+}
