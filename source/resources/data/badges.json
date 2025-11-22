@@ -3,6 +3,7 @@
     {
       "id": 1,
       "name": "First Step",
+      "ar": "الخطوة الأولى",
       "category": "General",
       "rarity": "common",
       "unlockCondition": {
@@ -16,6 +17,7 @@
     {
       "id": 2,
       "name": "Quarter Quran",
+      "ar": "ربع القرآن",
       "category": "General",
       "rarity": "common",
       "unlockCondition": {
@@ -28,6 +30,7 @@
     {
       "id": 3,
       "name": "Halfway There",
+      "ar": "في منتصف الطريق",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -40,6 +43,7 @@
     {
       "id": 4,
       "name": "Three Quarters",
+      "ar": "ثلاثة أرباع",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -52,6 +56,7 @@
     {
       "id": 5,
       "name": "Hafiz Al-Quran",
+      "ar": "حافظ القرآن",
       "category": "General",
       "rarity": "legendary",
       "unlockCondition": {
@@ -65,6 +70,7 @@
     {
       "id": 6,
       "name": "Page Master",
+      "ar": "متقن الصفحة",
       "category": "General",
       "rarity": "common",
       "unlockCondition": {
@@ -77,6 +83,7 @@
     {
       "id": 7,
       "name": "Surah Student",
+      "ar": "طالب السورة",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -89,6 +96,7 @@
     {
       "id": 8,
       "name": "Juz Journeyer",
+      "ar": "رحالة الأجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -101,6 +109,7 @@
     {
       "id": 9,
       "name": "Century Achiever",
+      "ar": "منجز المئة",
       "category": "General",
       "rarity": "rare",
       "unlockCondition": {
@@ -113,6 +122,7 @@
     {
       "id": 10,
       "name": "Juz Guardian",
+      "ar": "حارس الأجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -125,6 +135,7 @@
     {
       "id": 11,
       "name": "Consistency Keeper",
+      "ar": "حارس الاستمرارية",
       "category": "Progress",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -137,6 +148,7 @@
     {
       "id": 12,
       "name": "Steadfast Soul",
+      "ar": "روح ثابتة",
       "category": "Progress",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -149,6 +161,7 @@
     {
       "id": 13,
       "name": "Month of Mercy",
+      "ar": "شهر الرحمة",
       "category": "Progress",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -161,6 +174,7 @@
     {
       "id": 14,
       "name": "Forty Days & Nights",
+  "ar": "أربعون يوما وليلة",
       "category": "Progress",
       "rarity": "rare",
       "unlockCondition": {
@@ -173,6 +187,7 @@
     {
       "id": 15,
       "name": "Ramadan Champion",
+      "ar": "بطل رمضان",
       "category": "Progress",
       "rarity": "rare",
       "unlockCondition": {
@@ -185,6 +200,7 @@
     {
       "id": 16,
       "name": "Patient Warrior",
+      "ar": "محارب صبور",
       "category": "Progress",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -197,6 +213,7 @@
     {
       "id": 17,
       "name": "Century Streaker",
+      "ar": "سلسلة المئة",
       "category": "Progress",
       "rarity": "legendary",
       "unlockCondition": {
@@ -209,6 +226,7 @@
     {
       "id": 18,
       "name": "Year-Long Companion",
+      "ar": "رفيق العام",
       "category": "Progress",
       "rarity": "legendary",
       "unlockCondition": {
@@ -221,6 +239,7 @@
     {
       "id": 19,
       "name": "Error Corrector",
+  "ar": "مصحح الأخطاء",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -233,6 +252,7 @@
     {
       "id": 20,
       "name": "Master Reviser",
+  "ar": "مراجع متقن",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -245,6 +265,7 @@
     {
       "id": 21,
       "name": "Perfection Seeker",
+      "ar": "طالب الإتقان",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -257,6 +278,7 @@
     {
       "id": 22,
       "name": "Flawless Page",
+      "ar": "صفحة متقنة",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -269,6 +291,7 @@
     {
       "id": 23,
       "name": "Home Protector — Al-Baqarah",
+      "ar": "حامي البيت — البقرة",
       "category": "Hadith-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -282,6 +305,7 @@
     {
       "id": 24,
       "name": "Clouds of Shade",
+      "ar": "غيوم الظل",
       "category": "Hadith-Based",
       "rarity": "rare",
       "unlockCondition": {
@@ -295,6 +319,7 @@
     {
       "id": 25,
       "name": "Night Guardian — Al-Mulk",
+      "ar": "حارس الليل — الملك",
       "category": "Hadith-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -308,6 +333,7 @@
     {
       "id": 26,
       "name": "Bearer of Throne Verse",
+      "ar": "حامل آية الكرسي",
       "category": "Hadith-Based",
       "rarity": "rare",
       "unlockCondition": {
@@ -321,6 +347,7 @@
     {
       "id": 27,
       "name": "Heart of the Quran",
+      "ar": "قلب القرآن",
       "category": "Hadith-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -334,6 +361,7 @@
     {
       "id": 28,
       "name": "Companions of the Cave",
+      "ar": "أصحاب الكهف",
       "category": "Story-Based",
       "rarity": "rare",
       "unlockCondition": {
@@ -347,6 +375,7 @@
     {
       "id": 29,
       "name": "Friday Reader — Ya-Seen",
+      "ar": "قارئ الجمعة — يس",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -361,6 +390,7 @@
     {
       "id": 30,
       "name": "Golden Calf Finder",
+      "ar": "مكتشف العجل الذهبي",
       "category": "Story-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -375,6 +405,7 @@
     {
       "id": 31,
       "name": "Talut & Jalut — Faith Over Might",
+      "ar": "طالوت وجالوت — الايمان قبل القوة",
       "category": "Story-Based",
       "rarity": "rare",
       "unlockCondition": {
@@ -389,6 +420,7 @@
     {
       "id": 32,
       "name": "Pharaoh Passages",
+      "ar": "مقاطع فرعون",
       "category": "Story-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -403,6 +435,7 @@
     {
       "id": 33,
       "name": "Loqman's Wisdom",
+      "ar": "حكمة لقمان",
       "category": "Story-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -416,6 +449,7 @@
     {
       "id": 34,
       "name": "Jonah's Whale — Journey of Return",
+      "ar": "حوت يونس — رحلة العودة",
       "category": "Story-Based",
       "rarity": "rare",
       "unlockCondition": {
@@ -429,6 +463,7 @@
     {
       "id": 35,
       "name": "Consistent Scholar",
+      "ar": "عالم مستمر",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -441,6 +476,7 @@
     {
       "id": 36,
       "name": "Reviser's Dedication",
+      "ar": "تفاني المراجع",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -453,6 +489,7 @@
     {
       "id": 37,
       "name": "Accuracy Focus",
+      "ar": "تركيز الدقة",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -466,6 +503,7 @@
     {
       "id": 38,
       "name": "Balanced Learner",
+      "ar": "متعلم متوازن",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -479,6 +517,7 @@
     {
       "id": 39,
       "name": "Recovery Warrior",
+      "ar": "محارب التعافي",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -491,6 +530,7 @@
     {
       "id": 40,
       "name": "Humility in Progress",
+      "ar": "تواضع في التقدم",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -504,6 +544,7 @@
     {
       "id": 41,
       "name": "Protector's Wisdom — The Trifecta",
+      "ar": "حكمة الحماية — الثلاثية",
       "category": "Hadith-Based",
       "rarity": "legendary",
       "unlockCondition": {
@@ -517,6 +558,7 @@
     {
       "id": 42,
       "name": "Flawless Five",
+      "ar": "خمسة متقنة",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -529,6 +571,7 @@
     {
       "id": 43,
       "name": "Ten Times Perfect",
+      "ar": "عشر مرات متقنة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -541,6 +584,7 @@
     {
       "id": 44,
       "name": "Twenty Perfect",
+      "ar": "عشرون متقنة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -553,6 +597,7 @@
     {
       "id": 45,
       "name": "Hundred Perfect",
+      "ar": "مئة متقنة",
       "category": "Performance",
       "rarity": "legendary",
       "unlockCondition": {
@@ -565,6 +610,7 @@
     {
       "id": 46,
       "name": "Defender of the Quran",
+      "ar": "مدافع عن القرآن",
       "category": "Performance",
       "rarity": "legendary",
       "unlockCondition": {
@@ -577,6 +623,7 @@
     {
       "id": 47,
       "name": "Memory Fortress",
+      "ar": "حصن الذاكرة",
       "category": "General",
       "rarity": "legendary",
       "unlockCondition": {
@@ -589,6 +636,7 @@
     {
       "id": 48,
       "name": "Unbreakable Spirit",
+      "ar": "روح لا تنكسر",
       "category": "Progress",
       "rarity": "rare",
       "unlockCondition": {
@@ -601,6 +649,7 @@
     {
       "id": 49,
       "name": "The Humble",
+      "ar": "المتواضع",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -613,6 +662,7 @@
     {
       "id": 50,
       "name": "Five Juz Master",
+      "ar": "متقن خمسة اجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -625,6 +675,7 @@
     {
       "id": 51,
       "name": "Verse Keeper",
+      "ar": "حافظ الآيات",
       "category": "Virtue",
       "rarity": "common",
       "unlockCondition": {
@@ -637,6 +688,7 @@
     {
       "id": 52,
       "name": "The Diligent",
+      "ar": "المجتهد",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -649,6 +701,7 @@
     {
       "id": 53,
       "name": "Second Quarter",
+      "ar": "الربع الثاني",
       "category": "General",
       "rarity": "rare",
       "unlockCondition": {
@@ -661,6 +714,7 @@
     {
       "id": 54,
       "name": "Milestone Seeker",
+      "ar": "باحث الإنجاز",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -673,6 +727,7 @@
     {
       "id": 55,
       "name": "The Committed",
+      "ar": "الملتزم",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -685,6 +740,7 @@
     {
       "id": 56,
       "name": "Legacy Builder",
+      "ar": "صانع الإرث",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -699,6 +755,7 @@
     {
       "id": 57,
       "name": "Three Strikes",
+      "ar": "ثلاث ضربات",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -711,6 +768,7 @@
     {
       "id": 58,
       "name": "The Brave",
+      "ar": "الشجاع",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -723,6 +781,7 @@
     {
       "id": 59,
       "name": "Precision Master",
+      "ar": "متقن الدقة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -735,6 +794,7 @@
     {
       "id": 60,
       "name": "Surah Scholar",
+      "ar": "عالم السورة",
       "category": "General",
       "rarity": "rare",
       "unlockCondition": {
@@ -747,6 +807,7 @@
     {
       "id": 61,
       "name": "Five Hundred Strong",
+      "ar": "قوة الخمسمئة",
       "category": "General",
       "rarity": "legendary",
       "unlockCondition": {
@@ -759,6 +820,7 @@
     {
       "id": 62,
       "name": "Fifty Pages Perfect",
+      "ar": "خمسون صفحة متقنة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -771,6 +833,7 @@
     {
       "id": 63,
       "name": "Thirty Perfect",
+      "ar": "ثلاثون متقنة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -783,6 +846,7 @@
     {
       "id": 64,
       "name": "Seven Juz",
+      "ar": "سبعة أجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -795,6 +859,7 @@
     {
       "id": 65,
       "name": "Ten Juz",
+      "ar": "عشرة أجزاء",
       "category": "General",
       "rarity": "rare",
       "unlockCondition": {
@@ -807,6 +872,7 @@
     {
       "id": 66,
       "name": "Correction Champion",
+      "ar": "بطل التصحيح",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -819,6 +885,7 @@
     {
       "id": 67,
       "name": "The Persistent",
+      "ar": "المثابر",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -830,6 +897,7 @@
     {
       "id": 68,
       "name": "Revision Ritual",
+      "ar": "طقس المراجعة",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -842,6 +910,7 @@
     {
       "id": 69,
       "name": "Twenty Juz",
+  "ar": "عشرون جزءا",
       "category": "General",
       "rarity": "legendary",
       "unlockCondition": {
@@ -854,6 +923,7 @@
     {
       "id": 70,
       "name": "The Reverent",
+      "ar": "الموقر",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -867,6 +937,7 @@
     {
       "id": 71,
       "name": "Forty Perfect",
+      "ar": "أربعون متقنة",
       "category": "Performance",
       "rarity": "rare",
       "unlockCondition": {
@@ -879,6 +950,7 @@
     {
       "id": 72,
       "name": "The Learner",
+      "ar": "المتعلم",
       "category": "Virtue",
       "rarity": "common",
       "unlockCondition": {
@@ -890,6 +962,7 @@
     {
       "id": 73,
       "name": "Fifteen Pages Perfect",
+      "ar": "خمسة عشر صفحة متقنة",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -902,6 +975,7 @@
     {
       "id": 74,
       "name": "The Humble Servant",
+      "ar": "الخادم المتواضع",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -913,6 +987,7 @@
     {
       "id": 75,
       "name": "The Seeker of Knowledge",
+      "ar": "طالب العلم",
       "category": "Virtue",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -925,6 +1000,7 @@
     {
       "id": 76,
       "name": "Six Juz",
+      "ar": "ستة أجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -937,6 +1013,7 @@
     {
       "id": 77,
       "name": "Nine Juz",
+      "ar": "تسعة أجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -949,6 +1026,7 @@
     {
       "id": 78,
       "name": "Eight Juz",
+      "ar": "ثمانية أجزاء",
       "category": "General",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -961,6 +1039,7 @@
     {
       "id": 79,
       "name": "Perfect Pair",
+      "ar": "زوج متقن",
       "category": "Performance",
       "rarity": "common",
       "unlockCondition": {
@@ -973,6 +1052,7 @@
     {
       "id": 80,
       "name": "Five Pages Perfect",
+      "ar": "خمس صفحات متقنة",
       "category": "Performance",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -985,6 +1065,7 @@
     {
       "id": 81,
       "name": "The Determined One",
+      "ar": "العازم",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -998,6 +1079,7 @@
     {
       "id": 82,
       "name": "The Faithful",
+      "ar": "الوفي",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1010,6 +1092,7 @@
     {
       "id": 83,
       "name": "The Unbroken",
+      "ar": "غير المنكسر",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1023,6 +1106,7 @@
     {
       "id": 84,
       "name": "The Faithful Guardian",
+      "ar": "الحارس الوفي",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1037,6 +1121,7 @@
     {
       "id": 85,
       "name": "The Devoted Preserver",
+      "ar": "الحافظ المخلص",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1051,6 +1136,7 @@
     {
       "id": 86,
       "name": "The Reverent One",
+      "ar": "المتوقر",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1065,6 +1151,7 @@
     {
       "id": 87,
       "name": "The Complete Master",
+      "ar": "المتسيد الكامل",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1079,6 +1166,7 @@
     {
       "id": 88,
       "name": "The Hidden Blessing",
+      "ar": "البركة الخفية",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1091,6 +1179,7 @@
     {
       "id": 89,
       "name": "The Triumphant Heart",
+      "ar": "القلب المنتصر",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1105,6 +1194,7 @@
     {
       "id": 90,
       "name": "Surah Thinker — Al-Dukhan",
+      "ar": "متأمل السورة — الدخان",
       "category": "Hadith-Based",
       "rarity": "uncommon",
       "unlockCondition": {
@@ -1118,6 +1208,7 @@
     {
       "id": 91,
       "name": "The Discerning Scholar",
+      "ar": "العالم المتبصر",
       "category": "Virtue",
       "rarity": "rare",
       "unlockCondition": {
@@ -1132,6 +1223,7 @@
     {
       "id": 92,
       "name": "Fortress of Faith",
+      "ar": "حصن الإيمان",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1145,6 +1237,7 @@
     {
       "id": 93,
       "name": "The Protector",
+  "ar": "الواقي",
       "category": "Hadith-Based",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1158,6 +1251,7 @@
     {
       "id": 94,
       "name": "Keeper of Stories",
+      "ar": "حافظ القصص",
       "category": "Story-Based",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1170,6 +1264,7 @@
     {
       "id": 95,
       "name": "Virtue Embodied",
+      "ar": "تجسيد الفضيلة",
       "category": "Virtue",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1185,6 +1280,7 @@
     {
       "id": 96,
       "name": "The Inspired",
+  "ar": "الملهم",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1198,6 +1294,7 @@
     {
       "id": 97,
       "name": "Path of the Prophet",
+      "ar": "طريق النبي",
       "category": "Hadith-Based",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1211,6 +1308,7 @@
     {
       "id": 98,
       "name": "The Manifest Victory",
+      "ar": "الفتح المبين",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1225,7 +1323,8 @@
     },
     {
       "id": 99,
-      "name": "Echo of the Divine",
+      "name": "Servant of the Merciful",
+      "ar": "عبد الرحمن",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {
@@ -1233,11 +1332,12 @@
         "achievementsUnlocked": 85,
         "description": "Unlock 85 badges"
       },
-      "backstory": "When you have achieved mastery across almost all categories, you become an echo of the divine message itself. Few reach this pinnacle of comprehensive Quranic devotion."
+      "backstory": "One of the best names for a servant of Allah."
     },
     {
       "id": 100,
       "name": "Supreme Master — Hafiz Al-Quran",
+      "ar": "السيد الأعظم — حافظ القرآن",
       "category": "Special",
       "rarity": "legendary",
       "unlockCondition": {

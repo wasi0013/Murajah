@@ -4,6 +4,7 @@
  */
 
 import { generateBadgeSVG, generateLockedBadgeSVG, getRarityColorScheme } from '../utils/badgeSVGGenerator.js';
+import ShareBadgeModal from './ShareBadgeModal.js';
 
 export default {
   template: `
@@ -37,7 +38,7 @@ export default {
                 v-if="isUnlocked"
                 class="w-full h-full rounded-lg overflow-hidden transition-all"
                 :style="getBadgeShadow(badge.rarity)"
-                v-html="generateBadgeSVG(badge.id, badge.rarity, badge.name, badge.category)"
+                v-html="generateBadgeSVG(badge.id, badge.rarity, badge.name, badge.category, badge.ar)"
               ></div>
               <div 
                 v-else
@@ -170,7 +171,14 @@ export default {
         </div>
       </div>
     </div>
+
+    <!-- Share Badge Modal -->
+    <ShareBadgeModal v-if="showShareModal" :badge="badge" @close="showShareModal = false" />
   `,
+
+  components: {
+    ShareBadgeModal
+  },
 
   props: {
     badge: {
@@ -186,15 +194,15 @@ export default {
   emits: ['close', 'share'],
 
   setup(props, { emit }) {
+    const { ref } = Vue;
+    const showShareModal = ref(false);
+    
     const closeModal = () => {
       emit('close');
     };
 
     const shareBadge = () => {
-      emit('share', {
-        badge: props.badge,
-        isUnlocked: props.isUnlocked
-      });
+      showShareModal.value = true;
     };
 
     const copyBadgeInfo = () => {
@@ -275,7 +283,8 @@ export default {
       unlockedTime,
       generateBadgeSVG,
       generateLockedBadgeSVG,
-      getRarityColorScheme
+      getRarityColorScheme,
+      showShareModal
     };
   }
 };

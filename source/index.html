@@ -1348,6 +1348,12 @@
       const achievementDetailComponentModule = await import('./resources/js/components/AchievementDetailComponent.js');
       const AchievementDetailComponent = achievementDetailComponentModule.default;
 
+      const badgeShareCardComponentModule = await import('./resources/js/components/BadgeShareCardComponent.js');
+      const BadgeShareCardComponent = badgeShareCardComponentModule.default;
+
+      const shareBadgeModalModule = await import('./resources/js/components/ShareBadgeModal.js');
+      const ShareBadgeModal = shareBadgeModalModule.default;
+
       const app = createApp({
         template: `
           <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white text-gray-900">
@@ -1379,8 +1385,8 @@
                     <i class="fas fa-info-circle text-gray-700  text-xl"></i>
                   </button>
 
-                  <!-- Achievement Icon (NEW) -->
-                  <achievement-navbar-component></achievement-navbar-component>
+                  <!-- Achievement Icon (HIDDEN) -->
+                  <!-- <achievement-navbar-component></achievement-navbar-component> -->
                   
                   <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
@@ -1391,6 +1397,31 @@
 
             <!-- Main Content -->
             <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+              <!-- Achievements Inline Section (toggle via trophy button) -->
+              <section id="achievements-section" v-if="showAchievementsPanel" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="flex items-start justify-between mb-4">
+                  <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                    <i class="fas fa-trophy text-amber-600"></i>
+                    Achievements <span class="text-sm font-medium text-gray-500 dark:text-gray-400">({{ achievementStore.totalUnlocked }}/100)</span>
+                  </h2>
+                  <button @click="showAchievementsPanel = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors" title="Hide achievements">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <div class="flex flex-col lg:flex-row gap-6">
+                  <div class="flex-1 min-h-0">
+                    <achievement-grid-component @badge-selected="selectAchievementBadge"></achievement-grid-component>
+                  </div>
+                  <div v-if="selectedAchievementBadge" class="w-full lg:w-96 flex-shrink-0 lg:border-l dark:border-gray-700 lg:pl-6">
+                    <achievement-detail-component 
+                      :badge="selectedAchievementBadge"
+                      :is-unlocked="achievementStore.unlockedBadges.has(selectedAchievementBadge.id)"
+                      @close="selectedAchievementBadge = null"
+                      @share="shareBadge"
+                    ></achievement-detail-component>
+                  </div>
+                </div>
+              </section>
               <!-- Daily Revision Banner -->
               <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
                 <div class="flex-1">
@@ -2630,50 +2661,6 @@
               </div>
             </div>
 
-            <!-- Achievements Modal (NEW) -->
-            <div v-if="showAchievementsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div class="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-                <!-- Modal Header -->
-                <div class="sticky top-0 flex items-center justify-between p-6 border-b dark:border-gray-700 bg-gradient-to-r from-amber-50 dark:from-gray-700 to-orange-50 dark:to-gray-700 z-10 shadow-sm">
-                  <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <i class="fas fa-trophy text-amber-600"></i>
-                    Achievements ({{ totalUnlockedBadges }}/100)
-                  </h2>
-                  <button @click="showAchievementsModal = false" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-1">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <!-- Grid and Detail View Container -->
-                <div class="flex flex-col lg:flex-row gap-6 p-6 overflow-hidden h-[calc(90vh-80px)]">
-                  <!-- Achievement Grid (left side) -->
-                  <div class="flex-1 overflow-y-auto">
-                    <achievement-grid-component @badge-selected="selectAchievementBadge"></achievement-grid-component>
-                  </div>
-
-                  <!-- Achievement Detail (right side - desktop only) -->
-                  <div v-if="selectedAchievementBadge && viewportWidth >= 1024" class="w-96 flex-shrink-0 border-l dark:border-gray-700 pl-6 overflow-y-auto">
-                    <achievement-detail-component 
-                      :badge="selectedAchievementBadge"
-                      :is-unlocked="achievementStore.unlockedBadges.has(selectedAchievementBadge.id)"
-                      @close="selectedAchievementBadge = null"
-                      @share="shareBadge"
-                    ></achievement-detail-component>
-                  </div>
-                </div>
-
-                <!-- Mobile Detail Modal Overlay -->
-                <achievement-detail-component 
-                  v-if="selectedAchievementBadge && viewportWidth < 1024"
-                  :badge="selectedAchievementBadge"
-                  :is-unlocked="achievementStore.unlockedBadges.has(selectedAchievementBadge.id)"
-                  @close="selectedAchievementBadge = null"
-                  @share="shareBadge"
-                ></achievement-detail-component>
-              </div>
-            </div>
 
             <!-- Analytics Dashboard -->
             <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
@@ -3004,7 +2991,7 @@
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
           const showHelpModal = ref(false);
-          const showAchievementsModal = ref(false); // NEW: Achievements modal visibility
+          const showAchievementsPanel = ref(false); // NEW: Inline Achievements panel visibility
           const selectedAchievementBadge = ref(null); // NEW: Currently selected badge in achievements
           const showReviewPagesOverlay = ref(true); // Show review pages overlay by default
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
@@ -5373,10 +5360,17 @@ Display:
             // Initialize achievements
             await initializeAchievements();
             
-            // Listen for achievements modal open event
+            // Listen for achievements toggle event from navbar
             document.addEventListener('open-achievements-modal', () => {
-              showAchievementsModal.value = true;
-              console.log('[Murajah] Achievements modal opened');
+              showAchievementsPanel.value = !showAchievementsPanel.value;
+              console.log('[Murajah] Achievements panel toggled', { visible: showAchievementsPanel.value });
+              if (showAchievementsPanel.value) {
+                // Scroll into view after next frame
+                requestAnimationFrame(() => {
+                  const el = document.getElementById('achievements-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+              }
             });
             
             // Add window resize listener to recalculate font sizes
@@ -5474,11 +5468,7 @@ Display:
             const { badge, isUnlocked } = shareData;
             if (!badge) return;
 
-            const shareText = `🏆 I unlocked the "${badge.name}" achievement on Murajah!
-            
-${badge.backstory}
-
-Check out Murajah for Quran memorization: https://murajah.pages.dev`;
+            const shareText = `🏆 I unlocked the "${badge.name}" badge on Murajah! Check out: https://murajah.pages.dev`;
             
             if (navigator.share) {
               navigator.share({
@@ -5505,7 +5495,7 @@ Check out Murajah for Quran memorization: https://murajah.pages.dev`;
             gotoInput,
             showSettingsModal,
             showHelpModal,
-            showAchievementsModal,
+            showAchievementsPanel,
             selectedAchievementBadge,
             showReviewPagesOverlay,
             analyticsActiveTab,

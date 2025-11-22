@@ -72,16 +72,15 @@ export const loadUnlockedBadges = async (murajahDB) => {
       achievementStore.totalUnlocked = achievementStore.unlockedBadges.size;
       achievementStore.completionPercentage = Math.round((achievementStore.totalUnlocked / 100) * 100);
       
-  // lastUpdated acts as an additional reactive ping
-  achievementStore.lastUpdated = Date.now();
-      console.log('[Murajah] Updated unlockedBadgesArray in-place:', achievementStore.unlockedBadgesArray);
+      // lastUpdated acts as an additional reactive ping
+      achievementStore.lastUpdated = Date.now();
+      console.log('[Murajah] Updated unlocked badges set:', achievementStore.unlockedBadges.size);
       
       console.log(`[Murajah] Loaded ${achievementStore.totalUnlocked} unlocked badges, store state:`, {
         size: achievementStore.unlockedBadges.size,
         totalUnlocked: achievementStore.totalUnlocked,
         completionPercentage: achievementStore.completionPercentage,
-        setContents: Array.from(achievementStore.unlockedBadges),
-        arrayLength: achievementStore.unlockedBadgesArray.length
+        setContents: Array.from(achievementStore.unlockedBadges)
       });
     } else {
       console.log('[Murajah] loadUnlockedBadges: No unlockedBadges data found', {

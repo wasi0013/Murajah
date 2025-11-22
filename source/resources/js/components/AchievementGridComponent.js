@@ -12,7 +12,7 @@ export default {
   template: `
     <div class="achievement-grid-container w-full max-h-[80vh] overflow-y-auto bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-lg">
       <!-- Filter/Sort Controls -->
-      <div class="sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-b dark:border-gray-700 p-3 sm:p-4 z-10 shadow-sm">
+      <div class="sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-b dark:border-gray-700 p-3 sm:p-4 z-50 shadow-sm">
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
           <!-- Category Filters -->
           <div class="flex gap-2 flex-wrap w-full sm:w-auto">
@@ -58,21 +58,23 @@ export default {
           v-for="badge in filteredBadges"
           :key="badge.id"
           @click="selectBadge(badge)"
-          class="badge-grid-item cursor-pointer transition-all duration-200 
-                 hover:scale-110 hover:z-10 group relative
+          class="badge-grid-item transition-all duration-200 
+                 group relative
                  transform active:scale-95"
           :class="[
-            badge.unlocked ? 'opacity-100' : 'opacity-70 hover:opacity-90',
-            selectedBadge?.id === badge.id ? 'ring-2 ring-offset-2 ring-amber-500 scale-110' : ''
+            badge.unlocked ? 'cursor-pointer hover:scale-110 hover:z-10' : 'cursor-not-allowed',
+            badge.unlocked && selectedBadge?.id === badge.id ? 'ring-2 ring-offset-2 ring-amber-500 scale-110' : '',
+            badge.unlocked ? 'opacity-100' : 'opacity-70 hover:opacity-90'
           ]"
         >
           <!-- Badge SVG Container -->
-          <div class="relative w-full aspect-square rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
+          <!-- Allow overflow visible so tooltips aren't clipped -->
+          <div class="relative w-full aspect-square rounded-lg overflow-visible shadow-md hover:shadow-lg transition-shadow duration-200">
             <div 
               v-if="badge.unlocked"
               class="w-full h-full"
               :style="getBadgeShadow(badge.rarity)"
-              v-html="generateBadgeSVG(badge.id, badge.rarity, badge.name, badge.category)"
+              v-html="generateBadgeSVG(badge.id, badge.rarity, badge.name, badge.category, badge.ar)"
             ></div>
             <div 
               v-else
@@ -93,36 +95,28 @@ export default {
               </svg>
             </div>
 
-            <!-- Unlock Hint Tooltip (for locked badges) -->
-            <div v-if="!badge.unlocked && badge.backstory"
-                 class="absolute -top-10 sm:-top-12 left-1/2 transform -translate-x-1/2 
-                        bg-gray-900 text-white text-xs py-1 px-2 rounded whitespace-nowrap 
-                        opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50
-                        max-w-xs text-center">
-              {{ getHintText(badge) }}
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 
-                         border-4 border-transparent border-t-gray-900"></div>
-            </div>
-            
-            <!-- Badge ID/Number -->
+            <!-- Unlock Hint Tooltip (for locked badges) - HIDDEN for mystery mode -->
+            <!-- Tooltip removed for locked badges to maintain mystery -->            <!-- Badge ID/Number -->
             <div class="absolute top-1 right-1 bg-black/60 text-white text-xs font-bold 
                        px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20">
               #{{ badge.id }}
             </div>
             
-            <!-- Rarity Label Badge -->
-            <div class="absolute -bottom-2 -right-2 px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold 
-                        text-white opacity-0 group-hover:opacity-100 transition-opacity z-20
-                        text-shadow"
+            <!-- Rarity Label Badge (hover-only, hidden for locked) -->
+            <div v-if="badge.unlocked" class="absolute -bottom-2 -right-2 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold 
+                        text-white transition-opacity z-20 text-shadow opacity-0 group-hover:opacity-100"
                  :style="{ backgroundColor: getRarityColorScheme(badge.rarity).border }">
               {{ badge.rarity }}
             </div>
           </div>
           
-          <!-- Badge Name (shortened for grid) -->
+          <!-- Badge Name (hidden for locked badges - mystery mode) -->
           <div class="text-center mt-1 px-0.5">
-            <p class="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate line-clamp-2 leading-tight">
+            <p v-if="badge.unlocked" class="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate line-clamp-2 leading-tight">
               {{ badge.name }}
+            </p>
+            <p v-if="!badge.unlocked" class="text-xs text-gray-400 dark:text-gray-500 italic">
+              ???
             </p>
             <p v-if="badge.unlocked" class="text-xs text-green-600 dark:text-green-400 font-medium">
               ✓ Unlocked
@@ -147,7 +141,8 @@ export default {
   setup(_, { emit }) {
     const selectedCategory = ref(null);
     const selectedBadge = ref(null);
-    const sortBy = ref('id');
+  // Default sort by unlocked status for user clarity
+  const sortBy = ref('unlocked');
     // Responsive grid: Mobile (3 cols) → Tablet (5 cols) → Desktop (10 cols)
     const gridColsClass = 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10';
     const totalBadges = computed(() => achievementStore.badgesList.length || 0);
@@ -194,10 +189,15 @@ export default {
     });
 
     const selectBadge = (badge) => {
+      // Only allow unlocked badges to open modal - locked badges remain mysterious
+      if (!achievementStore.unlockedBadges.has(badge.id)) {
+        return;
+      }
+      
       selectedBadge.value = badge;
       emit('badge-selected', {
         badge,
-        isUnlocked: achievementStore.unlockedBadges.has(badge.id)
+        isUnlocked: true
       });
     };
 
