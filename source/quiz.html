@@ -517,6 +517,31 @@
                 }
             }
         }
+
+        /* Quran Text Styling */
+        .quran-text {
+            font-size: 1.2em;
+            line-height: 2.5;
+            direction: rtl;
+            text-align: right;
+            letter-spacing: 0.1em;
+            color: #111827;
+        }
+
+        .quran-word {
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0.08rem 0.12rem;
+            border-radius: 4px;
+            color: inherit;
+            font-size: 1.2em;
+        }
+
+        .dark .quran-text {
+            color: #1a1a1a;
+        }
+
     </style>
 </head>
 <body class="bg-gray-50 ">
@@ -928,12 +953,12 @@
                                     Surah {{ completionVerse.chapter }}, Verse {{ completionVerse.verse }}
                                 </p>
                             </div>
-                            <div class="text-2xl text-right font-arabic text-blue-900 " style="line-height: 2.5;">
+                            <div class="quran-text debug-font" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
                                 <span v-for="(word, index) in completionVerseDisplay || []" :key="index">
-                                    <span v-if="word.isBlank" class="inline-block bg-yellow-200  text-yellow-900  px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold">
+                                    <span v-if="word.isBlank" class="quran-word inline-block bg-yellow-200 text-yellow-900 px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
                                         {{ getFilledWord(word.originalIndex) || '___' }}
                                     </span>
-                                    <span v-else class="mx-1">
+                                    <span v-else class="quran-word inline-block mx-1" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
                                         {{ word.text }}
                                     </span>
                                 </span>
@@ -967,7 +992,7 @@
                                                 ? option?.isCorrect ? 'bg-green-100  border-green-500 text-green-700 ' : 'bg-gray-100  border-gray-300'
                                                 : 'bg-white  border-gray-200  hover:border-primary hover:bg-blue-50 '
                                     ]">
-                                    <p class="text-lg" style="line-height: 1.5;">{{ option?.text || '?' }}</p>
+                                    <p class="text-lg quran-word" style="line-height: 1.5;">{{ option?.text || '?' }}</p>
                                 </button>
                             </div>
                         </div>
@@ -978,7 +1003,7 @@
                                 <div>
                                     <p class="text-sm text-purple-900  mb-2">Words selected: {{ completionSelectedWords.length }} / {{ completionTotalMissing }}</p>
                                     <div class="flex flex-wrap gap-2">
-                                        <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200  text-purple-900  px-3 py-1 rounded-full text-sm">
+                                        <span v-for="(wordIndex, position) in completionSelectedWords" :key="position" class="bg-purple-200 text-purple-900 px-3 py-1 rounded-full text-sm quran-word">
                                             {{ position + 1 }}. {{ (completionOptions && completionOptions[wordIndex]) ? completionOptions[wordIndex].text : '?' }}
                                         </span>
                                     </div>
@@ -999,9 +1024,9 @@
                             </div>
                             <div v-else class="bg-red-50  border border-red-500 rounded-lg p-4">
                                 <p class="text-red-700  font-semibold">❌ Incorrect order or words</p>
-                                <div class="mt-3 text-right font-arabic">
-                                    <p class="text-sm text-gray-600  mb-1">Correct order:</p>
-                                    <p class="text-xl" style="line-height: 2;">{{ completionVerse.text }}</p>
+                                <div class="mt-3 text-right">
+                                    <p class="text-sm text-gray-600 mb-1">Correct order:</p>
+                                    <p class="text-xl quran-word" style="line-height: 2;">{{ completionVerse.text }}</p>
                                 </div>
                             </div>
                         </div>
@@ -1664,6 +1689,7 @@
                 const completionMissingCount = ref(0)
                 const completionBlankIndices = ref([]) // Indices of blank words in verse
                 const completionFilledWords = ref({}) // Map of blank position -> filled word
+                const completionFontFamily = ref('TajweedVerse') // Current font family for the verse
 
                 // Lightning Round State
                 const lightningSelectedTime = ref(null) // Selected time in seconds: 60, 120, 180, 300
@@ -1684,19 +1710,32 @@
                 const lightningRoundEnded = ref(false) // Has round ended
                 const lightningTimeRemaining = ref(0) // Time remaining when round ended (for stats)
 
-                // Load quiz data
-                const loadQuizData = async () => {
-                    try {
-                        const [quranResponse, translationResponse] = await Promise.all([
-                            fetch('resources/data/quran/quran.json'),
-                            fetch('resources/data/quran/en.json')
-                        ]);
-                        quranData.value = await quranResponse.json();
-                        translationData.value = await translationResponse.json();
-                    } catch (err) {
-                        console.error('Failed to load quiz data:', err);
-                        error.value = 'Failed to load quiz data.';
+                // Get words for a specific verse (surah:ayah)
+                const getVerseWords = (surahNum, ayahNum) => {
+                    if (!quranData.value || !quranData.value.words) {
+                        return [];
                     }
+                    
+                    const verseKey = `${surahNum}:${ayahNum}`;
+                    const words = [];
+                    
+                    // Find all words for this verse
+                    Object.keys(quranData.value.words).forEach(key => {
+                        const word = quranData.value.words[key];
+                        if (word.surah == surahNum && word.ayah == ayahNum) {
+                            words.push({
+                                id: word.id,
+                                text: word.text,
+                                surah: word.surah,
+                                ayah: word.ayah,
+                                word: word.word,
+                                location: word.location
+                            });
+                        }
+                    });
+                    
+                    // Sort by word number
+                    return words.sort((a, b) => parseInt(a.word) - parseInt(b.word));
                 };
 
                 // Detect touch device capability
@@ -1953,137 +1992,222 @@
                     }
                 }
 
+                // Load font for a specific page
+                const loadFontForPage = async (pageNum) => {
+                    console.log('[QUIZ DEBUG] Loading font for page:', pageNum);
+                    const fontFamily = `TajweedPage${pageNum}`;
+                    const fontId = `tajweed-page-${pageNum}`;
+                    if (document.getElementById(fontId)) {
+                        console.log('[QUIZ DEBUG] Font already loaded for page:', pageNum);
+                        return fontFamily; // Already loaded
+                    }
+
+                    return new Promise((resolve, reject) => {
+                        const styleTag = document.createElement('style');
+                        styleTag.id = fontId;
+
+                        const src = `src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2')`;
+                        styleTag.innerHTML = `@font-face { font-family: '${fontFamily}'; ${src}; font-weight: normal; font-style: normal; } .quran-word{ font-family: '${fontFamily}' !important; }`;
+                        document.head.appendChild(styleTag);
+
+                        console.log('[QUIZ DEBUG] Font CSS added for page:', pageNum);
+
+                        // Wait for font to load
+                        if ('fonts' in document) {
+                            document.fonts.load(`12px ${fontFamily}`).then(() => {
+                                console.log('[QUIZ DEBUG] Font loaded successfully for page:', pageNum);
+                                resolve(fontFamily);
+                            }).catch((error) => {
+                                console.warn('[QUIZ DEBUG] Font loading failed for page:', pageNum, error);
+                                resolve(fontFamily); // Continue anyway
+                            });
+                        } else {
+                            // Fallback: wait a bit for font to load
+                            setTimeout(() => {
+                                console.log('[QUIZ DEBUG] Font loading timeout for page:', pageNum);
+                                resolve(fontFamily);
+                            }, 500);
+                        }
+                    });
+                };
+
                 // Generate completion question
                 const generateCompletionQuestion = async () => {
                     if (!selectedSurahs.value.length) return;
-                    
+
                     // Reset scores if this is a new session
                     if (!completionVerse.value) {
                         completionScore.value = 0;
                         completionAttempts.value = 0;
                         completionStreak.value = 0;
                     }
-                    
+
                     isLoading.value = true;
                     completionAnswerRevealed.value = false;
                     completionSelectedWords.value = [];
                     completionIsCorrect.value = false;
-                    
+
                     try {
-                        // Keep picking verses until we find one long enough
-                        let verseText = '';
-                        let words = [];
-                        let randomSurahNum, randomVerseIndex, verseNumber;
-                        let attempts = 0;
-                        const maxAttempts = 10;
-                        
-                        while (words.length < 3 && attempts < maxAttempts) {
-                            // Select random surah from selected ones
-                            randomSurahNum = selectedSurahs.value[
-                                Math.floor(Math.random() * selectedSurahs.value.length)
-                            ];
-                            
-                            // Get verses for this surah
-                            const surahVerses = quranData.value[randomSurahNum];
-                            if (!surahVerses || surahVerses.length === 0) {
-                                throw new Error('No verses found for selected surah');
+                        console.log('[QUIZ DEBUG] Starting verse completion question generation');
+
+                        // Pick a random verse from quran.json
+                        const availableVerses = [];
+                        selectedSurahs.value.forEach(surahNum => {
+                            const surahVerses = quranData.value[surahNum];
+                            if (surahVerses) {
+                                availableVerses.push(...surahVerses);
                             }
-                            
-                            // Select a random verse
-                            randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
-                            verseNumber = randomVerseIndex + 1;
-                            verseText = surahVerses[randomVerseIndex].text;
-                            
-                            // Split verse into words
-                            words = verseText.split(/\s+/).filter(w => w.length > 0);
-                            attempts++;
+                        });
+
+                        if (availableVerses.length === 0) {
+                            throw new Error('No verses found for selected surahs');
                         }
-                        
-                        // If we couldn't find a long enough verse, use the shortest one we found
-                        if (words.length < 3) {
-                            console.warn(`Could not find verse with 3+ words after ${maxAttempts} attempts. Using shorter verse.`);
+
+                        // Select random verse
+                        const randomVerse = availableVerses[Math.floor(Math.random() * availableVerses.length)];
+                        console.log('[QUIZ DEBUG] Selected verse:', randomVerse);
+
+                        // Load the font for this verse's page
+                        const fontFamily = await loadFontForPage(randomVerse.page);
+                        completionFontFamily.value = fontFamily;
+                        console.log('[QUIZ DEBUG] Font loaded for page:', randomVerse.page, 'with family:', fontFamily);
+
+                        // Split verse text into words (Arabic is space-separated)
+                        const verseWords = randomVerse.text.trim().split(/\s+/).filter(word => word.length > 0);
+                        console.log('[QUIZ DEBUG] Verse words:', verseWords);
+
+                        if (verseWords.length < 3) {
+                            console.warn('Selected verse has fewer than 3 words, using it anyway');
                         }
-                        
-                        // Determine how many words to blank (between 2-5)
-                        const blankCount = Math.floor(2 + Math.random() * 4); // Random between 2-5
-                        
+
+                        // Determine how many words to blank (between 2-5, but not more than available words)
+                        const maxBlanks = Math.min(5, Math.max(2, verseWords.length - 1)); // Leave at least 1 word visible
+                        const blankCount = Math.floor(2 + Math.random() * (maxBlanks - 1)); // Random between 2-maxBlanks
+                        console.log('[QUIZ DEBUG] Will blank', blankCount, 'out of', verseWords.length, 'words');
+
                         // Randomly select which words to blank
                         const blankIndices = new Set();
                         while (blankIndices.size < blankCount) {
-                            blankIndices.add(Math.floor(Math.random() * words.length));
+                            blankIndices.add(Math.floor(Math.random() * verseWords.length));
                         }
-                        
+                        console.log('[QUIZ DEBUG] Blank indices:', Array.from(blankIndices));
+
                         // Create display array with blanks
-                        const display = words.map((word, index) => ({
+                        const display = verseWords.map((word, index) => ({
                             text: word,
                             isBlank: blankIndices.has(index),
                             originalIndex: index
                         }));
-                        
+
                         // Get correct answers in RIGHT-TO-LEFT order (highest index to lowest)
-                        // This represents reading from right to left in Arabic
                         const correctAnswersArray = Array.from(blankIndices)
-                            .sort((a, b) => b - a) // Sort in descending order (right to left)
-                            .map(index => words[index]);
-                        
+                            .sort((a, b) => b - a) // Sort descending for RTL
+                            .map(index => verseWords[index]);
+
                         completionVerse.value = {
-                            chapter: parseInt(randomSurahNum),
-                            verse: verseNumber,
-                            text: verseText
+                            chapter: randomVerse.chapter,
+                            verse: randomVerse.verse,
+                            page: randomVerse.page,
+                            fullText: randomVerse.text
                         };
-                        
+
                         completionVerseDisplay.value = display;
                         completionCorrectAnswers.value = correctAnswersArray;
                         // Store blank indices in RIGHT-TO-LEFT order for visual filling and answer validation
-                        // Highest index first (rightmost blank) = position 0
-                        // Lowest index last (leftmost blank) = last position
                         completionBlankIndices.value = Array.from(blankIndices).sort((a, b) => b - a);
                         completionFilledWords.value = {}; // Reset filled words map
                         completionTotalMissing.value = blankCount;
                         completionMissingCount.value = 0;
-                        
-                        // Get random wrong words from other verses
+
+                        console.log('[QUIZ DEBUG] Correct answers (RTL order):', correctAnswersArray);
+
+                        // Get random wrong words from the SAME PAGE only
                         const wrongWords = new Set();
-                        const allWords = [];
                         const correctAnswersSet = new Set(correctAnswersArray); // Use Set for O(1) lookup
+
+                        // Find all words on the same page as the selected verse
+                        const pageData = quranData.value.layout.pages.find(page => page.page_number === randomVerse.page);
+                        console.log('[QUIZ DEBUG] Looking for page data for page:', randomVerse.page, 'found:', !!pageData);
                         
-                        Object.keys(quranData.value).forEach(surahKey => {
-                            quranData.value[surahKey].forEach(verse => {
-                                verse.text.split(/\s+/).filter(w => w.length > 0).forEach(word => {
-                                    if (!correctAnswersSet.has(word)) {
-                                        allWords.push(word);
-                                    }
-                                });
-                            });
-                        });
-                        
-                        // Add wrong words until we have enough
-                        // Limit iterations to prevent infinite loop
-                        const maxWrongWordsNeeded = blankCount * 2;
-                        const maxIterations = Math.min(allWords.length, maxWrongWordsNeeded * 10);
-                        let iterations = 0;
-                        
-                        while (wrongWords.size < maxWrongWordsNeeded && iterations < maxIterations) {
-                            const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
-                            if (randomWord && !correctAnswersSet.has(randomWord)) {
-                                wrongWords.add(randomWord);
+                        if (!pageData) {
+                            console.warn('[QUIZ DEBUG] Could not find page data for page:', randomVerse.page, 'falling back to global list');
+                            // Fallback to global word list
+                            const availableWrongWords = Array.from(quranData.value.allWordTexts).filter(word => !correctAnswersSet.has(word));
+                            const maxWrongWordsNeeded = blankCount * 2;
+                            while (wrongWords.size < maxWrongWordsNeeded && availableWrongWords.length > 0) {
+                                const randomIndex = Math.floor(Math.random() * availableWrongWords.length);
+                                const word = availableWrongWords.splice(randomIndex, 1)[0];
+                                wrongWords.add(word);
                             }
-                            iterations++;
+                        } else {
+                            console.log('[QUIZ DEBUG] Page data found:', pageData);
+                            
+                            // Get all words on this page by filtering words with IDs in the page range
+                            const pageWords = Object.values(quranData.value.words).filter(word => 
+                                word.id >= pageData.first_word_id && word.id <= pageData.last_word_id
+                            );
+
+                            console.log('[QUIZ DEBUG] Found', pageWords.length, 'words on page', randomVerse.page);
+
+                            // Get unique word texts from this page
+                            const pageWordTexts = new Set();
+                            pageWords.forEach(word => {
+                                if (word.text) {
+                                    pageWordTexts.add(word.text);
+                                }
+                            });
+
+                            console.log('[QUIZ DEBUG] Found', pageWordTexts.size, 'unique words on page, correct answers:', correctAnswersArray);
+
+                            // Convert to array and filter out correct answers
+                            const availableWrongWords = Array.from(pageWordTexts).filter(word => !correctAnswersSet.has(word));
+                            
+                            console.log('[QUIZ DEBUG] After filtering correct answers:', availableWrongWords.length, 'words available');
+
+                            // Add wrong words until we have enough
+                            const maxWrongWordsNeeded = blankCount * 2;
+                            const maxIterations = Math.min(availableWrongWords.length, maxWrongWordsNeeded * 2); // Reduced multiplier
+                            let iterations = 0;
+
+                            while (wrongWords.size < maxWrongWordsNeeded && iterations < maxIterations && availableWrongWords.length > 0) {
+                                const randomIndex = Math.floor(Math.random() * availableWrongWords.length);
+                                const word = availableWrongWords.splice(randomIndex, 1)[0]; // Remove to avoid duplicates
+                                wrongWords.add(word);
+                                iterations++;
+                            }
+
+                            console.log('[QUIZ DEBUG] Selected', wrongWords.size, 'wrong words from same page');
+                            
+                            // If we still don't have enough wrong words, supplement with global list
+                            if (wrongWords.size < maxWrongWordsNeeded) {
+                                console.log('[QUIZ DEBUG] Not enough words from same page, supplementing with global list');
+                                const globalWords = Array.from(quranData.value.allWordTexts).filter(word => 
+                                    !correctAnswersSet.has(word) && !wrongWords.has(word)
+                                );
+                                
+                                while (wrongWords.size < maxWrongWordsNeeded && globalWords.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * globalWords.length);
+                                    const word = globalWords.splice(randomIndex, 1)[0];
+                                    wrongWords.add(word);
+                                }
+                            }
                         }
-                        
+
                         // Combine and shuffle options
                         const options = [
-                            ...correctAnswersArray.map(word => ({ text: word, isCorrect: true })),
-                            ...Array.from(wrongWords).map(word => ({ text: word, isCorrect: false }))
+                            ...correctAnswersArray.map(text => ({ text, isCorrect: true })),
+                            ...Array.from(wrongWords).map(text => ({ text, isCorrect: false }))
                         ];
-                        
+
                         // Fisher-Yates shuffle
                         for (let i = options.length - 1; i > 0; i--) {
                             const j = Math.floor(Math.random() * (i + 1));
                             [options[i], options[j]] = [options[j], options[i]];
                         }
-                        
+
                         completionOptions.value = options;
+                        console.log('[QUIZ DEBUG] Generated', options.length, 'options with', correctAnswersArray.length, 'correct answers');
+
                     } catch (err) {
                         console.error('Error generating completion question:', err);
                         error.value = 'Failed to generate question.';
@@ -2637,6 +2761,72 @@
                         endLightningRound()
                     }
                 }
+
+                // Load quiz data (old format for continuation, new for verse completion)
+                const loadQuizData = async () => {
+                    try {
+                        // Load old data for continuation quiz
+                        const [quranResponse, translationResponse] = await Promise.all([
+                            fetch('resources/data/quran/quran.json'),
+                            fetch('resources/data/quran/en.json')
+                        ]);
+                        quranData.value = await quranResponse.json();
+                        translationData.value = await translationResponse.json();
+
+                        // Load new word-by-word data for verse completion
+                        const [wordByWordResponse, layoutResponse, surahNamesResponse, englishWbwResponse] = await Promise.all([
+                            fetch('resources/data/quran/qpc-v2-word-by-word.json'),
+                            fetch('resources/data/quran/qpc-v2-15-lines.json'),
+                            fetch('resources/data/quran/surah-names.json'),
+                            fetch('resources/data/quran/english-wbw-translation.json')
+                        ]);
+
+                        const wordByWordData = await wordByWordResponse.json();
+                        const layoutData = await layoutResponse.json();
+                        const surahNamesData = await surahNamesResponse.json();
+                        const englishWbwData = await englishWbwResponse.json();
+
+                        // Store new data in quranData for verse completion
+                        quranData.value.words = wordByWordData;
+                        quranData.value.layout = layoutData;
+                        quranData.value.surahNames = surahNamesData;
+                        quranData.value.englishWbw = englishWbwData;
+
+                        // Build optimized indexes for performance
+                        quranData.value.surahWords = {};
+                        quranData.value.surahAyahs = {};
+                        quranData.value.allWordTexts = new Set();
+
+                        Object.values(wordByWordData).forEach(word => {
+                            // Build surah -> words index
+                            if (!quranData.value.surahWords[word.surah]) {
+                                quranData.value.surahWords[word.surah] = [];
+                            }
+                            quranData.value.surahWords[word.surah].push(word);
+
+                            // Build surah -> ayahs index
+                            if (!quranData.value.surahAyahs[word.surah]) {
+                                quranData.value.surahAyahs[word.surah] = new Set();
+                            }
+                            quranData.value.surahAyahs[word.surah].add(word.ayah);
+
+                            // Build unique word texts set
+                            quranData.value.allWordTexts.add(word.text);
+                        });
+
+                        // Convert ayah sets to arrays
+                        Object.keys(quranData.value.surahAyahs).forEach(surah => {
+                            quranData.value.surahAyahs[surah] = Array.from(quranData.value.surahAyahs[surah]);
+                        });
+
+                        console.log('[Murajah] Built optimized indexes for verse completion');
+
+                    } catch (err) {
+                        console.error('Failed to load quiz data:', err);
+                        error.value = 'Failed to load quiz data.';
+                    }
+                };
+
                 // Initialize app when component mounts
                 const init = async () => {
                     await initializeApp()
@@ -2644,6 +2834,7 @@
                     await loadQuizData() // Load quiz data after initialization
                     disableTooltipsOnTouch() // Disable tooltips on touch devices
                 }
+
                 init()
 
                 return {
@@ -2685,6 +2876,7 @@
                     completionMissingCount,
                     completionBlankIndices,
                     completionFilledWords,
+                    completionFontFamily,
                     toggleDarkMode,
                     applyThemeToDOM,
                     changeTab,
