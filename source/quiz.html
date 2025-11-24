@@ -955,8 +955,8 @@
                             </div>
                             <div class="quran-text debug-font" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
                                 <span v-for="(word, index) in completionVerseDisplay || []" :key="index">
-                                    <span v-if="word.isBlank" class="quran-word inline-block bg-yellow-200 text-yellow-900 px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
-                                        {{ getFilledWord(word.originalIndex) || '___' }}
+                                    <span v-if="word.isBlank" class="quran-word inline-block px-2 py-1 rounded mx-1 min-w-[100px] text-center font-semibold" :class="completionAnswerRevealed && !completionIsCorrect ? 'bg-green-200 text-green-900' : 'bg-yellow-200 text-yellow-900'" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
+                                        {{ completionAnswerRevealed && !completionIsCorrect ? getCorrectWordForBlank(word.originalIndex) : (getFilledWord(word.originalIndex) || '___') }}
                                     </span>
                                     <span v-else class="quran-word inline-block mx-1" :style="{ fontFamily: completionFontFamily + ', Traditional Arabic, Arial Unicode MS, sans-serif' }">
                                         {{ word.text }}
@@ -2237,6 +2237,13 @@
                     return option && option.text ? option.text : null;
                 };
 
+                // Helper function to get the correct word for a blank position when answer is revealed and wrong
+                const getCorrectWordForBlank = (originalIndex) => {
+                    const positionInBlankIndices = completionBlankIndices.value.indexOf(originalIndex);
+                    if (positionInBlankIndices === -1) return '___';
+                    return completionCorrectAnswers.value[positionInBlankIndices] || '___';
+                };
+
                 // Select a completion word
                 const selectCompletionWord = (index) => {
                     if (!completionSelectedWords.value.includes(index)) {
@@ -2893,6 +2900,7 @@
                     selectCompletionWord,
                     checkCompletionAnswer,
                     getFilledWord,
+                    getCorrectWordForBlank,
                     lightningSelectedTime,
                     lightningSelectedDifficulty,
                     lightningTimeLeft,
