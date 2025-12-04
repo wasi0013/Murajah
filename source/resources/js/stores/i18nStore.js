@@ -1,6 +1,7 @@
 const { reactive } = Vue;
 
-const DEFAULT_LOCALE = 'en';
+const DEFAULT_LOCALE = 'bn';
+const FALLBACK_LOCALE = 'en';
 const LOCALE_FILES = {
   en: './resources/data/i18n/en.json',
   bn: './resources/data/i18n/bn.json'
@@ -8,7 +9,7 @@ const LOCALE_FILES = {
 
 const i18nState = reactive({
   currentLocale: DEFAULT_LOCALE,
-  fallbackLocale: DEFAULT_LOCALE,
+  fallbackLocale: FALLBACK_LOCALE,
   loading: false,
   messages: {}
 });
@@ -90,8 +91,11 @@ const initLocale = async (murajahDB) => {
       console.warn('[Murajah][i18n] Failed to load stored locale:', error);
     }
   }
-  await fetchLocale(DEFAULT_LOCALE);
-  if (locale !== DEFAULT_LOCALE) {
+  await fetchLocale(FALLBACK_LOCALE);
+  if (FALLBACK_LOCALE !== DEFAULT_LOCALE) {
+    await fetchLocale(DEFAULT_LOCALE);
+  }
+  if (locale !== DEFAULT_LOCALE && locale !== FALLBACK_LOCALE) {
     await fetchLocale(locale);
   }
   i18nState.currentLocale = locale;
