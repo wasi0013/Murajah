@@ -186,7 +186,7 @@
   "actions": {
     "memorize": "Memorized",
     "memorized": "Forgot",
-    "perfect": "Perfect",
+    "perfect": "Recited without mistakes",
     "record": "Record",
     "recording": "Recording..."
   },

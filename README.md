@@ -214,7 +214,6 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 ### Data Privacy
 
 - ✅ No server-side storage
-- ✅ No tracking or analytics
 - ✅ All data remains on your device
 - ✅ Completely private and secure
 
