@@ -128,7 +128,7 @@ export const QuranAudioPlayerComponent = {
               >
                 <option value="">▶️ Full Surah</option>
                 <option v-for="(name, num) in availableSurahs" :key="num" :value="num">
-                  {{ num }}. {{ name }}
+                  {{ num }}. {{ translateSurahNameForDropdown(num) }}
                 </option>
               </select>
             </div>
@@ -232,6 +232,14 @@ export const QuranAudioPlayerComponent = {
     surahNames: {
       type: Object,
       default: () => ({})
+    },
+    localeSurahs: {
+      type: Object,
+      default: () => ({})
+    },
+    currentLocale: {
+      type: String,
+      default: 'en'
     }
   },
 
@@ -288,12 +296,12 @@ export const QuranAudioPlayerComponent = {
 
     selectedSurahName() {
       // Get the surah name from the availableSurahs map using the selected surah number
-      // Format: "7. الأعراف"
+      // Format: "7. الأعراف" or translated name if available
       if (!this.selectedSurahForAudio || !this.availableSurahs) {
         return '';
       }
-      const name = this.availableSurahs[this.selectedSurahForAudio] || `Surah ${this.selectedSurahForAudio}`;
-      return `${this.selectedSurahForAudio}. ${name}`;
+      const translated = this.translateSurahNameForDropdown(this.selectedSurahForAudio);
+      return `${this.selectedSurahForAudio}. ${translated}`;
     },
 
     currentVerseName() {
@@ -326,6 +334,11 @@ export const QuranAudioPlayerComponent = {
   },
 
   methods: {
+    translateSurahNameForDropdown(surahNum) {
+      if (!surahNum) return '';
+      const key = surahNum.toString();
+      return this.localeSurahs?.[key] || this.availableSurahs[key] || this.availableSurahs[surahNum] || `Surah ${surahNum}`;
+    },
     /**
      * Load verses for the current page
      */
@@ -958,10 +971,10 @@ export const QuranAudioPlayerComponent = {
       const surahMap = {};
       for (const verse of allVerses) {
         if (verse && verse.chapter && !surahMap[verse.chapter]) {
-          // Use surah name from props, which contains the Arabic names
-          surahMap[verse.chapter] = this.surahNames && this.surahNames[verse.chapter] 
-            ? this.surahNames[verse.chapter] 
-            : `Surah ${verse.chapter}`;
+          const chapterKey = verse.chapter.toString();
+          const translation = this.localeSurahs && this.localeSurahs[chapterKey];
+          const arabicName = this.surahNames && this.surahNames[verse.chapter];
+          surahMap[verse.chapter] = translation || arabicName || `Surah ${verse.chapter}`;
         }
       }
 

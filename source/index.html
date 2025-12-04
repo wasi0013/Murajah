@@ -1194,6 +1194,29 @@
           });
         }
 
+        async saveLanguage(locale) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: 'murajah-language', value: locale });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadLanguage(defaultLocale = 'en') {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get('murajah-language');
+            request.onsuccess = () => {
+              const result = request.result;
+              resolve(result ? result.value : defaultLocale);
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
         // ===== Daily Goals Methods =====
         async saveDailyGoal(dailyGoal) {
           const tx = this.db.transaction(['dailyGoals'], 'readwrite');
@@ -1364,6 +1387,17 @@
       const shareBadgeModalModule = await import('./resources/js/components/ShareBadgeModal.js');
       const ShareBadgeModal = shareBadgeModalModule.default;
 
+      const i18nStoreModule = await import('./resources/js/stores/i18nStore.js');
+      const {
+        i18nState,
+        SUPPORTED_LOCALES,
+        setLocale,
+        initLocale,
+        t
+      } = i18nStoreModule;
+
+      await initLocale(murajahDB);
+
       const app = createApp({
         template: `
           <div :class="{ 'dark-mode': appStore.theme === 'dark' }" class="min-h-screen transition-all bg-white text-gray-900">
@@ -1371,7 +1405,7 @@
             <div v-if="isInitializing" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div class="text-center">
                 <i class="fas fa-spinner fa-spin text-4xl text-white mb-4"></i>
-                <p class="text-white text-lg">Loading Murajah...</p>
+                  <p class="text-white text-lg">{{ $t('app.loading') }}</p>
               </div>
             </div>
 
@@ -1383,22 +1417,22 @@
                 </div>
                 <div class="flex items-center gap-4">
  
-                  <a href="#quran-text-section" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Memorize">
+                  <a href="#quran-text-section" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
                     <i class="fas fa-book text-gray-700 text-xl"></i>
                   </a>
                   
-                  <a href="https:///murajah.pages.dev/quiz" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Quiz">
+                  <a href="https:///murajah.pages.dev/quiz" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
                     <i class="fas fa-question-circle text-gray-700 text-xl"></i>
                   </a>
  
-                  <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="How to use Murajah">
+                  <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
                     <i class="fas fa-info-circle text-gray-700  text-xl"></i>
                   </button>
 
                   <!-- Achievement Icon (HIDDEN) -->
                   <!-- <achievement-navbar-component></achievement-navbar-component> -->
                   
-                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" title="Settings">
+                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
                   </button>
                 </div>
@@ -1433,21 +1467,21 @@
                 </div>
               </section>
               <!-- Daily Revision Banner -->
-              <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
+                <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
                 <div class="flex-1">
                   <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
                     <i class="fas fa-quran"></i>
-                    Quick test
+                    {{ $t('quickTest.title') }}
                   </h3>
-                  <p class="text-sm opacity-90">Click Get Random Page, then Record and recite from memory. </p>
-                  <p class="text-sm opacity-90">Review your recording to spot mistakes.</p>
+                  <p class="text-sm opacity-90">{{ $t('quickTest.description1') }}</p>
+                  <p class="text-sm opacity-90">{{ $t('quickTest.description2') }}</p>
                 </div>
-                <button 
+                  <button 
                   @click="selectRandomPage" 
                   class="ml-4 px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-2"
                 >
                   <i class="fas fa-random"></i>
-                  Get a Random Page
+                    {{ $t('quickTest.button') }}
                 </button>
               </div>
 
@@ -1455,7 +1489,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
                 <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
                   <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
-                  <p class="text-gray-600 ">Loading daily goals...</p>
+                  <p class="text-gray-600 ">{{ $t('dailyGoals.loading') }}</p>
                 </div>
                 <template v-else>
                 <!-- Header with Streak Badge -->
@@ -1463,7 +1497,7 @@
                   <div>
                     <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-3">
                       <i class="fas fa-calendar-check text-amber-500"></i>
-                      Daily Goals
+                      {{ $t('dailyGoals.title') }}
                     </h2>
                     <p class="text-sm text-gray-600  mt-1">{{ new Date(dailyGoalsStore.todayGoal.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
                   </div>
@@ -1475,9 +1509,9 @@
                         <i class="fas fa-fire"></i>
                         {{ dailyGoalsStore.streak }}
                       </div>
-                      <p class="text-xs font-semibold mt-1">DAY STREAK</p>
+                      <p class="text-xs font-semibold mt-1">{{ $t('dailyGoals.streakLabel') }}</p>
                     </div>
-                    <p class="text-xs text-gray-600 ">Best: {{ dailyGoalsStore.longestStreak }}</p>
+                    <p class="text-xs text-gray-600 ">{{ $t('dailyGoals.bestLabel', { best: dailyGoalsStore.longestStreak }) }}</p>
                   </div>
                 </div>
 
@@ -1487,7 +1521,7 @@
                   <div class="flex-shrink-0 text-center">
                     <div class="mb-4">
                       <div class="text-4xl font-bold text-amber-600 ">{{ getTaskProgressPercentage() }}%</div>
-                      <div class="text-sm text-gray-600  mt-1">{{ Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }}/{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length }} tasks</div>
+                      <div class="text-sm text-gray-600  mt-1">{{ $t('dailyGoals.tasksSummary', { completed: Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length, total: Object.keys(dailyGoalsStore.todayGoal.tasks).length }) }}</div>
                     </div>
                     <!-- Simple progress bar -->
                     <div class="w-24 h-3 bg-gray-300  rounded-full overflow-hidden">
@@ -1567,7 +1601,7 @@
                 <div v-else-if="getTaskProgressPercentage() >= 50" class="bg-blue-100  border-l-4 border-blue-500 p-4 rounded">
                   <p class="text-blue-800  font-semibold flex items-center gap-2">
                     <i class="fas fa-arrow-up text-blue-500"></i>
-                    Great progress! Complete {{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length }} more task{{ Object.keys(dailyGoalsStore.todayGoal.tasks).length - Object.values(dailyGoalsStore.todayGoal.tasks).filter(t => t.completed).length !== 1 ? 's' : '' }}.
+                    {{ $t('dashboard.greatProgress', { remaining: remainingDailyTasks, pluralSuffix: remainingDailyTasks !== 1 ? 's' : '' }) }}
                   </p>
                 </div>
                 </template>
@@ -1578,7 +1612,7 @@
                 <div class="bg-blue-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Memorized</p>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.memorized') }}</p>
                       <p class="text-3xl font-bold">{{ statistics.memorized }} <i class="fas fa-file-alt text-2xl"></i></p>
                       <p class="text-xs opacity-75">{{ statistics.percentage }}%</p>
                     </div>
@@ -1589,9 +1623,9 @@
                 <div class="bg-purple-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Total Hasanah</p>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalHasanah') }}</p>
                       <p class="text-3xl font-bold">{{ formattedTotalScore }}</p>
-                      <p class="text-xs opacity-75">for reciting {{ perfectRevisionsCount }} pages with no mistakes.</p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.perfectHasanahDescription', { pages: perfectRevisionsCount }) }}</p>
                     </div>
                     <i class="fas fa-star text-4xl opacity-30"></i>
                   </div>
@@ -1600,9 +1634,9 @@
                 <div class="bg-red-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Total Mistakes</p>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalMistakes') }}</p>
                       <p class="text-3xl font-bold">{{ statistics.mistakes }}</p>
-                      <p class="text-xs opacity-75">Tap on word to toggle mistakes</p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.mistakesHint') }}</p>
                     </div>
                     <i class="fas fa-exclamation-circle text-4xl opacity-30"></i>
                   </div>
@@ -1611,9 +1645,9 @@
                 <div class="bg-green-500 text-white p-6 rounded-lg shadow">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm opacity-90">Recordings</p>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.recordings') }}</p>
                       <p class="text-3xl font-bold">{{ statistics.audios }}</p>
-                      <p class="text-xs opacity-75">available now.</p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.recordingsAvailable') }}</p>
                     </div>
                     <i class="fas fa-microphone text-4xl opacity-30"></i>
                   </div>
@@ -1796,121 +1830,121 @@
                 <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                   <!-- Surah Navigator -->
                   <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-2 sm:px-3 py-1 sm:py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-xs sm:text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
-                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + currentSurahName) : '📖 Surahs (114)' }}</option>
-                    <option value="1">1. الفاتحة</option>
-                    <option value="2">2. البقرة</option>
-                    <option value="3">3. آل عمران</option>
-                    <option value="4">4. النساء</option>
-                    <option value="5">5. المائدة</option>
-                    <option value="6">6. الأنعام</option>
-                    <option value="7">7. الأعراف</option>
-                    <option value="8">8. الأنفال</option>
-                    <option value="9">9. التوبة</option>
-                    <option value="10">10. يونس</option>
-                    <option value="11">11. هود</option>
-                    <option value="12">12. يوسف</option>
-                    <option value="13">13. الرعد</option>
-                    <option value="14">14. إبراهيم</option>
-                    <option value="15">15. الحجر</option>
-                    <option value="16">16. النحل</option>
-                    <option value="17">17. الإسراء</option>
-                    <option value="18">18. الكهف</option>
-                    <option value="19">19. مريم</option>
-                    <option value="20">20. طه</option>
-                    <option value="21">21. الأنبياء</option>
-                    <option value="22">22. الحج</option>
-                    <option value="23">23. المؤمنون</option>
-                    <option value="24">24. النور</option>
-                    <option value="25">25. الفرقان</option>
-                    <option value="26">26. الشعراء</option>
-                    <option value="27">27. النمل</option>
-                    <option value="28">28. القصص</option>
-                    <option value="29">29. العنكبوت</option>
-                    <option value="30">30. الروم</option>
-                    <option value="31">31. لقمان</option>
-                    <option value="32">32. السجدة</option>
-                    <option value="33">33. الأحزاب</option>
-                    <option value="34">34. سبإ</option>
-                    <option value="35">35. فاطر</option>
-                    <option value="36">36. يس</option>
-                    <option value="37">37. الصافات</option>
-                    <option value="38">38. ص</option>
-                    <option value="39">39. الزمر</option>
-                    <option value="40">40. غافر</option>
-                    <option value="41">41. فصلت</option>
-                    <option value="42">42. الشورى</option>
-                    <option value="43">43. الزخرف</option>
-                    <option value="44">44. الدخان</option>
-                    <option value="45">45. الجاثية</option>
-                    <option value="46">46. الأحقاف</option>
-                    <option value="47">47. محمد</option>
-                    <option value="48">48. الفتح</option>
-                    <option value="49">49. الحجرات</option>
-                    <option value="50">50. ق</option>
-                    <option value="51">51. الذاريات</option>
-                    <option value="52">52. الطور</option>
-                    <option value="53">53. النجم</option>
-                    <option value="54">54. القمر</option>
-                    <option value="55">55. الرحمن</option>
-                    <option value="56">56. الواقعة</option>
-                    <option value="57">57. الحديد</option>
-                    <option value="58">58. المجادلة</option>
-                    <option value="59">59. الحشر</option>
-                    <option value="60">60. الممتحنة</option>
-                    <option value="61">61. الصف</option>
-                    <option value="62">62. الجمعة</option>
-                    <option value="63">63. المنافقون</option>
-                    <option value="64">64. التغابن</option>
-                    <option value="65">65. الطلاق</option>
-                    <option value="66">66. التحريم</option>
-                    <option value="67">67. الملك</option>
-                    <option value="68">68. القلم</option>
-                    <option value="69">69. الحاقة</option>
-                    <option value="70">70. المعارج</option>
-                    <option value="71">71. نوح</option>
-                    <option value="72">72. الجن</option>
-                    <option value="73">73. المزمل</option>
-                    <option value="74">74. المدثر</option>
-                    <option value="75">75. القيامة</option>
-                    <option value="76">76. الإنسان</option>
-                    <option value="77">77. المرسلات</option>
-                    <option value="78">78. النبأ</option>
-                    <option value="79">79. النازعات</option>
-                    <option value="80">80. عبس</option>
-                    <option value="81">81. التكوير</option>
-                    <option value="82">82. الإنفطار</option>
-                    <option value="83">83. المطففين</option>
-                    <option value="84">84. الإنشقاق</option>
-                    <option value="85">85. البروج</option>
-                    <option value="86">86. الطارق</option>
-                    <option value="87">87. الأعلى</option>
-                    <option value="88">88. الغاشية</option>
-                    <option value="89">89. الفجر</option>
-                    <option value="90">90. البلد</option>
-                    <option value="91">91. الشمس</option>
-                    <option value="92">92. الليل</option>
-                    <option value="93">93. الضحى</option>
-                    <option value="94">94. الشرح</option>
-                    <option value="95">95. التين</option>
-                    <option value="96">96. العلق</option>
-                    <option value="97">97. القدر</option>
-                    <option value="98">98. البينة</option>
-                    <option value="99">99. الزلزلة</option>
-                    <option value="100">100. العاديات</option>
-                    <option value="101">101. القارعة</option>
-                    <option value="102">102. التكاثر</option>
-                    <option value="103">103. العصر</option>
-                    <option value="104">104. الهمزة</option>
-                    <option value="105">105. الفيل</option>
-                    <option value="106">106. قريش</option>
-                    <option value="107">107. الماعون</option>
-                    <option value="108">108. الكوثر</option>
-                    <option value="109">109. الكافرون</option>
-                    <option value="110">110. النصر</option>
-                    <option value="111">111. المسد</option>
-                    <option value="112">112. الإخلاص</option>
-                    <option value="113">113. الفلق</option>
-                    <option value="114">114. الناس</option>
+                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + getSurahNameTranslated(currentSurahNumber)) : '📖 Surahs (114)' }}</option>
+                    <option value="1">1. {{ getSurahNameTranslated(1) }}</option>
+                    <option value="2">2. {{ getSurahNameTranslated(2) }}</option>
+                    <option value="3">3. {{ getSurahNameTranslated(3) }}</option>
+                    <option value="4">4. {{ getSurahNameTranslated(4) }}</option>
+                    <option value="5">5. {{ getSurahNameTranslated(5) }}</option>
+                    <option value="6">6. {{ getSurahNameTranslated(6) }}</option>
+                    <option value="7">7. {{ getSurahNameTranslated(7) }}</option>
+                    <option value="8">8. {{ getSurahNameTranslated(8) }}</option>
+                    <option value="9">9. {{ getSurahNameTranslated(9) }}</option>
+                    <option value="10">10. {{ getSurahNameTranslated(10) }}</option>
+                    <option value="11">11. {{ getSurahNameTranslated(11) }}</option>
+                    <option value="12">12. {{ getSurahNameTranslated(12) }}</option>
+                    <option value="13">13. {{ getSurahNameTranslated(13) }}</option>
+                    <option value="14">14. {{ getSurahNameTranslated(14) }}</option>
+                    <option value="15">15. {{ getSurahNameTranslated(15) }}</option>
+                    <option value="16">16. {{ getSurahNameTranslated(16) }}</option>
+                    <option value="17">17. {{ getSurahNameTranslated(17) }}</option>
+                    <option value="18">18. {{ getSurahNameTranslated(18) }}</option>
+                    <option value="19">19. {{ getSurahNameTranslated(19) }}</option>
+                    <option value="20">20. {{ getSurahNameTranslated(20) }}</option>
+                    <option value="21">21. {{ getSurahNameTranslated(21) }}</option>
+                    <option value="22">22. {{ getSurahNameTranslated(22) }}</option>
+                    <option value="23">23. {{ getSurahNameTranslated(23) }}</option>
+                    <option value="24">24. {{ getSurahNameTranslated(24) }}</option>
+                    <option value="25">25. {{ getSurahNameTranslated(25) }}</option>
+                    <option value="26">26. {{ getSurahNameTranslated(26) }}</option>
+                    <option value="27">27. {{ getSurahNameTranslated(27) }}</option>
+                    <option value="28">28. {{ getSurahNameTranslated(28) }}</option>
+                    <option value="29">29. {{ getSurahNameTranslated(29) }}</option>
+                    <option value="30">30. {{ getSurahNameTranslated(30) }}</option>
+                    <option value="31">31. {{ getSurahNameTranslated(31) }}</option>
+                    <option value="32">32. {{ getSurahNameTranslated(32) }}</option>
+                    <option value="33">33. {{ getSurahNameTranslated(33) }}</option>
+                    <option value="34">34. {{ getSurahNameTranslated(34) }}</option>
+                    <option value="35">35. {{ getSurahNameTranslated(35) }}</option>
+                    <option value="36">36. {{ getSurahNameTranslated(36) }}</option>
+                    <option value="37">37. {{ getSurahNameTranslated(37) }}</option>
+                    <option value="38">38. {{ getSurahNameTranslated(38) }}</option>
+                    <option value="39">39. {{ getSurahNameTranslated(39) }}</option>
+                    <option value="40">40. {{ getSurahNameTranslated(40) }}</option>
+                    <option value="41">41. {{ getSurahNameTranslated(41) }}</option>
+                    <option value="42">42. {{ getSurahNameTranslated(42) }}</option>
+                    <option value="43">43. {{ getSurahNameTranslated(43) }}</option>
+                    <option value="44">44. {{ getSurahNameTranslated(44) }}</option>
+                    <option value="45">45. {{ getSurahNameTranslated(45) }}</option>
+                    <option value="46">46. {{ getSurahNameTranslated(46) }}</option>
+                    <option value="47">47. {{ getSurahNameTranslated(47) }}</option>
+                    <option value="48">48. {{ getSurahNameTranslated(48) }}</option>
+                    <option value="49">49. {{ getSurahNameTranslated(49) }}</option>
+                    <option value="50">50. {{ getSurahNameTranslated(50) }}</option>
+                    <option value="51">51. {{ getSurahNameTranslated(51) }}</option>
+                    <option value="52">52. {{ getSurahNameTranslated(52) }}</option>
+                    <option value="53">53. {{ getSurahNameTranslated(53) }}</option>
+                    <option value="54">54. {{ getSurahNameTranslated(54) }}</option>
+                    <option value="55">55. {{ getSurahNameTranslated(55) }}</option>
+                    <option value="56">56. {{ getSurahNameTranslated(56) }}</option>
+                    <option value="57">57. {{ getSurahNameTranslated(57) }}</option>
+                    <option value="58">58. {{ getSurahNameTranslated(58) }}</option>
+                    <option value="59">59. {{ getSurahNameTranslated(59) }}</option>
+                    <option value="60">60. {{ getSurahNameTranslated(60) }}</option>
+                    <option value="61">61. {{ getSurahNameTranslated(61) }}</option>
+                    <option value="62">62. {{ getSurahNameTranslated(62) }}</option>
+                    <option value="63">63. {{ getSurahNameTranslated(63) }}</option>
+                    <option value="64">64. {{ getSurahNameTranslated(64) }}</option>
+                    <option value="65">65. {{ getSurahNameTranslated(65) }}</option>
+                    <option value="66">66. {{ getSurahNameTranslated(66) }}</option>
+                    <option value="67">67. {{ getSurahNameTranslated(67) }}</option>
+                    <option value="68">68. {{ getSurahNameTranslated(68) }}</option>
+                    <option value="69">69. {{ getSurahNameTranslated(69) }}</option>
+                    <option value="70">70. {{ getSurahNameTranslated(70) }}</option>
+                    <option value="71">71. {{ getSurahNameTranslated(71) }}</option>
+                    <option value="72">72. {{ getSurahNameTranslated(72) }}</option>
+                    <option value="73">73. {{ getSurahNameTranslated(73) }}</option>
+                    <option value="74">74. {{ getSurahNameTranslated(74) }}</option>
+                    <option value="75">75. {{ getSurahNameTranslated(75) }}</option>
+                    <option value="76">76. {{ getSurahNameTranslated(76) }}</option>
+                    <option value="77">77. {{ getSurahNameTranslated(77) }}</option>
+                    <option value="78">78. {{ getSurahNameTranslated(78) }}</option>
+                    <option value="79">79. {{ getSurahNameTranslated(79) }}</option>
+                    <option value="80">80. {{ getSurahNameTranslated(80) }}</option>
+                    <option value="81">81. {{ getSurahNameTranslated(81) }}</option>
+                    <option value="82">82. {{ getSurahNameTranslated(82) }}</option>
+                    <option value="83">83. {{ getSurahNameTranslated(83) }}</option>
+                    <option value="84">84. {{ getSurahNameTranslated(84) }}</option>
+                    <option value="85">85. {{ getSurahNameTranslated(85) }}</option>
+                    <option value="86">86. {{ getSurahNameTranslated(86) }}</option>
+                    <option value="87">87. {{ getSurahNameTranslated(87) }}</option>
+                    <option value="88">88. {{ getSurahNameTranslated(88) }}</option>
+                    <option value="89">89. {{ getSurahNameTranslated(89) }}</option>
+                    <option value="90">90. {{ getSurahNameTranslated(90) }}</option>
+                    <option value="91">91. {{ getSurahNameTranslated(91) }}</option>
+                    <option value="92">92. {{ getSurahNameTranslated(92) }}</option>
+                    <option value="93">93. {{ getSurahNameTranslated(93) }}</option>
+                    <option value="94">94. {{ getSurahNameTranslated(94) }}</option>
+                    <option value="95">95. {{ getSurahNameTranslated(95) }}</option>
+                    <option value="96">96. {{ getSurahNameTranslated(96) }}</option>
+                    <option value="97">97. {{ getSurahNameTranslated(97) }}</option>
+                    <option value="98">98. {{ getSurahNameTranslated(98) }}</option>
+                    <option value="99">99. {{ getSurahNameTranslated(99) }}</option>
+                    <option value="100">100. {{ getSurahNameTranslated(100) }}</option>
+                    <option value="101">101. {{ getSurahNameTranslated(101) }}</option>
+                    <option value="102">102. {{ getSurahNameTranslated(102) }}</option>
+                    <option value="103">103. {{ getSurahNameTranslated(103) }}</option>
+                    <option value="104">104. {{ getSurahNameTranslated(104) }}</option>
+                    <option value="105">105. {{ getSurahNameTranslated(105) }}</option>
+                    <option value="106">106. {{ getSurahNameTranslated(106) }}</option>
+                    <option value="107">107. {{ getSurahNameTranslated(107) }}</option>
+                    <option value="108">108. {{ getSurahNameTranslated(108) }}</option>
+                    <option value="109">109. {{ getSurahNameTranslated(109) }}</option>
+                    <option value="110">110. {{ getSurahNameTranslated(110) }}</option>
+                    <option value="111">111. {{ getSurahNameTranslated(111) }}</option>
+                    <option value="112">112. {{ getSurahNameTranslated(112) }}</option>
+                    <option value="113">113. {{ getSurahNameTranslated(113) }}</option>
+                    <option value="114">114. {{ getSurahNameTranslated(114) }}</option>
                   </select>
 
                   <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
@@ -1958,6 +1992,8 @@
                 :current-page="appStore.currentPage"
                 :quran-data="quranData.quranWithPages"
                 :surah-names="quranData.surahNames"
+                :locale-surahs="currentLocaleSurahs"
+                :current-locale="currentLocale"
               ></quran-audio-player-component>
 
               <!-- Mistake Bubble Grid -->
@@ -2170,10 +2206,10 @@
                   </div>
                   <div class="mt-4 p-4 bg-gray-50  rounded-lg border border-gray-200">
                     <p class="text-xs text-gray-600 ">
-                      <span class="font-semibold">Legend:</span>
-                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #d1d5db; border: 1px solid rgba(0,0,0,0.1);"></span> Not started</span>
-                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #a7f3d0; border: 1px solid rgba(0,0,0,0.1);"></span> 1 revision</span>
-                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #10b981; border: 1px solid rgba(0,0,0,0.1);"></span> 4+ revisions</span>
+                      <span class="font-semibold">{{ $t('dailyGoals.legendTitle') }}</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #d1d5db; border: 1px solid rgba(0,0,0,0.1);"></span> {{ $t('dailyGoals.legendNotStarted') }}</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #a7f3d0; border: 1px solid rgba(0,0,0,0.1);"></span> {{ $t('dailyGoals.legendOneRevision') }}</span>
+                      <span class="inline-block ml-2"><span class="inline-block w-3 h-3 rounded-full" style="background: #10b981; border: 1px solid rgba(0,0,0,0.1);"></span> {{ $t('dailyGoals.legendFourPlusRevisions') }}</span>
                     </p>
                   </div>
                 </div>
@@ -2187,9 +2223,9 @@
                 <div class="sticky top-0 bg-white  border-b border-gray-200  px-6 py-4 flex items-center justify-between">
                   <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-2">
                     <i class="fas fa-cog"></i>
-                    Settings
+                    {{ $t('settings.modalTitle') }}
                   </h2>
-                  <button @click="showSettingsModal = false" class="text-gray-500  hover:text-gray-700  transition-colors">
+                  <button @click="showSettingsModal = false" :title="$t('settings.close')" class="text-gray-500  hover:text-gray-700  transition-colors">
                     <i class="fas fa-times text-2xl"></i>
                   </button>
                 </div>
@@ -2200,23 +2236,38 @@
                   <div class="space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-sliders-h text-blue-600"></i>
-                      General Settings
+                      {{ $t('settings.generalTitle') }}
                     </h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Font Size</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.fontSize') }}</label>
                         <select id="fontSizeSelect" name="fontSize" v-model="settingsStore.fontSize" @change="updateSettings" class="w-full px-4 py-2 border border-gray-300  rounded-lg  ">
-                          <option value="small">Small</option>
-                          <option value="medium">Medium</option>
-                          <option value="large">Large</option>
+                          <option value="small">{{ $t('settings.fontSizeSmall') }}</option>
+                          <option value="medium">{{ $t('settings.fontSizeMedium') }}</option>
+                          <option value="large">{{ $t('settings.fontSizeLarge') }}</option>
                         </select>
                       </div>
 
                       <div class="flex items-center">
                         <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  ">
-                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">Enable Tajweed Colors</label>
+                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.enableTajweed') }}</label>
+                      </div>
+
+                      <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('language.label') }}</label>
+                        <select
+                          id="languageSelect"
+                          name="language"
+                          class="w-full px-4 py-2 border border-gray-300  rounded-lg"
+                          :value="currentLocale"
+                          @change="handleLocaleChange"
+                        >
+                          <option v-for="locale in SUPPORTED_LOCALES" :key="locale" :value="locale">
+                            {{ $t(languageLabelKey(locale)) }}
+                          </option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -2225,12 +2276,12 @@
                   <div class="border-t border-gray-300  pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-fire text-orange-500"></i>
-                      Daily Goals Settings
+                      {{ $t('settings.dailyGoalsTitle') }}
                     </h3>
                     
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Pages Per Day</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.pagesPerDay') }}</label>
                         <input 
                           id="pagesPerDayInput" 
                           name="pagesPerDay"
@@ -2248,7 +2299,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Finish Revision in (days)</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.finishRevisionDays') }}</label>
                         <input 
                           id="finishRevisionDaysInput" 
                           name="finishRevisionDays"
@@ -2268,7 +2319,7 @@
                     <!-- Adjust Revision Chunk Slider -->
                     <div>
                       <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-medium text-gray-700 ">Adjust revision</label>
+                        <label class="block text-sm font-medium text-gray-700 ">{{ $t('settings.adjustRevision') }}</label>
                         <span class="text-sm font-semibold text-blue-600">
                           day {{ settingsStore.adjustRevisionChunk + 1 }}/{{ dailyGoalsStore.todayGoal?.totalChunks || 1 }}
                         </span>
@@ -2286,12 +2337,12 @@
                         >
                         <span class="text-sm font-medium text-gray-700 min-w-[2rem]">{{ settingsStore.adjustRevisionChunk + 1 }}</span>
                       </div>
-                      <p class="text-xs text-gray-500 mt-1">Manually select which chunk of pages to review today</p>
+                      <p class="text-xs text-gray-500 mt-1">{{ $t('settings.adjustRevisionTooltip') }}</p>
                     </div>
 
                     <!-- Task Selection -->
                     <div>
-                      <label class="block text-sm font-semibold text-gray-700  mb-3">Select daily tasks:</label>
+                      <label class="block text-sm font-semibold text-gray-700  mb-3">{{ $t('settings.selectTasksLabel') }}</label>
                       <div class="space-y-2">
                         <div class="flex items-center">
                           <input 
@@ -2304,7 +2355,7 @@
                           >
                           <label for="task-recite" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-volume-up text-green-500"></i>
-                            Recite 10 verses
+                            {{ $t('settings.taskRecite') }}
                           </label>
                         </div>
 
@@ -2319,7 +2370,7 @@
                           >
                           <label for="task-record" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-microphone text-red-500"></i>
-                            Do a quick test
+                            {{ $t('settings.taskRecord') }}
                           </label>
                         </div>
 
@@ -2886,7 +2937,7 @@
 
                 <!-- Legend and Stats -->
                 <div class="mt-6 pt-4 border-t border-gray-300  text-xs text-gray-600  ">
-                  <p>Contribution graph shows daily goal completion status for 2025. Green = all tasks completed, Yellow = partial completion, Gray = no tasks completed.</p>
+                  <p>{{ $t('dailyGoals.contributionInfo') }}</p>
                 </div>
 
                 <!-- Tooltip -->
@@ -3039,6 +3090,22 @@
             }
           });
 
+          const currentLocale = computed(() => i18nState.currentLocale);
+          const languageLabelKey = (locale) => {
+            const map = {
+              en: 'language.english',
+              bn: 'language.bangla'
+            };
+            return map[locale] || locale;
+          };
+
+          const handleLocaleChange = async (event) => {
+            const nextLocale = event?.target?.value;
+            if (nextLocale && nextLocale !== i18nState.currentLocale) {
+              await setLocale(nextLocale, murajahDB);
+            }
+          };
+
           // Recording countdown state
           const recordingCountdown = ref(null); // null, 3, 2, 1, 0 = recording started
           let countdownTimer = null;
@@ -3093,11 +3160,11 @@
               await initializeDailyGoals();
               
               console.log('[Murajah] App initialized | Memorized pages: ' + memorizedStore.memorizedPages.size);
-              appStore.successMessage = 'Murajah loaded successfully!';
+              appStore.successMessage = t('app.loaded');
               setTimeout(() => appStore.successMessage = '', 3000);
             } catch (error) {
               console.error('[Murajah] Initialization error:', error);
-              appStore.errorMessage = 'Failed to load Murajah. Please refresh.';
+              appStore.errorMessage = t('app.loadError');
             } finally {
               isInitializing.value = false;
               isAppInitialized.value = true; // Now allow watch to trigger
@@ -3367,7 +3434,7 @@
               console.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
             } catch (error) {
               console.error('[Murajah] Error initializing daily goals:', error);
-              appStore.errorMessage = 'Failed to initialize daily goals';
+              appStore.errorMessage = t('app.dailyGoalInitError');
               setTimeout(() => appStore.errorMessage = '', 3000);
             }
           };
@@ -3789,6 +3856,20 @@
               return surahName;
             }
             return `Surah ${surahNum}`;
+          };
+
+          // Get translated Surah name based on current locale
+          const getSurahNameTranslated = (surahNum) => {
+            if (!surahNum) {
+              return '';
+            }
+            const surahNumStr = surahNum.toString();
+            const localeMessages = i18nState.messages[currentLocale.value];
+            const translated = localeMessages?.surahs?.[surahNumStr];
+            if (translated) {
+              return translated;
+            }
+            return getSurahNameArabic(surahNum);
           };
 
           const currentPageHifzStatus = computed(() => {
@@ -4712,6 +4793,20 @@
             return null;
           });
 
+          const currentLocaleSurahs = computed(() => {
+            const messages = i18nState.messages[currentLocale.value];
+            return (messages && messages.surahs) ? messages.surahs : {};
+          });
+
+          const remainingDailyTasks = computed(() => {
+            if (!dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks) {
+              return 0;
+            }
+            const total = Object.keys(dailyGoalsStore.todayGoal.tasks).length;
+            const completed = Object.values(dailyGoalsStore.todayGoal.tasks).filter(task => task.completed).length;
+            return Math.max(0, total - completed);
+          });
+
           // Calculate total score from perfect revisions using hasanah values
           const totalPerfectRevisionsPoints = computed(() => {
             const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
@@ -5560,6 +5655,7 @@ Display:
             updateTooltipPosition,
             hideWordTooltip,
             getSurahNameArabic,
+            getSurahNameTranslated,
             updateSettings,
             openSettingsModal,
             clearPageMistakes,
@@ -5604,6 +5700,8 @@ Display:
             nonePercentage,
             last30DaysTrend,
             recentActivity,
+            remainingDailyTasks,
+            currentLocaleSurahs,
             getTrendDayTooltip,
             achievementStore,
             initializeAchievements,
@@ -5617,10 +5715,16 @@ Display:
             viewportWidth,
             isDevMode,
             totalUnlockedBadges,
-            achievementCompletionPercentage
+            achievementCompletionPercentage,
+            currentLocale,
+            SUPPORTED_LOCALES,
+            languageLabelKey,
+            handleLocaleChange
           };
         }
       });
+
+      app.config.globalProperties.$t = t;
 
       // Register components
       app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
