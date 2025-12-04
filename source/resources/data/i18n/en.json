@@ -184,8 +184,8 @@
     "jumpSurah": "Jump to Surah"
   },
   "actions": {
-    "memorize": "Memorize",
-    "memorized": "Memorized",
+    "memorize": "Memorized",
+    "memorized": "Forgot",
     "perfect": "Perfect",
     "record": "Record",
     "recording": "Recording..."
