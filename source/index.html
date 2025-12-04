@@ -1955,7 +1955,7 @@
                     <option value="114">114. {{ getSurahNameTranslated(114) }}</option>
                   </select>
 
-                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
+                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-gray-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
                     <span>{{ isCurrentPageMemorized ? $t('actions.memorized') : $t('actions.memorize') }}</span>
                   </button>
