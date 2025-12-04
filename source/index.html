@@ -1632,7 +1632,10 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalHasanah') }}</p>
-                      <p class="text-3xl font-bold">{{ formattedTotalScore }}</p>
+                      <p class="text-3xl font-bold">
+                        {{ formattedTotalScore }}
+                        <span v-if="formattedTotalScore != '0'">+</span>
+                      </p>
                       <p class="text-xs opacity-75">{{ $t('dashboard.stats.perfectHasanahDescription', { pages: perfectRevisionsCount }) }}</p>
                     </div>
                     <i class="fas fa-star text-4xl opacity-30"></i>

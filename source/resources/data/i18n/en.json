@@ -98,6 +98,8 @@
       "juz": "Juzs",
       "completion": "Completion",
       "points": "Points",
+      "totalHasanah": "Total Hasanah",
+      "totalMistakes": "Total Mistakes",
       "perfectHasanahDescription": "for reciting {pages} pages with no mistakes.",
       "mistakesHint": "Tap on word to toggle mistakes",
       "recordings": "Recordings",
