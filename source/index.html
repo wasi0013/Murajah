@@ -21,7 +21,7 @@
   <script src="./resources/js/vendor/vue.global.js"></script>
 
   <!-- Confetti Library (for achievement animations) -->
-  <script src="https://cdn.jsdelivr.net/npm/confetti-js@0.0.18/dist/index.min.js"></script>
+  <script async src="./resources/js/vendor/confetti-js.0.0.18.min.js"></script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JEMZ83QK37"></script>
@@ -46,6 +46,40 @@
       --card-light: #ffffff;
     }
 
+    .initial-loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      z-index: 50;
+      transition: opacity 0.3s ease;
+    }
+
+    .initial-loader__card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.5rem 2rem;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 1rem;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+    }
+
+    .initial-loader__card i {
+      font-size: 2rem;
+      color: #3b82f6;
+    }
+
+    .initial-loader__card p {
+      margin: 0;
+      font-weight: 600;
+      color: #111827;
+    }
+
     * {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -58,6 +92,7 @@
       font-weight: normal;
       font-style: normal;
       unicode-range: U+0600-U+06FF;
+      font-display: swap;
     }
 
     html {
@@ -1044,6 +1079,12 @@
   </style>
 </head>
 <body class="overflow-x-hidden">
+  <div id="initial-loader" class="initial-loader" aria-live="polite">
+    <div class="initial-loader__card">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      <p>Downloading data. Please wait...</p>
+    </div>
+  </div>
   <div id="app"></div>
 
   <script type="module">
@@ -5762,6 +5803,13 @@ Display:
       app.component('achievement-detail-component', AchievementDetailComponent);
 
       app.mount('#app');
+      const initialLoader = document.getElementById('initial-loader');
+      if (initialLoader) {
+        initialLoader.style.opacity = '0';
+        setTimeout(() => {
+          initialLoader.remove();
+        }, 300);
+      }
     })();
   </script>
 </body>
