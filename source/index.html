@@ -1040,6 +1040,7 @@
       filter: blur(8px);
       pointer-events: none;
     }
+    
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -1416,7 +1417,7 @@
                   <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-12 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
                 </div>
                 <div class="flex items-center gap-4">
- 
+
                   <a href="#quran-text-section" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
                     <i class="fas fa-book text-gray-700 text-xl"></i>
                   </a>
@@ -1429,8 +1430,15 @@
                     <i class="fas fa-info-circle text-gray-700  text-xl"></i>
                   </button>
 
-                  <!-- Achievement Icon (HIDDEN) -->
-                  <!-- <achievement-navbar-component></achievement-navbar-component> -->
+                  <button
+                    type="button"
+                    class="px-4 py-1 border border-gray-300 text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    @click="toggleLocale"
+                    :aria-label="localeToggleLabel"
+                    :title="localeToggleLabel"
+                  >
+                    {{ currentLocale === 'bn' ? $t('language.english') : $t('language.bangla') }}
+                  </button>
                   
                   <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
                     <i class="fas fa-cog text-gray-700  text-xl"></i>
@@ -1551,12 +1559,12 @@
                       <!-- Task Info -->
                       <div class="flex-1 min-w-0">
                         <h4 :class="['font-semibold text-gray-900  transition-all', task.completed && 'line-through text-gray-500'] ">
-                          {{ task.name }}
+                          {{ getDailyGoalLabel(taskName, task) }}
                         </h4>
-                        
+
                         <!-- For reviewRange, render pages as clickable links -->
                         <template v-if="taskName === 'reviewRange' && task.pages && task.pages.length">
-                          <p class="text-sm text-gray-600  mt-0.5">Revise these pages today:</p>
+                          <p class="text-sm text-gray-600  mt-0.5">{{ $t('dailyGoals.reviewPagesLabel') }}</p>
                           <div class="mt-1 flex flex-wrap gap-1">
                             <button
                               v-for="page in task.pages"
@@ -1573,19 +1581,19 @@
                         </template>
                         
                         <!-- Default description for other tasks -->
-                        <p v-else class="text-sm text-gray-600  mt-0.5">{{ task.description }}</p>
+                        <p v-else class="text-sm text-gray-600  mt-0.5">{{ getDailyGoalDescription(taskName, task) }}</p>
                         
                         <div v-if="taskName === 'memorizeDaily'" class="mt-2 text-xs text-gray-700  bg-purple-50  p-2 rounded">
-                          <i class="fas fa-angle-double-right"></i> Target: {{ task.targetPages }} page{{ task.targetPages !== 1 ? 's' : '' }} today
+                          <i class="fas fa-angle-double-right"></i> {{ $t('dailyGoals.memorizeTarget', { count: task.targetPages, pluralSuffix: task.targetPages !== 1 ? 's' : '' }) }}
                         </div>
                       </div>
 
                       <!-- Completion indicator -->
-                      <div v-if="task.completed" class="flex-shrink-0">
-                        <p class="text-xs text-green-600  font-semibold">
-                          <i class="fas fa-check-circle"></i> Done
-                        </p>
-                      </div>
+                        <div v-if="task.completed" class="flex-shrink-0">
+                          <p class="text-xs text-green-600  font-semibold">
+                            <i class="fas fa-check-circle"></i> {{ $t('dailyGoals.taskCompleted') }}
+                          </p>
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -1594,7 +1602,7 @@
                 <div v-if="getTaskProgressPercentage() === 100" class="bg-green-100  border-l-4 border-green-500 p-4 rounded">
                   <p class="text-green-800  font-semibold flex items-center gap-2">
                     <i class="fas fa-star text-yellow-400"></i>
-                    Excellent! You've completed all today's goals! Keep up the amazing work! 🎉
+                    {{ $t('dailyGoals.motivation.complete') }}
                   </p>
                 </div>
 
@@ -1657,8 +1665,8 @@
               <!-- Progress Section -->
               <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                  <h2 class="text-2xl font-bold text-gray-900 ">Progress</h2>
-                  <span class="text-sm text-gray-600 ">{{ statistics.memorized }}/604 Pages</span>
+                  <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
+                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: 604 }) }}</span>
                 </div>
 
                 <div class="space-y-2">
@@ -1669,15 +1677,15 @@
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p class="text-gray-600 ">Remaining</p>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.remainingLabel') }}</p>
                     <p class="text-xl font-bold">{{ statistics.remaining }}</p>
                   </div>
                   <div>
-                    <p class="text-gray-600 ">Juzs (Parts)</p>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.juzLabel') }}</p>
                     <p class="text-xl font-bold">{{ statistics.juzCount }}/30</p>
                   </div>
                   <div>
-                    <p class="text-gray-600 ">Est. Completion</p>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.completionLabel') }}</p>
                     <p class="text-sm font-bold">{{ formattedCompletion }}</p>
                   </div>
                 </div>
@@ -1769,7 +1777,7 @@
                     @click="previousPage" 
                     class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
                     style="opacity: 0.75;"
-                    :title="'Previous Page (' + (appStore.currentPage - 1) + ')'"
+                    :title="$t('navigation.previousPage') + ' (' + (appStore.currentPage - 1) + ')'"
                   >
                     <i class="fas fa-chevron-left text-2xl"></i>
                   </button>
@@ -1781,7 +1789,7 @@
                     @click="nextPage" 
                     class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
                     style="opacity: 0.75;"
-                    :title="'Next Page (' + (appStore.currentPage + 1) + ')'"
+                    :title="$t('navigation.nextPage') + ' (' + (appStore.currentPage + 1) + ')'"
                   >
                     <i class="fas fa-chevron-right text-2xl"></i>
                   </button>
@@ -1791,11 +1799,11 @@
 
               <!-- Review Pages Overlay -->
               <div v-if="showReviewPagesOverlay && dailyGoalsStore.todayGoal && dailyGoalsStore.todayGoal.tasks.reviewRange && dailyGoalsStore.todayGoal.tasks.reviewRange.pages.length > 0" class="review-pages-overlay">
-                <button @click="showReviewPagesOverlay = false" class="close-btn" title="Dismiss">
+                <button @click="showReviewPagesOverlay = false" class="close-btn" :title="$t('dashboard.reviewOverlay.dismiss')">
                   <i class="fas fa-times"></i>
                 </button>
                 <h4>
-                  <i class="fas fa-book-open mr-2"></i>Recite these pages today
+                  <i class="fas fa-book-open mr-2"></i>{{ $t('dashboard.reviewOverlay.title') }}
                 </h4>
                 <div class="pages-list">
                   <span v-for="page in dailyGoalsStore.todayGoal.tasks.reviewRange.pages" :key="page" @click="goToPageNumber(page)" class="page-tag">
@@ -1803,7 +1811,7 @@
                   </span>
                 </div>
                 <p style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); margin: 0; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
-                  Chunk {{ dailyGoalsStore.todayGoal.chunkNumber }}/{{ dailyGoalsStore.todayGoal.totalChunks }}
+                  {{ $t('dashboard.reviewOverlay.chunkLabel', { chunk: dailyGoalsStore.todayGoal.chunkNumber, totalChunks: dailyGoalsStore.todayGoal.totalChunks }) }}
                 </p>
               </div>
              
@@ -1820,8 +1828,8 @@
                     <span class="text-xs sm:text-sm text-gray-600 ">/604</span>
                   </div>
 
-                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" placeholder="Go">
-                  <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">Go</button>
+                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
+                  <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">{{ $t('navigation.go') }}</button>
 
                   <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
                     <i class="fas fa-chevron-right"></i>
@@ -1829,8 +1837,8 @@
                 </div>                <!-- Action Buttons -->
                 <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                   <!-- Surah Navigator -->
-                  <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-2 sm:px-3 py-1 sm:py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-xs sm:text-sm hover:border-blue-500  transition-colors cursor-pointer" title="Jump to Surah">
-                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + getSurahNameTranslated(currentSurahNumber)) : '📖 Surahs (114)' }}</option>
+                  <select id="surahNavigator" name="surahNavigator" @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" class="px-2 sm:px-3 py-1 sm:py-2 bg-white  border border-gray-300  rounded-lg text-gray-900  text-xs sm:text-sm hover:border-blue-500  transition-colors cursor-pointer" :title="$t('navigation.jumpSurah')">
+                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + getSurahNameTranslated(currentSurahNumber)) : $t('dashboard.surahPlaceholder') }}</option>
                     <option value="1">1. {{ getSurahNameTranslated(1) }}</option>
                     <option value="2">2. {{ getSurahNameTranslated(2) }}</option>
                     <option value="3">3. {{ getSurahNameTranslated(3) }}</option>
@@ -1949,18 +1957,18 @@
 
                   <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
-                    <span>{{ isCurrentPageMemorized ? 'Memorized' : 'Memorize' }}</span>
+                    <span>{{ isCurrentPageMemorized ? $t('actions.memorized') : $t('actions.memorize') }}</span>
                   </button>
 
                   <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-star"></i>
-                    <span>Perfect</span>
+                    <span>{{ $t('actions.perfect') }}</span>
                     <span v-if="currentPagePerfectCount > 0" class="font-bold">({{ currentPagePerfectCount }})</span>
                   </button>
 
                   <button v-if="AudioRecorder.isSupported() && !audioStore.isRecording" @click="startRecording" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-microphone"></i>
-                    <span>Record</span>
+                    <span>{{ $t('actions.record') }}</span>
                   </button>
                 </div>
 
@@ -1974,7 +1982,7 @@
                 <!-- Recording Status -->
                 <div v-if="audioStore.isRecording" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-red-100  rounded-lg border-2 border-red-500">
                   <div class="flex-1">
-                    <p class="font-bold text-red-700  text-xs sm:text-sm">Recording...</p>
+                    <p class="font-bold text-red-700  text-xs sm:text-sm">{{ $t('actions.recording') }}</p>
                     <p class="text-xs text-red-600 ">{{ recordingDuration }}</p>
                   </div>
                   <button @click="stopRecording" class="px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs sm:text-sm transition-colors">
@@ -2000,18 +2008,18 @@
               <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
-                  Mistakes on Page {{ appStore.currentPage }}
+                  {{ $t('mistakes.headerOnPage', { page: appStore.currentPage }) }}
                 </h3>
-                <p class="text-xs sm:text-sm text-gray-600 ">{{ currentPageMistakeCount }} mistake(s) found</p>
+                <p class="text-xs sm:text-sm text-gray-600 ">{{ $t('mistakes.found', { count: currentPageMistakeCount, pluralSuffix: currentPageMistakeCount !== 1 ? 's' : '' }) }}</p>
                 
                 <!-- Mistake Bubbles Grid -->
                 <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 sm:gap-2">
-                  <button 
+                    <button 
                     v-for="wordId in currentPageMistakes" 
                     :key="wordId"
                     @click="highlightWord({ id: wordId })"
                     class="p-2 sm:p-3 rounded-full bg-red-200  text-red-700  font-bold text-xs sm:text-sm hover:bg-red-300  transition-colors text-center border border-red-300 "
-                    :title="'Mistake: Word ' + wordId"
+                    :title="$t('mistakes.tooltip', { word: wordId })"
                   >
                     {{ wordId }}
                   </button>
@@ -2021,7 +2029,7 @@
                   @click="clearPageMistakes"
                   class="mt-2 sm:mt-4 px-3 sm:px-4 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm"
                 >
-                  Clear All Mistakes
+                  {{ $t('mistakes.clearAll') }}
                 </button>
               </div>
 
@@ -2029,7 +2037,7 @@
               <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
-                  Pages with Mistakes
+                  {{ $t('mistakes.pagesWith') }}
                 </h3>
                 <div v-if="pagesWithMistakes.length > 0" class="space-y-1 sm:space-y-2 max-h-48 overflow-y-auto">
                   <div v-for="page in pagesWithMistakes" :key="page.pageNumber" @click="goToPageNumber(page.pageNumber)" class="p-2 sm:p-3 bg-red-50  rounded-lg flex items-center justify-between gap-2 sm:gap-3 cursor-pointer hover:bg-red-100 transition-colors">
@@ -2044,7 +2052,7 @@
                   </div>
                 </div>
                 <div v-else class="text-gray-600  text-xs sm:text-sm">
-                  <i class="fas fa-circle-check mr-2 text-green-600 "></i> No mistakes recorded!
+                  <i class="fas fa-circle-check mr-2 text-green-600 "></i> {{ $t('mistakes.noMistakes') }}
                 </div>
               </div>
 
@@ -2054,27 +2062,27 @@
                 <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                   <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                     <i class="fas fa-microphone text-blue-600 "></i>
-                    Recent Recordings
+                    {{ $t('dashboard.recentRecordings.title') }}
                   </h3>
                   <div v-if="statistics.audios > 0" class="space-y-1.5 sm:space-y-2 md:space-y-3 max-h-48 overflow-y-auto">
                     <div v-for="(recording, idx) in recentRecordings" :key="idx" class="p-2 sm:p-3 bg-gray-100  rounded-lg flex items-center justify-between gap-2 sm:gap-3">
                       <div class="flex-1 min-w-0">
                         <p class="font-medium text-xs sm:text-sm text-gray-900 ">Page {{ recording.pageNumber }}</p>
                         <p class="text-xs text-gray-600 ">{{ recording.recordedAt }}</p>
-                        <p class="text-xs text-gray-600 " v-if="recording.duration">Duration: {{ formatAudioDuration(recording.duration) }} <!-- Debug: raw={{ recording.duration }} --></p>
+                        <p class="text-xs text-gray-600 " v-if="recording.duration">{{ $t('dashboard.recentRecordings.durationLabel', { duration: formatAudioDuration(recording.duration) }) }} <!-- Debug: raw={{ recording.duration }} --></p>
                       </div>
                       <div class="flex items-center gap-1 sm:gap-2">
-                        <button @click="playAudio(recording)" class="p-1.5 sm:p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="'Play recording for page ' + recording.pageNumber">
+                        <button @click="playAudio(recording)" class="p-1.5 sm:p-2 hover:bg-blue-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="$t('dashboard.recentRecordings.playTitle', { page: recording.pageNumber })">
                           <i class="fas fa-play"></i>
                         </button>
-                        <button @click="deleteAudio(idx)" class="p-1.5 sm:p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="'Delete recording for page ' + recording.pageNumber">
+                        <button @click="deleteAudio(idx)" class="p-1.5 sm:p-2 hover:bg-red-600 hover:text-white rounded-lg transition-colors text-gray-600 text-xs sm:text-sm" :title="$t('dashboard.recentRecordings.deleteTitle', { page: recording.pageNumber })">
                           <i class="fas fa-trash"></i>
                         </button>
                       </div>
                     </div>
                   </div>
                   <div v-else class="text-gray-600  text-xs sm:text-sm">
-                    <i class="fas fa-circle-info mr-2"></i> No recordings yet
+                    <i class="fas fa-circle-info mr-2"></i> {{ $t('dashboard.recentRecordings.noRecordings') }}
                   </div>
                 </div>
 
@@ -2082,25 +2090,25 @@
                 <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                   <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                     <i class="fas fa-chart-bar text-blue-600 "></i>
-                    Summary Statistics
+                    {{ $t('dashboard.stats.summaryTitle') }}
                   </h3>
                   <div class="grid grid-cols-2 gap-2 sm:gap-3">
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
-                      <p class="text-xs text-gray-600 ">Memorized</p>
+                      <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.memorized') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
-                      <p class="text-xs text-gray-500 ">of 604</p>
+                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofPages', { total: 604 }) }}</p>
                     </div>
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
-                      <p class="text-xs text-gray-600 ">Juzs</p>
+                      <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.juz') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-purple-600 ">{{ statistics.juzCount }}</p>
-                      <p class="text-xs text-gray-500 ">of 30</p>
+                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofJuz', { total: 30 }) }}</p>
                     </div>
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-green-50 to-green-100   rounded-lg">
-                      <p class="text-xs text-gray-600 ">Completion</p>
+                      <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.completion') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-green-600 ">{{ statistics.percentage }}%</p>
                     </div>
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg">
-                      <p class="text-xs text-gray-600 ">Points</p>
+                      <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.points') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-orange-600 ">{{ formattedTotalScore }}</p>
                     </div>
                   </div>
@@ -2111,7 +2119,7 @@
               <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
                 <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-chart-pie text-purple-600 "></i>
-                  Analytics & Progress
+                  {{ $t('dashboard.analyticsTitle') }}
                 </h2>
 
                 <!-- Tab Navigation -->
@@ -2120,20 +2128,20 @@
                     class="analytics-tab-btn" 
                     :class="{ active: analyticsActiveTab === 1 }"
                     @click="analyticsActiveTab = 1">
-                    Juz Progress
+                    {{ $t('dashboard.analyticsTabs.juzProgress') }}
                   </button>
                   <button 
                     class="analytics-tab-btn" 
                     :class="{ active: analyticsActiveTab === 2 }"
                     @click="analyticsActiveTab = 2">
-                    Page by Page
+                    {{ $t('dashboard.analyticsTabs.pageByPage') }}
                   </button>
                 </div>
 
                 <!-- Tab 1: Juz Progress Grid -->
                 <div v-if="analyticsActiveTab === 1" class="space-y-6">
                   <div>
-                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">Progress by Juz</h3>
+                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">{{ $t('dashboard.analyticsProgressByJuz') }}</h3>
                     <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
                       <button 
                         v-for="juzNum in 30" 
@@ -2154,28 +2162,28 @@
                       </button>
                     </div>
                     <p class="text-sm mt-3 flex items-center justify-center gap-4 flex-wrap text-gray-700 ">
-                      <span><span class="text-green-600  font-semibold">Completed</span></span>|
-                      <span><span class="text-yellow-500  font-semibold">Partial</span></span>|
-                      <span><span class="text-gray-400  font-semibold">Not started</span></span>
+                      <span><span class="text-green-600  font-semibold">{{ $t('dashboard.analyticsLegend.completed') }}</span></span>|
+                      <span><span class="text-yellow-500  font-semibold">{{ $t('dashboard.analyticsLegend.partial') }}</span></span>|
+                      <span><span class="text-gray-400  font-semibold">{{ $t('dashboard.analyticsLegend.notStarted') }}</span></span>
                     </p>
                   </div>
 
                   <!-- Completion Estimate -->
                   <div class="border-t border-gray-300  pt-6">
-                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">Completion Estimate</h3>
+                    <h3 class="text-lg font-bold mb-4 text-gray-900 ">{{ $t('dashboard.analyticsCompletionEstimate') }}</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="p-4 bg-blue-50  rounded-lg border border-blue-200 ">
-                        <p class="text-sm text-gray-600 ">Estimated Completion Date</p>
+                        <p class="text-sm text-gray-600 ">{{ $t('dashboard.analyticsEstimatedCompletionDate') }}</p>
                         <p class="text-2xl font-bold text-blue-600 ">{{ formattedCompletion }}</p>
                       </div>
                       <div class="p-4 bg-purple-50  rounded-lg border border-purple-200 ">
-                        <p class="text-sm text-gray-600 ">Days Remaining</p>
+                        <p class="text-sm text-gray-600 ">{{ $t('dashboard.analyticsDaysRemaining') }}</p>
                         <p class="text-2xl font-bold text-purple-600 ">{{ daysRemaining }}</p>
                       </div>
                     </div>
                     <div class="mt-4 p-4 bg-gray-100  rounded-lg text-gray-700  text-sm border border-gray-300 ">
                       <p>
-                        Based on {{ settingsStore.pagesPerDay }} page(s) per day, you will complete memorization in approximately {{ daysRemaining }} days.
+                        {{ $t('dashboard.analyticsCompletionSentence', { pagesPerDay: settingsStore.pagesPerDay, daysRemaining }) }}
                       </p>
                     </div>
                   </div>
@@ -2186,7 +2194,7 @@
                   <div class="mb-4 p-4 bg-blue-50  rounded-lg border border-blue-200">
                     <p class="text-sm text-blue-700 ">
                       <i class="fas fa-info-circle mr-2"></i>
-                      Each box represents one Juz. Each dot represents one page. Green shades indicate higher perfect revision counts. Click any dot to navigate to that page.
+                      {{ $t('dashboard.analyticsPageInfo') }}
                     </p>
                   </div>
                   <div class="page-dots-visualization">
@@ -2417,23 +2425,23 @@
                   <div class="border-t border-gray-300  pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-database text-green-600"></i>
-                      Data Management
+                      {{ $t('settings.dataManagementTitle') }}
                     </h3>
                     
                     <div class="flex gap-3 flex-wrap">
                       <button @click="exportData" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
                         <i class="fas fa-download"></i>
-                        <span>Export Data</span>
+                        <span>{{ $t('settings.exportData') }}</span>
                       </button>
 
                       <button @click="importData" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                         <i class="fas fa-upload"></i>
-                        <span>Import Data</span>
+                        <span>{{ $t('settings.importData') }}</span>
                       </button>
 
                       <button @click="resetApp" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
                         <i class="fas fa-redo"></i>
-                        <span>Reset All</span>
+                        <span>{{ $t('settings.resetAll') }}</span>
                       </button>
                     </div>
                   </div>
@@ -2442,17 +2450,17 @@
                   <div class="border-t border-gray-300  pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-list-check text-purple-600"></i>
-                      Bulk Memorization
+                      {{ $t('settings.bulkMemorizationTitle') }}
                     </h3>
-                    <p class="text-sm text-gray-600 ">Mark multiple pages as memorized at once</p>
+                    <p class="text-sm text-gray-600 ">{{ $t('settings.bulkMemorizationDescription') }}</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">Start Page</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkStartPage') }}</label>
                         <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div>
-                        <label class="block text-sm font-medium mb-2 text-gray-700 ">End Page</label>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkEndPage') }}</label>
                         <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div class="flex items-end">
@@ -2461,7 +2469,7 @@
                           class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
                         >
                           <i class="fas fa-check-double"></i>
-                          <span>Memorize Range</span>
+                          <span>{{ $t('settings.bulkMemorizeButton') }}</span>
                         </button>
                       </div>
                     </div>
@@ -2476,18 +2484,18 @@
                   <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-trophy text-yellow-500"></i>
-                      Achievements
+                      {{ $t('achievements.title') }}
                     </h3>
 
                     <!-- Achievement Stats -->
                     <div class="grid grid-cols-2 gap-4">
                       <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-                        <div class="text-sm font-medium text-gray-600 mb-1">Badges Unlocked</div>
+                        <div class="text-sm font-medium text-gray-600 mb-1">{{ $t('achievements.badgesUnlocked') }}</div>
                         <div class="text-3xl font-bold text-purple-600">{{ achievementStore.totalUnlocked }}/100</div>
-                        <div class="text-xs text-gray-600 mt-2">{{ achievementStore.completionPercentage }}% Complete</div>
+                        <div class="text-xs text-gray-600 mt-2">{{ $t('achievements.completionPercent', { percent: achievementStore.completionPercentage }) }}</div>
                       </div>
                       <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                        <div class="text-sm font-medium text-gray-600 mb-1">Completion</div>
+                        <div class="text-sm font-medium text-gray-600 mb-1">{{ $t('achievements.completion') }}</div>
                         <div class="w-full bg-gray-300 rounded-full h-2 mt-3">
                           <div 
                             class="bg-blue-600 h-2 rounded-full transition-all duration-500"
@@ -2504,7 +2512,7 @@
                         class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
                       >
                         <i class="fas fa-medal"></i>
-                        <span>View All Achievements</span>
+                        <span>{{ $t('achievements.actions.viewAll') }}</span>
                       </button>
 
                       <!-- Sync Badges Button -->
@@ -2514,25 +2522,25 @@
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
                       >
                         <i :class="syncInProgress ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
-                        <span>{{ syncInProgress ? 'Syncing...' : 'Sync Badges with Data' }}</span>
+                        <span>{{ syncInProgress ? $t('achievements.actions.syncing') : $t('achievements.actions.syncBadges') }}</span>
                       </button>
 
                       <!-- Debug Options (only in dev) -->
                       <div v-if="isDevMode" class="space-y-2 pt-2 border-t border-gray-200">
-                        <div class="text-xs font-semibold text-gray-600 uppercase">Developer Tools</div>
+                        <div class="text-xs font-semibold text-gray-600 uppercase">{{ $t('achievements.actions.developerTools') }}</div>
                         <button 
                           @click="unlockAllBadges"
                           class="w-full px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
                         >
                           <i class="fas fa-flask mr-2"></i>
-                          Unlock All Badges (Debug)
+                          {{ $t('achievements.actions.unlockAll') }}
                         </button>
                         <button 
                           @click="clearAllAchievements"
                           class="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                         >
                           <i class="fas fa-trash mr-2"></i>
-                          Clear All Achievements
+                          {{ $t('achievements.actions.clearAll') }}
                         </button>
                       </div>
                     </div>
@@ -2555,9 +2563,9 @@
                 <div class="sticky top-0 bg-white  border-b border-gray-200  px-6 py-4 flex items-center justify-between">
                   <h2 class="text-2xl font-bold text-gray-900  flex items-center gap-2">
                     <i class="fas fa-book-open text-blue-600"></i>
-                    How to Use Murajah Effectively
+                    {{ $t('helpModal.title') }}
                   </h2>
-                  <button @click="showHelpModal = false" class="text-gray-500  hover:text-gray-700  transition-colors">
+                  <button @click="showHelpModal = false" class="text-gray-500  hover:text-gray-700  transition-colors" :title="$t('helpModal.close')">
                     <i class="fas fa-times text-2xl"></i>
                   </button>
                 </div>
@@ -2568,24 +2576,24 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-hourglass-start text-orange-500"></i>
-                      Make a solid intention
+                      {{ $t('helpModal.sections.intention.title') }}
                     </h3>
                     <div class="bg-orange-50  rounded-lg p-4 border-l-4 border-orange-500 space-y-2">
-                      <p class="text-gray-700 "><span class="font-semibold">Make a lot of dua</span> - Ask Allah for help. Day and night keep supplicating to make it easy for you.</p>
-                      <p class="text-gray-700 "><span class="font-semibold">Do it for the sake of Allah</span> - Make a solid intention, Do it <strong>Only for the sake of Allah!</strong></p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Avoid major and minor sins. "Verily, knowledge is a light and the light of Allah is not given to a sinner".</p>
+                      <p class="text-gray-700 "><span class="font-semibold">{{ $t('helpModal.sections.intention.duaTitle') }}</span> - {{ $t('helpModal.sections.intention.duaDesc') }}</p>
+                      <p class="text-gray-700 "><span class="font-semibold">{{ $t('helpModal.sections.intention.sakeTitle') }}</span> - {{ $t('helpModal.sections.intention.sakeDesc') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.intention.tip') }}</p>
                     </div>
                   </div>
                   <!-- Daily Goals Section -->
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-fire text-orange-500"></i>
-                      Daily Goals & Streaks
+                      {{ $t('helpModal.sections.dailyGoals.title') }}
                     </h3>
                     <div class="bg-orange-50  rounded-lg p-4 border-l-4 border-orange-500 space-y-2">
-                      <p class="text-gray-700 "><span class="font-semibold">Complete daily goals</span> - Finish all your selected tasks every day to maintain your streak.</p>
-                      <p class="text-gray-700 "><span class="font-semibold">Beat your best streak</span> - Challenge yourself to set new personal records. Each day counts!</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Completing all daily tasks keeps your streak alive. Start small selecting one or two tasks and building momentum.</p>
+                      <p class="text-gray-700 "><span class="font-semibold">{{ $t('helpModal.sections.dailyGoals.p1Title') }}</span> - {{ $t('helpModal.sections.dailyGoals.p1Desc') }}</p>
+                      <p class="text-gray-700 "><span class="font-semibold">{{ $t('helpModal.sections.dailyGoals.p2Title') }}</span> - {{ $t('helpModal.sections.dailyGoals.p2Desc') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.dailyGoals.tip') }}</p>
                     </div>
                   </div>
 
@@ -2593,12 +2601,12 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-microphone text-red-500"></i>
-                      Use Quick Test Often
+                      {{ $t('helpModal.sections.quickTest.title') }}
                     </h3>
                     <div class="bg-red-50  rounded-lg p-4 border-l-4 border-red-500 space-y-2">
-                      <p class="text-gray-700 ">Use the <span class="font-semibold">"Do a Quick Test"</span> task to strengthen your memorization. Recording yourself reciting from memory helps identify weak areas.</p>
-                      <p class="text-gray-700 ">After recording, listen back and mark any mistakes. This reinforces your memory and prevents regressions.</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Record yourself 3 times for each set of verses. Listen attentively and mark all mistakes.</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.quickTest.p1') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.quickTest.p2') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.quickTest.tip') }}</p>
                     </div>
                   </div>
 
@@ -2606,12 +2614,12 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-exclamation-circle text-yellow-600"></i>
-                      Revise Pages with Mistakes
+                      {{ $t('helpModal.sections.reviseMistakes.title') }}
                     </h3>
                     <div class="bg-yellow-50  rounded-lg p-4 border-l-4 border-yellow-600 space-y-2">
-                      <p class="text-gray-700 ">After correcting a mistake in a verse, recite that verse <span class="font-semibold">20-50 times</span> to permanently fix it in your memory.</p>
-                      <p class="text-gray-700 ">Use the "Revise from Memory" task to systematically review your memorized pages and catch any errors.</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Spaced repetition is key. Review mistakes multiple times over several days for better retention.</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.reviseMistakes.p1') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.reviseMistakes.p2') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.reviseMistakes.tip') }}</p>
                     </div>
                   </div>
 
@@ -2619,13 +2627,13 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-check-circle text-green-600"></i>
-                      Start Small
+                      {{ $t('helpModal.sections.startSmall.title') }}
                     </h3>
                     <div class="bg-green-50  rounded-lg p-4 border-l-4 border-green-600 space-y-2">
-                      <p class="text-gray-700 ">Begin with a small managable quantity, it could be as small as a single verse! But be consistent. Once comfortable you can increase it later.</p> 
-                      <p class="text-gray-700 ">For example, you can start with <span class="font-semibold">0.25 pages per day</span> (approximately 4 lines, not verses)</p>
-                      <p class="text-gray-700 ">Once this becomes comfortable, gradually increase your daily target. Building consistent habits matters more than speed.</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: You can configure your pages per day in Settings. Adjust it as you progress.</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.startSmall.p1') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.startSmall.p2') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.startSmall.p3') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.startSmall.tip') }}</p>
                     </div>
                   </div>
 
@@ -2633,12 +2641,12 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-headphones text-blue-600"></i>
-                      Don't miss your daily revision it's a must
+                      {{ $t('helpModal.sections.dailyRevision.title') }}
                     </h3>
                     <div class="bg-blue-50  rounded-lg p-4 border-l-4 border-blue-600 space-y-2">
-                      <p class="text-gray-700 ">You must complete this one task daily to keep your hifz <span class="font-semibold">solid and mistake free</span>.</p>
-                      <p class="text-gray-700 ">Revising what you already know is more important than learning new verses. So, prioritize this task over the new memorization in busy days.</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Set a managable target (finish revision in X days) in settings to rotate revisions efficiently.</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.dailyRevision.p1') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.dailyRevision.p2') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.dailyRevision.tip') }}</p>
                     </div>
                   </div>
 
@@ -2646,12 +2654,12 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-headphones text-blue-600"></i>
-                      Listen Before Memorizing
+                      {{ $t('helpModal.sections.listenBefore.title') }}
                     </h3>
                     <div class="bg-blue-50  rounded-lg p-4 border-l-4 border-blue-600 space-y-2">
-                      <p class="text-gray-700 ">Before starting memorization, listen to the target verses from your favorite reciter <span class="font-semibold">5-10 times</span>.</p>
-                      <p class="text-gray-700 ">This helps you avoid tajweed mistakes and familiarize yourself with the correct pronunciation and rhythm.</p>
-                      <p class="text-xs text-gray-600  mt-2">💡 Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization.</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.listenBefore.p1') }}</p>
+                      <p class="text-gray-700 ">{{ $t('helpModal.sections.listenBefore.p2') }}</p>
+                      <p class="text-xs text-gray-600  mt-2">{{ $t('helpModal.sections.listenBefore.tip') }}</p>
                     </div>
                   </div>
 
@@ -2659,29 +2667,16 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-list-ol text-purple-600"></i>
-                      Step-by-Step Memorization Process
+                      {{ $t('helpModal.sections.stepProcess.title') }}
                     </h3>
                     <div class="bg-purple-50  rounded-lg p-4 border-l-4 border-purple-600 space-y-3">
                       <div class="space-y-2">
-                        <p class="text-gray-700 "><span class="font-semibold">Example: Memorizing 3 verses today</span></p>
+                        <p class="text-gray-700 "><span class="font-semibold">{{ $t('helpModal.sections.stepProcess.intro') }}</span></p>
                         <ol class="list-decimal list-inside space-y-2 text-gray-700 ">
-                          <li><span class="font-semibold">Recite verse 1</span> from memory <strong>20 times</strong> without mistakes</li>
-                          <li><span class="font-semibold">Learn verse 2</span> and recite it <strong>20 times</strong> confidently</li>
-                          <li><span class="font-semibold">Combine verses 1 & 2</span> and recite together <strong>20 times</strong></li>
-                          <li><span class="font-semibold">Learn verse 3</span> and recite it <strong>20 times</strong> without mistakes</li>
-                          <li><span class="font-semibold">Recite all 3 verses</span> together <strong>20 times</strong></li>
-                          <li><span class="font-semibold">Record yourself</span> reciting this set <strong>3 times</strong></li>
-                          <li><span class="font-semibold">Listen attentively</span> to your recordings and mark any mistakes</li>
-                          <li><span class="font-semibold">Review mistakes</span> before moving to the next set</li>
-                          <li><span class="font-semibold">Mark page memorized</span> - Once finished, press the memorize button to mark the page as memorized</li>
-                          <li><span class="font-semibold">Record & verify</span> - Test your memorization by recording audio to check for any mistakes</li>
-                          <li><span class="font-semibold">Mark as perfect</span> - After successful recording with no mistakes, click the perfect button to track your hifz status</li>
-                          <li><span class="font-semibold">Track word mistakes</span> - Tap on any word you make a mistake on, it will automatically adjust your hifz status for that page</li>
-
-
+                          <li v-for="(item, index) in helpStepItems" :key="'step-process-' + index">{{ item }}</li>
                         </ol>
                       </div>
-                      <p class="text-xs text-gray-600  mt-3">💡 Some sheikhs/ustadhs recommend 50 times. This method makes your hifz (memorization) solid and long-lasting. Quality over quantity!</p>
+                      <p class="text-xs text-gray-600  mt-3">{{ $t('helpModal.sections.stepProcess.tip') }}</p>
                     </div>
                   </div>
 
@@ -2689,24 +2684,24 @@
                   <div class="space-y-3">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-lightbulb text-yellow-500"></i>
-                      Key Tips for Success
+                      {{ $t('helpModal.sections.quickTips.title') }}
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div class="bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg p-3 border border-blue-200 ">
-                        <p class="font-semibold text-blue-900  mb-1">🎯 Focus on Quality</p>
-                        <p class="text-sm text-blue-800 ">Perfect memorization of 3 verses is better than weak memorization of 10.</p>
+                        <p class="font-semibold text-blue-900  mb-1">{{ $t('helpModal.sections.quickTips.focus.title') }}</p>
+                        <p class="text-sm text-blue-800 ">{{ $t('helpModal.sections.quickTips.focus.desc') }}</p>
                       </div>
                       <div class="bg-gradient-to-br from-green-50 to-green-100   rounded-lg p-3 border border-green-200 ">
-                        <p class="font-semibold text-green-900  mb-1">📅 Consistency is Key</p>
-                        <p class="text-sm text-green-800 ">Complete your daily goals every day. Small daily efforts build lasting habits.</p>
+                        <p class="font-semibold text-green-900  mb-1">{{ $t('helpModal.sections.quickTips.consistency.title') }}</p>
+                        <p class="text-sm text-green-800 ">{{ $t('helpModal.sections.quickTips.consistency.desc') }}</p>
                       </div>
                       <div class="bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg p-3 border border-purple-200 ">
-                        <p class="font-semibold text-purple-900  mb-1">🔄 Review Regularly</p>
-                        <p class="text-sm text-purple-800 ">Use the "Recite from Memory" task to review. Spaced repetition strengthens retention.</p>
+                        <p class="font-semibold text-purple-900  mb-1">{{ $t('helpModal.sections.quickTips.review.title') }}</p>
+                        <p class="text-sm text-purple-800 ">{{ $t('helpModal.sections.quickTips.review.desc') }}</p>
                       </div>
                       <div class="bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg p-3 border border-orange-200 ">
-                        <p class="font-semibold text-orange-900  mb-1">📢 Record & Listen</p>
-                        <p class="text-sm text-orange-800 ">Recording yourself is a powerful tool. Mistakes are easier to spot in playback.</p>
+                        <p class="font-semibold text-orange-900  mb-1">{{ $t('helpModal.sections.quickTips.record.title') }}</p>
+                        <p class="text-sm text-orange-800 ">{{ $t('helpModal.sections.quickTips.record.desc') }}</p>
                       </div>
                     </div>
                   </div>
@@ -2716,7 +2711,7 @@
                 <!-- Modal Footer -->
                 <div class="sticky bottom-0 bg-gray-50  border-t border-gray-200  px-6 py-4 flex justify-end">
                   <button @click="showHelpModal = false" class="px-4 py-2 bg-blue-600  text-white  rounded-lg hover:bg-blue-700  transition-colors font-medium">
-                    Got it!
+                    {{ $t('helpModal.close') }}
                   </button>
                 </div>
               </div>
@@ -2724,17 +2719,17 @@
 
 
             <!-- Analytics Dashboard -->
-            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
-              <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
-                <i class="fas fa-chart-line text-blue-600"></i>
-                Daily Goal Analytics
-              </h3>
+              <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
+                  <i class="fas fa-chart-line text-blue-600"></i>
+                  {{ $t('dashboard.analyticsPanel.dailyTitle') }}
+                </h3>
 
               <!-- Stats Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- Current Streak -->
                 <div class="bg-gradient-to-br from-orange-50 to-orange-100   rounded-lg p-4 border border-orange-200 ">
-                  <div class="text-sm font-medium text-orange-700  mb-1">Current Streak</div>
+                  <div class="text-sm font-medium text-orange-700  mb-1">{{ $t('dashboard.analyticsPanel.currentStreak') }}</div>
                   <div class="text-3xl font-bold text-orange-600  flex items-center gap-2">
                     <i class="fas fa-fire"></i>
                     {{ dailyGoalsStore.streak }}
@@ -2744,29 +2739,29 @@
 
                 <!-- Longest Streak -->
                 <div class="bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg p-4 border border-purple-200 ">
-                  <div class="text-sm font-medium text-purple-700  mb-1">Longest Streak</div>
+                  <div class="text-sm font-medium text-purple-700  mb-1">{{ $t('dashboard.analyticsPanel.longestStreak') }}</div>
                   <div class="text-3xl font-bold text-purple-600  flex items-center gap-2">
                     <i class="fas fa-crown"></i>
                     {{ dailyGoalsStore.longestStreak }}
                   </div>
-                  <div class="text-xs text-purple-600  mt-2">Personal best</div>
+                  <div class="text-xs text-purple-600  mt-2">{{ $t('dashboard.analyticsPanel.personalBest') }}</div>
                 </div>
 
                 <!-- Completion Rate -->
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg p-4 border border-blue-200 ">
-                  <div class="text-sm font-medium text-blue-700  mb-1">Completion Rate</div>
+                  <div class="text-sm font-medium text-blue-700  mb-1">{{ $t('dashboard.analyticsPanel.completionRate') }}</div>
                   <div class="text-3xl font-bold text-blue-600 ">{{ completionRate }}%</div>
-                  <div class="text-xs text-blue-600  mt-2">{{ completedDays }} of {{ totalDays }} days</div>
+                  <div class="text-xs text-blue-600  mt-2">{{ $t('dashboard.analyticsPanel.completionRateInfo', { completedDays, totalDays }) }}</div>
                 </div>
 
                 <!-- Total Completed -->
                 <div class="bg-gradient-to-br from-green-50 to-green-100   rounded-lg p-4 border border-green-200 ">
-                  <div class="text-sm font-medium text-green-700  mb-1">Days Completed</div>
+                  <div class="text-sm font-medium text-green-700  mb-1">{{ $t('dashboard.analyticsPanel.daysCompleted') }}</div>
                   <div class="text-3xl font-bold text-green-600  flex items-center gap-2">
                     <i class="fas fa-check-circle"></i>
                     {{ completedDays }}
                   </div>
-                  <div class="text-xs text-green-600  mt-2">All goals achieved</div>
+                  <div class="text-xs text-green-600  mt-2">{{ $t('dashboard.analyticsPanel.goalsAchieved') }}</div>
                 </div>
               </div>
 
@@ -2776,7 +2771,7 @@
                 <div class="bg-gray-50  rounded-lg p-4 border border-gray-200  ">
                   <h4 class="font-semibold text-gray-900  mb-4 flex items-center gap-2">
                     <i class="fas fa-trending-up text-green-600"></i>
-                    Last 30 Days Trend
+                    {{ $t('dashboard.analyticsPanel.trendTitle') }}
                   </h4>
                   <div class="h-32 flex items-end gap-1 justify-between px-2">
                     <div v-for="(status, index) in last30DaysTrend" :key="index" class="flex-1 flex flex-col items-center gap-1 group">
@@ -2831,7 +2826,7 @@
                       <div class="w-28 h-28 rounded-full bg-white  flex items-center justify-center">
                         <div class="text-center">
                           <div class="text-lg font-bold text-gray-900  ">{{ completionRate }}%</div>
-                          <div class="text-xs text-gray-600  ">Complete</div>
+                          <div class="text-xs text-gray-600  ">{{ $t('dashboard.analyticsLegend.completed') }}</div>
                         </div>
                       </div>
                     </div>
@@ -2843,11 +2838,11 @@
               <div class="mt-6 border-t border-gray-200  pt-6">
                 <h4 class="font-semibold text-gray-900  mb-4 flex items-center gap-2">
                   <i class="fas fa-history text-indigo-600"></i>
-                  Recent Activity
+                  {{ $t('dashboard.recentActivity.title') }}
                 </h4>
                 <div class="space-y-2 max-h-40 overflow-y-auto">
                   <div v-if="recentActivity.length === 0" class="text-sm text-gray-600  ">
-                    No recent activity
+                    {{ $t('dashboard.recentActivity.noActivity') }}
                   </div>
                   <div v-for="(activity, index) in recentActivity.slice(0, 5)" :key="index" class="flex items-center gap-3 p-2 rounded bg-gray-100  text-sm">
                     <i :class="['fas', activity.icon, activity.color]"></i>
@@ -2866,20 +2861,20 @@
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2">
                     <i class="fas fa-fire text-orange-500"></i>
-                    Timeline
+                    {{ $t('dashboard.timeline.title') }}
                   </h3>
                   <div class="flex flex-wrap gap-2 sm:gap-3 text-xs">
                     <div class="flex items-center gap-1">
                       <div class="w-3 h-3 rounded-sm bg-gray-200  "></div>
-                      <span class="text-gray-600  ">None</span>
+                      <span class="text-gray-600  ">{{ $t('dashboard.timeline.legendNone') }}</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <div class="w-3 h-3 rounded-sm bg-yellow-300  "></div>
-                      <span class="text-gray-600  ">Partial</span>
+                      <span class="text-gray-600  ">{{ $t('dashboard.timeline.legendPartial') }}</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <div class="w-3 h-3 rounded-sm bg-green-500"></div>
-                      <span class="text-gray-600  ">Complete</span>
+                      <span class="text-gray-600  ">{{ $t('dashboard.timeline.legendComplete') }}</span>
                     </div>
                   </div>
                 </div>
@@ -2960,11 +2955,11 @@
             <!-- Footer -->
             <footer class="bg-gray-900 text-gray-400 text-center py-6 mt-12">
               <div class="space-y-3">
-                <p>Murajah Version 25.11.24 | Made with <i class="fas fa-heart text-red-500"></i> for Quran memorization</p>
+                <p>{{ $t('footer.versionInfo', { version: appStore.appVersion, heart: '❤️' }) }}</p>
                 <div>
                   <a href="https://github.com/wasi0013/Murajah" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                     <i class="fab fa-github text-lg"></i>
-                    <span>View on GitHub</span>
+                    <span>{{ $t('footer.viewOnGithub') }}</span>
                   </a>
                 </div>
               </div>
@@ -3091,6 +3086,14 @@
           });
 
           const currentLocale = computed(() => i18nState.currentLocale);
+          const helpStepItems = computed(() => {
+            return Array.from({ length: 12 }, (_, idx) => {
+              const translation = t(`helpModal.sections.stepProcess.item${idx + 1}`);
+              return translation && translation !== `helpModal.sections.stepProcess.item${idx + 1}`
+                ? translation
+                : `Step ${idx + 1}`;
+            });
+          });
           const languageLabelKey = (locale) => {
             const map = {
               en: 'language.english',
@@ -3104,6 +3107,12 @@
             if (nextLocale && nextLocale !== i18nState.currentLocale) {
               await setLocale(nextLocale, murajahDB);
             }
+          };
+
+          const localeToggleLabel = computed(() => t('language.label'));
+          const toggleLocale = async () => {
+            const nextLocale = i18nState.currentLocale === 'bn' ? 'en' : 'bn';
+            await setLocale(nextLocale, murajahDB);
           };
 
           // Recording countdown state
@@ -3689,6 +3698,18 @@
           const getTaskProgressPercentage = () => {
             if (!dailyGoalsStore.todayGoal) return 0;
             return getCompletionPercentage(dailyGoalsStore.todayGoal);
+          };
+
+          const getDailyGoalLabel = (taskName, task) => {
+            const translationKey = `dailyGoals.tasks.${taskName}.name`;
+            const translated = t(translationKey);
+            return translated && translated !== translationKey ? translated : task.name;
+          };
+
+          const getDailyGoalDescription = (taskName, task) => {
+            const translationKey = `dailyGoals.tasks.${taskName}.description`;
+            const translated = t(translationKey);
+            return translated && translated !== translationKey ? translated : task.description;
           };
 
           // Navigation functions
@@ -5682,6 +5703,8 @@ Display:
             completeTaskGoal,
             uncompleteTaskGoal,
             getTaskProgressPercentage,
+            getDailyGoalLabel,
+            getDailyGoalDescription,
             getDayStatus,
             getDayStatusColor,
             getDayTooltip,
@@ -5717,9 +5740,12 @@ Display:
             totalUnlockedBadges,
             achievementCompletionPercentage,
             currentLocale,
+            helpStepItems,
             SUPPORTED_LOCALES,
             languageLabelKey,
-            handleLocaleChange
+            handleLocaleChange,
+            localeToggleLabel,
+            toggleLocale
           };
         }
       });

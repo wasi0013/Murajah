@@ -12,7 +12,8 @@ export const QuranAudioPlayerComponent = {
           <i class="fas fa-music text-blue-600 text-xl"></i>
           <h3 class="text-lg font-semibold text-gray-900">
             <span v-if="selectedSurahForAudio">{{ selectedSurahName }} ({{ selectedSurahVerses.length }} verses)</span>
-            <span v-else>Audio of Page {{ currentPage }}
+            <span v-else>
+              {{ $t('audio.pageAudio', { page: currentPage }) }}
               <span v-if="pageVerses.length > 0" class="text-sm font-normal text-gray-500">
                 ({{ pageVerses.length }} verse{{ pageVerses.length !== 1 ? 's' : '' }})
               </span>
@@ -22,7 +23,7 @@ export const QuranAudioPlayerComponent = {
         <button 
           @click="togglePlaylist" 
           class="text-gray-500 hover:text-gray-700 transition"
-          :title="showPlaylist ? 'Hide playlist' : 'Show playlist'"
+          :title="showPlaylist ? $t('audio.hidePlaylist') : $t('audio.showPlaylist')"
         >
           <i :class="['fas', showPlaylist ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
         </button>
@@ -31,7 +32,7 @@ export const QuranAudioPlayerComponent = {
       <!-- No verses message -->
       <div v-if="versesToPlay.length === 0" class="text-center py-4 text-gray-500">
         <i class="fas fa-info-circle mr-2"></i>
-        No verses available
+        {{ $t('audio.noVerses') }}
       </div>
 
       <!-- Player Controls -->
@@ -91,7 +92,7 @@ export const QuranAudioPlayerComponent = {
                   ? 'bg-blue-100 text-blue-600' 
                   : 'hover:bg-gray-100 text-gray-600'
               ]"
-              title="Auto-play next verse"
+              :title="$t('audio.autoPlay')"
             >
               <i class="fas fa-long-arrow-alt-right"></i>
             </button>
@@ -104,7 +105,7 @@ export const QuranAudioPlayerComponent = {
                   ? 'bg-blue-100 text-blue-600' 
                   : 'hover:bg-gray-100 text-gray-600'
               ]"
-              title="Repeat entire playlist"
+              :title="$t('audio.repeatPlaylist')"
             >
               <i class="fas fa-retweet"></i>
             </button>
@@ -126,7 +127,7 @@ export const QuranAudioPlayerComponent = {
                 @change="loadSurahVerses"
                 class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">▶️ Full Surah</option>
+                <option value="">{{ $t('audio.fullSurah') }}</option>
                 <option v-for="(name, num) in availableSurahs" :key="num" :value="num">
                   {{ num }}. {{ translateSurahNameForDropdown(num) }}
                 </option>
@@ -135,7 +136,7 @@ export const QuranAudioPlayerComponent = {
 
             <!-- Reciter selector -->
             <div class="flex items-center gap-2 min-w-0">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">Reciter:</label>
+              <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">{{ $t('audio.reciterLabel') }}</label>
               <select 
                 v-model="selectedReciter" 
                 class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -155,7 +156,7 @@ export const QuranAudioPlayerComponent = {
                   ? 'bg-purple-100 text-purple-600' 
                   : 'hover:bg-gray-100 text-gray-600'
               ]"
-              title="Toggle Spaced Repetition"
+              :title="$t('audio.toggleSpacedRepetition')"
             >
               <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Repeat</span>
             </button>
@@ -166,7 +167,7 @@ export const QuranAudioPlayerComponent = {
         <div v-if="useSpacedRepetition" class="border-t pt-4 space-y-3">
           <!-- Repeat count input -->
           <div class="flex items-center gap-3 bg-purple-50 p-3 rounded-lg">
-            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Repeat each verses:</label>
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">{{ $t('audio.repeatEachVerse') }}</label>
             <input 
               v-model.number="repeatCount" 
               type="number" 
@@ -175,7 +176,7 @@ export const QuranAudioPlayerComponent = {
               @change="generateSpacedPlaylist"
               class="w-16 px-2 py-1 border border-purple-300 rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-            <span class="text-sm text-gray-600">times</span>
+            <span class="text-sm text-gray-600">{{ $t('audio.times') }}</span>
             <span v-if="spacedPlaylist.length > 0" class="text-xs text-purple-600 font-semibold ml-auto">
               {{ totalSpacedRepetitionPlays }} plays total
             </span>
@@ -184,7 +185,7 @@ export const QuranAudioPlayerComponent = {
           <!-- Spaced repetition info -->
           <div v-if="spacedPlaylist.length > 0" class="text-xs text-purple-700 bg-purple-50 p-2 rounded">
             <i class="fas fa-lightbulb mr-1"></i>
-            Cumulative learning: Each verse builds on previous ones
+            {{ $t('audio.cumulativeLearning') }}
           </div>
         </div>
 

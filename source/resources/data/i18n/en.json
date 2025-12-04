@@ -28,7 +28,31 @@
     "legendNotStarted": "Not started",
     "legendOneRevision": "1 revision",
     "legendFourPlusRevisions": "4+ revisions",
-    "contributionInfo": "Contribution graph shows daily goal completion status for 2025. Green = all tasks completed, Yellow = partial completion, Gray = no tasks completed."
+    "contributionInfo": "Contribution graph shows daily goal completion status for 2025. Green = all tasks completed, Yellow = partial completion, Gray = no tasks completed.",
+    "tasks": {
+      "reciteAyahs": {
+        "name": "Recite 10 verses",
+        "description": "Recite 10 ayahs from the quran."
+      },
+      "recordRandomPage": {
+        "name": "Do a quick test",
+        "description": "Recite and record a random memorized page from memory and check mistakes."
+      },
+      "reviewRange": {
+        "name": "Recite from memory",
+        "description": "Revise these pages today:"
+      },
+      "memorizeDaily": {
+        "name": "Memorize new",
+        "description": "Complete your daily memorization target."
+      }
+    },
+    "reviewPagesLabel": "Revise these pages today:",
+    "memorizeTarget": "Target: {count} page{pluralSuffix} today",
+    "taskCompleted": "Done",
+    "motivation": {
+      "complete": "Excellent! You've completed all today's goals! Keep up the amazing work! 🎉"
+    }
   },
   "settings": {
     "modalTitle": "Settings",
@@ -46,7 +70,16 @@
     "adjustRevisionTooltip": "Manually select which chunk of pages to review today",
     "selectTasksLabel": "Select daily tasks:",
     "taskRecite": "Recite 10 verses",
-    "taskRecord": "Record a random page"
+    "taskRecord": "Record a random page",
+    "dataManagementTitle": "Data Management",
+    "exportData": "Export Data",
+    "importData": "Import Data",
+    "resetAll": "Reset All",
+    "bulkMemorizationTitle": "Bulk Memorization",
+    "bulkMemorizationDescription": "Mark multiple pages as memorized at once",
+    "bulkStartPage": "Start Page",
+    "bulkEndPage": "End Page",
+    "bulkMemorizeButton": "Memorize Range"
   },
   "language": {
     "label": "Language",
@@ -60,21 +93,27 @@
   ,
   "dashboard": {
     "stats": {
+      "summaryTitle": "Summary Statistics",
       "memorized": "Memorized",
-      "totalHasanah": "Total Hasanah",
-      "totalMistakes": "Total Mistakes",
-      "recordings": "Recordings",
+      "juz": "Juzs",
+      "completion": "Completion",
+      "points": "Points",
       "perfectHasanahDescription": "for reciting {pages} pages with no mistakes.",
       "mistakesHint": "Tap on word to toggle mistakes",
+      "recordings": "Recordings",
       "recordingsAvailable": "available now.",
       "noRecordings": "No recordings yet",
-      "noMistakes": "No mistakes recorded!"
+      "noMistakes": "No mistakes recorded!",
+      "recentRecordings": "Recent Recordings",
+      "ofPages": "of {total}",
+      "ofJuz": "of {total}"
     },
     "progress": {
       "title": "Progress",
       "remainingLabel": "Remaining",
       "juzLabel": "Juzs (Parts)",
-      "completionLabel": "Est. Completion"
+      "completionLabel": "Est. Completion",
+      "pagesInfo": "{current}/{total} Pages"
     },
     "reviewOverlay": {
       "title": "Recite these pages today",
@@ -82,10 +121,56 @@
       "dismiss": "Dismiss"
     },
     "surahPlaceholder": "📖 Surahs (114)",
-    "greatProgress": "Great progress! Complete {remaining} more task{pluralSuffix}."
+    "greatProgress": "Great progress! Complete {remaining} more task{pluralSuffix}.",
+    "analyticsTitle": "Analytics & Progress",
+    "analyticsTabs": {
+      "juzProgress": "Juz Progress",
+      "pageByPage": "Page by Page"
+    },
+    "analyticsProgressByJuz": "Progress by Juz",
+    "analyticsCompletionEstimate": "Completion Estimate",
+    "analyticsEstimatedCompletionDate": "Estimated Completion Date",
+    "analyticsDaysRemaining": "Days Remaining",
+    "analyticsCompletionSentence": "Based on {pagesPerDay} page(s) per day, you will complete memorization in approximately {daysRemaining} days.",
+    "analyticsLegend": {
+      "completed": "Completed",
+      "partial": "Partial",
+      "notStarted": "Not started"
+    },
+    "analyticsPageInfo": "Each box represents one Juz. Each dot represents one page. Green shades indicate higher perfect revision counts. Click any dot to navigate to that page.",
+    "recentRecordings": {
+      "title": "Recent Recordings",
+      "noRecordings": "No recordings yet",
+      "durationLabel": "Duration: {duration}",
+      "playTitle": "Play recording for page {page}",
+      "deleteTitle": "Delete recording for page {page}"
+    },
+    "analyticsPanel": {
+      "dailyTitle": "Daily Goal Analytics",
+      "currentStreak": "Current Streak",
+      "longestStreak": "Longest Streak",
+      "completionRate": "Completion Rate",
+      "completionRateInfo": "{completedDays} of {totalDays} days",
+      "daysCompleted": "Days Completed",
+      "personalBest": "Personal best",
+      "goalsAchieved": "All goals achieved",
+      "trendTitle": "Last 30 Days Trend"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "noActivity": "No recent activity"
+    },
+    "timeline": {
+      "title": "Timeline",
+      "legendNone": "None",
+      "legendPartial": "Partial",
+      "legendComplete": "Complete"
+    }
   },
   "mistakes": {
+    "headerOnPage": "Mistakes on Page {page}",
     "found": "{count} mistake{pluralSuffix} found",
+    "tooltip": "Mistake: Word {word}",
     "pagesWith": "Pages with Mistakes",
     "clearAll": "Clear All Mistakes",
     "noMistakes": "No mistakes recorded!"
@@ -103,6 +188,20 @@
     "record": "Record",
     "recording": "Recording..."
   },
+  "achievements": {
+    "title": "Achievements",
+    "badgesUnlocked": "Badges Unlocked",
+    "completion": "Completion",
+    "completionPercent": "{percent}% Complete",
+    "actions": {
+      "viewAll": "View All Achievements",
+      "syncBadges": "Sync Badges with Data",
+      "syncing": "Syncing...",
+      "developerTools": "Developer Tools",
+      "unlockAll": "Unlock All Badges (Debug)",
+      "clearAll": "Clear All Achievements"
+    }
+  },
   "audio": {
     "fullSurah": "▶️ Full Surah",
     "noVerses": "No verses available",
@@ -115,7 +214,8 @@
     "times": "times",
     "playsTotal": "{plays} plays total",
     "cumulativeLearning": "Cumulative learning: Each verse builds on previous ones",
-    "toggleSpacedRepetition": "Toggle Spaced Repetition"
+    "toggleSpacedRepetition": "Toggle Spaced Repetition",
+    "pageAudio": "Audio of Page {page}"
   },
   "notifications": {
     "pageMarkedPerfect": "Page {page} marked perfect! (+1)",
@@ -126,6 +226,95 @@
   "tips": {
     "recitationGuide": "Before starting memorization, listen to the target verses from your favorite reciter 5-10 times.",
     "reciterTip": "Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization."
+  },
+  "helpModal": {
+    "title": "How to Use Murajah Effectively",
+    "close": "Got it!",
+    "sections": {
+      "intention": {
+        "title": "Make a solid intention",
+        "duaTitle": "Make a lot of dua",
+        "duaDesc": "Ask Allah for help. Day and night keep supplicating to make it easy for you.",
+        "sakeTitle": "Do it for the sake of Allah",
+        "sakeDesc": "Make a solid intention. Do it only for the sake of Allah!",
+        "tip": "💡 Tip: Avoid major and minor sins. 'Verily, knowledge is a light and the light of Allah is not given to a sinner'."
+      },
+      "dailyGoals": {
+        "title": "Daily Goals & Streaks",
+        "p1Title": "Complete daily goals",
+        "p1Desc": "Finish all your selected tasks every day to maintain your streak.",
+        "p2Title": "Beat your best streak",
+        "p2Desc": "Challenge yourself to set new personal records. Each day counts!",
+        "tip": "💡 Completing all daily tasks keeps your streak alive. Start small with one or two tasks and build momentum."
+      },
+      "quickTest": {
+        "title": "Use Quick Test Often",
+        "p1": "Use the 'Do a Quick Test' task to strengthen your memorization. Recording yourself reciting from memory helps identify weak areas.",
+        "p2": "After recording, listen back and mark any mistakes. This reinforces your memory and prevents regressions.",
+        "tip": "💡 Tip: Record yourself 3 times for each set of verses. Listen attentively and mark all mistakes."
+      },
+      "reviseMistakes": {
+        "title": "Revise Pages with Mistakes",
+        "p1": "After correcting a mistake in a verse, recite that verse 20-50 times to permanently fix it in your memory.",
+        "p2": "Use the 'Revise from Memory' task to systematically review your memorized pages and catch any errors.",
+        "tip": "💡 Tip: Spaced repetition is key. Review mistakes multiple times over several days for better retention."
+      },
+      "startSmall": {
+        "title": "Start Small",
+        "p1": "Begin with a small manageable quantity, it could be as small as a single verse! But be consistent. Once comfortable you can increase it later.",
+        "p2": "For example, you can start with 0.25 pages per day (approximately 4 lines, not verses).",
+        "p3": "Once this becomes comfortable, gradually increase your daily target. Building consistent habits matters more than speed.",
+        "tip": "💡 Tip: You can configure your pages per day in Settings. Adjust it as you progress."
+      },
+      "dailyRevision": {
+        "title": "Don't miss your daily revision it's a must",
+        "p1": "You must complete this one task daily to keep your hifz solid and mistake free.",
+        "p2": "Revising what you already know is more important than learning new verses. So, prioritize this task over the new memorization in busy days.",
+        "tip": "💡 Tip: Set a manageable target (finish revision in X days) in settings to rotate revisions efficiently."
+      },
+      "listenBefore": {
+        "title": "Listen Before Memorizing",
+        "p1": "Before starting memorization, listen to the target verses from your favorite reciter 5-10 times.",
+        "p2": "This helps you avoid tajweed mistakes and familiarize yourself with the correct pronunciation and rhythm.",
+        "tip": "💡 Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization."
+      },
+      "stepProcess": {
+        "title": "Step-by-Step Memorization Process",
+        "intro": "Example: Memorizing 3 verses today",
+        "item1": "Recite verse 1 from memory 20 times without mistakes",
+        "item2": "Learn verse 2 and recite it 20 times confidently",
+        "item3": "Combine verses 1 & 2 and recite together 20 times",
+        "item4": "Learn verse 3 and recite it 20 times without mistakes",
+        "item5": "Recite all 3 verses together 20 times",
+        "item6": "Record yourself reciting this set 3 times",
+        "item7": "Listen attentively to your recordings and mark any mistakes",
+        "item8": "Review mistakes before moving to the next set",
+        "item9": "Mark page memorized - Once finished, press the memorize button to mark the page as memorized",
+        "item10": "Record & verify - Test your memorization by recording audio to check for any mistakes",
+        "item11": "Mark as perfect - After successful recording with no mistakes, click the perfect button to track your hifz status",
+        "item12": "Track word mistakes - Tap on any word you make a mistake on, it will automatically adjust your hifz status for that page",
+        "tip": "💡 Some sheikhs/ustadhs recommend 50 times. This method makes your hifz solid and long-lasting. Quality over quantity!"
+      },
+      "quickTips": {
+        "title": "Key Tips for Success",
+        "focus": {
+          "title": "🎯 Focus on Quality",
+          "desc": "Perfect memorization of 3 verses is better than weak memorization of 10."
+        },
+        "consistency": {
+          "title": "📅 Consistency is Key",
+          "desc": "Complete your daily goals every day. Small daily efforts build lasting habits."
+        },
+        "review": {
+          "title": "🔄 Review Regularly",
+          "desc": "Use the 'Recite from Memory' task to review. Spaced repetition strengthens retention."
+        },
+        "record": {
+          "title": "📢 Record & Listen",
+          "desc": "Recording yourself is a powerful tool. Mistakes are easier to spot in playback."
+        }
+      }
+    }
   },
   "quran": {
     "contentTitle": "Quran Content"
