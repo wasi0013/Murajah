@@ -1097,7 +1097,7 @@
       class MurajahDB {
         constructor() {
           this.dbName = 'murajah-db';
-          this.version = 2;
+          this.version = 3;
           this.db = null;
         }
 
@@ -1124,6 +1124,9 @@
               }
               if (!db.objectStoreNames.contains('dailyGoals')) {
                 db.createObjectStore('dailyGoals', { keyPath: 'date' });
+              }
+              if (!db.objectStoreNames.contains('quranCache')) {
+                db.createObjectStore('quranCache', { keyPath: 'id' });
               }
               console.log('[Murajah] IndexedDB schema created');
             };
@@ -1348,6 +1351,56 @@
             };
             request.onerror = () => reject(request.error);
           });
+        }
+
+        async saveCachedResource(record) {
+          if (!record || !record.id) {
+            throw new Error('[Murajah] Cache record must include an id field');
+          }
+          const tx = this.db.transaction(['quranCache'], 'readwrite');
+          const store = tx.objectStore('quranCache');
+          store.put(record);
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadCachedResource(cacheId = 'english-wbw-translation') {
+          const tx = this.db.transaction(['quranCache'], 'readonly');
+          const store = tx.objectStore('quranCache');
+          return new Promise((resolve, reject) => {
+            const request = store.get(cacheId);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async deleteCachedResource(cacheId = 'english-wbw-translation') {
+          const tx = this.db.transaction(['quranCache'], 'readwrite');
+          const store = tx.objectStore('quranCache');
+          store.delete(cacheId);
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async saveTranslationCache(record) {
+          const cacheRecord = {
+            id: record?.id || 'english-wbw-translation',
+            resourceKey: 'translations',
+            ...record
+          };
+          return this.saveCachedResource(cacheRecord);
+        }
+
+        async loadTranslationCache(cacheId = 'english-wbw-translation') {
+          return this.loadCachedResource(cacheId);
+        }
+
+        async deleteTranslationCache(cacheId = 'english-wbw-translation') {
+          return this.deleteCachedResource(cacheId);
         }
       }
 
@@ -3110,6 +3163,14 @@
           const tooltipY = ref(0);
           const tooltipText = ref('');
 
+          const handleTranslationUpdate = (freshTranslations) => {
+            if (!freshTranslations || !quranData.value) {
+              return;
+            }
+            quranData.value.translations = freshTranslations;
+            console.log('[Murajah] Translations updated from background cache');
+          };
+
           const updateViewportWidth = () => {
             if (typeof window !== 'undefined') {
               viewportWidth.value = window.innerWidth;
@@ -3187,8 +3248,11 @@
                 appStore.theme = 'light';
               }
               
-              // Load Quran data
-              quranData.value = await loadAllQuranData();
+              // Load Quran data (translations come from cache with background refresh)
+              quranData.value = await loadAllQuranData({
+                murajahDB,
+                onTranslationUpdate: handleTranslationUpdate
+              });
               
               // Load quran.json for audio player (contains surah, verse, page mapping)
               try {

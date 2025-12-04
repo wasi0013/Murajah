@@ -5,6 +5,29 @@
 
 import Logger from './logger.js';
 
+const RESOURCE_CONFIGS = {
+  layout: {
+    key: 'layout',
+    cacheId: 'qpc-v2-15-lines',
+    url: './resources/data/quran/qpc-v2-15-lines.json'
+  },
+  words: {
+    key: 'words',
+    cacheId: 'qpc-v2-word-by-word',
+    url: './resources/data/quran/qpc-v2-word-by-word.json'
+  },
+  surahNames: {
+    key: 'surahNames',
+    cacheId: 'quran-surah-names',
+    url: './resources/data/quran/surah-names.json'
+  },
+  translations: {
+    key: 'translations',
+    cacheId: 'english-wbw-translation',
+    url: './resources/data/quran/english-wbw-translation.json'
+  }
+};
+
 const dataCache = {
   layout: null,
   words: null,
@@ -13,12 +36,101 @@ const dataCache = {
   isLoaded: false
 };
 
+const resourceRefreshState = {};
+
+const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
+  const response = await fetch(resourceConfig.url, { cache: 'no-cache' });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${resourceConfig.key} (${response.status})`);
+  }
+
+  const data = await response.json();
+  const cacheRecord = {
+    id: resourceConfig.cacheId,
+    resourceKey: resourceConfig.key,
+    url: resourceConfig.url,
+    data,
+    updatedAt: new Date().toISOString(),
+    etag: response.headers.get('etag'),
+    lastModified: response.headers.get('last-modified')
+  };
+
+  if (murajahDB) {
+    try {
+      await murajahDB.saveCachedResource(cacheRecord);
+    } catch (cacheError) {
+      Logger.warn(Logger.MODULES.DATA, `Failed to cache ${resourceConfig.key}`, cacheError);
+    }
+  }
+
+  return data;
+};
+
+const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate) => {
+  if (!resourceConfig) {
+    return;
+  }
+
+  const { key } = resourceConfig;
+  if (resourceRefreshState[key]) {
+    return;
+  }
+
+  resourceRefreshState[key] = true;
+  setTimeout(async () => {
+    try {
+      const freshData = await fetchAndCacheResource(resourceConfig, murajahDB);
+      dataCache[key] = freshData;
+      Logger.info(Logger.MODULES.DATA, `Cached ${key} refreshed in background`);
+      if (typeof onBackgroundUpdate === 'function') {
+        onBackgroundUpdate(key, freshData, { source: 'background' });
+      }
+    } catch (error) {
+      Logger.warn(Logger.MODULES.DATA, `Background refresh failed for ${key}`, error);
+    } finally {
+      resourceRefreshState[key] = false;
+    }
+  }, 100);
+};
+
+const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUpdate }) => {
+  if (!resourceConfig) {
+    throw new Error('[Murajah] Resource configuration is required');
+  }
+
+  if (murajahDB) {
+    try {
+      const cached = await murajahDB.loadCachedResource(resourceConfig.cacheId);
+      if (cached?.data) {
+        scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate);
+        return cached.data;
+      }
+    } catch (error) {
+      Logger.warn(Logger.MODULES.DATA, `Failed to read cached ${resourceConfig.key}`, error);
+    }
+  }
+
+  const data = await fetchAndCacheResource(resourceConfig, murajahDB);
+  scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate);
+  return data;
+};
+
 /**
  * Load all Quran data files in parallel
  * @returns {Promise<Object>} Combined data object
  */
-export const loadAllQuranData = async () => {
+export const loadAllQuranData = async ({ murajahDB, onTranslationUpdate, onResourceUpdate } = {}) => {
+  const handleBackgroundUpdate = (resourceKey, freshData, meta = {}) => {
+    if (resourceKey === 'translations' && typeof onTranslationUpdate === 'function') {
+      onTranslationUpdate(freshData, meta);
+    }
+    if (typeof onResourceUpdate === 'function') {
+      onResourceUpdate({ key: resourceKey, data: freshData, ...meta });
+    }
+  };
+
   if (dataCache.isLoaded) {
+    Object.values(RESOURCE_CONFIGS).forEach(config => scheduleResourceRefresh(config, murajahDB, handleBackgroundUpdate));
     Logger.debug(Logger.MODULES.DATA, 'Returning cached Quran data');
     return {
       layout: dataCache.layout,
@@ -32,12 +144,12 @@ export const loadAllQuranData = async () => {
   try {
     Logger.info(Logger.MODULES.DATA, 'Loading Quran data files...');
     const startTime = performance.now();
-    
+
     const [layoutData, wordsData, surahNamesData, translationsData] = await Promise.all([
-      fetch('./resources/data/quran/qpc-v2-15-lines.json').then(r => r.json()),
-      fetch('./resources/data/quran/qpc-v2-word-by-word.json').then(r => r.json()),
-      fetch('./resources/data/quran/surah-names.json').then(r => r.json()),
-      fetch('./resources/data/quran/english-wbw-translation.json').then(r => r.json())
+      loadResourceWithCache({ resourceConfig: RESOURCE_CONFIGS.layout, murajahDB, onBackgroundUpdate: handleBackgroundUpdate }),
+      loadResourceWithCache({ resourceConfig: RESOURCE_CONFIGS.words, murajahDB, onBackgroundUpdate: handleBackgroundUpdate }),
+      loadResourceWithCache({ resourceConfig: RESOURCE_CONFIGS.surahNames, murajahDB, onBackgroundUpdate: handleBackgroundUpdate }),
+      loadResourceWithCache({ resourceConfig: RESOURCE_CONFIGS.translations, murajahDB, onBackgroundUpdate: handleBackgroundUpdate })
     ]);
 
     dataCache.layout = layoutData;
@@ -53,7 +165,7 @@ export const loadAllQuranData = async () => {
       words: Object.keys(wordsData).length,
       surahs: Object.keys(surahNamesData).length
     });
-    
+
     return {
       layout: layoutData,
       words: wordsData,
@@ -246,6 +358,9 @@ export const clearDataCache = () => {
   dataCache.surahNames = null;
   dataCache.translations = null;
   dataCache.isLoaded = false;
+  Object.keys(resourceRefreshState).forEach(key => {
+    resourceRefreshState[key] = false;
+  });
   Logger.info(Logger.MODULES.DATA, 'Data cache cleared');
 };
 
