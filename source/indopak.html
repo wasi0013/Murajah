@@ -1658,8 +1658,8 @@
                   </div>
                 </div>
               </section>
-              <!-- Daily Revision Banner -->
-                <div v-if="memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
+              <!-- Daily Revision Banner (Quick Test) -->
+                <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
                 <div class="flex-1">
                   <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
                     <i class="fas fa-quran"></i>
@@ -1678,7 +1678,7 @@
               </div>
 
               <!-- Daily Goals Card -->
-              <div class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
+              <div v-if="hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
                 <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
                   <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
                   <p class="text-gray-600 ">{{ $t('dailyGoals.loading') }}</p>
@@ -2906,7 +2906,7 @@
 
 
             <!-- Analytics Dashboard -->
-              <div v-if="dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+              <div v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
                   <i class="fas fa-chart-line text-blue-600"></i>
                   {{ $t('dashboard.analyticsPanel.dailyTitle') }}
@@ -3043,7 +3043,7 @@
             </div>
 
             <!-- Daily Goals Contribution Graph (GitHub-style) -->
-            <div v-if="dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
+            <div v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
               <div class="bg-white  rounded-lg shadow-lg p-6 mb-12">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2">
@@ -5051,6 +5051,11 @@
             return Math.max(0, total - completed);
           });
 
+          // Check if user has any daily tasks enabled
+          const hasDailyTasks = computed(() => {
+            return dailyGoalsStore.selectedTasks && dailyGoalsStore.selectedTasks.length > 0;
+          });
+
           // Calculate total score from perfect revisions using hasanah values
           const totalPerfectRevisionsPoints = computed(() => {
             const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
@@ -6058,6 +6063,7 @@ Display:
             last30DaysTrend,
             recentActivity,
             remainingDailyTasks,
+            hasDailyTasks,
             currentLocaleSurahs,
             getTrendDayTooltip,
             achievementStore,
