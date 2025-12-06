@@ -3384,6 +3384,18 @@
                 console.error('[Murajah] Failed to load quran.json for audio player:', error);
               }
               
+              // Load Bangla word-by-word translations for tooltip
+              try {
+                const bnTranslationsResponse = await fetch('./resources/data/quran/bangali-word-by-word-translation.json');
+                const bnTranslations = await bnTranslationsResponse.json();
+                quranData.value.translationsBn = bnTranslations;
+                console.log('[Murajah] Loaded Bangla word-by-word translations', {
+                  keys: Object.keys(bnTranslations).length
+                });
+              } catch (error) {
+                console.error('[Murajah] Failed to load Bangla translations:', error);
+              }
+              
               // Load stored data
               await loadStoredData();
               
@@ -4163,11 +4175,17 @@
             
             // The translation key format is "surah:ayah:word" (e.g., "2:275:1")
             const key = `${word.surah}:${word.ayah}:${word.word}`;
-            const translation = quranData.value.translations[key];
+            
+            // Use Bangla translation when locale is 'bn', otherwise use English
+            const translationsSource = currentLocale.value === 'bn' && quranData.value.translationsBn
+              ? quranData.value.translationsBn
+              : quranData.value.translations;
+            const translation = translationsSource[key];
             
             console.log('[Murajah] Word tooltip lookup:', { 
               word: { id: word.id, surah: word.surah, ayah: word.ayah, word: word.word },
               key,
+              locale: currentLocale.value,
               found: !!translation,
               translation: translation || 'N/A'
             });
