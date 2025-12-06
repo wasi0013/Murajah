@@ -63,6 +63,7 @@
     "fontSizeMedium": "Medium",
     "fontSizeLarge": "Large",
     "enableTajweed": "Enable Tajweed Colors",
+    "showTafsir": "Show Tafsir (Commentary)",
     "dailyGoalsTitle": "Daily Goals Settings",
     "pagesPerDay": "Pages Per Day",
     "finishRevisionDays": "Finish Revision in (days)",
@@ -445,7 +446,7 @@
   },
   "tafsir": {
     "title": "Tafsir",
-    "subtitle": "Brief explanation of the verses on this page. Report if you find any mistakes these are taken from quran.com",
+    "subtitle": "Brief explanation of the verses on this page. Report if you find any mistakes or something seems doubtful. These are taken from quran.com",
     "verse": "Verse",
     "showMore": "Show more",
     "showLess": "Show less",

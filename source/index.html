@@ -2116,7 +2116,7 @@
               ></quran-audio-player-component>
 
               <!-- Tafsir Section -->
-              <div v-if="currentPageTafsir.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200">
+              <div v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200">
                 <!-- Header - Clickable to expand/collapse -->
                 <button 
                   @click="tafsirExpanded = !tafsirExpanded"
@@ -2421,6 +2421,11 @@
                       <div class="flex items-center">
                         <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  ">
                         <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.enableTajweed') }}</label>
+                      </div>
+
+                      <div class="flex items-center">
+                        <input v-model="settingsStore.showTafsir" @change="updateSettings" type="checkbox" id="showTafsir" class="rounded  ">
+                        <label for="showTafsir" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.showTafsir') }}</label>
                       </div>
 
                       <div class="sm:col-span-2">
@@ -3167,6 +3172,7 @@
             pagesPerDay: 1,
             fontSize: 'medium',
             tajweedEnabled: true,
+            showTafsir: false,
             adjustRevisionChunk: 0  // NEW: Manual adjustment to rotation index (0 = no adjustment)
           });
 
@@ -3473,6 +3479,7 @@
               pagesPerDay: Number(settingsStore.pagesPerDay),
               fontSize: String(settingsStore.fontSize),
               tajweedEnabled: Boolean(settingsStore.tajweedEnabled),
+              showTafsir: Boolean(settingsStore.showTafsir),
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
                 : []
