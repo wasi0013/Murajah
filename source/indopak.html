@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Murajah - Quran Memorization App">
+  <meta name="description" content="Murajah - Quran Memorization App (Indopak Layout - 610 Pages)">
   <meta name="theme-color" content="#1f2937">
   <meta name="google-site-verification" content="dqigT_yt_V7BwR1uM5PplRWn8Vj5gc8duaReuC7xRTw" />
-  <title>Murajah - Quran Memorization</title>
+  <title>Murajah - Indopak Layout</title>
   
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
@@ -1408,8 +1408,8 @@
       const murajahDB = new MurajahDB();
       await murajahDB.init();
 
-      // Import utility modules
-      const dataLoaderModule = await import('./resources/js/utils/dataLoader.js');
+      // Import utility modules (using Indopak data loader for 610-page layout)
+      const dataLoaderModule = await import('./resources/js/utils/indopakDataLoader.js');
       const { loadAllQuranData, getPageText, getPageWordsDetailed } = dataLoaderModule;
       
       const calculationsModule = await import('./resources/js/utils/calculations.js');
@@ -1510,14 +1510,14 @@
                 <div class="flex items-center gap-3">
                   <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-12 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
                   <!-- Layout Indicator Badge -->
-                  <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    QPC (604)
+                  <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                    Indopak (610)
                   </span>
                 </div>
                 <div class="flex items-center gap-4">
 
-                  <!-- Switch to Indopak Layout -->
-                  <a href="./indopak.html" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Switch to Indopak Layout (610 pages)">
+                  <!-- Switch to QPC Layout -->
+                  <a href="./index.html" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Switch to QPC Layout (604 pages)">
                     <i class="fas fa-exchange-alt text-gray-700 text-xl"></i>
                   </a>
 
@@ -1772,7 +1772,7 @@
               <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
                   <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
-                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: 604 }) }}</span>
+                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: 610 }) }}</span>
                 </div>
 
                 <div class="space-y-2">
@@ -1800,7 +1800,7 @@
               <!-- Quran Text Display with Overlay Navigation -->
               <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group">
                 <div class="text-center space-y-1 sm:space-y-2 relative">
-                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 610</p>
                   <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
                   
                   <!-- Hifz Status Bookmark - Moved to header -->
@@ -1931,13 +1931,13 @@
 
                   <div class="flex items-center gap-1 sm:gap-2 bg-gray-100  px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-900 ">
                     <span class="text-lg sm:text-xl font-bold">{{ appStore.currentPage }}</span>
-                    <span class="text-xs sm:text-sm text-gray-600 ">/604</span>
+                    <span class="text-xs sm:text-sm text-gray-600 ">/610</span>
                   </div>
 
-                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
+                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="610" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
                   <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">{{ $t('navigation.go') }}</button>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
+                  <button @click="nextPage" :disabled="appStore.currentPage === 610" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>                <!-- Action Buttons -->
@@ -2202,7 +2202,7 @@
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.memorized') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
-                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofPages', { total: 604 }) }}</p>
+                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofPages', { total: 610 }) }}</p>
                     </div>
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.juz') }}</p>
@@ -2407,7 +2407,7 @@
                           }" 
                           type="number" 
                           min="1" 
-                          max="604" 
+                          max="610" 
                           class="w-full px-4 py-2 border border-gray-300  rounded-lg   "
                         >
                     </div>
@@ -2563,11 +2563,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkStartPage') }}</label>
-                        <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" max="610" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkEndPage') }}</label>
-                        <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" max="610" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div class="flex items-end">
                         <button 
@@ -3100,7 +3100,7 @@
           // State Stores
           const appStore = reactive({
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
-            totalPages: 604,
+            totalPages: 610,
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
             appVersion: '25.11.24',
@@ -3838,7 +3838,7 @@
           };
 
           const nextPage = () => {
-            if (appStore.currentPage < 604) {
+            if (appStore.currentPage < 610) {
               appStore.currentPage++;
               updateURL();
             }
@@ -3846,8 +3846,8 @@
 
           const gotoPage = () => {
             const num = parseInt(gotoInput.value);
-            if (isNaN(num) || num < 1 || num > 604) {
-              appStore.errorMessage = 'Please enter a page number between 1 and 604';
+            if (isNaN(num) || num < 1 || num > 610) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 610';
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
@@ -3855,8 +3855,8 @@
           };
 
           const goToPageNumber = (pageNum) => {
-            if (pageNum < 1 || pageNum > 604) {
-              appStore.errorMessage = 'Please enter a page number between 1 and 604';
+            if (pageNum < 1 || pageNum > 610) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 610';
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
@@ -4206,27 +4206,28 @@
           const selectedJuzPreset = ref(1);
 
           // Hardcoded Juz ranges (Juz 1 has 21 pages, Juz 2-29 have 20 pages each, Juz 30 has 23 pages)
+          // Indopak Juz page ranges (calculated from detailed_quran.json indopak_page values)
           const JUZ_RANGES = {
             1: [1, 21],
             2: [22, 41],
             3: [42, 61],
             4: [62, 81],
             5: [82, 101],
-            6: [102, 121],
-            7: [122, 141],
+            6: [102, 120],
+            7: [121, 141],
             8: [142, 161],
             9: [162, 181],
-            10: [182, 201],
-            11: [202, 221],
+            10: [182, 200],
+            11: [201, 221],
             12: [222, 241],
-            13: [242, 261],
-            14: [262, 281],
+            13: [242, 260],
+            14: [261, 281],
             15: [282, 301],
             16: [302, 321],
             17: [322, 341],
             18: [342, 361],
-            19: [362, 381],
-            20: [382, 401],
+            19: [362, 380],
+            20: [381, 401],
             21: [402, 421],
             22: [422, 441],
             23: [442, 461],
@@ -4235,26 +4236,26 @@
             26: [502, 521],
             27: [522, 541],
             28: [542, 561],
-            29: [562, 581],
-            30: [582, 604]
+            29: [562, 585],
+            30: [586, 610]
           };
 
           const getJuzRange = (juzNum) => JUZ_RANGES[juzNum] || [1, 21];
 
-          // Surah starting pages mapping (surah number -> starting page) - Extracted from actual Quran data
+          // Indopak Surah starting pages (surah number -> starting page) - Extracted from detailed_quran.json
           const SURAH_PAGES = {
-            1: 1, 2: 2, 3: 50, 4: 76, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 207,
-            11: 221, 12: 235, 13: 249, 14: 255, 15: 262, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
-            21: 322, 22: 331, 23: 341, 24: 349, 25: 359, 26: 366, 27: 376, 28: 385, 29: 396, 30: 404,
-            31: 411, 32: 414, 33: 417, 34: 428, 35: 434, 36: 440, 37: 445, 38: 452, 39: 458, 40: 467,
-            41: 477, 42: 483, 43: 489, 44: 496, 45: 498, 46: 502, 47: 506, 48: 511, 49: 515, 50: 518,
-            51: 520, 52: 523, 53: 525, 54: 528, 55: 531, 56: 534, 57: 537, 58: 542, 59: 545, 60: 548,
-            61: 551, 62: 553, 63: 554, 64: 555, 65: 557, 66: 560, 67: 562, 68: 564, 69: 566, 70: 568,
-            71: 570, 72: 572, 73: 574, 74: 575, 75: 577, 76: 578, 77: 580, 78: 582, 79: 583, 80: 584,
-            81: 586, 82: 587, 83: 587, 84: 589, 85: 590, 86: 591, 87: 591, 88: 592, 89: 593, 90: 594,
-            91: 595, 92: 595, 93: 596, 94: 596, 95: 597, 96: 597, 97: 598, 98: 598, 99: 599, 100: 599,
-            101: 600, 102: 600, 103: 601, 104: 601, 105: 601, 106: 602, 107: 602, 108: 602, 109: 603, 110: 603,
-            111: 603, 112: 604, 113: 604, 114: 604
+            1: 1, 2: 2, 3: 50, 4: 77, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 208,
+            11: 221, 12: 235, 13: 249, 14: 255, 15: 261, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
+            21: 322, 22: 331, 23: 342, 24: 350, 25: 359, 26: 366, 27: 376, 28: 385, 29: 396, 30: 404,
+            31: 411, 32: 415, 33: 418, 34: 428, 35: 434, 36: 440, 37: 445, 38: 452, 39: 458, 40: 467,
+            41: 477, 42: 483, 43: 489, 44: 495, 45: 498, 46: 502, 47: 506, 48: 511, 49: 515, 50: 518,
+            51: 520, 52: 523, 53: 526, 54: 528, 55: 531, 56: 534, 57: 537, 58: 542, 59: 545, 60: 549,
+            61: 551, 62: 553, 63: 554, 64: 556, 65: 558, 66: 560, 67: 562, 68: 564, 69: 567, 70: 569,
+            71: 571, 72: 573, 73: 576, 74: 578, 75: 580, 76: 582, 77: 584, 78: 586, 79: 587, 80: 589,
+            81: 590, 82: 591, 83: 592, 84: 594, 85: 595, 86: 596, 87: 597, 88: 597, 89: 598, 90: 600,
+            91: 600, 92: 601, 93: 602, 94: 602, 95: 603, 96: 603, 97: 604, 98: 604, 99: 605, 100: 605,
+            101: 606, 102: 606, 103: 607, 104: 607, 105: 607, 106: 608, 107: 608, 108: 608, 109: 608, 110: 609,
+            111: 609, 112: 609, 113: 610, 114: 610
           };
 
           const getSurahStartPage = (surahNum) => SURAH_PAGES[surahNum] || 1;
@@ -4302,8 +4303,8 @@
 
           const bulkMemorize = () => {
             bulkWarning.value = '';
-            const start = Math.max(1, Math.min(bulkStartPage.value, 604));
-            const end = Math.max(start, Math.min(bulkEndPage.value, 604));
+            const start = Math.max(1, Math.min(bulkStartPage.value, 610));
+            const end = Math.max(start, Math.min(bulkEndPage.value, 610));
 
             if (start > end) {
               bulkWarning.value = 'Start page must be less than or equal to end page';
@@ -4353,12 +4354,12 @@
               bulkEndPage.value = endPage;
               bulkMemorize();
             } else if (type === 'all') {
-              if (confirm('Mark ALL 604 pages as memorized?')) {
-                for (let i = 1; i <= 604; i++) {
+              if (confirm('Mark ALL 610 pages as memorized?')) {
+                for (let i = 1; i <= 610; i++) {
                   memorizedStore.memorizedPages.add(i);
                 }
                 saveDataBackground();
-                appStore.successMessage = 'All 604 pages marked as memorized!';
+                appStore.successMessage = 'All 610 pages marked as memorized!';;
                 setTimeout(() => appStore.successMessage = '', 2000);
               }
             } else if (type === 'clear') {
@@ -5551,10 +5552,10 @@
             // G - Go to page (with prompt)
             if (key === 'g') {
               event.preventDefault();
-              const pageNum = prompt('Go to page (1-604):', appStore.currentPage.toString());
+              const pageNum = prompt('Go to page (1-610):', appStore.currentPage.toString());
               if (pageNum) {
                 const num = parseInt(pageNum);
-                if (!isNaN(num) && num >= 1 && num <= 604) {
+                if (!isNaN(num) && num >= 1 && num <= 610) {
                   appStore.currentPage = num;
                   updateURL();
                 } else {
