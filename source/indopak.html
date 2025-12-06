@@ -3356,10 +3356,10 @@
               });
               console.log('[Murajah] Quran data loaded successfully');
               
-              // Load detailed_quran.json for audio player (contains both QPC and Indopak page mappings)
+              // Load quran.json for audio player (contains both QPC and Indopak page mappings)
               // For Indopak layout, we use indopak_page field as the page field
               try {
-                const quranJsonResponse = await fetch('./resources/data/quran/detailed_quran.json');
+                const quranJsonResponse = await fetch('./resources/data/quran/quran.json');
                 const detailedQuranJson = await quranJsonResponse.json();
                 
                 // Transform data: use indopak_page as page for Indopak layout
@@ -3373,7 +3373,7 @@
                 
                 // Store it in quranData for use by the audio player component
                 quranData.value.quranWithPages = transformedData;
-                console.log('[Murajah] Loaded detailed_quran.json for audio player (using indopak_page)', {
+                console.log('[Murajah] Loaded quran.json for audio player (using indopak_page)', {
                   type: typeof transformedData,
                   isArray: Array.isArray(transformedData),
                   keys: Object.keys(transformedData).length,
@@ -3381,7 +3381,7 @@
                   sampleVerse: transformedData['1']?.[0]
                 });
               } catch (error) {
-                console.error('[Murajah] Failed to load detailed_quran.json for audio player:', error);
+                console.error('[Murajah] Failed to load quran.json for audio player:', error);
               }
               
               // Load stored data
@@ -4311,7 +4311,7 @@
           const selectedJuzPreset = ref(1);
 
           // Hardcoded Juz ranges (Juz 1 has 21 pages, Juz 2-29 have 20 pages each, Juz 30 has 23 pages)
-          // Indopak Juz page ranges (calculated from detailed_quran.json indopak_page values)
+          // Indopak Juz page ranges (calculated from quran.json indopak_page values)
           const JUZ_RANGES = {
             1: [1, 21],
             2: [22, 41],
@@ -4347,7 +4347,7 @@
 
           const getJuzRange = (juzNum) => JUZ_RANGES[juzNum] || [1, 21];
 
-          // Indopak Surah starting pages (surah number -> starting page) - Extracted from detailed_quran.json
+          // Indopak Surah starting pages (surah number -> starting page) - Extracted from quran.json
           const SURAH_PAGES = {
             1: 1, 2: 2, 3: 50, 4: 77, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 208,
             11: 221, 12: 235, 13: 249, 14: 255, 15: 261, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
