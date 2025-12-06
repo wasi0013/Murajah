@@ -13,8 +13,8 @@ const RESOURCE_CONFIGS = {
   },
   words: {
     key: 'words',
-    cacheId: 'qpc-v2-word-by-word',
-    url: './resources/data/quran/qpc-v2-word-by-word.json'
+    cacheId: 'indopak-nastaleeq',
+    url: './resources/data/indopak/indopak-nastaleeq.json'
   },
   surahNames: {
     key: 'surahNames',
@@ -39,12 +39,16 @@ const dataCache = {
 const resourceRefreshState = {};
 
 const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
+  console.log(`[Murajah] Fetching ${resourceConfig.key} from ${resourceConfig.url}...`);
   const response = await fetch(resourceConfig.url, { cache: 'no-cache' });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${resourceConfig.key} (${response.status})`);
   }
+  console.log(`[Murajah] Fetch complete for ${resourceConfig.key}, parsing JSON...`);
 
   const data = await response.json();
+  console.log(`[Murajah] JSON parsed for ${resourceConfig.key}, entries: ${typeof data === 'object' ? Object.keys(data).length : 'N/A'}`);
+  
   const cacheRecord = {
     id: resourceConfig.cacheId,
     resourceKey: resourceConfig.key,
@@ -57,7 +61,15 @@ const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
 
   if (murajahDB) {
     try {
-      await murajahDB.saveCachedResource(cacheRecord);
+      // Skip caching for very large data (>5MB) to avoid IndexedDB quota issues
+      const dataSize = JSON.stringify(data).length;
+      if (dataSize < 5000000) {
+        console.log(`[Murajah] Caching ${resourceConfig.key} to IndexedDB (${(dataSize/1024/1024).toFixed(2)}MB)...`);
+        await murajahDB.saveCachedResource(cacheRecord);
+        console.log(`[Murajah] Cached ${resourceConfig.key} successfully`);
+      } else {
+        console.log(`[Murajah] Skipping cache for ${resourceConfig.key} - too large (${(dataSize/1024/1024).toFixed(2)}MB)`);
+      }
     } catch (cacheError) {
       Logger.warn(Logger.MODULES.DATA, `Failed to cache ${resourceConfig.key}`, cacheError);
     }
@@ -98,14 +110,21 @@ const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUp
     throw new Error('[Murajah] Resource configuration is required');
   }
 
+  console.log(`[Murajah] Loading resource: ${resourceConfig.key}`);
+  
   if (murajahDB) {
     try {
+      console.log(`[Murajah] Checking cache for ${resourceConfig.key}...`);
       const cached = await murajahDB.loadCachedResource(resourceConfig.cacheId);
+      console.log(`[Murajah] Cache result for ${resourceConfig.key}:`, cached ? 'found' : 'not found');
       if (cached?.data) {
+        console.log(`[Murajah] Using cached ${resourceConfig.key}, entries: ${typeof cached.data === 'object' ? Object.keys(cached.data).length : 'N/A'}`);
         scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate);
         return cached.data;
       }
+      console.log(`[Murajah] No valid cache data for ${resourceConfig.key}`);
     } catch (error) {
+      console.error(`[Murajah] Error reading cache for ${resourceConfig.key}:`, error);
       Logger.warn(Logger.MODULES.DATA, `Failed to read cached ${resourceConfig.key}`, error);
     }
   }

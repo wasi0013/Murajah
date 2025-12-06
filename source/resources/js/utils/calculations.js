@@ -262,8 +262,7 @@ export const calculateTotalScore = (perfectRevisionsData = {}) => {
  * @param {Object} params - { memorized, mistakes, audios, perfectRevisions }
  * @returns {Object} Statistics object
  */
-export const calculateStatistics = ({ memorized = 0, mistakes = 0, audios = 0, perfectRevisions = 0 }) => {
-  const total = 604;
+export const calculateStatistics = ({ memorized = 0, mistakes = 0, audios = 0, perfectRevisions = 0, total = 604 }) => {
   const remaining = total - memorized;
   
   return {
@@ -282,11 +281,12 @@ export const calculateStatistics = ({ memorized = 0, mistakes = 0, audios = 0, p
 /**
  * Parse page number from input
  * @param {string|number} input - User input
- * @returns {number} Valid page number (1-604) or null
+ * @param {number} maxPages - Maximum valid page number (default: 604)
+ * @returns {number} Valid page number (1-maxPages) or null
  */
-export const parsePageNumber = (input) => {
+export const parsePageNumber = (input, maxPages = 604) => {
   const num = parseInt(input, 10);
-  if (isNaN(num) || num < 1 || num > 604) {
+  if (isNaN(num) || num < 1 || num > maxPages) {
     return null;
   }
   return num;
@@ -296,10 +296,11 @@ export const parsePageNumber = (input) => {
  * Validate page range
  * @param {number} start - Start page
  * @param {number} end - End page
+ * @param {number} maxPages - Maximum valid page number (default: 604)
  * @returns {boolean} True if valid range
  */
-export const isValidPageRange = (start, end) => {
-  return start >= 1 && end <= 604 && start <= end;
+export const isValidPageRange = (start, end, maxPages = 604) => {
+  return start >= 1 && end <= maxPages && start <= end;
 };
 
 /**

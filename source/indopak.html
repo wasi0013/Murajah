@@ -34,6 +34,15 @@
   </script>
 
   <style>
+    /* Indopak Nastaleeq Font */
+    @font-face {
+      font-family: 'IndopakNastaleeq';
+      src: url('./resources/styles/fonts/indopak/font.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --primary: #3b82f6;
       --success: #10b981;
@@ -289,11 +298,11 @@
 
     /* Quran Text Styling */
     .quran-text {
-      font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      line-height: 1.6;
+      font-family: 'IndopakNastaleeq', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
+      line-height: 2.2;
       direction: rtl;
       text-align: right;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.05em;
       color: #111827;
       background-color: #fef3c7;
     }
@@ -1075,6 +1084,73 @@
       filter: blur(8px);
       pointer-events: none;
     }
+
+    /* ===== Indopak Page Rendering Styles ===== */
+    .indopak-page-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .indopak-page-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .indopak-word-overlays {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .indopak-word-overlay {
+      position: absolute;
+      pointer-events: all;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      border-radius: 2px;
+    }
+
+    .indopak-word-overlay:hover {
+      background-color: rgba(59, 130, 246, 0.25); /* blue-500 with opacity */
+    }
+
+    .indopak-word-overlay.mistake {
+      background-color: rgba(239, 68, 68, 0.3); /* red-500 with opacity */
+    }
+
+    .indopak-word-overlay.mistake:hover {
+      background-color: rgba(239, 68, 68, 0.45);
+    }
+
+    .indopak-word-overlay.selected {
+      background-color: rgba(34, 197, 94, 0.3); /* green-500 with opacity */
+    }
+
+    .indopak-word-overlay.hovered {
+      background-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .indopak-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
     
   </style>
 </head>
@@ -1506,36 +1582,40 @@
 
             <!-- Header -->
             <header class="bg-white shadow">
-              <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-12 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
-                  <!-- Layout Indicator Badge -->
-                  <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                    Indopak (610)
-                  </span>
+              <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2 sm:gap-3">
+                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1 sm:gap-2 md:gap-4">
 
-                  <!-- Switch to QPC Layout -->
-                  <a href="./index.html" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Switch to QPC Layout (604 pages)">
-                    <i class="fas fa-exchange-alt text-gray-700 text-xl"></i>
-                  </a>
-
-                  <a href="#quran-text-section" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
-                    <i class="fas fa-book text-gray-700 text-xl"></i>
+                  <!-- Quran/Memorize -->
+                  <a href="#quran-text-section" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
+                    <i class="fas fa-book text-gray-700 text-lg sm:text-xl"></i>
                   </a>
                   
-                  <a href="https:///murajah.pages.dev/quiz" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
-                    <i class="fas fa-question-circle text-gray-700 text-xl"></i>
+                  <!-- Quiz -->
+                  <a href="https:///murajah.pages.dev/quiz" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
+                    <i class="fas fa-question-circle text-gray-700 text-lg sm:text-xl"></i>
                   </a>
  
-                  <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
-                    <i class="fas fa-info-circle text-gray-700  text-xl"></i>
+                  <!-- Help/Info -->
+                  <button @click="showHelpModal = true" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
+                    <i class="fas fa-info-circle text-gray-700 text-lg sm:text-xl"></i>
                   </button>
 
+                  <!-- Layout Toggle: Uthmani / Indopak (current) -->
+                  <a
+                    href="./index.html"
+                    class="inline-flex items-center justify-center px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    :title="$t('layout.switchToUthmani')"
+                  >
+                    {{ $t('layout.uthmani') }}
+                  </a>
+
+                  <!-- Language Toggle -->
                   <button
                     type="button"
-                    class="px-4 py-1 border border-gray-300 text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    class="px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                     @click="toggleLocale"
                     :aria-label="localeToggleLabel"
                     :title="localeToggleLabel"
@@ -1543,8 +1623,9 @@
                     {{ currentLocale === 'bn' ? $t('language.english') : $t('language.bangla') }}
                   </button>
                   
-                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
-                    <i class="fas fa-cog text-gray-700  text-xl"></i>
+                  <!-- Settings -->
+                  <button @click="openSettingsModal" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
+                    <i class="fas fa-cog text-gray-700 text-lg sm:text-xl"></i>
                   </button>
                 </div>
               </div>
@@ -1834,17 +1915,17 @@
                   </div>
                 </div>
 
-                <!-- Quran Text Content - Word by Word Display -->
+                <!-- Indopak Quran Page Display (Font-based rendering with IndopakNastaleeq) -->
                 <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative">
 
                   <!-- Mistakes Counter Badge -->
-                  <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
+                  <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl z-10" style="opacity: 0.4;" title="Number of mistakes on this page">
                     {{ currentPageMistakeCount }}
                   </div>
 
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-1.5 md:gap-2">
                     <!-- Surah Name Display -->
-                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl font-black text-black  my-2 sm:my-3 md:my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl font-black text-black my-2 sm:my-3 md:my-4 text-center" style="font-family: 'IndopakNastaleeq', 'Traditional Arabic', serif;">
                       {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
                       <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
                     </div>
@@ -1858,11 +1939,11 @@
                       @mousemove="updateTooltipPosition($event)"
                       @mouseleave="hideWordTooltip()"
                       :class="{
-                        'bg-blue-100  rounded-md px-1 sm:px-1.5 md:px-2 py-0.5 sm:py-1': hoveredWordId === word.id,
-                        'bg-red-200 ': currentPageMistakes.includes(word.id),
+                        'bg-blue-100 rounded-md px-1 sm:px-1.5 md:px-2 py-0.5 sm:py-1': hoveredWordId === word.id,
+                        'bg-red-200': currentPageMistakes.includes(word.id),
                         'cursor-pointer transition-all duration-200': true
                       }"
-                       class="quran-word inline-block"
+                      class="quran-word inline-block"
                     >
                       {{ word.text }}
                     </span>
@@ -1870,9 +1951,9 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
+                <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100 rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
-                  <p class="text-gray-600 ">Loading Quran text...</p>
+                  <p class="text-gray-600">Loading Indopak page...</p>
                 </div>
 
                 <!-- Overlay Navigation Arrows (Hidden by default, visible on hover) -->
@@ -2365,8 +2446,8 @@
                       </div>
 
                       <div class="flex items-center">
-                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  ">
-                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.enableTajweed') }}</label>
+                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  " disabled>
+                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-400 " title="Tajweed highlighting is not available for Indopak layout">{{ $t('settings.enableTajweed') }} <span class="text-xs">(N/A for Indopak)</span></label>
                       </div>
 
                       <div class="sm:col-span-2">
@@ -3172,6 +3253,16 @@
           const tooltipY = ref(0);
           const tooltipText = ref('');
 
+          // Indopak page rendering state
+          const indopakPageImage = ref(null);
+          const indopakWordMapping = ref({});
+          const indopakImageDimensions = ref({ width: 0, height: 0 });
+          const indopakPageLoading = ref(false);
+          const indopakWordMappingCache = {};  // Cache word mappings
+          
+          // Base canvas dimensions for coordinate scaling (based on the word mapping data)
+          const INDOPAK_BASE_CANVAS = { width: 900, height: 1200 };
+
           const handleTranslationUpdate = (freshTranslations) => {
             if (!freshTranslations || !quranData.value) {
               return;
@@ -3258,25 +3349,39 @@
               }
               
               // Load Quran data (translations come from cache with background refresh)
+              console.log('[Murajah] Starting to load Quran data...');
               quranData.value = await loadAllQuranData({
                 murajahDB,
                 onTranslationUpdate: handleTranslationUpdate
               });
+              console.log('[Murajah] Quran data loaded successfully');
               
-              // Load quran.json for audio player (contains surah, verse, page mapping)
+              // Load detailed_quran.json for audio player (contains both QPC and Indopak page mappings)
+              // For Indopak layout, we use indopak_page field as the page field
               try {
-                const quranJsonResponse = await fetch('./resources/data/quran/quran.json');
-                const quranJson = await quranJsonResponse.json();
+                const quranJsonResponse = await fetch('./resources/data/quran/detailed_quran.json');
+                const detailedQuranJson = await quranJsonResponse.json();
+                
+                // Transform data: use indopak_page as page for Indopak layout
+                const transformedData = {};
+                Object.keys(detailedQuranJson).forEach(surahKey => {
+                  transformedData[surahKey] = detailedQuranJson[surahKey].map(verse => ({
+                    ...verse,
+                    page: verse.indopak_page || verse.page // Use indopak_page for Indopak layout
+                  }));
+                });
+                
                 // Store it in quranData for use by the audio player component
-                quranData.value.quranWithPages = quranJson;
-                console.log('[Murajah] Loaded quran.json for audio player', {
-                  type: typeof quranJson,
-                  isArray: Array.isArray(quranJson),
-                  keys: Object.keys(quranJson).length,
-                  stored: !!quranData.value.quranWithPages
+                quranData.value.quranWithPages = transformedData;
+                console.log('[Murajah] Loaded detailed_quran.json for audio player (using indopak_page)', {
+                  type: typeof transformedData,
+                  isArray: Array.isArray(transformedData),
+                  keys: Object.keys(transformedData).length,
+                  stored: !!quranData.value.quranWithPages,
+                  sampleVerse: transformedData['1']?.[0]
                 });
               } catch (error) {
-                console.error('[Murajah] Failed to load quran.json for audio player:', error);
+                console.error('[Murajah] Failed to load detailed_quran.json for audio player:', error);
               }
               
               // Load stored data
@@ -4967,7 +5072,8 @@
               mistakes: Array.from(mistakesStore.mistakes.values()).reduce((sum, set) => sum + set.size, 0),
               audios: audioStore.recordings.length,
               perfectRevisions: perfectRevisionsCount.value,
-              totalPoints: totalPerfectRevisionsPoints.value
+              totalPoints: totalPerfectRevisionsPoints.value,
+              total: 610 // Indopak layout has 610 pages
             });
           });
 
@@ -5104,28 +5210,138 @@
             return getPageWordsDetailed(appStore.currentPage, quranData.value.layout, quranData.value.words);
           });
 
-          // Load font dynamically for current page
-          const loadPageFont = (pageNum) => {
-            const fontId = 'dynamicQPCPageFont';
-            let styleTag = document.getElementById(fontId);
-            if (styleTag) styleTag.remove();
-            
-            styleTag = document.createElement('style');
-            styleTag.id = fontId;
-            
-            // Use settingsStore to check if tajweed is enabled
-            const tajweed = settingsStore.tajweedEnabled;
-            
-            let src;
-            if (tajweed) {
-              src = `src: url('./resources/styles/fonts/tajweed/p${pageNum}.woff2') format('woff2')`;
-            } else {
-              src = `src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2')`;
+          // ===== Indopak Page Rendering Functions =====
+          
+          // Load Indopak page image and word mapping
+          const loadIndopakPage = async (pageNum) => {
+            indopakPageLoading.value = true;
+            try {
+              // Load the page image
+              const imagePath = `./resources/assets/images/indopak/${pageNum}.png`;
+              
+              // Create image to get dimensions
+              const img = new Image();
+              img.src = imagePath;
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+              });
+              
+              indopakPageImage.value = imagePath;
+              indopakImageDimensions.value = { width: img.naturalWidth, height: img.naturalHeight };
+              
+              // Load word mapping (with caching)
+              if (indopakWordMappingCache[pageNum]) {
+                indopakWordMapping.value = indopakWordMappingCache[pageNum];
+              } else {
+                const mappingPath = `./resources/data/indopak_word_mapping/${pageNum}.json`;
+                const response = await fetch(mappingPath);
+                if (response.ok) {
+                  const mapping = await response.json();
+                  indopakWordMappingCache[pageNum] = mapping;
+                  indopakWordMapping.value = mapping;
+                } else {
+                  console.warn(`[Murajah] Word mapping not found for page ${pageNum}`);
+                  indopakWordMapping.value = {};
+                }
+              }
+              
+              console.log(`[Murajah] Loaded Indopak page ${pageNum}: ${img.naturalWidth}x${img.naturalHeight}, ${Object.keys(indopakWordMapping.value).length} words`);
+            } catch (error) {
+              console.error(`[Murajah] Error loading Indopak page ${pageNum}:`, error);
+              indopakPageImage.value = null;
+              indopakWordMapping.value = {};
+            } finally {
+              indopakPageLoading.value = false;
+            }
+          };
+
+          // Calculate scaled word overlay positions
+          const indopakWordOverlays = computed(() => {
+            if (!indopakWordMapping.value || !indopakImageDimensions.value.width) {
+              return [];
             }
             
-            styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;
-            document.head.appendChild(styleTag);
-            console.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
+            const overlays = [];
+            const imgWidth = indopakImageDimensions.value.width;
+            const imgHeight = indopakImageDimensions.value.height;
+            
+            // Calculate bounds from the mapping data to determine scale
+            let minX = Infinity, maxX = 0, minY = Infinity, maxY = 0;
+            for (const [key, coords] of Object.entries(indopakWordMapping.value)) {
+              minX = Math.min(minX, coords.x);
+              maxX = Math.max(maxX, coords.x + coords.w);
+              minY = Math.min(minY, coords.y);
+              maxY = Math.max(maxY, coords.y + coords.h);
+            }
+            
+            // Calculate scale factors
+            const mappingWidth = maxX - minX + 40; // Add padding
+            const mappingHeight = maxY - minY + 40;
+            const scaleX = imgWidth / mappingWidth;
+            const scaleY = imgHeight / mappingHeight;
+            
+            for (const [key, coords] of Object.entries(indopakWordMapping.value)) {
+              const [surah, ayah, wordNum] = key.split(':').map(Number);
+              
+              // Scale and offset coordinates
+              const scaledX = (coords.x - minX + 20) * scaleX;
+              const scaledY = (coords.y - minY + 20) * scaleY;
+              const scaledW = coords.w * scaleX;
+              const scaledH = coords.h * scaleY;
+              
+              overlays.push({
+                key,
+                surah,
+                ayah,
+                wordNum,
+                x: scaledX,
+                y: scaledY,
+                width: scaledW,
+                height: scaledH,
+                // For compatibility with existing word interaction functions
+                id: key,
+                text: '', // No text needed for overlay
+                word: wordNum
+              });
+            }
+            
+            return overlays;
+          });
+
+          // Get mistakes for current page (by word keys)
+          const currentPageMistakeKeys = computed(() => {
+            const mistakes = [];
+            for (const key of Object.keys(indopakWordMapping.value)) {
+              const [surah, ayah, wordNum] = key.split(':').map(Number);
+              // Check if this word is in mistakes store (need to adapt to existing mistake storage)
+              if (mistakesStore.mistakes[appStore.currentPage]?.includes(key) || 
+                  mistakesStore.mistakes[appStore.currentPage]?.some(m => {
+                    // Handle both old format (word.id) and new format (surah:ayah:word)
+                    if (typeof m === 'number') {
+                      // Old format - check if word ID matches
+                      return false; // Will need to map word IDs
+                    }
+                    return m === key;
+                  })) {
+                mistakes.push(key);
+              }
+            }
+            return mistakes;
+          });
+
+          // Watch for page changes to load Indopak data
+          watch(() => appStore.currentPage, async (newPage) => {
+            if (newPage >= 1 && newPage <= 610) {
+              await loadIndopakPage(newPage);
+            }
+          }, { immediate: false });
+
+          // Load font dynamically for current page (Indopak uses single font - no per-page loading needed)
+          const loadPageFont = (pageNum) => {
+            // Indopak uses a single font file loaded via CSS @font-face
+            // No per-page font loading required unlike QPC/Tajweed
+            console.log(`[Murajah] Indopak page ${pageNum} - using single IndopakNastaleeq font`);
           };
 
           // ===== Calendar View Functions =====

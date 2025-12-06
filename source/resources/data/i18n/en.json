@@ -86,6 +86,12 @@
     "english": "English",
     "bangla": "Bangla"
   },
+  "layout": {
+    "uthmani": "Uthmani",
+    "indopak": "Indopak",
+    "switchToUthmani": "Switch to Uthmani Layout (604 pages)",
+    "switchToIndopak": "Switch to Indopak Layout (610 pages)"
+  },
   "footer": {
     "versionInfo": "Murajah Version {version} | Made with {heart} for Quran memorization",
     "viewOnGithub": "View on GitHub"

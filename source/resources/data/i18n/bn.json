@@ -86,6 +86,12 @@
     "english": "English",
     "bangla": "বাংলা"
   },
+  "layout": {
+    "uthmani": "ওসমানী",
+    "indopak": "হাফেযি",
+    "switchToUthmani": "ওসমানী লেআউটে যান (৬০৪ পৃষ্ঠা)",
+    "switchToIndopak": "হাফেযি লেআউটে যান (৬১০ পৃষ্ঠা)"
+  },
   "footer": {
     "versionInfo": "مراجعة সংস্করণ {version} | {heart}",
     "viewOnGithub": "GitHub-এ দেখুন"

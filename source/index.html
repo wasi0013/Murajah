@@ -1506,36 +1506,40 @@
 
             <!-- Header -->
             <header class="bg-white shadow">
-              <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-12 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
-                  <!-- Layout Indicator Badge -->
-                  <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    QPC (604)
-                  </span>
+              <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2 sm:gap-3">
+                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1 sm:gap-2 md:gap-4">
 
-                  <!-- Switch to Indopak Layout -->
-                  <a href="./indopak.html" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Switch to Indopak Layout (610 pages)">
-                    <i class="fas fa-exchange-alt text-gray-700 text-xl"></i>
-                  </a>
-
-                  <a href="#quran-text-section" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
-                    <i class="fas fa-book text-gray-700 text-xl"></i>
+                  <!-- Quran/Memorize -->
+                  <a href="#quran-text-section" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
+                    <i class="fas fa-book text-gray-700 text-lg sm:text-xl"></i>
                   </a>
                   
-                  <a href="https:///murajah.pages.dev/quiz" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
-                    <i class="fas fa-question-circle text-gray-700 text-xl"></i>
+                  <!-- Quiz -->
+                  <a href="https:///murajah.pages.dev/quiz" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
+                    <i class="fas fa-question-circle text-gray-700 text-lg sm:text-xl"></i>
                   </a>
  
-                  <button @click="showHelpModal = true" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
-                    <i class="fas fa-info-circle text-gray-700  text-xl"></i>
+                  <!-- Help/Info -->
+                  <button @click="showHelpModal = true" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
+                    <i class="fas fa-info-circle text-gray-700 text-lg sm:text-xl"></i>
                   </button>
 
+                  <!-- Layout Toggle: Uthmani (current) / Indopak -->
+                  <a
+                    href="./indopak.html"
+                    class="inline-flex items-center justify-center px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    :title="$t('layout.switchToIndopak')"
+                  >
+                    {{ $t('layout.indopak') }}
+                  </a>
+
+                  <!-- Language Toggle -->
                   <button
                     type="button"
-                    class="px-4 py-1 border border-gray-300 text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    class="px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                     @click="toggleLocale"
                     :aria-label="localeToggleLabel"
                     :title="localeToggleLabel"
@@ -1543,8 +1547,9 @@
                     {{ currentLocale === 'bn' ? $t('language.english') : $t('language.bangla') }}
                   </button>
                   
-                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
-                    <i class="fas fa-cog text-gray-700  text-xl"></i>
+                  <!-- Settings -->
+                  <button @click="openSettingsModal" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
+                    <i class="fas fa-cog text-gray-700 text-lg sm:text-xl"></i>
                   </button>
                 </div>
               </div>
