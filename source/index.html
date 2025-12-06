@@ -1803,7 +1803,12 @@
               </div>
 
               <!-- Quran Text Display with Overlay Navigation -->
-              <div id="quran-text-section" class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group">
+              <div id="quran-text-section" 
+                class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group"
+                @touchstart="handleTouchStart"
+                @touchmove="handleTouchMove"
+                @touchend="handleTouchEnd"
+              >
                 <div class="text-center space-y-1 sm:space-y-2 relative">
                   <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
                   <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
@@ -2116,7 +2121,13 @@
               ></quran-audio-player-component>
 
               <!-- Tafsir Section -->
-              <div v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200">
+              <div 
+                v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" 
+                class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200"
+                @touchstart="handleTouchStart"
+                @touchmove="handleTouchMove"
+                @touchend="handleTouchEnd"
+              >
                 <!-- Header - Clickable to expand/collapse -->
                 <button 
                   @click="tafsirExpanded = !tafsirExpanded"
@@ -2127,7 +2138,7 @@
                       <i class="fas fa-book-open text-white text-sm sm:text-base"></i>
                     </div>
                     <div class="text-left">
-                      <h3 class="text-base sm:text-lg font-bold text-emerald-800">{{ $t('tafsir.title') }}</h3>
+                      <h3 class="text-base sm:text-lg font-bold text-emerald-800">{{ $t('tafsir.title') }} - {{ $t('tafsir.page') }} {{ appStore.currentPage }}</h3>
                       <p class="text-xs sm:text-sm text-emerald-600">{{ $t('tafsir.subtitle') }}</p>
                     </div>
                   </div>
@@ -3937,6 +3948,53 @@
               appStore.currentPage++;
               updateURL();
             }
+          };
+
+          // Swipe gesture navigation for mobile devices
+          const swipeState = reactive({
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0,
+            isSwiping: false
+          });
+
+          const handleTouchStart = (e) => {
+            swipeState.startX = e.touches[0].clientX;
+            swipeState.startY = e.touches[0].clientY;
+            swipeState.isSwiping = true;
+          };
+
+          const handleTouchMove = (e) => {
+            if (!swipeState.isSwiping) return;
+            swipeState.endX = e.touches[0].clientX;
+            swipeState.endY = e.touches[0].clientY;
+          };
+
+          const handleTouchEnd = () => {
+            if (!swipeState.isSwiping) return;
+            swipeState.isSwiping = false;
+
+            const deltaX = swipeState.endX - swipeState.startX;
+            const deltaY = swipeState.endY - swipeState.startY;
+            const minSwipeDistance = 50; // Minimum distance for a valid swipe
+
+            // Only trigger if horizontal swipe is greater than vertical (to avoid conflicts with scrolling)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+              if (deltaX > 0) {
+                // Swipe right -> go to previous page (Arabic RTL convention)
+                previousPage();
+              } else {
+                // Swipe left -> go to next page
+                nextPage();
+              }
+            }
+
+            // Reset swipe state
+            swipeState.startX = 0;
+            swipeState.startY = 0;
+            swipeState.endX = 0;
+            swipeState.endY = 0;
           };
 
           const gotoPage = () => {
@@ -5934,6 +5992,9 @@ Display:
             recordingCountdown,
             previousPage,
             nextPage,
+            handleTouchStart,
+            handleTouchMove,
+            handleTouchEnd,
             gotoPage,
             goToPageNumber,
             selectRandomPage,

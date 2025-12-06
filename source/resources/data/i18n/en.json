@@ -447,6 +447,7 @@
   "tafsir": {
     "title": "Tafsir",
     "subtitle": "Brief explanation of the verses on this page. Report if you find any mistakes or something seems doubtful. These are taken from quran.com",
+    "page": "Page",
     "verse": "Verse",
     "showMore": "Show more",
     "showLess": "Show less",
