@@ -442,5 +442,16 @@
     "112": "Al-Ikhlas",
     "113": "Al-Falaq",
     "114": "An-Nas"
+  },
+  "tafsir": {
+    "title": "Tafsir",
+    "subtitle": "Brief explanation of the verses on this page. Report if you find any mistakes these are taken from quran.com",
+    "verse": "Verse",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "noTafsir": "No tafsir available for this page",
+    "loading": "Loading tafsir...",
+    "collapse": "Collapse",
+    "expand": "Expand"
   }
 }
