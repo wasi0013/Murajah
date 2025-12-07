@@ -657,6 +657,7 @@
           display: none;
         }
 
+ 
         @media (min-width: 768px) {
           .desktop-nav {
             display: flex;
@@ -712,10 +713,10 @@
 
                 <!-- Mobile Navigation -->
                 <div class="mobile-nav flex items-center">
-                    <!-- Hamburger Menu Button -->
-                    <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
-                        <i class="fas fa-bars text-gray-700 text-xl"></i>
-                    </button>
+                    <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-home text-gray-500"></i>
+                        Home
+                    </a>    
                 </div>
             </div>
         </header>
