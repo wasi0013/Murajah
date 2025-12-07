@@ -1103,6 +1103,164 @@
       filter: blur(8px);
       pointer-events: none;
     }
+
+    /* Navbar Dropdown Styles */
+    .nav-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .nav-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 200px;
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e5e7eb;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+      z-index: 1000;
+    }
+
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown.active .nav-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .nav-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-dropdown-item:first-child {
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .nav-dropdown-item:last-child {
+      border-radius: 0 0 0.5rem 0.5rem;
+    }
+
+    .nav-dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+
+    .nav-dropdown-item i {
+      width: 1.25rem;
+      text-align: center;
+      color: #6b7280;
+    }
+
+    /* Mobile Menu Styles */
+    .mobile-menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-menu-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 280px;
+      max-width: 85vw;
+      height: 100vh;
+      background: white;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+    }
+
+    .mobile-menu.active {
+      transform: translateX(0);
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .mobile-menu-section {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .mobile-menu-section-title {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .mobile-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .mobile-menu-item:hover {
+      background-color: #f3f4f6;
+    }
+
+    .mobile-menu-item i {
+      width: 1.25rem;
+      text-align: center;
+      color: #6b7280;
+    }
+
+    .mobile-menu-item.active {
+      background-color: #eff6ff;
+      color: #2563eb;
+    }
+
+    .mobile-menu-item.active i {
+      color: #2563eb;
+    }
+
+    /* Hide desktop nav on mobile, show on md+ */
+    .desktop-nav {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .desktop-nav {
+        display: flex;
+      }
+      .mobile-nav {
+        display: none;
+      }
+    }
     
   </style>
 </head>
@@ -1117,7 +1275,7 @@
 
   <script type="module">
     // Access Vue from global scope since it's loaded as a script tag
-  const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
+  const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
 
     // IIFE to handle async imports
     (async () => {
@@ -1482,7 +1640,7 @@
       const audioPlayerComponentModule = await import('./resources/js/components/QuranAudioPlayerComponent.js');
       const { QuranAudioPlayerComponent } = audioPlayerComponentModule;
 
-      // Import Achievement System
+      /* Achievement System (coming soon - not developed yet)
       const achievementStoreModule = await import('./resources/js/stores/achievementStore.js');
       const { 
         achievementStore, 
@@ -1509,6 +1667,7 @@
 
       const shareBadgeModalModule = await import('./resources/js/components/ShareBadgeModal.js');
       const ShareBadgeModal = shareBadgeModalModule.default;
+      */
 
       const i18nStoreModule = await import('./resources/js/stores/i18nStore.js');
       const {
@@ -1533,33 +1692,80 @@
             </div>
 
             <!-- Header -->
-            <header class="bg-white shadow">
-              <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between">
+            <header class="bg-white shadow sticky top-0 z-50">
+              <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+                <!-- Logo -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-16 md:h-20 lg:h-25 w-auto" style="border-radius: 15%;"></a>
+                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
                 </div>
-                <div class="flex items-center gap-1 sm:gap-2 md:gap-4">
 
-                  <!-- Quran/Memorize -->
-                  <a href="#quran-text-section" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.memorize')">
-                    <i class="fas fa-book text-gray-700 text-lg sm:text-xl"></i>
+                <!-- Desktop Navigation -->
+                <nav class="desktop-nav items-center gap-1 md:gap-2 lg:gap-4">
+                  <!-- Home Dropdown -->
+                  <div class="nav-dropdown" @mouseenter="showHomeDropdown = true" @mouseleave="showHomeDropdown = false" :class="{ active: showHomeDropdown }">
+                    <button class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                      <i class="fas fa-home text-gray-500"></i>
+                      {{ $t('header.home') }}
+                      <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                    </button>
+                    <div class="nav-dropdown-menu">
+                      <a href="#quran-text-section" class="nav-dropdown-item" @click.prevent="scrollToSection('quran-text-section')">
+                        <i class="fas fa-quran"></i>
+                        {{ $t('header.sections.quran') }}
+                      </a>
+                      <a href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
+                        <i class="fas fa-book-open"></i>
+                        {{ $t('header.sections.tafsir') }}
+                      </a>
+                      <a href="#audio-section" class="nav-dropdown-item" @click.prevent="scrollToSection('audio-section')">
+                        <i class="fas fa-headphones"></i>
+                        {{ $t('header.sections.audio') }}
+                      </a>
+                      <a href="#mistakes-section" class="nav-dropdown-item" @click.prevent="scrollToSection('mistakes-section')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ $t('header.sections.mistakes') }}
+                      </a>
+                      <a href="#daily-goals-section" class="nav-dropdown-item" @click.prevent="scrollToSection('daily-goals-section')">
+                        <i class="fas fa-bullseye"></i>
+                        {{ $t('header.sections.dailyGoals') }}
+                      </a>
+                      <a href="#analytics-section" class="nav-dropdown-item" @click.prevent="scrollToSection('analytics-section')">
+                        <i class="fas fa-chart-line"></i>
+                        {{ $t('header.sections.analytics') }}
+                      </a>
+                      <a href="#timeline-section" class="nav-dropdown-item" @click.prevent="scrollToSection('timeline-section')">
+                        <i class="fas fa-calendar-alt"></i>
+                        {{ $t('header.sections.timeline') }}
+                      </a>
+                      <!-- Achievements (coming soon)
+                      <button class="nav-dropdown-item w-full text-left" @click="showAchievementsPanel = true; showHomeDropdown = false">
+                        <i class="fas fa-trophy"></i>
+                        {{ $t('header.sections.achievements') }}
+                      </button>
+                      -->
+                    </div>
+                  </div>
+
+                  <!-- Quiz Link -->
+                  <a href="https://murajah.pages.dev/quiz" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-question-circle text-gray-500"></i>
+                    {{ $t('header.quiz') }}
                   </a>
-                  
-                  <!-- Quiz -->
-                  <a href="https:///murajah.pages.dev/quiz" class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.quiz')">
-                    <i class="fas fa-question-circle text-gray-700 text-lg sm:text-xl"></i>
-                  </a>
- 
-                  <!-- Help/Info -->
-                  <button @click="showHelpModal = true" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.help')">
-                    <i class="fas fa-info-circle text-gray-700 text-lg sm:text-xl"></i>
+
+                  <!-- How It Works -->
+                  <button @click="showHelpModal = true" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-info-circle text-gray-500"></i>
+                    {{ $t('header.howItWorks') }}
                   </button>
 
-                  <!-- Layout Toggle: Dynamic switch between Uthmani and Indopak -->
+                  <!-- Divider -->
+                  <div class="h-6 w-px bg-gray-200 mx-1"></div>
+
+                  <!-- Layout Toggle -->
                   <button
                     type="button"
                     @click="switchLayout"
-                    class="inline-flex items-center justify-center px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                     :title="isIndopak ? $t('layout.switchToQpc') : $t('layout.switchToIndopak')"
                   >
                     {{ isIndopak ? $t('layout.qpc') : $t('layout.indopak') }}
@@ -1568,7 +1774,7 @@
                   <!-- Language Toggle -->
                   <button
                     type="button"
-                    class="px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+                    class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                     @click="toggleLocale"
                     :aria-label="localeToggleLabel"
                     :title="localeToggleLabel"
@@ -1577,16 +1783,124 @@
                   </button>
                   
                   <!-- Settings -->
-                  <button @click="openSettingsModal" class="p-1.5 sm:p-2 hover:bg-gray-100  rounded-lg transition-colors" :title="$t('header.settings')">
-                    <i class="fas fa-cog text-gray-700 text-lg sm:text-xl"></i>
+                  <button @click="openSettingsModal" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.settings')">
+                    <i class="fas fa-cog text-gray-700 text-lg"></i>
+                  </button>
+                </nav>
+
+                <!-- Mobile Navigation -->
+                <div class="mobile-nav flex items-center">
+                  <!-- Hamburger Menu Button -->
+                  <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.menu')">
+                    <i class="fas fa-bars text-gray-700 text-xl"></i>
                   </button>
                 </div>
               </div>
             </header>
 
+            <!-- Mobile Menu Overlay -->
+            <div class="mobile-menu-overlay" :class="{ active: showMobileMenu }" @click="showMobileMenu = false"></div>
+
+            <!-- Mobile Menu Sidebar -->
+            <div class="mobile-menu" :class="{ active: showMobileMenu }">
+              <div class="mobile-menu-header">
+                <div class="flex items-center gap-2">
+                  <img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-8 w-auto" style="border-radius: 15%;">
+                  <span class="font-semibold text-gray-800">Murajah</span>
+                </div>
+                <button @click="showMobileMenu = false" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <i class="fas fa-times text-gray-600"></i>
+                </button>
+              </div>
+
+              <!-- Home Sections -->
+              <div class="mobile-menu-section">
+                <div class="mobile-menu-section-title">{{ $t('header.home') }}</div>
+                <a href="#quran-text-section" class="mobile-menu-item" @click.prevent="scrollToSection('quran-text-section')">
+                  <i class="fas fa-quran"></i>
+                  {{ $t('header.sections.quran') }}
+                </a>
+                <a href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
+                  <i class="fas fa-book-open"></i>
+                  {{ $t('header.sections.tafsir') }}
+                </a>
+                <a href="#audio-section" class="mobile-menu-item" @click.prevent="scrollToSection('audio-section')">
+                  <i class="fas fa-headphones"></i>
+                  {{ $t('header.sections.audio') }}
+                </a>
+                <a href="#mistakes-section" class="mobile-menu-item" @click.prevent="scrollToSection('mistakes-section')">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ $t('header.sections.mistakes') }}
+                </a>
+                <a href="#daily-goals-section" class="mobile-menu-item" @click.prevent="scrollToSection('daily-goals-section')">
+                  <i class="fas fa-bullseye"></i>
+                  {{ $t('header.sections.dailyGoals') }}
+                </a>
+                <a href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
+                  <i class="fas fa-chart-line"></i>
+                  {{ $t('header.sections.analytics') }}
+                </a>
+                <a href="#timeline-section" class="mobile-menu-item" @click.prevent="scrollToSection('timeline-section')">
+                  <i class="fas fa-calendar-alt"></i>
+                  {{ $t('header.sections.timeline') }}
+                </a>
+                <!-- Achievements (coming soon)
+                <button class="mobile-menu-item w-full text-left" @click="showAchievementsPanel = true; showMobileMenu = false">
+                  <i class="fas fa-trophy"></i>
+                  {{ $t('header.sections.achievements') }}
+                </button>
+                -->
+              </div>
+
+              <!-- Other Links -->
+              <div class="mobile-menu-section">
+                <a href="https://murajah.pages.dev/quiz" class="mobile-menu-item" @click="showMobileMenu = false">
+                  <i class="fas fa-question-circle"></i>
+                  {{ $t('header.quiz') }}
+                </a>
+                <button class="mobile-menu-item w-full text-left" @click="showHelpModal = true; showMobileMenu = false">
+                  <i class="fas fa-info-circle"></i>
+                  {{ $t('header.howItWorks') }}
+                </button>
+              </div>
+
+              <!-- Settings Section -->
+              <div class="mobile-menu-section">
+                <div class="mobile-menu-section-title">{{ $t('header.settings') }}</div>
+                
+                <!-- Layout Toggle -->
+                <button class="mobile-menu-item w-full text-left flex items-center justify-between" @click="switchLayout">
+                  <span class="flex items-center gap-3">
+                    <i class="fas fa-book"></i>
+                    {{ $t('layout.label') }}
+                  </span>
+                  <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                    {{ isIndopak ? $t('layout.indopak') : $t('layout.qpc') }}
+                  </span>
+                </button>
+
+                <!-- Language Toggle -->
+                <button class="mobile-menu-item w-full text-left flex items-center justify-between" @click="toggleLocale">
+                  <span class="flex items-center gap-3">
+                    <i class="fas fa-language"></i>
+                    {{ $t('language.label') }}
+                  </span>
+                  <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                    {{ currentLocale === 'bn' ? $t('language.bangla') : $t('language.english') }}
+                  </span>
+                </button>
+
+                <!-- Settings Modal -->
+                <button class="mobile-menu-item w-full text-left" @click="openSettingsModal(); showMobileMenu = false">
+                  <i class="fas fa-cog"></i>
+                  {{ $t('settings.moreSettings') }}
+                </button>
+              </div>
+            </div>
+
             <!-- Main Content -->
             <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
-              <!-- Achievements Inline Section (toggle via trophy button) -->
+              <!-- Achievements Inline Section (coming soon - not developed yet)
               <section id="achievements-section" v-if="showAchievementsPanel" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div class="flex items-start justify-between mb-4">
                   <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
@@ -1611,6 +1925,7 @@
                   </div>
                 </div>
               </section>
+              -->
               <!-- Daily Revision Banner (Quick Test) -->
                 <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
                 <div class="flex-1">
@@ -1631,7 +1946,7 @@
               </div>
 
               <!-- Daily Goals Card -->
-              <div v-if="hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
+              <div id="daily-goals-section" v-if="hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
                 <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
                   <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
                   <p class="text-gray-600 ">{{ $t('dailyGoals.loading') }}</p>
@@ -2140,17 +2455,19 @@
               </div>
 
                <!-- Quran Audio Player -->
+              <div id="audio-section" v-if="quranData && quranData.quranWithPages">
               <quran-audio-player-component 
-                v-if="quranData && quranData.quranWithPages"
                 :current-page="appStore.currentPage"
                 :quran-data="quranData.quranWithPages"
                 :surah-names="quranData.surahNames"
                 :locale-surahs="currentLocaleSurahs"
                 :current-locale="currentLocale"
               ></quran-audio-player-component>
+              </div>
 
               <!-- Tafsir Section -->
               <div 
+                id="tafsir-section"
                 v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" 
                 class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200"
                 @touchstart="handleTouchStart"
@@ -2234,7 +2551,7 @@
               </div>
 
               <!-- Pages with Mistakes (Full Width) -->
-              <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+              <div id="mistakes-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   {{ $t('mistakes.pagesWith') }}
@@ -2688,14 +3005,13 @@
                     </div>
                   </div>
 
-                  <!-- Achievements Section -->
+                  <!-- Achievements Section (coming soon - not developed yet)
                   <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-gray-900  flex items-center gap-2">
                       <i class="fas fa-trophy text-yellow-500"></i>
                       {{ $t('achievements.title') }}
                     </h3>
 
-                    <!-- Achievement Stats -->
                     <div class="grid grid-cols-2 gap-4">
                       <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
                         <div class="text-sm font-medium text-gray-600 mb-1">{{ $t('achievements.badgesUnlocked') }}</div>
@@ -2713,7 +3029,6 @@
                       </div>
                     </div>
 
-                    <!-- Achievement Actions -->
                     <div class="space-y-2">
                       <button 
                         @click="showAchievementsModal = true; showSettingsModal = false"
@@ -2723,7 +3038,6 @@
                         <span>{{ $t('achievements.actions.viewAll') }}</span>
                       </button>
 
-                      <!-- Sync Badges Button -->
                       <button 
                         @click="syncAchievementsWithData"
                         :disabled="syncInProgress"
@@ -2733,7 +3047,6 @@
                         <span>{{ syncInProgress ? $t('achievements.actions.syncing') : $t('achievements.actions.syncBadges') }}</span>
                       </button>
 
-                      <!-- Debug Options (only in dev) -->
                       <div v-if="isDevMode" class="space-y-2 pt-2 border-t border-gray-200">
                         <div class="text-xs font-semibold text-gray-600 uppercase">{{ $t('achievements.actions.developerTools') }}</div>
                         <button 
@@ -2753,6 +3066,7 @@
                       </div>
                     </div>
                   </div>
+                  -->
                 </div>
 
                 <!-- Modal Footer -->
@@ -2927,7 +3241,7 @@
 
 
             <!-- Analytics Dashboard -->
-              <div v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+              <div id="analytics-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
                   <i class="fas fa-chart-line text-blue-600"></i>
                   {{ $t('dashboard.analyticsPanel.dailyTitle') }}
@@ -3064,7 +3378,7 @@
             </div>
 
             <!-- Daily Goals Contribution Graph (GitHub-style) -->
-            <div v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
+            <div id="timeline-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
               <div class="bg-white  rounded-lg shadow-lg p-6 mb-12">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2">
@@ -3257,14 +3571,21 @@
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
           const showHelpModal = ref(false);
-          const showAchievementsPanel = ref(false); // NEW: Inline Achievements panel visibility
-          const selectedAchievementBadge = ref(null); // NEW: Currently selected badge in achievements
+          const showAchievementsPanel = ref(false); // Achievements (coming soon)
+          const selectedAchievementBadge = ref(null); // Achievements (coming soon)
           const showReviewPagesOverlay = ref(true); // Show review pages overlay by default
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
-          const syncInProgress = ref(false); // Flag for badge sync in progress
+          const syncInProgress = ref(false); // Achievements (coming soon) - Flag for badge sync in progress
           const analyticsActiveTab = ref(1); // 1 = Juz Progress, 2 = Page-by-Page
           const isDevMode = ref(false); // Developer mode toggle for achievement debugging
           const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+          
+          // Stub achievement store (coming soon - not developed yet)
+          const achievementStore = reactive({ totalUnlocked: 0, completionPercentage: 0, unlockedBadges: new Set(), badgesData: new Map() });
+          
+          // Navigation state
+          const showHomeDropdown = ref(false);
+          const showMobileMenu = ref(false);
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -3331,6 +3652,31 @@
           const toggleLocale = async () => {
             const nextLocale = i18nState.currentLocale === 'bn' ? 'en' : 'bn';
             await setLocale(nextLocale, murajahDB);
+          };
+
+          // Scroll to section function for navbar navigation
+          const scrollToSection = async (sectionId) => {
+            showMobileMenu.value = false;
+            showHomeDropdown.value = false;
+            
+            // Special handling for 'quran' section - go to top of page
+            if (sectionId === 'quran') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+            
+            // Special handling for tafsir - enable it if not already visible
+            if (sectionId === 'tafsir-section' && !settingsStore.showTafsir) {
+              settingsStore.showTafsir = true;
+              await murajahDB.setSetting('showTafsir', true);
+              // Wait for Vue to render the tafsir section
+              await nextTick();
+            }
+            
+            const element = document.getElementById(sectionId);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           };
 
           // Recording countdown state
@@ -4622,7 +4968,7 @@
             }
           };
 
-          // ===== ACHIEVEMENT MANAGEMENT FUNCTIONS =====
+          /* ===== ACHIEVEMENT MANAGEMENT FUNCTIONS (coming soon - not developed yet) =====
           
           const unlockAllBadges = async () => {
             if (!confirm('Unlock all 100 badges? This is for development/testing only.')) {
@@ -4630,14 +4976,12 @@
             }
             
             try {
-              // Unlock all badges
               for (let i = 1; i <= 100; i++) {
                 if (!achievementStore.unlockedBadges.has(i)) {
                   unlockBadge(i);
                 }
               }
               
-              // Save to IndexedDB
               await saveUnlockedBadges(murajahDB);
               
               appStore.successMessage = '🎉 All 100 badges unlocked!';
@@ -4660,7 +5004,6 @@
               achievementStore.completionPercentage = 0;
               achievementStore.lastUnlockedBadgeId = null;
               
-              // Save to IndexedDB
               await saveUnlockedBadges(murajahDB);
               
               appStore.successMessage = '✓ All achievements cleared';
@@ -4678,7 +5021,6 @@
             try {
               console.log('[Murajah] Starting achievement sync with current data...');
               
-              // Get all stored badge definitions
               if (achievementStore.badgesData.size === 0) {
                 await loadBadgesData();
               }
@@ -4695,14 +5037,11 @@
               let newUnlocks = 0;
               const unlockedBadges = Array.from(achievementStore.badgesData.values());
               
-              // Check each badge to see if unlock conditions are met
               for (const badge of unlockedBadges) {
-                // Skip if already unlocked
                 if (achievementStore.unlockedBadges.has(badge.id)) {
                   continue;
                 }
                 
-                // Check if conditions are met
                 if (checkBadgeUnlock(badge, stores)) {
                   unlockBadge(badge.id);
                   newUnlocks++;
@@ -4710,7 +5049,6 @@
                 }
               }
               
-              // Save all changes to IndexedDB
               if (newUnlocks > 0) {
                 await saveUnlockedBadges(murajahDB);
               }
@@ -4733,6 +5071,12 @@
               syncInProgress.value = false;
             }
           };
+          */
+          
+          // Stub achievement functions (coming soon)
+          const unlockAllBadges = () => {};
+          const clearAllAchievements = () => {};
+          const syncAchievementsWithData = () => {};
 
           // Audio functions
           const playAudio = async (recording) => {
@@ -5226,16 +5570,20 @@
             });
           });
 
-          // Compute total unlocked badges for navbar and modal header
+          /* Achievements (coming soon - not developed yet)
           const totalUnlockedBadges = computed(() => {
             return achievementStore.unlockedBadges.size;
           });
 
-          // Compute completion percentage for modal header
           const achievementCompletionPercentage = computed(() => {
             const total = totalUnlockedBadges.value;
             return Math.round((total / 100) * 100);
           });
+          */
+          
+          // Stub computed properties for achievements
+          const totalUnlockedBadges = computed(() => 0);
+          const achievementCompletionPercentage = computed(() => 0);
 
           const pagesWithMistakes = computed(() => {
             // Get all pages that have mistakes (with count > 0), sorted by page number
@@ -5941,21 +6289,20 @@ Display:
             document.addEventListener('keydown', handleKeyboardShortcut);
             console.log('[Murajah] Keyboard shortcuts enabled');
             
-            // Initialize achievements
+            /* Achievements (coming soon - not developed yet)
             await initializeAchievements();
             
-            // Listen for achievements toggle event from navbar
             document.addEventListener('open-achievements-modal', () => {
               showAchievementsPanel.value = !showAchievementsPanel.value;
               console.log('[Murajah] Achievements panel toggled', { visible: showAchievementsPanel.value });
               if (showAchievementsPanel.value) {
-                // Scroll into view after next frame
                 requestAnimationFrame(() => {
                   const el = document.getElementById('achievements-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
               }
             });
+            */
             
             // Add window resize listener to recalculate font sizes
             const handleResize = () => {
@@ -5972,9 +6319,7 @@ Display:
             console.log('[Murajah] Keyboard shortcuts disabled');
           };
 
-          // ===== ACHIEVEMENT SYSTEM FUNCTIONS (NEW) =====
-
-          // Initialize achievements
+          /* ===== ACHIEVEMENT SYSTEM FUNCTIONS (coming soon - not developed yet) =====
           const initializeAchievements = async () => {
             try {
               console.log('[Murajah] initializeAchievements: Starting...');
@@ -5987,7 +6332,6 @@ Display:
                 setSize: achievementStore.unlockedBadges.size,
                 setContents: Array.from(achievementStore.unlockedBadges)
               });
-              // Force a tick to ensure components re-evaluate
               if (Vue && Vue.nextTick) {
                 Vue.nextTick(() => {
                   achievementStore.lastUpdated = Date.now();
@@ -5999,7 +6343,6 @@ Display:
             }
           };
 
-          // Check for badge unlocks after game actions
           const checkForBadgeUnlocks = async () => {
             try {
               const stores = {
@@ -6020,11 +6363,9 @@ Display:
                     unlockBadge(badgeId);
                     await saveUnlockedBadges(murajahDB);
                     
-                    // Show notification
                     appStore.successMessage = `🏆 Achievement Unlocked: ${badge.name}!`;
                     setTimeout(() => appStore.successMessage = '', 4000);
                     
-                    // Trigger confetti (if available)
                     if (window.confetti) {
                       window.confetti({
                         particleCount: 100,
@@ -6042,12 +6383,10 @@ Display:
             }
           };
 
-          // Select achievement badge for detail view
           const selectAchievementBadge = (badgeData) => {
             selectedAchievementBadge.value = badgeData.badge;
           };
 
-          // Share badge
           const shareBadge = (shareData) => {
             const { badge, isUnlocked } = shareData;
             if (!badge) return;
@@ -6065,6 +6404,13 @@ Display:
               setTimeout(() => appStore.successMessage = '', 3000);
             }
           };
+          */
+
+          // Stub functions for achievements (coming soon) - defined above
+          const initializeAchievements = () => {};
+          const checkForBadgeUnlocks = () => {};
+          const selectAchievementBadge = () => {};
+          const shareBadge = () => {};
 
           return {
             appStore,
@@ -6216,7 +6562,10 @@ Display:
             languageLabelKey,
             handleLocaleChange,
             localeToggleLabel,
-            toggleLocale
+            toggleLocale,
+            showMobileMenu,
+            showHomeDropdown,
+            scrollToSection
           };
         }
       });
@@ -6225,9 +6574,11 @@ Display:
 
       // Register components
       app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
+      /* Achievement components (coming soon - not developed yet)
       app.component('achievement-navbar-component', AchievementNavbarComponent);
       app.component('achievement-grid-component', AchievementGridComponent);
       app.component('achievement-detail-component', AchievementDetailComponent);
+      */
 
       app.mount('#app');
       const initialLoader = document.getElementById('initial-loader');

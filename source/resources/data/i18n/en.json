@@ -10,7 +10,20 @@
     "memorize": "Memorize",
     "quiz": "Quiz",
     "help": "How to use Murajah",
-    "settings": "Settings"
+    "howItWorks": "How It Works",
+    "settings": "Settings",
+    "home": "Home",
+    "menu": "Menu",
+    "sections": {
+      "quran": "Quran",
+      "tafsir": "Tafsir",
+      "audio": "Audio",
+      "mistakes": "Mistakes",
+      "dailyGoals": "Daily Goals",
+      "analytics": "Analytics",
+      "timeline": "Timeline",
+      "achievements": "Achievements"
+    }
   },
   "quickTest": {
     "title": "Quick test",
@@ -82,7 +95,8 @@
     "bulkMemorizationDescription": "Mark multiple pages as memorized at once",
     "bulkStartPage": "Start Page",
     "bulkEndPage": "End Page",
-    "bulkMemorizeButton": "Memorize Range"
+    "bulkMemorizeButton": "Memorize Range",
+    "moreSettings": "More Settings"
   },
   "language": {
     "label": "Language",
@@ -90,6 +104,7 @@
     "bangla": "Bangla"
   },
   "layout": {
+    "label": "Layout",
     "uthmani": "Uthmani",
     "qpc": "Uthmani",
     "indopak": "Indopak",
