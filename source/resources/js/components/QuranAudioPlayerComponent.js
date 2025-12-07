@@ -139,10 +139,11 @@ export const QuranAudioPlayerComponent = {
               <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">{{ $t('audio.reciterLabel') }}</label>
               <select 
                 v-model="selectedReciter" 
+                @change="onReciterChange"
                 class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option v-for="reciter in availableReciters" :key="reciter.id" :value="reciter.id">
-                  {{ reciter.name }}
+                  {{ $t('reciters.' + reciter.id) || reciter.name }}
                 </option>
               </select>
             </div>
@@ -241,6 +242,10 @@ export const QuranAudioPlayerComponent = {
     currentLocale: {
       type: String,
       default: 'en'
+    },
+    db: {
+      type: Object,
+      default: null
     }
   },
 
@@ -249,6 +254,7 @@ export const QuranAudioPlayerComponent = {
       pageVerses: [],
       currentVerseIndex: 0,
       isPlaying: false,
+      needsReload: true, // Flag to track when audio needs to load fresh verse
       currentTime: 0,
       duration: 0,
       autoPlayNext: true,
@@ -264,6 +270,8 @@ export const QuranAudioPlayerComponent = {
       availableReciters: [
         { id: 'shuraim', name: 'Sheikh Shuraim' },
         { id: 'ali_jaber', name: 'Ali Jaber' },
+        { id: 'abdullah_matrood', name: 'Abdullah Al Matrood' },
+        { id: 'maher_muaiqly', name: 'Maher Al Muaiqly' },
         { id: 'khalifa_al_tunaiji', name: 'Khalifa Al Tunaiji' },
         { id: 'abdur_rahman_as_sudais', name: 'Abdur Rahman As Sudais' },
         { id: 'minshawy', name: 'Muhammad Siddiq Al-Minshawy' },
@@ -340,6 +348,69 @@ export const QuranAudioPlayerComponent = {
       const key = surahNum.toString();
       return this.localeSurahs?.[key] || this.availableSurahs[key] || this.availableSurahs[surahNum] || `Surah ${surahNum}`;
     },
+
+    /**
+     * Handle reciter change and save to IndexedDB/localStorage
+     */
+    async onReciterChange() {
+      console.log('[Murajah-Audio] Reciter changed to:', this.selectedReciter);
+      // Always save to localStorage as reliable fallback
+      try {
+        localStorage.setItem('murajah-reciter', this.selectedReciter);
+        console.log('[Murajah-Audio] Reciter saved to localStorage');
+      } catch (e) {
+        console.warn('[Murajah-Audio] localStorage not available');
+      }
+      // Also try IndexedDB if available
+      if (this.db) {
+        try {
+          await this.db.saveReciter(this.selectedReciter);
+        } catch (error) {
+          console.error('[Murajah-Audio] Failed to save reciter to IndexedDB:', error);
+        }
+      }
+    },
+
+    /**
+     * Load saved reciter from localStorage/IndexedDB
+     */
+    async loadSavedReciter() {
+      let savedReciter = null;
+      
+      // First try localStorage (more reliable)
+      try {
+        savedReciter = localStorage.getItem('murajah-reciter');
+        if (savedReciter) {
+          console.log('[Murajah-Audio] Found reciter in localStorage:', savedReciter);
+        }
+      } catch (e) {
+        console.warn('[Murajah-Audio] localStorage not available');
+      }
+      
+      // Fallback to IndexedDB if localStorage didn't have it
+      if (!savedReciter && this.db) {
+        try {
+          savedReciter = await this.db.loadReciter(null);
+          if (savedReciter) {
+            console.log('[Murajah-Audio] Found reciter in IndexedDB:', savedReciter);
+          }
+        } catch (error) {
+          console.error('[Murajah-Audio] Failed to load reciter from IndexedDB:', error);
+        }
+      }
+      
+      // Verify and apply the saved reciter
+      if (savedReciter) {
+        const validReciter = this.availableReciters.find(r => r.id === savedReciter);
+        if (validReciter) {
+          this.selectedReciter = savedReciter;
+          console.log('[Murajah-Audio] Applied saved reciter:', savedReciter);
+        } else {
+          console.warn('[Murajah-Audio] Saved reciter not found in available list, using default');
+        }
+      }
+    },
+
     /**
      * Load verses for the current page
      */
@@ -422,12 +493,21 @@ export const QuranAudioPlayerComponent = {
      * Load all verses for a selected surah
      */
     loadSurahVerses() {
+      // Stop any currently playing audio first and clear src
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+        this.audioElement.src = ''; // Clear src so play button loads fresh verse
+      }
+      
       if (!this.selectedSurahForAudio) {
         // User switched back to page verses mode
         this.selectedSurahVerses = [];
         this.currentVerseIndex = 0;
         this.currentTime = 0;
+        this.duration = 0;
         this.isPlaying = false;
+        this.needsReload = true; // Force reload on next play
         return;
       }
 
@@ -470,7 +550,9 @@ export const QuranAudioPlayerComponent = {
       // Reset playback state
       this.currentVerseIndex = 0;
       this.currentTime = 0;
+      this.duration = 0;
       this.isPlaying = false;
+      this.needsReload = true; // Force reload on next play
       this.currentSequenceIndices = [];
       this.currentSequencePosition = 0;
 
@@ -649,6 +731,14 @@ export const QuranAudioPlayerComponent = {
           primaryUrl = `https://wasi0013.github.io/Murajah/recitations/ali_jaber/${surahPadded}${ayahPadded}.mp3`;
           fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
           break;
+        case 'abdullah_matrood':
+          primaryUrl = `https://everyayah.com/data/Abdullah_Matroud_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'maher_muaiqly':
+          primaryUrl = `https://everyayah.com/data/MaherAlMuaiqly128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
         case 'khalifa_al_tunaiji':
           primaryUrl = `https://everyayah.com/data/khalefa_al_tunaiji_64kbps/${surahPadded}${ayahPadded}.mp3`;
           fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
@@ -710,10 +800,14 @@ export const QuranAudioPlayerComponent = {
      * Play a specific verse by index
      */
     playVerse(index) {
-      if (index < 0 || index >= this.versesToPlay.length) return;
+      if (index < 0 || index >= this.versesToPlay.length) {
+        console.log('[Murajah-Audio] Invalid verse index:', index, 'versesToPlay length:', this.versesToPlay.length);
+        return;
+      }
 
       this.currentVerseIndex = index;
       const verse = this.versesToPlay[index];
+      console.log('[Murajah-Audio] Playing verse:', verse.chapter + ':' + verse.verse);
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
       // Try primary URL first, fallback to fallback URL
@@ -721,6 +815,7 @@ export const QuranAudioPlayerComponent = {
       this.audioElement.onloadstart = () => {
         // If primary fails, try fallback
         this.audioElement.addEventListener('error', () => {
+          console.log('[Murajah-Audio] Primary URL failed, trying fallback');
           this.audioElement.src = fallbackUrl;
         }, { once: true });
       };
@@ -730,31 +825,39 @@ export const QuranAudioPlayerComponent = {
       });
 
       this.isPlaying = true;
+      this.needsReload = false; // Audio loaded successfully
     },
 
     /**
      * Toggle play/pause
      */
     togglePlayPause() {
-      if (this.pageVerses.length === 0) return;
+      // Use versesToPlay which returns either surah verses or page verses
+      if (this.versesToPlay.length === 0) {
+        console.log('[Murajah-Audio] No verses to play');
+        return;
+      }
 
       if (this.isPlaying) {
         this.audioElement.pause();
         this.isPlaying = false;
       } else {
-        if (this.audioElement.src === '') {
+        // Check if we need to load a new verse
+        if (this.needsReload) {
+          console.log('[Murajah-Audio] Loading fresh verse, index:', this.currentVerseIndex);
           // Start playback
           if (this.useSpacedRepetition && this.spacedPlaylist.length > 0) {
             this.playSpacedItem(0); // Start from first spaced item
           } else {
             this.playVerse(this.currentVerseIndex);
           }
+          this.needsReload = false;
         } else {
           this.audioElement.play().catch(error => {
             console.error('[Murajah] Audio playback error:', error);
           });
+          this.isPlaying = true;
         }
-        this.isPlaying = true;
       }
     },
 
@@ -1050,6 +1153,8 @@ export const QuranAudioPlayerComponent = {
     this.audioElement = this.$refs.audioElement;
     this.loadPageVerses();
     this.populateAvailableSurahs();
+    // Load saved reciter from IndexedDB
+    this.loadSavedReciter();
     console.log('[Murajah] Audio player component mounted', {
       currentPage: this.currentPage,
       quranDataType: typeof this.quranData,

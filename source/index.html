@@ -1448,6 +1448,32 @@
           });
         }
 
+        async saveReciter(reciterId) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: 'murajah-reciter', value: reciterId });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log('[Murajah] Reciter saved:', reciterId);
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        async loadReciter(defaultReciter = 'shuraim') {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get('murajah-reciter');
+            request.onsuccess = () => {
+              const result = request.result;
+              resolve(result ? result.value : defaultReciter);
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
         // ===== Daily Goals Methods =====
         async saveDailyGoal(dailyGoal) {
           const tx = this.db.transaction(['dailyGoals'], 'readwrite');
@@ -2251,6 +2277,7 @@
                 :surah-names="quranData.surahNames"
                 :locale-surahs="currentLocaleSurahs"
                 :current-locale="currentLocale"
+                :db="murajahDB"
               ></quran-audio-player-component>
               </div>
 

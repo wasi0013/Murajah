@@ -249,6 +249,24 @@
     "toggleSpacedRepetition": "Toggle Spaced Repetition",
     "pageAudio": "Audio of Page {page}"
   },
+  "reciters": {
+    "shuraim": "Sheikh Shuraim",
+    "ali_jaber": "Ali Jaber",
+    "abdullah_matrood": "Abdullah Al Matrood",
+    "maher_muaiqly": "Maher Al Muaiqly",
+    "khalifa_al_tunaiji": "Khalifa Al Tunaiji",
+    "abdur_rahman_as_sudais": "Abdur Rahman As Sudais",
+    "minshawy": "Muhammad Siddiq Al-Minshawy",
+    "ayyoub": "Muhammad Ayyoub",
+    "abdul_basit": "Abdul Basit Abd El-Samad",
+    "alafasy": "Mishary Rashid Al Afasy",
+    "abu_bakr": "Abu Bakr Al Shatri",
+    "nasser": "Nasser Al Qatami",
+    "yasser": "Yasser Al Dosari",
+    "hani": "Hani Ar Rifai",
+    "ghamdi": "Saad Al Ghamdi",
+    "hudhaify": "Hudhaify"
+  },
   "notifications": {
     "pageMarkedPerfect": "Page {page} marked perfect! (+1)",
     "mistakeRemoved": "Mistake removed!",
