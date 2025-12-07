@@ -34,15 +34,6 @@
   </script>
 
   <style>
-    /* IndopakNastaleeq Font - Loaded dynamically when needed */
-    @font-face {
-      font-family: 'IndopakNastaleeq';
-      src: url('./resources/styles/fonts/indopak/font.woff2') format('woff2');
-      font-weight: normal;
-      font-style: normal;
-      font-display: swap;
-    }
-
     :root {
       --primary: #3b82f6;
       --success: #10b981;
@@ -296,7 +287,7 @@
       color: var(--dark-text) !important;
     }
 
-    /* Quran Text Styling - QPC Layout (default) */
+    /* Quran Text Styling */
     .quran-text {
       font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
       line-height: 1.6;
@@ -305,13 +296,6 @@
       letter-spacing: 0.1em;
       color: #111827;
       background-color: #fef3c7;
-    }
-
-    /* Quran Text Styling - Indopak Layout */
-    .quran-text.layout-indopak {
-      font-family: 'IndopakNastaleeq', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      line-height: 2.2;
-      letter-spacing: 0.05em;
     }
 
     .dark-mode .quran-text {
@@ -385,9 +369,6 @@
       .quran-text {
         line-height: 2.0;
       }
-      .quran-text.layout-indopak {
-        line-height: 2.0;
-      }
       .quran-word {
         padding: 0.02rem 0.04rem;
       }
@@ -401,9 +382,6 @@
     /* Small Devices (500px - 640px) */
     @media (min-width: 501px) and (max-width: 640px) {
       .quran-text {
-        line-height: 1.9;
-      }
-      .quran-text.layout-indopak {
         line-height: 1.9;
       }
       .quran-word {
@@ -420,9 +398,6 @@
       .quran-text {
         line-height: 1.7;
       }
-      .quran-text.layout-indopak {
-        line-height: 1.7;
-      }
       .quran-word {
         padding: 0.05rem 0.08rem;
       }
@@ -435,9 +410,6 @@
 
     @media (min-width: 1024px) {
       .quran-text {
-        line-height: 1.6;
-      }
-      .quran-text.layout-indopak {
         line-height: 1.6;
       }
       .quran-word {
@@ -1436,9 +1408,9 @@
       const murajahDB = new MurajahDB();
       await murajahDB.init();
 
-      // Import utility modules - Using unified data loader for both QPC and Indopak layouts
-      const dataLoaderModule = await import('./resources/js/utils/unifiedDataLoader.js');
-      const { loadAllQuranData, getPageText, getPageWordsDetailed, getLayoutConfig, clearDataCache, preloadLayout } = dataLoaderModule;
+      // Import utility modules
+      const dataLoaderModule = await import('./resources/js/utils/dataLoader.js');
+      const { loadAllQuranData, getPageText, getPageWordsDetailed } = dataLoaderModule;
       
       const calculationsModule = await import('./resources/js/utils/calculations.js');
       const { 
@@ -1555,15 +1527,14 @@
                     <i class="fas fa-info-circle text-gray-700 text-lg sm:text-xl"></i>
                   </button>
 
-                  <!-- Layout Toggle: Dynamic switch between Uthmani and Indopak -->
-                  <button
-                    type="button"
-                    @click="switchLayout"
+                  <!-- Layout Toggle: Uthmani (current) / Indopak -->
+                  <a
+                    href="./indopak.html"
                     class="inline-flex items-center justify-center px-2 sm:px-4 py-1 border border-gray-300 text-xs sm:text-sm font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                    :title="isIndopak ? $t('layout.switchToQpc') : $t('layout.switchToIndopak')"
+                    :title="$t('layout.switchToIndopak')"
                   >
-                    {{ isIndopak ? $t('layout.qpc') : $t('layout.indopak') }}
-                  </button>
+                    {{ $t('layout.indopak') }}
+                  </a>
 
                   <!-- Language Toggle -->
                   <button
@@ -1806,7 +1777,7 @@
               <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
                   <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
-                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: totalPages }) }}</span>
+                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: 604 }) }}</span>
                 </div>
 
                 <div class="space-y-2">
@@ -1839,7 +1810,7 @@
                 @touchend="handleTouchEnd"
               >
                 <div class="text-center space-y-1 sm:space-y-2 relative">
-                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of {{ totalPages }}</p>
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of 604</p>
                   <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
                   
                   <!-- Hifz Status Bookmark - Moved to header -->
@@ -1874,7 +1845,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
+                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" class="quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
@@ -1970,13 +1941,13 @@
 
                   <div class="flex items-center gap-1 sm:gap-2 bg-gray-100  px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-900 ">
                     <span class="text-lg sm:text-xl font-bold">{{ appStore.currentPage }}</span>
-                    <span class="text-xs sm:text-sm text-gray-600 ">/{{ totalPages }}</span>
+                    <span class="text-xs sm:text-sm text-gray-600 ">/604</span>
                   </div>
 
-                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" :max="totalPages" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
+                  <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" max="604" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
                   <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">{{ $t('navigation.go') }}</button>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === totalPages" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
+                  <button @click="nextPage" :disabled="appStore.currentPage === 604" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>                <!-- Action Buttons -->
@@ -2296,7 +2267,7 @@
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-50 to-blue-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.memorized') }}</p>
                       <p class="text-xl sm:text-2xl font-bold text-blue-600 ">{{ statistics.memorized }}</p>
-                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofPages', { total: totalPages }) }}</p>
+                      <p class="text-xs text-gray-500 ">{{ $t('dashboard.stats.ofPages', { total: 604 }) }}</p>
                     </div>
                     <div class="p-2 sm:p-3 bg-gradient-to-br from-purple-50 to-purple-100   rounded-lg">
                       <p class="text-xs text-gray-600 ">{{ $t('dashboard.stats.juz') }}</p>
@@ -2458,12 +2429,9 @@
                         </select>
                       </div>
 
-                      <div class="flex items-center" :class="{ 'opacity-50': isIndopak }">
-                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  " :disabled="isIndopak">
-                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">
-                          {{ $t('settings.enableTajweed') }}
-                          <span v-if="isIndopak" class="text-xs text-gray-500 ml-1">({{ $t('settings.notAvailableForIndopak') }})</span>
-                        </label>
+                      <div class="flex items-center">
+                        <input v-model="settingsStore.tajweedEnabled" @change="updateSettings" type="checkbox" id="tajweed" class="rounded  ">
+                        <label for="tajweed" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.enableTajweed') }}</label>
                       </div>
 
                       <div class="flex items-center">
@@ -2509,7 +2477,7 @@
                           }" 
                           type="number" 
                           min="1" 
-                          :max="totalPages" 
+                          max="604" 
                           class="w-full px-4 py-2 border border-gray-300  rounded-lg   "
                         >
                     </div>
@@ -2625,7 +2593,7 @@
                     <!-- Streak Info Note -->
                     <div class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
                       <i class="fas fa-info-circle mr-2"></i>
-                      {{ $t('settings.streakInfo') }}
+                      Streak breaks when the above selected tasks are not completed in a day. New daily goal starts from midnight.
                     </div>
                   </div>
 
@@ -2665,11 +2633,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkStartPage') }}</label>
-                        <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" :max="totalPages" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkStartPageInput" name="bulkStartPage" v-model.number="bulkStartPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div>
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.bulkEndPage') }}</label>
-                        <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" :max="totalPages" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
+                        <input id="bulkEndPageInput" name="bulkEndPage" v-model.number="bulkEndPage" type="number" min="1" max="604" class="w-full px-3 py-2 border border-gray-300  rounded-lg   ">
                       </div>
                       <div class="flex items-end">
                         <button 
@@ -3202,7 +3170,7 @@
           // State Stores
           const appStore = reactive({
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
-            totalPages: 604, // Will be updated based on layout
+            totalPages: 604,
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
             appVersion: '25.12.06',
@@ -3216,8 +3184,7 @@
             fontSize: 'medium',
             tajweedEnabled: true,
             showTafsir: false,
-            layout: 'qpc', // 'qpc' (604 pages) or 'indopak' (610 pages)
-            adjustRevisionChunk: 0  // Manual adjustment to rotation index (0 = no adjustment)
+            adjustRevisionChunk: 0  // NEW: Manual adjustment to rotation index (0 = no adjustment)
           });
 
           const memorizedStore = reactive({
@@ -3360,24 +3327,11 @@
                 console.warn('[Murajah] Failed to load theme from IndexedDB:', error);
                 appStore.theme = 'light';
               }
-
-              // Load stored data first to get the layout preference
-              await loadStoredData();
               
-              // Update totalPages based on layout
-              appStore.totalPages = totalPages.value;
-              
-              // Load Quran data with layout parameter (translations come from cache with background refresh)
-              // The unified loader now includes tafsir data
-              quranData.value = await loadAllQuranData(settingsStore.layout, {
+              // Load Quran data (translations come from cache with background refresh)
+              quranData.value = await loadAllQuranData({
                 murajahDB,
                 onTranslationUpdate: handleTranslationUpdate
-              });
-              
-              console.log('[Murajah] Loaded Quran data for layout:', settingsStore.layout, {
-                pages: quranData.value.layout?.pages?.length,
-                words: Object.keys(quranData.value.words || {}).length,
-                tafsirMapping: Object.keys(quranData.value.tafsirMapping || {}).length
               });
               
               // Load quran.json for audio player (contains surah, verse, page mapping)
@@ -3408,16 +3362,35 @@
                 console.error('[Murajah] Failed to load Bangla translations:', error);
               }
               
+              // Load tafsir data (both English and Bangla) and page mapping
+              try {
+                const [bnTafsirResponse, enTafsirResponse, tafsirMappingResponse] = await Promise.all([
+                  fetch('./resources/data/tafsir/bn-tafsir.json'),
+                  fetch('./resources/data/tafsir/en-tafsir.json'),
+                  fetch('./resources/data/tafsir/qpc-page-tafsir-mapping.json')
+                ]);
+                const bnTafsirData = await bnTafsirResponse.json();
+                const enTafsirData = await enTafsirResponse.json();
+                const tafsirMapping = await tafsirMappingResponse.json();
+                quranData.value.tafsirBn = bnTafsirData;
+                quranData.value.tafsirEn = enTafsirData;
+                quranData.value.tafsirMapping = tafsirMapping;
+                console.log('[Murajah] Loaded tafsir data', {
+                  bnTafsirKeys: Object.keys(bnTafsirData).length,
+                  enTafsirKeys: Object.keys(enTafsirData).length,
+                  mappingPages: Object.keys(tafsirMapping).length
+                });
+              } catch (error) {
+                console.error('[Murajah] Failed to load tafsir:', error);
+              }
+              
+              // Load stored data
+              await loadStoredData();
+              
               // Initialize daily goals
               await initializeDailyGoals();
               
-              // Preload the other layout in background for faster switching
-              setTimeout(() => {
-                const otherLayout = settingsStore.layout === 'qpc' ? 'indopak' : 'qpc';
-                preloadLayout(otherLayout, murajahDB);
-              }, 5000);
-              
-              console.log('[Murajah] App initialized | Layout:', settingsStore.layout, '| Memorized pages:', memorizedStore.memorizedPages.size);
+              console.log('[Murajah] App initialized | Memorized pages: ' + memorizedStore.memorizedPages.size);
               appStore.successMessage = t('app.loaded');
               setTimeout(() => appStore.successMessage = '', 3000);
             } catch (error) {
@@ -3499,10 +3472,6 @@
             if (!['small', 'medium', 'large'].includes(settingsStore.fontSize)) {
               settingsStore.fontSize = 'medium';
             }
-            // Ensure layout is always a valid value
-            if (!['qpc', 'indopak'].includes(settingsStore.layout)) {
-              settingsStore.layout = 'qpc';
-            }
           };
 
           // Save data to IndexedDB
@@ -3522,7 +3491,6 @@
               fontSize: String(settingsStore.fontSize),
               tajweedEnabled: Boolean(settingsStore.tajweedEnabled),
               showTafsir: Boolean(settingsStore.showTafsir),
-              layout: String(settingsStore.layout),
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
                 : []
@@ -3976,7 +3944,7 @@
           };
 
           const nextPage = () => {
-            if (appStore.currentPage < totalPages.value) {
+            if (appStore.currentPage < 604) {
               appStore.currentPage++;
               updateURL();
             }
@@ -4031,8 +3999,8 @@
 
           const gotoPage = () => {
             const num = parseInt(gotoInput.value);
-            if (isNaN(num) || num < 1 || num > totalPages.value) {
-              appStore.errorMessage = `Please enter a page number between 1 and ${totalPages.value}`;
+            if (isNaN(num) || num < 1 || num > 604) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 604';
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
@@ -4040,8 +4008,8 @@
           };
 
           const goToPageNumber = (pageNum) => {
-            if (pageNum < 1 || pageNum > totalPages.value) {
-              appStore.errorMessage = `Please enter a page number between 1 and ${totalPages.value}`;
+            if (pageNum < 1 || pageNum > 604) {
+              appStore.errorMessage = 'Please enter a page number between 1 and 604';
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
@@ -4105,66 +4073,6 @@
           const isCurrentPageMemorized = computed(() => {
             return memorizedStore.memorizedPages.has(appStore.currentPage);
           });
-
-          // Layout computed properties and functions
-          const isIndopak = computed(() => {
-            return settingsStore.layout === 'indopak';
-          });
-
-          const totalPages = computed(() => {
-            return appStore.totalPages || (isIndopak.value ? 610 : 604);
-          });
-
-          const layoutLabel = computed(() => {
-            return isIndopak.value ? 'Indopak' : 'QPC Uthmani';
-          });
-
-          const switchLayout = async () => {
-            const newLayout = isIndopak.value ? 'qpc' : 'indopak';
-            settingsStore.layout = newLayout;
-            
-            // Clear cached data and reload with new layout
-            clearDataCache();
-            appStore.loading = true;
-            
-            try {
-              // Reload Quran data with new layout (includes tafsirMapping)
-              const data = await loadAllQuranData(newLayout, {
-                murajahDB
-              });
-              
-              quranData.value = data;
-              appStore.totalPages = newLayout === 'indopak' ? 610 : 604;
-              
-              // Adjust current page if it exceeds new layout's total pages
-              if (appStore.currentPage > appStore.totalPages) {
-                appStore.currentPage = appStore.totalPages;
-              }
-              
-              // For Indopak, disable tajweed as it doesn't support it
-              if (newLayout === 'indopak' && settingsStore.tajweedEnabled) {
-                settingsStore.tajweedEnabled = false;
-              }
-              
-              // Reload font for new layout
-              loadPageFont(appStore.currentPage);
-              
-              appStore.successMessage = `Switched to ${newLayout === 'indopak' ? 'Indopak' : 'QPC Uthmani'} layout`;
-              setTimeout(() => appStore.successMessage = '', 2000);
-              
-              // Save the layout preference
-              saveDataBackground();
-            } catch (error) {
-              console.error('[Murajah] Failed to switch layout:', error);
-              appStore.errorMessage = 'Failed to switch layout. Please try again.';
-              setTimeout(() => appStore.errorMessage = '', 3000);
-              
-              // Revert layout setting on error
-              settingsStore.layout = isIndopak.value ? 'indopak' : 'qpc';
-            } finally {
-              appStore.loading = false;
-            }
-          };
 
           // Theme functions - Always use light mode
           const applyThemeToDOM = (theme) => {
@@ -4350,7 +4258,7 @@
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
-            appStore.successMessage = t('notifications.settingsUpdated');
+            appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
           };
 
@@ -5406,13 +5314,6 @@
             let styleTag = document.getElementById(fontId);
             if (styleTag) styleTag.remove();
             
-            // For Indopak layout, we use a single font file (already loaded via @font-face)
-            // so we don't need to load per-page fonts
-            if (isIndopak.value) {
-              console.log(`[Murajah] Indopak layout uses single font file - no per-page font needed`);
-              return;
-            }
-            
             styleTag = document.createElement('style');
             styleTag.id = fontId;
             
@@ -5805,14 +5706,9 @@
 
             const key = event.key.toLowerCase();
             
-            // T - Toggle Tajweed (only for QPC layout)
+            // T - Toggle Tajweed
             if (key === 't') {
               event.preventDefault();
-              if (isIndopak.value) {
-                appStore.errorMessage = 'Tajweed is not available for Indopak layout';
-                setTimeout(() => appStore.errorMessage = '', 2000);
-                return;
-              }
               settingsStore.tajweedEnabled = !settingsStore.tajweedEnabled;
               updateSettings();
               appStore.successMessage = `Tajweed ${settingsStore.tajweedEnabled ? 'enabled' : 'disabled'}`;
@@ -5878,36 +5774,6 @@
               event.preventDefault();
               showKeyboardShortcutsHelp();
             }
-            
-            // + or = - Increase Font Size
-            if (key === '+' || key === '=') {
-              event.preventDefault();
-              const sizes = ['small', 'medium', 'large'];
-              const currentIndex = sizes.indexOf(settingsStore.fontSize);
-              if (currentIndex < sizes.length - 1) {
-                settingsStore.fontSize = sizes[currentIndex + 1];
-                updateSettings();
-                appStore.successMessage = `Font size: ${settingsStore.fontSize}`;
-              } else {
-                appStore.successMessage = 'Font size already at maximum';
-              }
-              setTimeout(() => appStore.successMessage = '', 2000);
-            }
-            
-            // - - Decrease Font Size
-            if (key === '-') {
-              event.preventDefault();
-              const sizes = ['small', 'medium', 'large'];
-              const currentIndex = sizes.indexOf(settingsStore.fontSize);
-              if (currentIndex > 0) {
-                settingsStore.fontSize = sizes[currentIndex - 1];
-                updateSettings();
-                appStore.successMessage = `Font size: ${settingsStore.fontSize}`;
-              } else {
-                appStore.successMessage = 'Font size already at minimum';
-              }
-              setTimeout(() => appStore.successMessage = '', 2000);
-            }
           };
 
           const showKeyboardShortcutsHelp = () => {
@@ -5925,8 +5791,6 @@ Memorization:
   T                  Toggle Tajweed colors
 
 Display:
-  + / =              Increase font size
-  -                  Decrease font size
   D                  Toggle dark mode
   ? / H              Show this help menu
 
@@ -6117,10 +5981,6 @@ Display:
             tooltipY,
             tooltipText,
             isCurrentPageMemorized,
-            isIndopak,
-            totalPages,
-            layoutLabel,
-            switchLayout,
             currentPagePerfectCount,
             currentPageHifzStatus,
             currentPageAudioCount,

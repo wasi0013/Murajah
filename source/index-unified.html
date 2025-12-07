@@ -385,9 +385,6 @@
       .quran-text {
         line-height: 2.0;
       }
-      .quran-text.layout-indopak {
-        line-height: 2.0;
-      }
       .quran-word {
         padding: 0.02rem 0.04rem;
       }
@@ -401,9 +398,6 @@
     /* Small Devices (500px - 640px) */
     @media (min-width: 501px) and (max-width: 640px) {
       .quran-text {
-        line-height: 1.9;
-      }
-      .quran-text.layout-indopak {
         line-height: 1.9;
       }
       .quran-word {
@@ -420,9 +414,6 @@
       .quran-text {
         line-height: 1.7;
       }
-      .quran-text.layout-indopak {
-        line-height: 1.7;
-      }
       .quran-word {
         padding: 0.05rem 0.08rem;
       }
@@ -435,9 +426,6 @@
 
     @media (min-width: 1024px) {
       .quran-text {
-        line-height: 1.6;
-      }
-      .quran-text.layout-indopak {
         line-height: 1.6;
       }
       .quran-word {
@@ -2625,7 +2613,7 @@
                     <!-- Streak Info Note -->
                     <div class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
                       <i class="fas fa-info-circle mr-2"></i>
-                      {{ $t('settings.streakInfo') }}
+                      Streak breaks when the above selected tasks are not completed in a day. New daily goal starts from midnight.
                     </div>
                   </div>
 
@@ -4350,7 +4338,7 @@
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
-            appStore.successMessage = t('notifications.settingsUpdated');
+            appStore.successMessage = 'Settings updated!';
             setTimeout(() => appStore.successMessage = '', 2000);
           };
 
@@ -5878,36 +5866,6 @@
               event.preventDefault();
               showKeyboardShortcutsHelp();
             }
-            
-            // + or = - Increase Font Size
-            if (key === '+' || key === '=') {
-              event.preventDefault();
-              const sizes = ['small', 'medium', 'large'];
-              const currentIndex = sizes.indexOf(settingsStore.fontSize);
-              if (currentIndex < sizes.length - 1) {
-                settingsStore.fontSize = sizes[currentIndex + 1];
-                updateSettings();
-                appStore.successMessage = `Font size: ${settingsStore.fontSize}`;
-              } else {
-                appStore.successMessage = 'Font size already at maximum';
-              }
-              setTimeout(() => appStore.successMessage = '', 2000);
-            }
-            
-            // - - Decrease Font Size
-            if (key === '-') {
-              event.preventDefault();
-              const sizes = ['small', 'medium', 'large'];
-              const currentIndex = sizes.indexOf(settingsStore.fontSize);
-              if (currentIndex > 0) {
-                settingsStore.fontSize = sizes[currentIndex - 1];
-                updateSettings();
-                appStore.successMessage = `Font size: ${settingsStore.fontSize}`;
-              } else {
-                appStore.successMessage = 'Font size already at minimum';
-              }
-              setTimeout(() => appStore.successMessage = '', 2000);
-            }
           };
 
           const showKeyboardShortcutsHelp = () => {
@@ -5925,8 +5883,6 @@ Memorization:
   T                  Toggle Tajweed colors
 
 Display:
-  + / =              Increase font size
-  -                  Decrease font size
   D                  Toggle dark mode
   ? / H              Show this help menu
 

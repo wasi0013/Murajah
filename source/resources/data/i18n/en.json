@@ -63,6 +63,7 @@
     "fontSizeMedium": "Medium",
     "fontSizeLarge": "Large",
     "enableTajweed": "Enable Tajweed Colors",
+    "notAvailableForIndopak": "Not available for Indopak layout",
     "showTafsir": "Show Tafsir (Commentary)",
     "dailyGoalsTitle": "Daily Goals Settings",
     "pagesPerDay": "Pages Per Day",
@@ -72,6 +73,7 @@
     "selectTasksLabel": "Select daily tasks:",
     "taskRecite": "Recite 10 verses",
     "taskRecord": "Record a random page",
+    "streakInfo": "Streak breaks when the above selected tasks are not completed in a day. New daily goal starts from midnight.",
     "dataManagementTitle": "Data Management",
     "exportData": "Export Data",
     "importData": "Import Data",
@@ -89,8 +91,10 @@
   },
   "layout": {
     "uthmani": "Uthmani",
+    "qpc": "Uthmani",
     "indopak": "Indopak",
     "switchToUthmani": "Switch to Uthmani Layout (604 pages)",
+    "switchToQpc": "Switch to QPC Uthmani Layout (604 pages)",
     "switchToIndopak": "Switch to Indopak Layout (610 pages)"
   },
   "footer": {
