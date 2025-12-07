@@ -1729,7 +1729,7 @@
                         <i class="fas fa-bullseye"></i>
                         {{ $t('header.sections.dailyGoals') }}
                       </a>
-                      <a href="#analytics-section" class="nav-dropdown-item" @click.prevent="scrollToSection('analytics-section')">
+                      <a href="#progress-section" class="nav-dropdown-item" @click.prevent="scrollToSection('progress-section')">
                         <i class="fas fa-chart-line"></i>
                         {{ $t('header.sections.analytics') }}
                       </a>
@@ -1836,7 +1836,7 @@
                   <i class="fas fa-bullseye"></i>
                   {{ $t('header.sections.dailyGoals') }}
                 </a>
-                <a v-if="hasDailyTasks" href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
+                <a href="#progress-section" class="mobile-menu-item" @click.prevent="scrollToSection('progress-section')">
                   <i class="fas fa-chart-line"></i>
                   {{ $t('header.sections.analytics') }}
                 </a>
@@ -2060,8 +2060,9 @@
               <div class="bg-white  rounded-lg shadow-lg p-2 sm:p-3 md:p-4 space-y-2 sm:space-y-3">
                 <!-- Navigation Controls -->
                 <div class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
-                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Previous page">
+                  <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm flex items-center gap-1" title="Previous page">
                     <i class="fas fa-chevron-left"></i>
+                    <span class="hidden sm:inline">{{ $t('navigation.prev') }}</span>
                   </button>
 
                   <div class="flex items-center gap-1 sm:gap-2 bg-gray-100  px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-900 ">
@@ -2072,7 +2073,8 @@
                   <input id="gotoPageInput" name="gotoPageInput" v-model.number="gotoInput" @keyup.enter="gotoPage" type="number" min="1" :max="totalPages" class="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-2 border border-gray-300  rounded-lg text-center text-xs sm:text-sm" :placeholder="$t('navigation.go')">
                   <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">{{ $t('navigation.go') }}</button>
 
-                  <button @click="nextPage" :disabled="appStore.currentPage === totalPages" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm" title="Next page">
+                  <button @click="nextPage" :disabled="appStore.currentPage === totalPages" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm flex items-center gap-1" title="Next page">
+                    <span class="hidden sm:inline">{{ $t('navigation.next') }}</span>
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>                <!-- Action Buttons -->
@@ -3213,7 +3215,7 @@
               </div>
 
               <!-- Progress Section -->
-              <div class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+              <div id="progress-section" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
                 <div class="flex items-center justify-between">
                   <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
                   <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: totalPages }) }}</span>

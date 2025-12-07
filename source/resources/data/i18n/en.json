@@ -207,6 +207,8 @@
   },
   "navigation": {
     "go": "Go",
+    "prev": "Prev",
+    "next": "Next",
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "jumpSurah": "Jump to Surah"

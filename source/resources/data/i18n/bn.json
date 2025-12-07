@@ -207,6 +207,8 @@
   },
   "navigation": {
     "go": "চলুন",
+    "prev": "পূর্ব",
+    "next": "পরবর্তী",
     "previousPage": "পূর্বের পৃষ্ঠা",
     "nextPage": "পরের পৃষ্ঠা",
     "jumpSurah": "সূরা"
