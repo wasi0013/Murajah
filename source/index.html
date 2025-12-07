@@ -1703,9 +1703,10 @@
                 <nav class="desktop-nav items-center gap-1 md:gap-2 lg:gap-4">
                   <!-- Home Dropdown -->
                   <div class="nav-dropdown" @mouseenter="showHomeDropdown = true" @mouseleave="showHomeDropdown = false" :class="{ active: showHomeDropdown }">
-                    <button class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative">
                       <i class="fas fa-home text-gray-500"></i>
                       {{ $t('header.home') }}
+                      <span v-if="hasPendingDailyTasks" class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white"></span>
                       <i class="fas fa-chevron-down text-xs text-gray-400"></i>
                     </button>
                     <div class="nav-dropdown-menu">
@@ -1725,9 +1726,10 @@
                         <i class="fas fa-exclamation-triangle"></i>
                         {{ $t('header.sections.mistakes') }}
                       </a>
-                      <a v-if="hasDailyTasks" href="#daily-goals-section" class="nav-dropdown-item" @click.prevent="scrollToSection('daily-goals-section')">
+                      <a v-if="hasDailyTasks" href="#daily-goals-section" class="nav-dropdown-item relative" @click.prevent="scrollToSection('daily-goals-section')">
                         <i class="fas fa-bullseye"></i>
                         {{ $t('header.sections.dailyGoals') }}
+                        <span v-if="hasPendingDailyTasks" class="absolute top-1/2 -translate-y-1/2 right-2 w-2 h-2 bg-orange-500 rounded-full"></span>
                       </a>
                       <a href="#progress-section" class="nav-dropdown-item" @click.prevent="scrollToSection('progress-section')">
                         <i class="fas fa-chart-line"></i>
@@ -1815,7 +1817,10 @@
 
               <!-- Home Sections -->
               <div class="mobile-menu-section">
-                <div class="mobile-menu-section-title">{{ $t('header.home') }}</div>
+                <div class="mobile-menu-section-title flex items-center gap-2">
+                  {{ $t('header.home') }}
+                  <span v-if="hasPendingDailyTasks" class="w-2 h-2 bg-orange-500 rounded-full"></span>
+                </div>
                 <a href="#quran-text-section" class="mobile-menu-item" @click.prevent="scrollToSection('quran-text-section')">
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
@@ -1832,9 +1837,10 @@
                   <i class="fas fa-exclamation-triangle"></i>
                   {{ $t('header.sections.mistakes') }}
                 </a>
-                <a v-if="hasDailyTasks" href="#daily-goals-section" class="mobile-menu-item" @click.prevent="scrollToSection('daily-goals-section')">
+                <a v-if="hasDailyTasks" href="#daily-goals-section" class="mobile-menu-item relative" @click.prevent="scrollToSection('daily-goals-section')">
                   <i class="fas fa-bullseye"></i>
                   {{ $t('header.sections.dailyGoals') }}
+                  <span v-if="hasPendingDailyTasks" class="absolute top-1/2 -translate-y-1/2 right-3 w-2 h-2 bg-orange-500 rounded-full"></span>
                 </a>
                 <a href="#progress-section" class="mobile-menu-item" @click.prevent="scrollToSection('progress-section')">
                   <i class="fas fa-chart-line"></i>
@@ -2062,7 +2068,7 @@
                 <div class="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
                   <button @click="previousPage" :disabled="appStore.currentPage === 1" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm flex items-center gap-1" title="Previous page">
                     <i class="fas fa-chevron-left"></i>
-                    <span class="hidden sm:inline">{{ $t('navigation.prev') }}</span>
+                    <span>{{ $t('navigation.prev') }}</span>
                   </button>
 
                   <div class="flex items-center gap-1 sm:gap-2 bg-gray-100  px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-900 ">
@@ -2074,7 +2080,7 @@
                   <button @click="gotoPage" class="px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm">{{ $t('navigation.go') }}</button>
 
                   <button @click="nextPage" :disabled="appStore.currentPage === totalPages" class="p-1.5 sm:p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm flex items-center gap-1" title="Next page">
-                    <span class="hidden sm:inline">{{ $t('navigation.next') }}</span>
+                    <span>{{ $t('navigation.next') }}</span>
                     <i class="fas fa-chevron-right"></i>
                   </button>
                 </div>                <!-- Action Buttons -->
@@ -5548,6 +5554,15 @@
             return dailyGoalsStore.selectedTasks && dailyGoalsStore.selectedTasks.length > 0;
           });
 
+          // Check if there are pending (incomplete) daily tasks
+          const hasPendingDailyTasks = computed(() => {
+            if (!hasDailyTasks.value || !dailyGoalsStore.todayGoal || !dailyGoalsStore.todayGoal.tasks) {
+              return false;
+            }
+            const tasks = dailyGoalsStore.todayGoal.tasks;
+            return Object.values(tasks).some(task => !task.completed);
+          });
+
           // Calculate total score from perfect revisions using hasanah values
           const totalPerfectRevisionsPoints = computed(() => {
             const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
@@ -6544,6 +6559,7 @@ Display:
             recentActivity,
             remainingDailyTasks,
             hasDailyTasks,
+            hasPendingDailyTasks,
             currentLocaleSurahs,
             getTrendDayTooltip,
             achievementStore,
