@@ -86,6 +86,8 @@
     "selectTasksLabel": "Select daily tasks:",
     "taskRecite": "Recite 10 verses",
     "taskRecord": "Record a random page",
+    "taskReview": "Recite from memory",
+    "taskMemorize": "Memorize new",
     "streakInfo": "Streak breaks when the above selected tasks are not completed in a day. New daily goal starts from midnight.",
     "dataManagementTitle": "Data Management",
     "exportData": "Export Data",

@@ -1713,7 +1713,7 @@
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
                       </a>
-                      <a href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
+                      <a v-if="settingsStore.showTafsir" href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
                         <i class="fas fa-book-open"></i>
                         {{ $t('header.sections.tafsir') }}
                       </a>
@@ -1725,7 +1725,7 @@
                         <i class="fas fa-exclamation-triangle"></i>
                         {{ $t('header.sections.mistakes') }}
                       </a>
-                      <a href="#daily-goals-section" class="nav-dropdown-item" @click.prevent="scrollToSection('daily-goals-section')">
+                      <a v-if="hasDailyTasks" href="#daily-goals-section" class="nav-dropdown-item" @click.prevent="scrollToSection('daily-goals-section')">
                         <i class="fas fa-bullseye"></i>
                         {{ $t('header.sections.dailyGoals') }}
                       </a>
@@ -1733,7 +1733,7 @@
                         <i class="fas fa-chart-line"></i>
                         {{ $t('header.sections.analytics') }}
                       </a>
-                      <a href="#timeline-section" class="nav-dropdown-item" @click.prevent="scrollToSection('timeline-section')">
+                      <a v-if="hasDailyTasks" href="#timeline-section" class="nav-dropdown-item" @click.prevent="scrollToSection('timeline-section')">
                         <i class="fas fa-calendar-alt"></i>
                         {{ $t('header.sections.timeline') }}
                       </a>
@@ -1747,7 +1747,7 @@
                   </div>
 
                   <!-- Quiz Link -->
-                  <a href="https://murajah.pages.dev/quiz" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <a href="./quiz.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-question-circle text-gray-500"></i>
                     {{ $t('header.quiz') }}
                   </a>
@@ -1820,7 +1820,7 @@
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
                 </a>
-                <a href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
+                <a v-if="settingsStore.showTafsir" href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
                   <i class="fas fa-book-open"></i>
                   {{ $t('header.sections.tafsir') }}
                 </a>
@@ -1832,15 +1832,15 @@
                   <i class="fas fa-exclamation-triangle"></i>
                   {{ $t('header.sections.mistakes') }}
                 </a>
-                <a href="#daily-goals-section" class="mobile-menu-item" @click.prevent="scrollToSection('daily-goals-section')">
+                <a v-if="hasDailyTasks" href="#daily-goals-section" class="mobile-menu-item" @click.prevent="scrollToSection('daily-goals-section')">
                   <i class="fas fa-bullseye"></i>
                   {{ $t('header.sections.dailyGoals') }}
                 </a>
-                <a href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
+                <a v-if="hasDailyTasks" href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
                   <i class="fas fa-chart-line"></i>
                   {{ $t('header.sections.analytics') }}
                 </a>
-                <a href="#timeline-section" class="mobile-menu-item" @click.prevent="scrollToSection('timeline-section')">
+                <a v-if="hasDailyTasks" href="#timeline-section" class="mobile-menu-item" @click.prevent="scrollToSection('timeline-section')">
                   <i class="fas fa-calendar-alt"></i>
                   {{ $t('header.sections.timeline') }}
                 </a>
@@ -1854,7 +1854,7 @@
 
               <!-- Other Links -->
               <div class="mobile-menu-section">
-                <a href="https://murajah.pages.dev/quiz" class="mobile-menu-item" @click="showMobileMenu = false">
+                <a href="./quiz.html" class="mobile-menu-item" @click="showMobileMenu = false">
                   <i class="fas fa-question-circle"></i>
                   {{ $t('header.quiz') }}
                 </a>
@@ -2594,7 +2594,7 @@
                     </h3>
                     
 
-                    <div>
+                    <div v-if="hasDailyTasks">
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.pagesPerDay') }}</label>
                         <input 
                           id="pagesPerDayInput" 
@@ -2612,7 +2612,7 @@
                         >
                     </div>
 
-                    <div>
+                    <div v-if="hasDailyTasks">
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('settings.finishRevisionDays') }}</label>
                         <input 
                           id="finishRevisionDaysInput" 
@@ -2631,7 +2631,7 @@
                     </div>
 
                     <!-- Adjust Revision Chunk Slider -->
-                    <div>
+                    <div v-if="hasDailyTasks">
                       <div class="flex items-center justify-between mb-2">
                         <label class="block text-sm font-medium text-gray-700 ">{{ $t('settings.adjustRevision') }}</label>
                         <span class="text-sm font-semibold text-blue-600">
@@ -2699,7 +2699,7 @@
                           >
                           <label for="task-review" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-book-open text-blue-500"></i>
-                            Recite from memory
+                            {{ $t('settings.taskReview') }}
                           </label>
                         </div>
 
@@ -2714,14 +2714,14 @@
                           >
                           <label for="task-memorize" class="ml-3 text-sm text-gray-700  flex items-center gap-2">
                             <i class="fas fa-quran text-purple-500"></i>
-                            Memorize new
+                            {{ $t('settings.taskMemorize') }}
                           </label>
                         </div>
                       </div>
                     </div>
 
                     <!-- Streak Info Note -->
-                    <div class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
+                    <div v-if="hasDailyTasks" class="p-3 bg-blue-50  rounded-lg text-sm text-blue-800 ">
                       <i class="fas fa-info-circle mr-2"></i>
                       {{ $t('settings.streakInfo') }}
                     </div>
