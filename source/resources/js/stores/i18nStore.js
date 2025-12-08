@@ -1,7 +1,7 @@
 const { reactive } = Vue;
 
-const DEFAULT_LOCALE = 'bn';
-const FALLBACK_LOCALE = 'en';
+const DEFAULT_LOCALE = 'en';
+const FALLBACK_LOCALE = 'bn';
 const LOCALE_FILES = {
   en: './resources/data/i18n/en.json',
   bn: './resources/data/i18n/bn.json'
