@@ -335,6 +335,22 @@
       background-color: #d4b896;
     }
 
+    /* Tafsir Arabic Text Styling */
+    .tafsir-arabic-text {
+      font-family: 'TajweedPage', 'QPCPage', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
+      line-height: 1.6;
+      direction: rtl;
+      text-align: right;
+      letter-spacing: 0.1em;
+      color: #111827;
+    }
+
+    .tafsir-arabic-text.layout-indopak {
+      font-family: 'IndopakNastaleeq', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
+      line-height: 2.2;
+      letter-spacing: 0.05em;
+    }
+
     .quran-text-small {
       font-size: 14px !important;
     }
@@ -2374,13 +2390,21 @@
                     class="p-3 sm:p-4 hover:bg-emerald-50/30 transition-colors"
                   >
                     <!-- Verse Badge and Reference -->
-                    <div class="flex items-center gap-2 mb-2">
+                    <div class="flex items-center gap-2 mb-3">
                       <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 bg-emerald-600 text-white text-xs font-bold rounded-full">
                         {{ item.surah }}:{{ item.verse }}
                       </span>
                       <span class="text-xs text-emerald-700 font-medium">
                         {{ getSurahNameTranslated(item.surah) }}
                       </span>
+                    </div>
+                    
+                    <!-- Arabic Verse Text -->
+                    <div class="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                      <p :style="fontSizeStyle" :class="['text-right leading-relaxed text-gray-800 tafsir-arabic-text', { 'layout-indopak': isIndopak }]" 
+                         class="">
+                        {{ item.arabicText }}
+                      </p>
                     </div>
                     
                     <!-- Tafsir Text -->
@@ -6026,6 +6050,23 @@
             return getPageWordsDetailed(appStore.currentPage, quranData.value.layout, quranData.value.words);
           });
 
+          // Get Arabic text for a specific verse
+          const getVerseText = (surahNum, ayahNum) => {
+            if (!quranData.value || !quranData.value.words) {
+              return '';
+            }
+            
+            const words = [];
+            Object.keys(quranData.value.words).forEach(key => {
+              const word = quranData.value.words[key];
+              if (word.surah == surahNum && word.ayah == ayahNum) {
+                words.push(word.text);
+              }
+            });
+            
+            return words.join(' ');
+          };
+
           // Get current page tafsir entries (switches based on locale)
           const currentPageTafsir = computed(() => {
             const tafsirData = i18nState.currentLocale === 'bn' 
@@ -6044,7 +6085,8 @@
                   ref,
                   surah: parseInt(surah),
                   verse: parseInt(verse),
-                  text: tafsirEntry.text
+                  text: tafsirEntry.text,
+                  arabicText: getVerseText(parseInt(surah), parseInt(verse))
                 };
               }
               return null;
