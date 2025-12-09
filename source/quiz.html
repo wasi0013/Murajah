@@ -2163,8 +2163,8 @@
                 // Load font for a specific page
                 const loadFontForPage = async (pageNum) => {
                     console.log('[QUIZ DEBUG] Loading font for page:', pageNum);
-                    const fontFamily = `TajweedPage${pageNum}`;
-                    const fontId = `tajweed-page-${pageNum}`;
+                    const fontFamily = `QPCPage${pageNum}`;
+                    const fontId = `qpc-page-${pageNum}`;
                     if (document.getElementById(fontId)) {
                         console.log('[QUIZ DEBUG] Font already loaded for page:', pageNum);
                         return fontFamily; // Already loaded
@@ -2175,7 +2175,7 @@
                         styleTag.id = fontId;
 
                         const src = `src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2')`;
-                        styleTag.innerHTML = `@font-face { font-family: '${fontFamily}'; ${src}; font-weight: normal; font-style: normal; } .quran-word{ font-family: '${fontFamily}' !important; }`;
+                        styleTag.innerHTML = `@font-face { font-family: '${fontFamily}'; ${src}; font-weight: normal; font-style: normal; font-display: swap; } .quran-word{ font-family: '${fontFamily}' !important; }`;
                         document.head.appendChild(styleTag);
 
                         console.log('[QUIZ DEBUG] Font CSS added for page:', pageNum);

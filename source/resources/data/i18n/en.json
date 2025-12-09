@@ -98,7 +98,26 @@
     "bulkStartPage": "Start Page",
     "bulkEndPage": "End Page",
     "bulkMemorizeButton": "Memorize Range",
-    "moreSettings": "More Settings"
+    "moreSettings": "More Settings",
+    "cacheTitle": "Offline Mode",
+    "cacheDescription": "Download all resources to use Murajah offline. This includes all 604 Quran page fonts (~50MB total).",
+    "cacheInfo": "After downloading, the app will work completely offline (except audio recitations which require internet).",
+    "cacheCached": "Cached",
+    "cacheSize": "Cache Size",
+    "cacheVersion": "Version",
+    "cacheHits": "Cache Hits",
+    "cacheDownloading": "Downloading resources for offline use...",
+    "cacheCurrent": "Current",
+    "refreshCache": "Download for Offline Use",
+    "clearCache": "Clear Cache",
+    "cacheStarting": "Downloading resources for offline use...",
+    "cacheSuccess": "Successfully downloaded {count} resources! App now works offline.",
+    "cachePartial": "Downloaded {loaded} resources, {failed} failed",
+    "cacheFailed": "Download failed: {error}",
+    "clearCacheConfirm": "Are you sure you want to clear all cached resources? The app will need to re-download resources.",
+    "cacheClearedSuccess": "Cache cleared successfully",
+    "cacheClearFailed": "Failed to clear cache: {error}",
+    "cachingInProgress": "Downloading..."
   },
   "language": {
     "label": "Language",
@@ -496,5 +515,11 @@
     "loading": "Loading tafsir...",
     "collapse": "Collapse",
     "expand": "Expand"
+  },
+  "pwa": {
+    "offlineMode": "You're offline. Some features may be limited.",
+    "updateAvailable": "A new version is available!",
+    "refresh": "Refresh",
+    "dismiss": "Dismiss"
   }
 }

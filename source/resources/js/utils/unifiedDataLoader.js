@@ -2,9 +2,11 @@
  * Murajah Unified Data Loader Utility
  * Handles loading and parsing Quran data for both QPC (604 pages) and Indopak (610 pages) layouts
  * Resources are cached to IndexedDB for better performance
+ * Now integrates with ResourceCache for unified caching
  */
 
 import Logger from './logger.js';
+import { getResourceCache } from './resourceCache.js';
 
 // Layout-specific resource configurations
 const LAYOUT_CONFIGS = {

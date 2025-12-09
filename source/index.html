@@ -4,13 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Murajah - Quran Memorization App">
-  <meta name="theme-color" content="#1f2937">
+  <meta name="theme-color" content="#3b82f6">
   <meta name="color-scheme" content="only light">
   <meta name="google-site-verification" content="dqigT_yt_V7BwR1uM5PplRWn8Vj5gc8duaReuC7xRTw" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Murajah">
+  <meta name="application-name" content="Murajah">
+  <meta name="msapplication-TileColor" content="#3b82f6">
+  <meta name="msapplication-config" content="none">
+  
   <title>Murajah - Quran Memorization</title>
   
-  <!-- Favicon -->
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  
+  <!-- Favicon & Apple Touch Icons -->
   <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
+  <link rel="apple-touch-icon" href="./resources/assets/images/logo-bg.png">
   
   <!-- Tailwind CSS -->
   <script src="./resources/js/vendor/tailwind.3.4.7.js"></script>
@@ -300,7 +314,7 @@
 
     /* Quran Text Styling - QPC Layout (default) */
     .quran-text {
-      font-family: 'QPCV2Page', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
+      font-family: 'TajweedPage', 'QPCPage', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
       line-height: 1.6;
       direction: rtl;
       text-align: right;
@@ -1285,7 +1299,7 @@
       class MurajahDB {
         constructor() {
           this.dbName = 'murajah-db';
-          this.version = 3;
+          this.version = 4; // Bumped version for new resourceCache store
           this.db = null;
         }
 
@@ -1316,7 +1330,11 @@
               if (!db.objectStoreNames.contains('quranCache')) {
                 db.createObjectStore('quranCache', { keyPath: 'id' });
               }
-              console.log('[Murajah] IndexedDB schema created');
+              // New store for caching all static resources (JS, CSS, JSON, fonts)
+              if (!db.objectStoreNames.contains('resourceCache')) {
+                db.createObjectStore('resourceCache', { keyPath: 'id' });
+              }
+              console.log('[Murajah] IndexedDB schema created/upgraded');
             };
           });
         }
@@ -1353,13 +1371,14 @@
         }
 
         async clearAll() {
-          const tx = this.db.transaction(['appData', 'recordings', 'dailyGoals'], 'readwrite');
+          const tx = this.db.transaction(['appData', 'recordings', 'dailyGoals', 'resourceCache'], 'readwrite');
           tx.objectStore('appData').clear();
           tx.objectStore('recordings').clear();
           tx.objectStore('dailyGoals').clear();
+          tx.objectStore('resourceCache').clear();
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] IndexedDB cleared');
+              console.log('[Murajah] IndexedDB cleared (including resource cache)');
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -1622,6 +1641,17 @@
       const murajahDB = new MurajahDB();
       await murajahDB.init();
 
+      // Initialize Resource Cache for offline support
+      const resourceCacheModule = await import('./resources/js/utils/resourceCache.js');
+      const { ResourceCache, initResourceCache, getResourceCache, CACHE_VERSION, RESOURCE_MANIFEST, getTotalResourceCount, generatePageFonts, generateTajweedFonts } = resourceCacheModule;
+      const resourceCache = initResourceCache(murajahDB);
+      
+      // Check if cache needs refresh due to version change
+      const needsCacheRefresh = await resourceCache.needsVersionRefresh();
+      if (needsCacheRefresh) {
+        console.log('[Murajah] Cache version changed, will refresh on next preload');
+      }
+
       // Import utility modules - Using unified data loader for both QPC and Indopak layouts
       const dataLoaderModule = await import('./resources/js/utils/unifiedDataLoader.js');
       const { loadAllQuranData, getPageText, getPageWordsDetailed, getLayoutConfig, clearDataCache, preloadLayout } = dataLoaderModule;
@@ -1719,8 +1749,30 @@
               </div>
             </div>
 
+            <!-- Offline Indicator Banner -->
+            <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-amber-500 text-amber-900 text-center py-2 px-4 z-[60] shadow-md">
+              <div class="flex items-center justify-center gap-2 text-sm font-medium">
+                <i class="fas fa-wifi-slash"></i>
+                <span>{{ $t('pwa.offlineMode') || 'You are offline. Some features may be limited.' }}</span>
+              </div>
+            </div>
+
+            <!-- Update Available Banner -->
+            <div v-if="showUpdateBanner" class="fixed top-0 left-0 right-0 bg-blue-600 text-white text-center py-2 px-4 z-[60] shadow-md">
+              <div class="flex items-center justify-center gap-3 text-sm font-medium">
+                <i class="fas fa-arrow-circle-up"></i>
+                <span>{{ $t('pwa.updateAvailable') || 'A new version is available!' }}</span>
+                <button @click="refreshApp" class="px-3 py-1 bg-white text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-semibold text-xs">
+                  {{ $t('pwa.refresh') || 'Refresh' }}
+                </button>
+                <button @click="dismissUpdateBanner" class="text-white/80 hover:text-white">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
             <!-- Header -->
-            <header class="bg-white shadow sticky top-0 z-50">
+            <header class="bg-white shadow sticky top-0 z-50" :class="{ 'mt-10': !isOnline || showUpdateBanner }">
               <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-2 sm:gap-3">
@@ -2789,6 +2841,83 @@
                     </div>
                   </div>
 
+                  <!-- Offline Cache Management Section -->
+                  <div class="border-t border-gray-300 pt-6 space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <i class="fas fa-cloud-download-alt text-cyan-600"></i>
+                      {{ $t('settings.cacheTitle') || 'Offline Mode' }}
+                    </h3>
+                    <p class="text-sm text-gray-600">{{ $t('settings.cacheDescription') || 'Download all resources to use Murajah offline. This includes all 604 Quran page fonts (~50MB total).' }}</p>
+                    
+                    <!-- Info Box -->
+                    <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      {{ $t('settings.cacheInfo') || 'After downloading, the app will work completely offline (except audio recitations which require internet).' }}
+                    </div>
+                    
+                    <!-- Cache Stats -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div class="p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+                        <p class="text-xs text-gray-600">{{ $t('settings.cacheCached') || 'Cached' }}</p>
+                        <p class="text-lg font-bold text-cyan-600">{{ cacheStats.totalCached }}/{{ cacheStats.totalResources }}</p>
+                      </div>
+                      <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p class="text-xs text-gray-600">{{ $t('settings.cacheSize') || 'Cache Size' }}</p>
+                        <p class="text-lg font-bold text-purple-600">{{ cacheStats.formattedSize }}</p>
+                      </div>
+                      <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-xs text-gray-600">{{ $t('settings.cacheVersion') || 'Version' }}</p>
+                        <p class="text-lg font-bold text-blue-600">{{ cacheStats.version }}</p>
+                      </div>
+                      <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p class="text-xs text-gray-600">{{ $t('settings.cacheHits') || 'Cache Hits' }}</p>
+                        <p class="text-lg font-bold text-green-600">{{ cacheStats.hits }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Cache Progress Bar (shown during refresh) -->
+                    <div v-if="cacheRefreshInProgress" class="space-y-2">
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600">{{ $t('settings.cacheDownloading') || 'Downloading resources...' }}</span>
+                        <span class="font-medium text-cyan-600">{{ cacheRefreshProgress.loaded }}/{{ cacheRefreshProgress.total }}</span>
+                      </div>
+                      <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          class="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full transition-all duration-300"
+                          :style="{ width: ((cacheRefreshProgress.loaded / cacheRefreshProgress.total) * 100) + '%' }"
+                        ></div>
+                      </div>
+                      <p class="text-xs text-gray-500">{{ $t('settings.cacheCurrent') || 'Current' }}: {{ cacheRefreshProgress.current }}</p>
+                    </div>
+
+                    <!-- Cache Actions -->
+                    <div class="flex gap-3 flex-wrap">
+                      <button 
+                        @click="refreshAllCache" 
+                        :disabled="cacheRefreshInProgress"
+                        class="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        <i :class="cacheRefreshInProgress ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt'"></i>
+                        <span>{{ cacheRefreshInProgress ? ($t('settings.cachingInProgress') || 'Caching...') : ($t('settings.refreshCache') || 'Download All Resources') }}</span>
+                      </button>
+                      
+                      <button 
+                        @click="clearResourceCache" 
+                        :disabled="cacheRefreshInProgress"
+                        class="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                        <span>{{ $t('settings.clearCache') || 'Clear Cache' }}</span>
+                      </button>
+                    </div>
+
+                    <!-- Cache Status Message -->
+                    <div v-if="cacheStatusMessage" :class="['p-3 rounded-lg text-sm', cacheStatusMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : cacheStatusMessage.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-blue-50 text-blue-800 border border-blue-200']">
+                      <i :class="cacheStatusMessage.type === 'success' ? 'fas fa-check-circle' : cacheStatusMessage.type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle'" class="mr-2"></i>
+                      {{ cacheStatusMessage.text }}
+                    </div>
+                  </div>
+
                   <!-- Bulk Memorization Tool -->
                   <div class="border-t border-gray-300  pt-6 space-y-4">
                     <h3 class="text-lg font-bold text-gray-900  flex items-center gap-2">
@@ -3621,6 +3750,35 @@
           // Stub achievement store (coming soon - not developed yet)
           const achievementStore = reactive({ totalUnlocked: 0, completionPercentage: 0, unlockedBadges: new Set(), badgesData: new Map() });
           
+          // Resource Cache state
+          const cacheStats = reactive({
+            totalCached: 0,
+            totalResources: getTotalResourceCount(false) + 604 + 604, // Base + qpc fonts + tajweed fonts
+            totalSize: 0,
+            formattedSize: '0 Bytes',
+            version: CACHE_VERSION,
+            hits: 0,
+            misses: 0,
+            indexedDBCached: 0,
+            fontsCached: 0
+          });
+          const cacheRefreshInProgress = ref(false);
+          const cacheRefreshProgress = reactive({ loaded: 0, failed: 0, total: 0, current: '' });
+          const cacheStatusMessage = ref(null);
+          
+          // PWA/Offline state
+          const isOnline = ref(navigator.onLine);
+          const showUpdateBanner = ref(false);
+          
+          // Expose update function for service worker communication
+          window.updateOnlineStatus = (online) => {
+            isOnline.value = online;
+          };
+          
+          window.showUpdateNotification = () => {
+            showUpdateBanner.value = true;
+          };
+          
           // Navigation state
           const showHomeDropdown = ref(false);
           const showMobileMenu = ref(false);
@@ -3794,6 +3952,9 @@
               
               // Initialize daily goals
               await initializeDailyGoals();
+              
+              // Initialize cache stats
+              await updateCacheStats();
               
               // Preload the other layout in background for faster switching
               setTimeout(() => {
@@ -5466,6 +5627,117 @@
             }
           };
 
+          // ===== Resource Cache Management Methods =====
+          
+          /**
+           * Update cache stats display
+           */
+          const updateCacheStats = async () => {
+            try {
+              const stats = await resourceCache.getCacheStats();
+              Object.assign(cacheStats, stats);
+            } catch (error) {
+              console.warn('[Murajah] Failed to update cache stats:', error);
+            }
+          };
+
+          /**
+           * Refresh/download all resources to cache (including all 604 page fonts)
+           */
+          const refreshAllCache = async () => {
+            if (cacheRefreshInProgress.value) return;
+            
+            cacheRefreshInProgress.value = true;
+            cacheStatusMessage.value = { type: 'info', text: t('settings.cacheStarting') || 'Downloading resources for offline use...' };
+            cacheRefreshProgress.loaded = 0;
+            cacheRefreshProgress.failed = 0;
+            cacheRefreshProgress.total = getTotalResourceCount(true); // Include page fonts
+            cacheRefreshProgress.current = '';
+
+            try {
+              const result = await resourceCache.preloadAllResources((progress) => {
+                cacheRefreshProgress.loaded = progress.loaded;
+                cacheRefreshProgress.failed = progress.failed;
+                cacheRefreshProgress.total = progress.total;
+                cacheRefreshProgress.current = progress.current;
+              }, { includePageFonts: true }); // Download all page fonts
+
+              await updateCacheStats();
+
+              if (result.failed === 0) {
+                cacheStatusMessage.value = { 
+                  type: 'success', 
+                  text: (t('settings.cacheSuccess') || 'Successfully cached {count} resources!').replace('{count}', result.loaded)
+                };
+              } else {
+                cacheStatusMessage.value = { 
+                  type: 'warning', 
+                  text: (t('settings.cachePartial') || 'Cached {loaded} resources, {failed} failed').replace('{loaded}', result.loaded).replace('{failed}', result.failed)
+                };
+              }
+
+              // Clear message after 5 seconds
+              setTimeout(() => {
+                cacheStatusMessage.value = null;
+              }, 5000);
+
+            } catch (error) {
+              console.error('[Murajah] Cache refresh failed:', error);
+              cacheStatusMessage.value = { 
+                type: 'error', 
+                text: (t('settings.cacheFailed') || 'Cache refresh failed: {error}').replace('{error}', error.message)
+              };
+            } finally {
+              cacheRefreshInProgress.value = false;
+            }
+          };
+
+          /**
+           * Clear all cached resources
+           */
+          const clearResourceCache = async () => {
+            if (cacheRefreshInProgress.value) return;
+            
+            if (!confirm(t('settings.clearCacheConfirm') || 'Are you sure you want to clear all cached resources? The app will need to re-download resources.')) {
+              return;
+            }
+
+            try {
+              await resourceCache.clearAll();
+              await updateCacheStats();
+              cacheStatusMessage.value = { 
+                type: 'success', 
+                text: t('settings.cacheClearedSuccess') || 'Cache cleared successfully'
+              };
+
+              setTimeout(() => {
+                cacheStatusMessage.value = null;
+              }, 5000);
+
+            } catch (error) {
+              console.error('[Murajah] Failed to clear cache:', error);
+              cacheStatusMessage.value = { 
+                type: 'error', 
+                text: (t('settings.cacheClearFailed') || 'Failed to clear cache: {error}').replace('{error}', error.message)
+              };
+            }
+          };
+
+          /**
+           * Refresh app when new version is available
+           */
+          const refreshApp = () => {
+            showUpdateBanner.value = false;
+            window.location.reload();
+          };
+
+          /**
+           * Dismiss update banner
+           */
+          const dismissUpdateBanner = () => {
+            showUpdateBanner.value = false;
+          };
+
           // Computed
           const currentPageAudioCount = computed(() => {
             return audioStore.recordings.filter(r => r.pageNumber === appStore.currentPage).length;
@@ -5797,10 +6069,6 @@
 
           // Load font dynamically for current page
           const loadPageFont = (pageNum) => {
-            const fontId = 'dynamicQPCPageFont';
-            let styleTag = document.getElementById(fontId);
-            if (styleTag) styleTag.remove();
-            
             // For Indopak layout, we use a single font file (already loaded via @font-face)
             // so we don't need to load per-page fonts
             if (isIndopak.value) {
@@ -5808,20 +6076,29 @@
               return;
             }
             
-            styleTag = document.createElement('style');
-            styleTag.id = fontId;
-            
             // Use settingsStore to check if tajweed is enabled
             const tajweed = settingsStore.tajweedEnabled;
             
-            let src;
+            // Use unique IDs for QPC and Tajweed fonts to prevent mixing
+            const qpcFontId = 'dynamicQPCPageFont';
+            const tajweedFontId = 'dynamicTajweedPageFont';
+            
+            // Remove the old font style tags (both types)
+            const oldQpc = document.getElementById(qpcFontId);
+            const oldTajweed = document.getElementById(tajweedFontId);
+            if (oldQpc) oldQpc.remove();
+            if (oldTajweed) oldTajweed.remove();
+            
+            const styleTag = document.createElement('style');
+            
             if (tajweed) {
-              src = `src: url('./resources/styles/fonts/tajweed/p${pageNum}.woff2') format('woff2')`;
+              styleTag.id = tajweedFontId;
+              styleTag.innerHTML = `@font-face { font-family: 'TajweedPage'; src: url('./resources/styles/fonts/tajweed/p${pageNum}.woff2') format('woff2'); font-weight: normal; font-style: normal; font-display: swap; }`;
             } else {
-              src = `src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2')`;
+              styleTag.id = qpcFontId;
+              styleTag.innerHTML = `@font-face { font-family: 'QPCPage'; src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2'); font-weight: normal; font-style: normal; font-display: swap; }`;
             }
             
-            styleTag.innerHTML = `@font-face { font-family: 'QPCV2Page'; ${src}; font-weight: normal; font-style: normal; }`;
             document.head.appendChild(styleTag);
             console.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
           };
@@ -6613,7 +6890,20 @@ Display:
             toggleLocale,
             showMobileMenu,
             showHomeDropdown,
-            scrollToSection
+            scrollToSection,
+            // Resource Cache
+            cacheStats,
+            cacheRefreshInProgress,
+            cacheRefreshProgress,
+            cacheStatusMessage,
+            updateCacheStats,
+            refreshAllCache,
+            clearResourceCache,
+            // PWA/Offline
+            isOnline,
+            showUpdateBanner,
+            refreshApp,
+            dismissUpdateBanner
           };
         }
       });
@@ -6637,6 +6927,171 @@ Display:
         }, 300);
       }
     })();
+  </script>
+
+  <!-- Service Worker Registration for Offline Support -->
+  <script>
+    // Register Service Worker for PWA/Offline functionality
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./sw.js', {
+            scope: './'
+          });
+          
+          console.log('[Murajah] Service Worker registered:', registration.scope);
+          
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            console.log('[Murajah] Service Worker update found');
+            
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available
+                console.log('[Murajah] New version available');
+                // Show update notification to user
+                if (window.showUpdateNotification) {
+                  window.showUpdateNotification();
+                }
+              }
+            });
+          });
+          
+          // Listen for controller change (new SW activated)
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('[Murajah] Service Worker controller changed');
+          });
+          
+          // Listen for content update messages from SW (stale-while-revalidate)
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'CONTENT_UPDATED') {
+              console.log('[Murajah] Content updated in background:', event.data.url);
+              // For HTML updates, optionally notify user or auto-refresh
+              // Currently we just log - the cache is already updated for next load
+            }
+          });
+          
+        } catch (error) {
+          console.warn('[Murajah] Service Worker registration failed:', error);
+        }
+      });
+      
+      // Expose functions for communicating with Service Worker
+      window.swCacheFonts = (pages) => {
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CACHE_FONTS',
+            payload: { pages }
+          });
+        }
+      };
+      
+      window.swCacheSecondary = () => {
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CACHE_SECONDARY'
+          });
+        }
+      };
+      
+      window.swGetCacheStatus = () => {
+        return new Promise((resolve) => {
+          if (!navigator.serviceWorker.controller) {
+            resolve(null);
+            return;
+          }
+          
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => {
+            resolve(event.data.payload);
+          };
+          
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'GET_CACHE_STATUS' },
+            [messageChannel.port2]
+          );
+        });
+      };
+      
+      window.swClearCache = () => {
+        return new Promise((resolve) => {
+          if (!navigator.serviceWorker.controller) {
+            resolve(false);
+            return;
+          }
+          
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = () => {
+            resolve(true);
+          };
+          
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'CLEAR_CACHE' },
+            [messageChannel.port2]
+          );
+        });
+      };
+      
+      // Debug: List cached fonts
+      window.swDebugFontCache = () => {
+        return new Promise((resolve) => {
+          if (!navigator.serviceWorker.controller) {
+            resolve(null);
+            return;
+          }
+          
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => {
+            console.log('[Murajah Debug] Font cache:', event.data.payload);
+            resolve(event.data.payload);
+          };
+          
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'DEBUG_FONT_CACHE' },
+            [messageChannel.port2]
+          );
+        });
+      };
+      
+      // Debug: Test if a font URL can be matched in cache
+      window.swTestFontMatch = (url) => {
+        return new Promise((resolve) => {
+          if (!navigator.serviceWorker.controller) {
+            resolve(null);
+            return;
+          }
+          
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => {
+            console.log('[Murajah Debug] Font match result:', event.data.payload);
+            resolve(event.data.payload);
+          };
+          
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'TEST_FONT_MATCH', url },
+            [messageChannel.port2]
+          );
+        });
+      };
+    }
+    
+    // Online/Offline status tracking
+    window.addEventListener('online', () => {
+      console.log('[Murajah] Back online');
+      document.body.classList.remove('offline-mode');
+      if (window.updateOnlineStatus) {
+        window.updateOnlineStatus(true);
+      }
+    });
+    
+    window.addEventListener('offline', () => {
+      console.log('[Murajah] Gone offline');
+      document.body.classList.add('offline-mode');
+      if (window.updateOnlineStatus) {
+        window.updateOnlineStatus(false);
+      }
+    });
   </script>
 </body>
 </html>

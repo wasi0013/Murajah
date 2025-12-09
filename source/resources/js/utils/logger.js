@@ -17,7 +17,8 @@ const MODULES = {
   DAILY_GOALS: 'GOALS',
   UI: 'UI',
   PERFORMANCE: 'PERF',
-  DB: 'DB'
+  DB: 'DB',
+  CACHE: 'CACHE'
 };
 
 let enabledLevels = new Set([LOG_LEVELS.INFO.name, LOG_LEVELS.WARN.name, LOG_LEVELS.ERROR.name]);
