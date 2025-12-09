@@ -167,21 +167,26 @@ async function staleWhileRevalidate(request, cacheName) {
   const cachedResponse = await cache.match(request);
   
   // Start fetching fresh copy in background (don't await)
-  const fetchPromise = fetch(request)
+  const fetchPromise = fetch(request, { redirect: 'follow' })
     .then(async (networkResponse) => {
-      if (networkResponse.ok) {
-        // Update cache with fresh response
-        await cache.put(request, networkResponse.clone());
-        
-        // For HTML files, notify clients about the update
-        if (request.destination === 'document' || request.url.endsWith('.html')) {
-          const clients = await self.clients.matchAll();
-          clients.forEach(client => {
-            client.postMessage({
-              type: 'CONTENT_UPDATED',
-              url: request.url
+      // Check if response is OK (status 200-299) and not a redirect
+      if (networkResponse.ok && networkResponse.status !== 301 && networkResponse.status !== 302 && networkResponse.status !== 303 && networkResponse.status !== 307 && networkResponse.status !== 308) {
+        try {
+          // Update cache with fresh response (clone it as we're using it)
+          await cache.put(request, networkResponse.clone());
+          
+          // For HTML files, notify clients about the update
+          if (request.destination === 'document' || request.url.endsWith('.html')) {
+            const clients = await self.clients.matchAll();
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'CONTENT_UPDATED',
+                url: request.url
+              });
             });
-          });
+          }
+        } catch (e) {
+          console.warn('[SW] Failed to cache response:', e);
         }
       }
       return networkResponse;
@@ -216,21 +221,26 @@ async function staleWhileRevalidateFont(request) {
   const cachedResponse = await findCachedFont(request);
   
   // Start fetching fresh copy in background
-  const fetchPromise = fetch(request)
+  const fetchPromise = fetch(request, { redirect: 'follow' })
     .then(async (networkResponse) => {
-      if (networkResponse.ok) {
-        // Cache with multiple keys for flexible matching
-        const absoluteUrl = request.url;
-        const urlWithoutQuery = absoluteUrl.split('?')[0];
-        
-        await fontsCache.put(absoluteUrl, networkResponse.clone());
-        await fontsCache.put(urlWithoutQuery, networkResponse.clone());
-        
-        // Also cache by pathname
+      // Only cache if response is OK and not a redirect status
+      if (networkResponse.ok && networkResponse.status !== 301 && networkResponse.status !== 302 && networkResponse.status !== 303 && networkResponse.status !== 307 && networkResponse.status !== 308) {
         try {
-          const urlObj = new URL(absoluteUrl);
-          await fontsCache.put(urlObj.pathname, networkResponse.clone());
-        } catch (e) {}
+          // Cache with multiple keys for flexible matching
+          const absoluteUrl = request.url;
+          const urlWithoutQuery = absoluteUrl.split('?')[0];
+          
+          await fontsCache.put(absoluteUrl, networkResponse.clone());
+          await fontsCache.put(urlWithoutQuery, networkResponse.clone());
+          
+          // Also cache by pathname
+          try {
+            const urlObj = new URL(absoluteUrl);
+            await fontsCache.put(urlObj.pathname, networkResponse.clone());
+          } catch (e) {}
+        } catch (e) {
+          console.warn('[SW] Failed to cache font:', e);
+        }
       }
       return networkResponse;
     })
@@ -260,16 +270,28 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('[SW] Caching app shell');
         return Promise.allSettled(
-          APP_SHELL.map(url => 
-            cache.add(url).catch(err => {
-              console.warn(`[SW] Failed to cache: ${url}`, err.message);
-            })
-          )
+          APP_SHELL.map(url => {
+            // Use fetch with redirect: 'follow' to handle redirects properly
+            return fetch(url, { redirect: 'follow', mode: 'no-cors' })
+              .then(response => {
+                if (response.ok || response.status === 0) { // 0 status is for opaque responses (no-cors)
+                  return cache.put(url, response);
+                } else {
+                  console.warn(`[SW] Got status ${response.status} for: ${url}`);
+                }
+              })
+              .catch(err => {
+                console.warn(`[SW] Failed to cache: ${url}`, err.message);
+              });
+          })
         );
       })
       .then(() => {
         console.log('[SW] App shell cached');
         return self.skipWaiting();
+      })
+      .catch(err => {
+        console.error('[SW] Install failed:', err);
       })
   );
 });
