@@ -3682,8 +3682,38 @@
               </div>
             </div>
 
+            <!-- Call to Action - Download App -->
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-12 px-4 mt-12 rounded-b-4xl">
+              <div class="max-w-7xl mx-auto text-center">
+                <div class="mb-6">
+                  <i class="fab fa-google-play text-5xl sm:text-6xl mb-4 opacity-90"></i>
+                  <h2 class="text-2xl sm:text-3xl font-bold mb-3">{{ $t('cta.headline') }}</h2>
+                  <p class="text-lg sm:text-xl opacity-90 mb-2">{{ $t('cta.subtitle') }}</p>
+                  <p class="text-sm sm:text-base opacity-75">{{ $t('cta.features') }}</p>
+                </div>
+                
+                <a href="https://play.google.com/store/apps/details?id=com.murajah.webview" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="inline-flex items-center gap-3 bg-white text-gray-900 px-6 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                  <i class="fab fa-google-play text-2xl text-green-600"></i>
+                  <div class="text-left">
+                    <div class="text-xs opacity-75">{{ $t('cta.buttonGetIt') }}</div>
+                    <div class="text-lg font-bold">{{ $t('cta.buttonPlatform') }}</div>
+                  </div>
+                  <i class="fas fa-external-link-alt text-sm opacity-50"></i>
+                </a>
+                
+                <div class="mt-6 text-sm opacity-75">
+                  <p>{{ $t('cta.trust') }}</p>
+                </div>
+              </div>
+            </div>
+
+
             </main>
 
+            
             <!-- Footer -->
             <footer class="bg-gray-900 text-gray-400 text-center py-6 mt-12">
               <div class="space-y-3">
@@ -3734,7 +3764,7 @@
             totalPages: 604, // Will be updated based on layout
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '25.12.06',
+            appVersion: '25.12.10',
             errorMessage: '',
             successMessage: ''
           });

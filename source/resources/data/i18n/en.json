@@ -140,6 +140,14 @@
     "joinCommunity": "Join Murajah community"
   }
   ,
+  "cta": {
+    "headline": "Get Murajah on Android",
+    "subtitle": "Experience the full power of Quran memorization on your mobile device",
+    "features": "Click below to download or, leave a review",
+    "buttonGetIt": "Get it on",
+    "buttonPlatform": "Google Play",
+    "trust": "Free to download • No ads • Privacy focused"
+  },
   "dashboard": {
     "stats": {
       "summaryTitle": "Summary Statistics",
