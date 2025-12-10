@@ -22,7 +22,8 @@
       "dailyGoals": "দৈনিক লক্ষ্য",
       "analytics": "বিশ্লেষণ",
       "timeline": "টাইমলাইন",
-      "achievements": "অর্জনসমূহ"
+      "achievements": "অর্জনসমূহ",
+      "community": "কমিউনিটি ও সাপোর্ট"
     }
   },
   "quickTest": {
@@ -135,7 +136,8 @@
   },
   "footer": {
     "versionInfo": "مراجعة সংস্করণ {version} | {heart}",
-    "viewOnGithub": "GitHub-এ দেখুন"
+    "viewOnGithub": "GitHub-এ দেখুন",
+    "joinCommunity": "মুরাজাহ কমিউনিটিতে যোগ দিন"
   }
   ,
   "dashboard": {

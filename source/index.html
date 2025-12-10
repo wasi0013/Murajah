@@ -1850,6 +1850,11 @@
                     {{ $t('header.quiz') }}
                   </a>
 
+                  <a href="https://discord.gg/Vycfm28anP" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item">
+                        <i class="fab fa-discord"></i>
+                        {{ $t('header.sections.community') }}
+                  </a>
+
                   <!-- How It Works -->
                   <button @click="showHelpModal = true" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-info-circle text-gray-500"></i>
@@ -1959,6 +1964,10 @@
                 <a href="./quiz.html" class="mobile-menu-item" @click="showMobileMenu = false">
                   <i class="fas fa-question-circle"></i>
                   {{ $t('header.quiz') }}
+                </a>
+                <a href="https://discord.gg/Vycfm28anP" target="_blank" rel="noopener noreferrer" class="mobile-menu-item">
+                  <i class="fab fa-discord"></i>
+                  {{ $t('header.sections.community') }}
                 </a>
                 <button class="mobile-menu-item w-full text-left" @click="showHelpModal = true; showMobileMenu = false">
                   <i class="fas fa-info-circle"></i>
@@ -3673,6 +3682,11 @@
                   <a href="https://github.com/wasi0013/Murajah" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                     <i class="fab fa-github text-lg"></i>
                     <span>{{ $t('footer.viewOnGithub') }}</span>
+                  </a>
+                  <span class="mx-4 text-gray-600">|</span>
+                  <a href="https://discord.gg/Vycfm28anP" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                    <i class="fab fa-discord text-lg"></i>
+                    <span>{{ $t('footer.joinCommunity') }}</span>
                   </a>
                 </div>
               </div>

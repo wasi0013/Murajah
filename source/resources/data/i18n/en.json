@@ -22,7 +22,8 @@
       "dailyGoals": "Daily Goals",
       "analytics": "Analytics",
       "timeline": "Timeline",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "community": "Community & Support"
     }
   },
   "quickTest": {
@@ -135,7 +136,8 @@
   },
   "footer": {
     "versionInfo": "Murajah Version {version} | Made with {heart} for Quran memorization",
-    "viewOnGithub": "View on GitHub"
+    "viewOnGithub": "View on GitHub",
+    "joinCommunity": "Join Murajah community"
   }
   ,
   "dashboard": {
