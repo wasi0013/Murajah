@@ -102,6 +102,7 @@ export class ResourceCache {
       misses: 0,
       lastUpdated: null
     };
+    this.statsLoaded = false;
   }
 
   /**
@@ -142,6 +143,43 @@ export class ResourceCache {
   }
 
   /**
+   * Get the stored cache stats
+   */
+  async getCacheStatsFromDB() {
+    if (!this.db?.db) return null;
+    try {
+      const tx = this.db.db.transaction(['appData'], 'readonly');
+      const store = tx.objectStore('appData');
+      return new Promise((resolve, reject) => {
+        const request = store.get('cache-stats');
+        request.onsuccess = () => resolve(request.result?.value || null);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (error) {
+      Logger.warn(Logger.MODULES.CACHE, 'Failed to get cache stats', error);
+      return null;
+    }
+  }
+
+  /**
+   * Set the cache stats
+   */
+  async setCacheStatsToDB(stats) {
+    if (!this.db?.db) return;
+    try {
+      const tx = this.db.db.transaction(['appData'], 'readwrite');
+      const store = tx.objectStore('appData');
+      store.put({ id: 'cache-stats', value: { ...stats, lastUpdated: new Date().toISOString() }, updatedAt: new Date().toISOString() });
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch (error) {
+      Logger.warn(Logger.MODULES.CACHE, 'Failed to set cache stats', error);
+    }
+  }
+
+  /**
    * Check if cache needs refresh due to version change
    */
   async needsVersionRefresh() {
@@ -154,6 +192,15 @@ export class ResourceCache {
    * Get cache statistics (includes both IndexedDB and Cache API)
    */
   async getCacheStats() {
+    // Load persisted stats if not loaded yet
+    if (!this.statsLoaded) {
+      const persistedStats = await this.getCacheStatsFromDB();
+      if (persistedStats) {
+        this.cacheStats = { ...this.cacheStats, ...persistedStats };
+      }
+      this.statsLoaded = true;
+    }
+
     let indexedDBCached = 0;
     let indexedDBSize = 0;
     let fontsCached = 0;
@@ -281,6 +328,7 @@ export class ResourceCache {
     // Check memory cache first
     if (this.memoryCache.has(id)) {
       this.cacheStats.hits++;
+      await this.setCacheStatsToDB(this.cacheStats);
       return this.memoryCache.get(id);
     }
 
@@ -298,9 +346,11 @@ export class ResourceCache {
             this.cacheStats.hits++;
             // Store in memory cache for faster subsequent access
             this.memoryCache.set(id, record.data);
+            this.setCacheStatsToDB(this.cacheStats); // No await since it's fire-and-forget
             resolve(record.data);
           } else {
             this.cacheStats.misses++;
+            this.setCacheStatsToDB(this.cacheStats);
             resolve(null);
           }
         };
@@ -309,6 +359,7 @@ export class ResourceCache {
     } catch (error) {
       Logger.warn(Logger.MODULES.CACHE, `Failed to load cached ${id}`, error);
       this.cacheStats.misses++;
+      await this.setCacheStatsToDB(this.cacheStats);
       return null;
     }
   }

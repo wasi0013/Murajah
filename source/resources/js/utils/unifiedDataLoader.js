@@ -179,23 +179,28 @@ const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUp
     throw new Error('[Murajah] Resource configuration is required');
   }
 
-  // Try loading from IndexedDB cache first
-  if (murajahDB) {
+  // Use ResourceCache for static Quran data (increments cache hits)
+  const resourceCache = getResourceCache();
+  if (resourceCache) {
     try {
-      const cached = await murajahDB.loadCachedResource(resourceConfig.cacheId);
-      if (cached?.data) {
-        scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
-        return cached.data;
-      }
+      const data = await resourceCache.loadWithCache(resourceConfig.cacheId, resourceConfig.url, 'json');
+      scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
+      return data;
     } catch (error) {
-      Logger.warn(Logger.MODULES.DATA, `Failed to read cached ${resourceConfig.key}`, error);
+      Logger.warn(Logger.MODULES.DATA, `Failed to load ${resourceConfig.key}`, error);
+      // Fallback to direct fetch
+      const response = await fetch(resourceConfig.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${resourceConfig.url}`);
+      }
+      const data = await response.json();
+      scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
+      return data;
     }
   }
 
-  // Fetch from network
-  const data = await fetchAndCacheResource(resourceConfig, murajahDB);
-  scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
-  return data;
+  // Fallback if no resourceCache
+  throw new Error('[Murajah] ResourceCache not available');
 };
 
 /**
