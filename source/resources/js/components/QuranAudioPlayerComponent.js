@@ -204,8 +204,10 @@ export const QuranAudioPlayerComponent = {
                   : 'hover:bg-gray-100 text-gray-700'
               ]"
             >
-              <span class="font-medium">{{ v.chapter }}:{{ v.verse }}</span>
-              <span class="text-gray-500 ml-2">{{ v.text.substring(0, 40) }}...</span>
+              <div class="flex items-center justify-between">
+                <span class="font-medium">{{ v.chapter }}:{{ v.verse }}</span>
+                <span class="audio-arabic-text text-sm flex-1 ml-3 text-right">{{ v.text }}</span>
+              </div>
             </button>
           </div>
         </div>
