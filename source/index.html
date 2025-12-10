@@ -320,7 +320,6 @@
       text-align: right;
       letter-spacing: 0.1em;
       color: #111827;
-      background-color: #f1ece7;
       border-radius: 0.5rem;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
@@ -334,7 +333,6 @@
 
     .dark-mode .quran-text {
       color: #1a1a1a;
-      background-color: #f1ece7;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
@@ -2102,6 +2100,19 @@
                   </div>
                 </div>
 
+                <!-- Color Palette for Quran Background -->
+                <div class="absolute top-2 left-2 z-10">
+                  <button 
+                    @click="cycleQuranBackgroundColor"
+                    class="w-10 h-10 sm:w-12 sm:h-12 bg-transparent  cursor-pointer transition-all duration-200 hover:scale-130 active:scale-95 shadow-md flex items-center justify-center"
+                    :title="'Current background: ' + settingsStore.quranBackgroundColor + ' (Click to cycle)'">
+                    <div 
+                      class="w-6 h-6 sm:w-8 sm:h-8 rounded-full"
+                      :style="{ backgroundColor: settingsStore.quranBackgroundColor }">
+                    </div>
+                  </button>
+                </div>
+
                 <!-- Quran Text Content - Word by Word Display -->
                 <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
 
@@ -2151,7 +2162,7 @@
                   <button 
                     v-if="appStore.currentPage > 1"
                     @click="previousPage" 
-                    class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
+                    class="p-3 rounded-full bg-blue-100 hover:bg-blue-300 text-white shadow-lg transition-all pointer-events-auto"
                     style="opacity: 0.75;"
                     :title="$t('navigation.previousPage') + ' (' + (appStore.currentPage - 1) + ')'"
                   >
@@ -2163,7 +2174,7 @@
                   <button 
                     v-if="appStore.currentPage < appStore.totalPages"
                     @click="nextPage" 
-                    class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all pointer-events-auto"
+                    class="p-3 rounded-full bg-blue-100 hover:bg-blue-300 text-white shadow-lg transition-all pointer-events-auto"
                     style="opacity: 0.75;"
                     :title="$t('navigation.nextPage') + ' (' + (appStore.currentPage + 1) + ')'"
                   >
@@ -3790,7 +3801,8 @@
             tajweedEnabled: true,
             showTafsir: false,
             layout: 'qpc', // 'qpc' (604 pages) or 'indopak' (610 pages)
-            adjustRevisionChunk: 0  // Manual adjustment to rotation index (0 = no adjustment)
+            adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
+            quranBackgroundColor: '#ffffff'
           });
 
           const memorizedStore = reactive({
@@ -4162,7 +4174,8 @@
               layout: String(settingsStore.layout),
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
-                : []
+                : [],
+              quranBackgroundColor: String(settingsStore.quranBackgroundColor)
             };
 
             const data = {
@@ -4989,6 +5002,14 @@
             saveDataBackground(); // Save to IndexedDB
             appStore.successMessage = t('notifications.settingsUpdated');
             setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          const cycleQuranBackgroundColor = () => {
+            const colors = ['#f8ebd5', '#f1ece7', '#e7f6ff', '#f1f1f1', '#ffffff'];
+            const currentIndex = colors.indexOf(settingsStore.quranBackgroundColor);
+            const nextIndex = (currentIndex + 1) % colors.length;
+            settingsStore.quranBackgroundColor = colors[nextIndex];
+            updateSettings();
           };
 
           const openSettingsModal = () => {
@@ -5879,7 +5900,7 @@
               deviceWidth: window.innerWidth,
               isSmallDevice
             });
-            return { fontSize: fontSize };
+            return { fontSize: fontSize, backgroundColor: settingsStore.quranBackgroundColor };
           });
 
           const currentSurahName = computed(() => {
@@ -6920,6 +6941,7 @@ Display:
             getSurahNameArabic,
             getSurahNameTranslated,
             updateSettings,
+            cycleQuranBackgroundColor,
             openSettingsModal,
             clearPageMistakes,
             applyRevisionChunkAdjustment,
