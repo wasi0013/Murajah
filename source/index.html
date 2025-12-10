@@ -315,12 +315,14 @@
     /* Quran Text Styling - QPC Layout (default) */
     .quran-text {
       font-family: 'TajweedPage', 'QPCPage', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
-      line-height: 1.6;
+      line-height: 1.8;
       direction: rtl;
       text-align: right;
       letter-spacing: 0.1em;
       color: #111827;
-      background-color: #fef3c7;
+      background-color: #f1ece7;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     /* Quran Text Styling - Indopak Layout */
@@ -332,7 +334,8 @@
 
     .dark-mode .quran-text {
       color: #1a1a1a;
-      background-color: #d4b896;
+      background-color: #f1ece7;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     /* Tafsir Arabic Text Styling */
@@ -377,8 +380,8 @@
       display: inline-block;
       cursor: pointer;
       transition: all 0.2s ease;
-      padding: 0.08rem 0.12rem;
-      border-radius: 4px;
+      padding: 0.12rem 0.16rem;
+      border-radius: 6px;
       color: inherit;
     }
 
@@ -2057,7 +2060,7 @@
 
               <!-- Quran Text Display with Overlay Navigation -->
               <div id="quran-text-section" 
-                class="bg-white  rounded-lg shadow-lg p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 border-2 border-blue-200  relative group"
+                class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 relative group"
                 @touchstart="handleTouchStart"
                 @touchmove="handleTouchMove"
                 @touchend="handleTouchEnd"
