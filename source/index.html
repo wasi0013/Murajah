@@ -504,13 +504,20 @@
         width: 28px !important;
         margin-left: 15px !important;
       }
-    }    /* Surah Name Styling */
+    }
+    /* Surah Name Styling (number + name) */
+    .quran-text .surah-number,
     .quran-text .surah-name {
       font-family: 'SurahNames', 'Traditional Arabic', serif;
       color: #000 !important;
-      font-size: 2.25rem;
+      font-size: 3.5rem;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+      margin: 0 0.4rem;
     }
 
+    .dark-mode .quran-text .surah-number,
     .dark-mode .quran-text .surah-name {
       color: #000 !important;
     }
@@ -2056,8 +2063,10 @@
                 @touchend="handleTouchEnd"
               >
                 <div class="text-center space-y-1 sm:space-y-2 relative">
-                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">Page {{ appStore.currentPage }} of {{ totalPages }}</p>
-                  <h2 class="text-2xl sm:text-3xl font-bold text-blue-600 " style="font-family: 'SurahNames', 'Traditional Arabic', serif;">{{ currentSurahName }}</h2>
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 ">
+                    {{ $t('tafsir.page') }} {{ appStore.currentPage }} ({{ $t('dashboard.stats.ofPages', { total: totalPages }) }})
+                  </p>
+                  <h2 class="text-black" style="font-family: 'SurahNames', 'Traditional Arabic', serif; font-size: 3.5em;">{{ currentSurahName }}</h2>
                   
                   <!-- Hifz Status Bookmark - Moved to header -->
                   <div v-if="currentPageHifzStatus" class="absolute -top-4 -right-4 sm:top-0 sm:right-2" style="width: 50px; height: 80px;">
@@ -2100,9 +2109,11 @@
 
                   <div v-for="(line, lineIdx) in currentPageWords" :key="lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-1.5 md:gap-2">
                     <!-- Surah Name Display -->
-                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl font-black text-black  my-2 sm:my-3 md:my-4 text-center" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
-                      {{ getSurahNameArabic(parseInt(line.text.replace('Surah ', ''))) }}
-                      <div v-if="parseInt(line.text.replace('Surah ', '')) !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
+                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl text-black my-2 sm:my-3 md:my-4 text-center">
+                      <span class="surah-name" aria-hidden="true">
+                        {{ (isNaN(parseInt((line.text || '').replace('Surah ', '').trim(), 10)) ? (line.text || '') : String(parseInt((line.text || '').replace('Surah ', '').trim(), 10)).padStart(3, '0')) }}surah
+                      </span>
+                      <div v-if="parseInt((line.text || '').replace('Surah ', '').trim(), 10) !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
                     </div>
                     
                     <!-- Words Display -->
@@ -5872,27 +5883,19 @@
             if (!quranData.value || !currentPageWords.value || currentPageWords.value.length === 0) {
               return 'Quran Content';
             }
-            
+
             // Extract surah number from the first word of current page
             for (const line of currentPageWords.value) {
               if (line.words && line.words.length > 0) {
                 const firstWord = line.words[0];
                 if (firstWord && firstWord.surah) {
-                  const surahNum = firstWord.surah;
-                  // Get surah names from quranData - should be an object with string keys
-                  if (quranData.value.surahNames) {
-                    const surahNames = quranData.value.surahNames;
-                    // Try both array and object access patterns
-                    let surahName = surahNames[surahNum] || surahNames[surahNum.toString()] || surahNames[surahNum - 1];
-                    if (surahName) {
-                      return surahName;
-                    }
-                  }
-                  return `Surah ${surahNum}`;
+                  const surahNum = Number(firstWord.surah) || 0;
+                  // Return zero-padded numeric token (e.g. '001surah') so the surah_name font renders correctly
+                  return String(surahNum).padStart(3, '0') + 'surah';
                 }
               }
             }
-            
+
             return 'Quran Content';
           });
 
