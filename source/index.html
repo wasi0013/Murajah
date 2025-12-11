@@ -2113,6 +2113,70 @@
                   </button>
                 </div>
 
+                <!-- Tafsir Section -->
+                <div 
+                  id="tafsir-section"
+                  v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" 
+                  class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200 mb-4"
+                  @touchstart="handleTouchStart"
+                  @touchmove="handleTouchMove"
+                  @touchend="handleTouchEnd"
+                >
+                  <!-- Header - Clickable to expand/collapse -->
+                  <button 
+                    @click="tafsirExpanded = !tafsirExpanded"
+                    class="w-full p-3 sm:p-4 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between hover:from-emerald-100 hover:to-teal-100 transition-colors"
+                  >
+                    <div class="flex items-center gap-2 sm:gap-3">
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-book-open text-white text-sm sm:text-base"></i>
+                      </div>
+                      <div class="text-left">
+                        <h3 class="text-base sm:text-lg font-bold text-emerald-800">{{ $t('tafsir.title') }} - {{ $t('tafsir.page') }} {{ appStore.currentPage }}</h3>
+                        <p class="text-xs sm:text-sm text-emerald-600">{{ $t('tafsir.subtitle') }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs sm:text-sm text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">
+                        {{ currentPageTafsir.length }} {{ $t('tafsir.verse') }}
+                      </span>
+                      <i :class="tafsirExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-emerald-600 text-sm sm:text-base"></i>
+                    </div>
+                  </button>
+
+                  <!-- Content - All verses shown when expanded -->
+                  <div v-show="tafsirExpanded" class="divide-y divide-emerald-100">
+                    <div 
+                      v-for="item in currentPageTafsir" 
+                      :key="item.ref"
+                      class="p-3 sm:p-4 hover:bg-emerald-50/30 transition-colors"
+                    >
+                      <!-- Verse Badge and Reference -->
+                      <div class="flex items-center gap-2 mb-3">
+                        <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 bg-emerald-600 text-white text-xs font-bold rounded-full">
+                          {{ item.surah }}:{{ item.verse }}
+                        </span>
+                        <span class="text-xs text-emerald-700 font-medium">
+                          {{ getSurahNameTranslated(item.surah) }}
+                        </span>
+                      </div>
+                      
+                      <!-- Arabic Verse Text -->
+                      <div class="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                        <p :style="fontSizeStyle" :class="['text-right leading-relaxed text-gray-800 tafsir-arabic-text', { 'layout-indopak': isIndopak }]" 
+                           class="">
+                          {{ item.arabicText }}
+                        </p>
+                      </div>
+                      
+                      <!-- Tafsir Text -->
+                      <p class="text-sm sm:text-base text-gray-700 leading-relaxed sm:leading-loose pl-1" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;" dir="ltr">
+                        {{ item.text }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Quran Text Content - Word by Word Display -->
                 <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
 
@@ -2393,70 +2457,6 @@
                 :current-locale="currentLocale"
                 :db="murajahDB"
               ></quran-audio-player-component>
-              </div>
-
-              <!-- Tafsir Section -->
-              <div 
-                id="tafsir-section"
-                v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" 
-                class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200"
-                @touchstart="handleTouchStart"
-                @touchmove="handleTouchMove"
-                @touchend="handleTouchEnd"
-              >
-                <!-- Header - Clickable to expand/collapse -->
-                <button 
-                  @click="tafsirExpanded = !tafsirExpanded"
-                  class="w-full p-3 sm:p-4 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between hover:from-emerald-100 hover:to-teal-100 transition-colors"
-                >
-                  <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-600 rounded-full flex items-center justify-center">
-                      <i class="fas fa-book-open text-white text-sm sm:text-base"></i>
-                    </div>
-                    <div class="text-left">
-                      <h3 class="text-base sm:text-lg font-bold text-emerald-800">{{ $t('tafsir.title') }} - {{ $t('tafsir.page') }} {{ appStore.currentPage }}</h3>
-                      <p class="text-xs sm:text-sm text-emerald-600">{{ $t('tafsir.subtitle') }}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs sm:text-sm text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">
-                      {{ currentPageTafsir.length }} {{ $t('tafsir.verse') }}
-                    </span>
-                    <i :class="tafsirExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-emerald-600 text-sm sm:text-base"></i>
-                  </div>
-                </button>
-
-                <!-- Content - All verses shown when expanded -->
-                <div v-show="tafsirExpanded" class="divide-y divide-emerald-100">
-                  <div 
-                    v-for="item in currentPageTafsir" 
-                    :key="item.ref"
-                    class="p-3 sm:p-4 hover:bg-emerald-50/30 transition-colors"
-                  >
-                    <!-- Verse Badge and Reference -->
-                    <div class="flex items-center gap-2 mb-3">
-                      <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 bg-emerald-600 text-white text-xs font-bold rounded-full">
-                        {{ item.surah }}:{{ item.verse }}
-                      </span>
-                      <span class="text-xs text-emerald-700 font-medium">
-                        {{ getSurahNameTranslated(item.surah) }}
-                      </span>
-                    </div>
-                    
-                    <!-- Arabic Verse Text -->
-                    <div class="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-                      <p :style="fontSizeStyle" :class="['text-right leading-relaxed text-gray-800 tafsir-arabic-text', { 'layout-indopak': isIndopak }]" 
-                         class="">
-                        {{ item.arabicText }}
-                      </p>
-                    </div>
-                    
-                    <!-- Tafsir Text -->
-                    <p class="text-sm sm:text-base text-gray-700 leading-relaxed sm:leading-loose pl-1" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;" dir="ltr">
-                      {{ item.text }}
-                    </p>
-                  </div>
-                </div>
               </div>
 
               <!-- Mistake Bubble Grid -->
