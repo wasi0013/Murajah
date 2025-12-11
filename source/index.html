@@ -3861,6 +3861,8 @@
           const quranData = ref(null);
           // UI view mode: 'core' | 'analytics' | 'dailyGoals'
           const viewMode = ref('core');
+          // When true, user explicitly selected Quran via navbar - keep Quran active across navigation
+          const forceQuranMode = ref(false);
           const gotoInput = ref('');
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
@@ -3982,15 +3984,15 @@
             showMobileMenu.value = false;
             showHomeDropdown.value = false;
             
-            // Special handling for 'quran' section - hide tafsir and go to top of page
+            // Special handling for 'quran' section - user explicitly requested Quran
             if (sectionId === 'quran' || sectionId === 'quran-text-section') {
-              // Ensure we switch back to the core (Quran) view so content is rendered
+              // Mark that user explicitly chose Quran; keep Quran active across navigation
+              forceQuranMode.value = true;
               viewMode.value = 'core';
               try {
                 settingsStore.showTafsir = false;
                 await murajahDB.setSetting('showTafsir', false);
               } catch (e) {
-                // ignore persistence errors but ensure tafsir is hidden
                 settingsStore.showTafsir = false;
               }
               // Remove tafsir param from URL (preserve other params)
@@ -4021,11 +4023,12 @@
 
             // Special handling for tafsir - enable it and add URL param, then scroll to top
             if (sectionId === 'tafsir-section') {
+              // Clear explicit Quran override so Tafsir stays active across navigation
+              forceQuranMode.value = false;
               try {
                 settingsStore.showTafsir = true;
                 await murajahDB.setSetting('showTafsir', true);
               } catch (e) {
-                // ensure tafsir is visible even if persistence fails
                 settingsStore.showTafsir = true;
               }
 
@@ -4705,13 +4708,15 @@
 
           // Navigation functions
           const previousPage = async () => {
-            // Ensure core view and hide tafsir
+            // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
-            try {
-              settingsStore.showTafsir = false;
-              await murajahDB.setSetting('showTafsir', false);
-            } catch (e) {
-              settingsStore.showTafsir = false;
+            if (forceQuranMode && forceQuranMode.value) {
+              try {
+                settingsStore.showTafsir = false;
+                await murajahDB.setSetting('showTafsir', false);
+              } catch (e) {
+                settingsStore.showTafsir = false;
+              }
             }
 
             if (appStore.currentPage > 1) {
@@ -4724,13 +4729,15 @@
           };
 
           const nextPage = async () => {
-            // Ensure core view and hide tafsir
+            // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
-            try {
-              settingsStore.showTafsir = false;
-              await murajahDB.setSetting('showTafsir', false);
-            } catch (e) {
-              settingsStore.showTafsir = false;
+            if (forceQuranMode && forceQuranMode.value) {
+              try {
+                settingsStore.showTafsir = false;
+                await murajahDB.setSetting('showTafsir', false);
+              } catch (e) {
+                settingsStore.showTafsir = false;
+              }
             }
 
             if (appStore.currentPage < totalPages.value) {
@@ -4810,12 +4817,14 @@
             appStore.currentPage = pageNum;
             gotoInput.value = '';
 
-            // Hide tafsir and persist the preference; ignore persistence errors
-            try {
-              settingsStore.showTafsir = false;
-              await murajahDB.setSetting('showTafsir', false);
-            } catch (e) {
-              settingsStore.showTafsir = false;
+            // Only hide Tafsir if the user explicitly forced Quran mode.
+            if (forceQuranMode && forceQuranMode.value) {
+              try {
+                settingsStore.showTafsir = false;
+                await murajahDB.setSetting('showTafsir', false);
+              } catch (e) {
+                settingsStore.showTafsir = false;
+              }
             }
 
             // Update URL (this replaces search with ?page=...) which removes tafsir param
@@ -4829,33 +4838,40 @@
             }
           };
 
-          const selectRandomPage = () => {
+          const selectRandomPage = async () => {
             if (memorizedStore.memorizedPages.size === 0) {
               appStore.errorMessage = 'No memorized pages yet';
               return;
             }
             const memorizedArray = Array.from(memorizedStore.memorizedPages);
             const randomPage = memorizedArray[Math.floor(Math.random() * memorizedArray.length)];
-            appStore.currentPage = randomPage;
-            updateURL();
+            await goToPageNumber(randomPage);
             appStore.successMessage = `Random page selected: Page ${randomPage}`;
             setTimeout(() => appStore.successMessage = '', 3000);
-            
-            // Scroll to Quran text section after a brief delay to let Vue update the DOM
-            setTimeout(() => {
-              const quranSection = document.getElementById('quran-text-section');
-              if (quranSection) {
-                quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }, 100);
           };
 
           const updateURL = () => {
-            window.history.replaceState(
-              {},
-              '',
-              `?page=${appStore.currentPage}`
-            );
+            try {
+              const url = new URL(window.location.href);
+              const params = url.searchParams;
+              // Preserve other params, update page
+              params.set('page', String(appStore.currentPage));
+              // Manage tafsir param: if user explicitly chose Quran, remove it
+              if (forceQuranMode && forceQuranMode.value) {
+                params.delete('tafsir');
+              } else {
+                if (settingsStore.showTafsir) {
+                  params.set('tafsir', 'true');
+                } else {
+                  params.delete('tafsir');
+                }
+              }
+              // Use replaceState to avoid extra history entries
+              history.replaceState({}, '', url.pathname + (params.toString() ? `?${params.toString()}` : ''));
+            } catch (e) {
+              // Fallback to simple replace
+              window.history.replaceState({}, '', `?page=${appStore.currentPage}`);
+            }
           };
 
           // Memorization functions
@@ -4957,7 +4973,7 @@
               
               // Adjust current page if it exceeds new layout's total pages
               if (appStore.currentPage > appStore.totalPages) {
-                appStore.currentPage = appStore.totalPages;
+                await goToPageNumber(appStore.totalPages);
               }
               
               // Reload font for new layout
@@ -5890,7 +5906,7 @@
                 memorizedStore.memorizedPages.clear();
                 mistakesStore.mistakes.clear();
                 audioStore.recordings = [];
-                appStore.currentPage = 1;
+                await goToPageNumber(1);
                 await murajahDB.clearAll();
                 appStore.successMessage = 'App reset!';
                 setTimeout(() => location.reload(), 2000);
@@ -6817,11 +6833,10 @@
             if (key === 'g') {
               event.preventDefault();
               const pageNum = prompt('Go to page (1-604):', appStore.currentPage.toString());
-              if (pageNum) {
+                  if (pageNum) {
                 const num = parseInt(pageNum);
                 if (!isNaN(num) && num >= 1 && num <= 604) {
-                  appStore.currentPage = num;
-                  updateURL();
+                  goToPageNumber(num);
                 } else {
                   appStore.errorMessage = 'Invalid page number';
                   setTimeout(() => appStore.errorMessage = '', 2000);
