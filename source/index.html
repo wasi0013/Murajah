@@ -1882,14 +1882,14 @@
                   <!-- Divider -->
                   <div class="h-6 w-px bg-gray-200 mx-1"></div>
 
-                  <!-- Layout Toggle -->
+                  <!-- Font Toggle -->
                   <button
                     type="button"
-                    @click="switchLayout"
+                    @click="switchFont"
                     class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                    :title="isIndopak ? $t('layout.switchToQpc') : $t('layout.switchToIndopak')"
+                    :title="'Current font: ' + fontModeNames[currentFontMode] + ' (Click to cycle)'"
                   >
-                    {{ isIndopak ? $t('layout.qpc') : $t('layout.indopak') }}
+                    {{ fontModeNames[currentFontMode] }}
                   </button>
 
                   <!-- Language Toggle -->
@@ -1997,14 +1997,14 @@
               <div class="mobile-menu-section">
                 <div class="mobile-menu-section-title">{{ $t('header.settings') }}</div>
                 
-                <!-- Layout Toggle -->
-                <button class="mobile-menu-item w-full text-left flex items-center justify-between" @click="switchLayout">
+                <!-- Font Toggle -->
+                <button class="mobile-menu-item w-full text-left flex items-center justify-between" @click="switchFont">
                   <span class="flex items-center gap-3">
                     <i class="fas fa-book"></i>
                     {{ $t('layout.label') }}
                   </span>
                   <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                    {{ isIndopak ? $t('layout.indopak') : $t('layout.qpc') }}
+                    {{ fontModeNames[currentFontMode] }}
                   </span>
                 </button>
 
@@ -4761,17 +4761,42 @@
             return settingsStore.layout === 'indopak';
           });
 
+          const fontModes = ['indopak', 'tajweed', 'uthmani'];
+          const fontModeNames = {
+            indopak: 'Indopak',
+            tajweed: 'Tajweed',
+            uthmani: 'Uthmani'
+          };
+
+          const currentFontMode = computed(() => {
+            if (settingsStore.layout === 'indopak') return 'indopak';
+            if (settingsStore.tajweedEnabled) return 'tajweed';
+            return 'uthmani';
+          });
+
           const totalPages = computed(() => {
             return appStore.totalPages || (isIndopak.value ? 610 : 604);
           });
 
           const layoutLabel = computed(() => {
-            return isIndopak.value ? 'Indopak' : 'QPC Uthmani';
+            return fontModeNames[currentFontMode.value];
           });
 
-          const switchLayout = async () => {
-            const newLayout = isIndopak.value ? 'qpc' : 'indopak';
-            settingsStore.layout = newLayout;
+          const switchFont = async () => {
+            const currentIndex = fontModes.indexOf(currentFontMode.value);
+            const nextIndex = (currentIndex + 1) % fontModes.length;
+            const nextMode = fontModes[nextIndex];
+
+            if (nextMode === 'indopak') {
+              settingsStore.layout = 'indopak';
+              settingsStore.tajweedEnabled = false;
+            } else if (nextMode === 'tajweed') {
+              settingsStore.layout = 'qpc';
+              settingsStore.tajweedEnabled = true;
+            } else if (nextMode === 'uthmani') {
+              settingsStore.layout = 'qpc';
+              settingsStore.tajweedEnabled = false;
+            }
             
             // Clear cached data and reload with new layout
             clearDataCache();
@@ -4779,38 +4804,30 @@
             
             try {
               // Reload Quran data with new layout (includes tafsirMapping)
-              const data = await loadAllQuranData(newLayout, {
+              const data = await loadAllQuranData(settingsStore.layout, {
                 murajahDB
               });
               
               quranData.value = data;
-              appStore.totalPages = newLayout === 'indopak' ? 610 : 604;
+              appStore.totalPages = settingsStore.layout === 'indopak' ? 610 : 604;
               
               // Adjust current page if it exceeds new layout's total pages
               if (appStore.currentPage > appStore.totalPages) {
                 appStore.currentPage = appStore.totalPages;
               }
               
-              // For Indopak, disable tajweed as it doesn't support it
-              if (newLayout === 'indopak' && settingsStore.tajweedEnabled) {
-                settingsStore.tajweedEnabled = false;
-              }
-              
               // Reload font for new layout
               loadPageFont(appStore.currentPage);
               
-              appStore.successMessage = `Switched to ${newLayout === 'indopak' ? 'Indopak' : 'QPC Uthmani'} layout`;
+              appStore.successMessage = `Switched to ${fontModeNames[nextMode]} font`;
               setTimeout(() => appStore.successMessage = '', 2000);
               
-              // Save the layout preference
-              saveDataBackground();
+              // Save the settings
+              updateSettings();
             } catch (error) {
-              console.error('[Murajah] Failed to switch layout:', error);
-              appStore.errorMessage = 'Failed to switch layout. Please try again.';
+              console.error('[Murajah] Failed to switch font:', error);
+              appStore.errorMessage = 'Failed to switch font. Please try again.';
               setTimeout(() => appStore.errorMessage = '', 3000);
-              
-              // Revert layout setting on error
-              settingsStore.layout = isIndopak.value ? 'indopak' : 'qpc';
             } finally {
               appStore.loading = false;
             }
@@ -6913,7 +6930,9 @@ Display:
             isIndopak,
             totalPages,
             layoutLabel,
-            switchLayout,
+            fontModeNames,
+            currentFontMode,
+            switchFont,
             currentPagePerfectCount,
             currentPageHifzStatus,
             currentPageAudioCount,
