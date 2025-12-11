@@ -1848,7 +1848,7 @@
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
                       </a>
-                      <a v-if="settingsStore.showTafsir" href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
+                      <a href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
                         <i class="fas fa-book-open"></i>
                         {{ $t('header.sections.tafsir') }}
                       </a>
@@ -1964,7 +1964,7 @@
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
                 </a>
-                <a v-if="settingsStore.showTafsir" href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
+                <a href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
                   <i class="fas fa-book-open"></i>
                   {{ $t('header.sections.tafsir') }}
                 </a>
@@ -2077,6 +2077,7 @@
               -->
 
               <!-- Quran Text Display with Overlay Navigation -->
+              <div v-if="viewMode === 'core'">
               <div id="quran-text-section" 
                 class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 relative group"
                 @touchstart="handleTouchStart"
@@ -2198,7 +2199,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
+                <div v-if="!settingsStore.showTafsir && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
@@ -2235,7 +2236,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
+                <div v-else-if="!settingsStore.showTafsir" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
                   <p class="text-gray-600 ">Loading Quran text...</p>
                 </div>
@@ -2467,7 +2468,7 @@
                 </div>
               </div>
 
-               <!-- Quran Audio Player -->
+                <!-- Quran Audio Player -->
               <div id="audio-section" v-if="quranData && quranData.quranWithPages">
               <quran-audio-player-component 
                 :current-page="appStore.currentPage"
@@ -2509,7 +2510,7 @@
               </div>
 
               <!-- Pages with Mistakes (Full Width) -->
-              <div id="mistakes-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+              <div id="mistakes-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 mb-5">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   {{ $t('mistakes.pagesWith') }}
@@ -2590,8 +2591,8 @@
                 </div>
               </div>
               
-                          <!-- Get a random page (Quick Test) -->
-              <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
+              <!-- Get a random page (Quick Test) -->
+              <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 mt-10 flex items-center justify-between">
                 <div class="flex-1">
                   <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
                     <i class="fas fa-quran"></i>
@@ -2609,9 +2610,9 @@
                 </button>
               </div>
 
-
+              </div>
               <!-- Analytics -->
-              <div id="analytics-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+              <div id="analytics-section" v-if="viewMode === 'analytics'" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
                 <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-chart-pie text-purple-600 "></i>
                   {{ $t('dashboard.analyticsTitle') }}
@@ -2716,6 +2717,86 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- Status Indicators Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-blue-500 text-white p-6 rounded-lg shadow">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.memorized') }}</p>
+                      <p class="text-3xl font-bold">{{ statistics.memorized }} <i class="fas fa-file-alt text-2xl"></i></p>
+                      <p class="text-xs opacity-75">{{ statistics.percentage }}%</p>
+                    </div>
+                    <i class="fas fa-bookmark text-4xl opacity-30"></i>
+                  </div>
+                </div>
+
+                <div class="bg-purple-500 text-white p-6 rounded-lg shadow">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalHasanah') }}</p>
+                      <p class="text-3xl font-bold">
+                        {{ formattedTotalScore }}
+                        <span v-if="formattedTotalScore != '0'">+</span>
+                      </p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.perfectHasanahDescription', { pages: perfectRevisionsCount }) }}</p>
+                    </div>
+                    <i class="fas fa-star text-4xl opacity-30"></i>
+                  </div>
+                </div>
+
+                <div class="bg-red-500 text-white p-6 rounded-lg shadow">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalMistakes') }}</p>
+                      <p class="text-3xl font-bold">{{ statistics.mistakes }}</p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.mistakesHint') }}</p>
+                    </div>
+                    <i class="fas fa-exclamation-circle text-4xl opacity-30"></i>
+                  </div>
+                </div>
+
+                <div class="bg-green-500 text-white p-6 rounded-lg shadow">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.recordings') }}</p>
+                      <p class="text-3xl font-bold">{{ statistics.audios }}</p>
+                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.recordingsAvailable') }}</p>
+                    </div>
+                    <i class="fas fa-microphone text-4xl opacity-30"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Progress Section -->
+              <div id="progress-section" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
+                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: totalPages }) }}</span>
+                </div>
+
+                <div class="space-y-2">
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: statistics.percentage + '%' }"></div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.remainingLabel') }}</p>
+                    <p class="text-xl font-bold">{{ statistics.remaining }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.juzLabel') }}</p>
+                    <p class="text-xl font-bold">{{ statistics.juzCount }}/30</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-600 ">{{ $t('dashboard.progress.completionLabel') }}</p>
+                    <p class="text-sm font-bold">{{ formattedCompletion }}</p>
+                  </div>
+                </div>
+              </div>
+
               </div>
 
 
@@ -2761,10 +2842,7 @@
                         </label>
                       </div>
 
-                      <div class="flex items-center">
-                        <input v-model="settingsStore.showTafsir" @change="updateSettings" type="checkbox" id="showTafsir" class="rounded  ">
-                        <label for="showTafsir" class="ml-3 text-sm font-medium text-gray-700 ">{{ $t('settings.showTafsir') }}</label>
-                      </div>
+                      <!-- showTafsir setting removed: tafsir visibility controlled via URL and navbar -->
 
                       <div class="sm:col-span-2">
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('language.label') }}</label>
@@ -3296,7 +3374,7 @@
 
 
               <!-- Daily Goals Card -->
-              <div id="daily-goals-section" v-if="hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
+              <div id="daily-goals-section" v-if="viewMode === 'dailyGoals' && hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
                 <div v-if="!dailyGoalsStore.todayGoal" class="text-center py-8">
                   <i class="fas fa-spinner fa-spin text-3xl text-amber-500 mb-3"></i>
                   <p class="text-gray-600 ">{{ $t('dailyGoals.loading') }}</p>
@@ -3417,87 +3495,9 @@
                 </template>
               </div>
 
-              <!-- Status Indicators Row -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-blue-500 text-white p-6 rounded-lg shadow">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.memorized') }}</p>
-                      <p class="text-3xl font-bold">{{ statistics.memorized }} <i class="fas fa-file-alt text-2xl"></i></p>
-                      <p class="text-xs opacity-75">{{ statistics.percentage }}%</p>
-                    </div>
-                    <i class="fas fa-bookmark text-4xl opacity-30"></i>
-                  </div>
-                </div>
-
-                <div class="bg-purple-500 text-white p-6 rounded-lg shadow">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalHasanah') }}</p>
-                      <p class="text-3xl font-bold">
-                        {{ formattedTotalScore }}
-                        <span v-if="formattedTotalScore != '0'">+</span>
-                      </p>
-                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.perfectHasanahDescription', { pages: perfectRevisionsCount }) }}</p>
-                    </div>
-                    <i class="fas fa-star text-4xl opacity-30"></i>
-                  </div>
-                </div>
-
-                <div class="bg-red-500 text-white p-6 rounded-lg shadow">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.totalMistakes') }}</p>
-                      <p class="text-3xl font-bold">{{ statistics.mistakes }}</p>
-                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.mistakesHint') }}</p>
-                    </div>
-                    <i class="fas fa-exclamation-circle text-4xl opacity-30"></i>
-                  </div>
-                </div>
-
-                <div class="bg-green-500 text-white p-6 rounded-lg shadow">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm opacity-90">{{ $t('dashboard.stats.recordings') }}</p>
-                      <p class="text-3xl font-bold">{{ statistics.audios }}</p>
-                      <p class="text-xs opacity-75">{{ $t('dashboard.stats.recordingsAvailable') }}</p>
-                    </div>
-                    <i class="fas fa-microphone text-4xl opacity-30"></i>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Progress Section -->
-              <div id="progress-section" class="bg-white  rounded-lg shadow-lg p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                  <h2 class="text-2xl font-bold text-gray-900 ">{{ $t('dashboard.progress.title') }}</h2>
-                  <span class="text-sm text-gray-600 ">{{ $t('dashboard.progress.pagesInfo', { current: statistics.memorized, total: totalPages }) }}</span>
-                </div>
-
-                <div class="space-y-2">
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: statistics.percentage + '%' }"></div>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p class="text-gray-600 ">{{ $t('dashboard.progress.remainingLabel') }}</p>
-                    <p class="text-xl font-bold">{{ statistics.remaining }}</p>
-                  </div>
-                  <div>
-                    <p class="text-gray-600 ">{{ $t('dashboard.progress.juzLabel') }}</p>
-                    <p class="text-xl font-bold">{{ statistics.juzCount }}/30</p>
-                  </div>
-                  <div>
-                    <p class="text-gray-600 ">{{ $t('dashboard.progress.completionLabel') }}</p>
-                    <p class="text-sm font-bold">{{ formattedCompletion }}</p>
-                  </div>
-                </div>
-              </div>
-
+              
             <!-- Analytics Dashboard -->
-              <div id="daily-analytics-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+              <div id="daily-analytics-section" v-if="viewMode === 'dailyGoals' && hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
                   <i class="fas fa-chart-line text-blue-600"></i>
                   {{ $t('dashboard.analyticsPanel.dailyTitle') }}
@@ -3634,7 +3634,7 @@
             </div>
 
             <!-- Daily Goals Contribution Graph (GitHub-style) -->
-            <div id="timeline-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
+            <div id="timeline-section" v-if="viewMode === 'dailyGoals' && hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="overflow-x-auto">
               <div class="bg-white  rounded-lg shadow-lg p-6 mb-12">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2">
@@ -3859,6 +3859,8 @@
           // Local state
           const isInitializing = ref(true);
           const quranData = ref(null);
+          // UI view mode: 'core' | 'analytics' | 'dailyGoals'
+          const viewMode = ref('core');
           const gotoInput = ref('');
           const audioRecorder = new AudioRecorder();
           const showSettingsModal = ref(false);
@@ -3980,20 +3982,54 @@
             showMobileMenu.value = false;
             showHomeDropdown.value = false;
             
-            // Special handling for 'quran' section - go to top of page
-            if (sectionId === 'quran') {
+            // Special handling for 'quran' section - hide tafsir and go to top of page
+            if (sectionId === 'quran' || sectionId === 'quran-text-section') {
+              try {
+                settingsStore.showTafsir = false;
+                await murajahDB.setSetting('showTafsir', false);
+              } catch (e) {
+                // ignore persistence errors but ensure tafsir is hidden
+                settingsStore.showTafsir = false;
+              }
               window.scrollTo({ top: 0, behavior: 'smooth' });
               return;
             }
             
-            // Special handling for tafsir - enable it if not already visible
-            if (sectionId === 'tafsir-section' && !settingsStore.showTafsir) {
-              settingsStore.showTafsir = true;
-              await murajahDB.setSetting('showTafsir', true);
-              // Wait for Vue to render the tafsir section
-              await nextTick();
+            // Determine view mode based on target section
+            if (sectionId === 'analytics-section') {
+              viewMode.value = 'analytics';
+            } else if (sectionId === 'daily-goals-section' || sectionId === 'timeline-section') {
+              viewMode.value = 'dailyGoals';
+            } else {
+              // quran, tafsir, audio, mistakes, quick test, recent recordings -> core
+              viewMode.value = 'core';
             }
-            
+
+            // Special handling for tafsir - enable it and add URL param, then scroll to top
+            if (sectionId === 'tafsir-section') {
+              try {
+                settingsStore.showTafsir = true;
+                await murajahDB.setSetting('showTafsir', true);
+              } catch (e) {
+                // ensure tafsir is visible even if persistence fails
+                settingsStore.showTafsir = true;
+              }
+
+              // Add/replace URL query param tafsir=true while preserving other params
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tafsir', 'true');
+                // Use replaceState so navigation history isn't cluttered by repeated clicks
+                history.replaceState(null, '', url.toString());
+              } catch (e) {
+                // ignore URL update errors
+              }
+
+              // Scroll to top (same behavior as quran navigation)
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+
             const element = document.getElementById(sectionId);
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4030,6 +4066,21 @@
 
               // Load stored data first to get the layout preference
               await loadStoredData();
+
+              // Override tafsir visibility based on URL parameter `tafsir`
+              // Only enable tafsir when the query param is exactly `tafsir=true`.
+              // If the param is absent or has any other value, ensure tafsir is hidden.
+              try {
+                const tafsirParam = new URLSearchParams(window.location.search).get('tafsir');
+                if (tafsirParam === 'true') {
+                  settingsStore.showTafsir = true;
+                } else {
+                  settingsStore.showTafsir = false;
+                }
+              } catch (e) {
+                // In case URL parsing fails for any reason, default to hiding tafsir
+                settingsStore.showTafsir = false;
+              }
               
               // Update totalPages based on layout
               appStore.totalPages = totalPages.value;
@@ -6811,6 +6862,16 @@ Display:
               console.log('[Murajah] Window resized, font size will be recalculated');
             };
             window.addEventListener('resize', handleResize);
+            // Respect URL hash on initial load (e.g., #analytics-section)
+            try {
+              const hash = (window.location.hash || '').replace('#', '');
+              if (hash) {
+                // scrollToSection will also set viewMode appropriately
+                await scrollToSection(hash);
+              }
+            } catch (e) {
+              console.debug('[Murajah] No initial hash to navigate or scroll error', e);
+            }
           });
 
           // Clean up keyboard listener before unmount (optional for Vue 3)
@@ -6929,6 +6990,7 @@ Display:
             selectedAchievementBadge,
             showReviewPagesOverlay,
             analyticsActiveTab,
+            viewMode,
             statistics,
             totalPerfectRevisionsPoints,
             formattedTotalScore,
