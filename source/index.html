@@ -3984,6 +3984,8 @@
             
             // Special handling for 'quran' section - hide tafsir and go to top of page
             if (sectionId === 'quran' || sectionId === 'quran-text-section') {
+              // Ensure we switch back to the core (Quran) view so content is rendered
+              viewMode.value = 'core';
               try {
                 settingsStore.showTafsir = false;
                 await murajahDB.setSetting('showTafsir', false);
@@ -3991,6 +3993,18 @@
                 // ignore persistence errors but ensure tafsir is hidden
                 settingsStore.showTafsir = false;
               }
+              // Remove tafsir param from URL (preserve other params)
+              try {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('tafsir')) {
+                  url.searchParams.delete('tafsir');
+                  history.replaceState(null, '', url.toString());
+                }
+              } catch (e) {
+                // ignore URL errors
+              }
+              // Wait a tick to allow Vue to render the core view, then scroll to top
+              await nextTick();
               window.scrollTo({ top: 0, behavior: 'smooth' });
               return;
             }
@@ -4690,17 +4704,41 @@
           };
 
           // Navigation functions
-          const previousPage = () => {
+          const previousPage = async () => {
+            // Ensure core view and hide tafsir
+            viewMode.value = 'core';
+            try {
+              settingsStore.showTafsir = false;
+              await murajahDB.setSetting('showTafsir', false);
+            } catch (e) {
+              settingsStore.showTafsir = false;
+            }
+
             if (appStore.currentPage > 1) {
               appStore.currentPage--;
               updateURL();
+              await nextTick();
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           };
 
-          const nextPage = () => {
+          const nextPage = async () => {
+            // Ensure core view and hide tafsir
+            viewMode.value = 'core';
+            try {
+              settingsStore.showTafsir = false;
+              await murajahDB.setSetting('showTafsir', false);
+            } catch (e) {
+              settingsStore.showTafsir = false;
+            }
+
             if (appStore.currentPage < totalPages.value) {
               appStore.currentPage++;
               updateURL();
+              await nextTick();
+              const quranSection = document.getElementById('quran-text-section');
+              if (quranSection) quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           };
 
@@ -4761,15 +4799,34 @@
             goToPageNumber(num);
           };
 
-          const goToPageNumber = (pageNum) => {
+          const goToPageNumber = async (pageNum) => {
             if (pageNum < 1 || pageNum > totalPages.value) {
               appStore.errorMessage = `Please enter a page number between 1 and ${totalPages.value}`;
               setTimeout(() => appStore.errorMessage = '', 2000);
               return;
             }
+            // Ensure core (Quran) view is active so the page content renders
+            viewMode.value = 'core';
             appStore.currentPage = pageNum;
             gotoInput.value = '';
+
+            // Hide tafsir and persist the preference; ignore persistence errors
+            try {
+              settingsStore.showTafsir = false;
+              await murajahDB.setSetting('showTafsir', false);
+            } catch (e) {
+              settingsStore.showTafsir = false;
+            }
+
+            // Update URL (this replaces search with ?page=...) which removes tafsir param
             updateURL();
+
+            // Wait for Vue to render the core view, then scroll Quran section into view
+            await nextTick();
+            const quranSection = document.getElementById('quran-text-section');
+            if (quranSection) {
+              quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           };
 
           const selectRandomPage = () => {
