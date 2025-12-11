@@ -4803,12 +4803,27 @@
             appStore.loading = true;
             
             try {
+              // Preserve existing data that doesn't change with layout
+              const preservedData = {
+                quranWithPages: quranData.value?.quranWithPages,
+                translationsBn: quranData.value?.translationsBn
+              };
+              
               // Reload Quran data with new layout (includes tafsirMapping)
               const data = await loadAllQuranData(settingsStore.layout, {
                 murajahDB
               });
               
               quranData.value = data;
+              
+              // Restore preserved data
+              if (preservedData.quranWithPages) {
+                quranData.value.quranWithPages = preservedData.quranWithPages;
+              }
+              if (preservedData.translationsBn) {
+                quranData.value.translationsBn = preservedData.translationsBn;
+              }
+              
               appStore.totalPages = settingsStore.layout === 'indopak' ? 610 : 604;
               
               // Adjust current page if it exceeds new layout's total pages
