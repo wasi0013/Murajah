@@ -2589,6 +2589,26 @@
                   </div>
                 </div>
               </div>
+              
+                          <!-- Get a random page (Quick Test) -->
+              <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
+                    <i class="fas fa-quran"></i>
+                    {{ $t('quickTest.title') }}
+                  </h3>
+                  <p class="text-sm opacity-90">{{ $t('quickTest.description1') }}</p>
+                  <p class="text-sm opacity-90">{{ $t('quickTest.description2') }}</p>
+                </div>
+                  <button 
+                  @click="selectRandomPage" 
+                  class="ml-4 px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-2"
+                >
+                  <i class="fas fa-random"></i>
+                    {{ $t('quickTest.button') }}
+                </button>
+              </div>
+
 
               <!-- Advanced Analytics Section -->
               <div id="analytics-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
@@ -3274,25 +3294,6 @@
               </div>
             </div>
 
-
-            <!-- Daily Revision Banner (Quick Test) -->
-              <div v-if="hasDailyTasks && memorizedStore.memorizedPages.size > 0" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg p-6 flex items-center justify-between">
-                <div class="flex-1">
-                  <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
-                    <i class="fas fa-quran"></i>
-                    {{ $t('quickTest.title') }}
-                  </h3>
-                  <p class="text-sm opacity-90">{{ $t('quickTest.description1') }}</p>
-                  <p class="text-sm opacity-90">{{ $t('quickTest.description2') }}</p>
-                </div>
-                  <button 
-                  @click="selectRandomPage" 
-                  class="ml-4 px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap flex items-center gap-2"
-                >
-                  <i class="fas fa-random"></i>
-                    {{ $t('quickTest.button') }}
-                </button>
-              </div>
 
               <!-- Daily Goals Card -->
               <div id="daily-goals-section" v-if="hasDailyTasks" class="bg-gradient-to-br from-amber-50 to-orange-50   rounded-lg shadow-lg p-6 border-2 border-amber-200  space-y-6">
