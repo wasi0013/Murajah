@@ -1095,7 +1095,8 @@
 
     @media (max-width: 768px) {
       .page-dots-visualization {
-        display: none;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
       }
     }
 
@@ -1104,6 +1105,12 @@
       border-radius: 0.5rem;
       padding: 1rem;
       border: 1px solid #e5e7eb;
+    }
+
+    @media (max-width: 768px) {
+      .juz-box {
+        padding: 0.75rem;
+      }
     }
 
     .dark-mode .juz-box {
@@ -1130,6 +1137,12 @@
       justify-content: center;
     }
 
+    @media (max-width: 768px) {
+      .page-dots-grid {
+        gap: 0.3rem;
+      }
+    }
+
     .page-dot {
       width: 10px;
       height: 10px;
@@ -1137,6 +1150,13 @@
       cursor: pointer;
       transition: all 0.2s ease;
       border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .page-dot {
+        width: 14px;
+        height: 14px;
+      }
     }
 
     .page-dot:hover {
@@ -1845,7 +1865,7 @@
                         {{ $t('header.sections.dailyGoals') }}
                         <span v-if="hasPendingDailyTasks" class="absolute top-1/2 -translate-y-1/2 right-2 w-2 h-2 bg-orange-500 rounded-full"></span>
                       </a>
-                      <a href="#progress-section" class="nav-dropdown-item" @click.prevent="scrollToSection('progress-section')">
+                      <a href="#analytics-section" class="nav-dropdown-item" @click.prevent="scrollToSection('analytics-section')">
                         <i class="fas fa-chart-line"></i>
                         {{ $t('header.sections.analytics') }}
                       </a>
@@ -1961,7 +1981,7 @@
                   {{ $t('header.sections.dailyGoals') }}
                   <span v-if="hasPendingDailyTasks" class="absolute top-1/2 -translate-y-1/2 right-3 w-2 h-2 bg-orange-500 rounded-full"></span>
                 </a>
-                <a href="#progress-section" class="mobile-menu-item" @click.prevent="scrollToSection('progress-section')">
+                <a href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
                   <i class="fas fa-chart-line"></i>
                   {{ $t('header.sections.analytics') }}
                 </a>
@@ -2571,7 +2591,7 @@
               </div>
 
               <!-- Advanced Analytics Section -->
-              <div class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+              <div id="analytics-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
                 <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-chart-pie text-purple-600 "></i>
                   {{ $t('dashboard.analyticsTitle') }}
@@ -3476,7 +3496,7 @@
               </div>
 
             <!-- Analytics Dashboard -->
-              <div id="analytics-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
+              <div id="daily-analytics-section" v-if="hasDailyTasks && dailyGoalsStore.goalHistory.length > 0" class="bg-white  rounded-lg shadow-lg p-6">
                 <h3 class="text-xl font-bold text-gray-900  flex items-center gap-2 mb-6">
                   <i class="fas fa-chart-line text-blue-600"></i>
                   {{ $t('dashboard.analyticsPanel.dailyTitle') }}
