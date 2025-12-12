@@ -6143,6 +6143,11 @@
             return Object.values(tasks).some(task => !task.completed);
           });
 
+          // Check if device is small (mobile/tablet)
+          const isSmallDevice = computed(() => {
+            return viewportWidth.value < 768;
+          });
+
           // Calculate total score from perfect revisions using hasanah values
           const totalPerfectRevisionsPoints = computed(() => {
             const perfectRevisionsData = Object.fromEntries(perfectRevisionsStore.perfectRevisions);
@@ -6612,9 +6617,9 @@
             return `${completed}/${total} tasks completed on ${new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
           };
 
-          // GitHub-style contribution graph: Last 365 days
+          // GitHub-style contribution graph: Last 365 days or 6 months for small devices
           const contributionGraph = computed(() => {
-            // Last 365 days ending with today
+            // Last 365 days or 6 months for small devices
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -6622,7 +6627,13 @@
             const todayStr = `${year}-${month}-${day}`;
             const endDate = new Date(today);
             const startDate = new Date(today);
-            startDate.setDate(startDate.getDate() - 364); // 365 days including today
+            if (isSmallDevice.value) {
+              // For small devices, show last 6 months
+              startDate.setMonth(startDate.getMonth() - 5);
+            } else {
+              // Otherwise, show last 12 months (365 days)
+              startDate.setDate(startDate.getDate() - 364);
+            }
             
             // Start with the actual first day (no padding at start)
             const weeks = [];
@@ -6665,13 +6676,19 @@
             return weeks;
           });
 
-          // Month labels for GitHub-style graph (last 365 days)
+          // Month labels for GitHub-style graph (last 365 days or 180 days for small devices)
           const monthLabels = computed(() => {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const endDate = new Date(today);
             const startDate = new Date(today);
-            startDate.setDate(startDate.getDate() - 364);
+            if (isSmallDevice.value) {
+              // For small devices, show last 6 months
+              startDate.setMonth(startDate.getMonth() - 5);
+            } else {
+              // Otherwise, show last 12 months (365 days)
+              startDate.setDate(startDate.getDate() - 364);
+            }
             
             const labels = [];
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -6680,7 +6697,7 @@
             let lastMonth = -1;
             let dayCount = 0; // Days since start
             
-            // Add labels for each month that appears in the 365-day range
+            // Add labels for each month that appears in the range
             while (currentDate <= endDate) {
               const month = currentDate.getMonth();
               
