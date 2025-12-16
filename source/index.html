@@ -38,6 +38,9 @@
   <!-- Confetti Library (for achievement animations) -->
   <script async src="./resources/js/vendor/confetti-js.0.0.18.min.js"></script>
 
+  <!-- HLS.js (vendor) -->
+  <script src="./resources/js/vendor/hls.min.js"></script>
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JEMZ83QK37"></script>
   <script>
@@ -103,6 +106,12 @@
       margin: 0;
       font-weight: 600;
       color: #111827;
+    }
+
+    /* Live section styles */
+    .live-active-btn {
+      background: #dc2626;
+      color: white;
     }
 
     * {
@@ -1883,6 +1892,12 @@
                   </div>
 
                   <!-- Quiz Link -->
+                 
+                  <!-- Live -->
+                  <button @click.prevent="scrollToSection('live-section')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2" :title="'Live'">
+                    <span class="w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm animate-pulse" aria-hidden="true"></span>
+                    <span class="text-sm font-medium text-gray-700">Live</span>
+                  </button>
                   <a href="./quiz.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-question-circle text-gray-500"></i>
                     {{ $t('header.quiz') }}
@@ -1927,6 +1942,7 @@
                   <button @click="openSettingsModal" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.settings')">
                     <i class="fas fa-cog text-gray-700 text-lg"></i>
                   </button>
+                  
                 </nav>
 
                 <!-- Mobile Navigation -->
@@ -1984,6 +2000,11 @@
                 <a href="#analytics-section" class="mobile-menu-item" @click.prevent="scrollToSection('analytics-section')">
                   <i class="fas fa-chart-line"></i>
                   {{ $t('header.sections.analytics') }}
+                </a>
+                <a href="#live-section" class="mobile-menu-item flex items-center gap-2" @click.prevent="scrollToSection('live-section')">
+                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-sm"></span>
+                  
+                  <span class="font-medium">Live</span>
                 </a>
                 <a v-if="hasDailyTasks" href="#timeline-section" class="mobile-menu-item" @click.prevent="scrollToSection('timeline-section')">
                   <i class="fas fa-calendar-alt"></i>
@@ -3724,7 +3745,44 @@
               </div>
             </div>
 
-            <!-- Call to Action - Download App -->
+              <!-- Live Section -->
+              <section id="live-section" class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <div class="max-w-4xl mx-auto">
+                  <div class="text-center mb-4">
+                    <div class="flex items-center justify-center gap-3">
+                      <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-600 shadow-sm" aria-hidden="true"></span>
+                      <h3 class="text-xl font-semibold text-gray-900">Live</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">Live stream of Kingdom of Saudi Arabia's Quran and Sunnah channels.</p>
+                  </div>
+
+                  <div class="flex flex-col items-center gap-3 mb-4">
+                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                      <button @click="playChannel('quran')" :aria-pressed="liveActiveChannel === 'quran'" :class="['w-full sm:w-auto flex items-center gap-2 justify-center px-5 py-2 rounded-lg shadow-sm border transition-colors text-sm font-semibold', liveActiveChannel === 'quran' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-800 hover:bg-gray-50']">
+                        <i class="fas fa-quran"></i>
+                        Al Quran-ul Kareem
+                      </button>
+                      <button @click="playChannel('sunnah')" :aria-pressed="liveActiveChannel === 'sunnah'" :class="['w-full sm:w-auto flex items-center gap-2 justify-center px-5 py-2 rounded-lg shadow-sm border transition-colors text-sm font-semibold', liveActiveChannel === 'sunnah' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-800 hover:bg-gray-50']">
+                        <i class="fas fa-book-reader"></i>
+                       As-Sunnah an-Nabawiyah
+                      </button>
+                    </div>
+                    <div class="text-xs text-gray-500">Click an active channel button again to stop playback.</div>
+                  </div>
+
+                  <div class="bg-black rounded-lg overflow-hidden shadow-inner">
+                    <div style="position:relative;padding-top:56.25%;">
+                      <video ref="liveVideo" class="absolute inset-0 w-full h-full object-cover" controls playsinline muted crossorigin="anonymous" aria-label="Live stream player"></video>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 text-center">
+                    <div class="text-sm text-gray-600">Now playing: <span class="font-medium text-gray-800">{{ liveActiveChannel ? (liveActiveChannel === 'quran' ? 'Quran Channel' : 'Sunnah Channel') : '—' }}</span></div>
+                    </div>
+                </div>
+              </section>
+
+              <!-- Call to Action - Download App -->
             <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-12 px-4 mt-12 rounded-b-4xl">
               <div class="max-w-7xl mx-auto text-center">
                 <div class="mb-6">
@@ -3917,6 +3975,79 @@
           const tooltipX = ref(0);
           const tooltipY = ref(0);
           const tooltipText = ref('');
+
+          // Live streaming state
+          const liveVideo = ref(null);
+          const liveActiveChannel = ref(null); // 'quran' | 'sunnah' | null
+          let liveHls = null;
+          const LIVE_URLS = {
+            quran: 'https://win.holol.com/live/quran/playlist.m3u8',
+            //quran: 'http://m.live.net.sa:1935/live/quran/playlist.m3u8',
+            //sunnah: 'http://m.live.net.sa:1935/live/quran/playlist.m3u8'
+            sunnah: 'https://win.holol.com/live/sunnah/playlist.m3u8'
+          };
+
+          const stopLivePlayback = () => {
+            try {
+              if (liveHls) {
+                liveHls.destroy();
+                liveHls = null;
+              }
+              const vid = liveVideo.value;
+              if (vid) {
+                vid.pause();
+                vid.removeAttribute('src');
+                vid.load();
+              }
+            } catch (e) {
+              console.warn('[Murajah][Live] Failed to stop playback', e);
+            }
+          };
+
+          const playChannel = async (channel) => {
+            if (!LIVE_URLS[channel]) return;
+            const url = LIVE_URLS[channel];
+            const vid = liveVideo.value;
+            if (!vid) {
+              console.warn('[Murajah][Live] Video element not mounted yet');
+              liveActiveChannel.value = channel;
+              return;
+            }
+
+            // If same channel clicked, toggle off
+            if (liveActiveChannel.value === channel) {
+              stopLivePlayback();
+              liveActiveChannel.value = null;
+              return;
+            }
+
+            // Switch to new channel
+            liveActiveChannel.value = channel;
+
+            try {
+              stopLivePlayback();
+              // Prefer Hls.js when available and needed
+              if (window.Hls && window.Hls.isSupported()) {
+                liveHls = new window.Hls();
+                liveHls.loadSource(url);
+                liveHls.attachMedia(vid);
+                liveHls.on(window.Hls.Events.MANIFEST_PARSED, function() {
+                  vid.play().catch(() => {});
+                });
+              } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+                vid.src = url;
+                await vid.play().catch(() => {});
+              } else {
+                // Fallback - set src and try
+                vid.src = url;
+                await vid.play().catch(() => {});
+              }
+            } catch (e) {
+              console.error('[Murajah][Live] Failed to play channel', e);
+              appStore.errorMessage = 'Failed to start live stream';
+              setTimeout(() => appStore.errorMessage = '', 3000);
+            }
+          };
 
           const handleTranslationUpdate = (freshTranslations) => {
             if (!freshTranslations || !quranData.value) {
@@ -7231,6 +7362,12 @@ Display:
             showUpdateBanner,
             refreshApp,
             dismissUpdateBanner
+            ,
+            // Live streaming bindings
+            liveVideo,
+            liveActiveChannel,
+            playChannel,
+            stopLivePlayback
           };
         }
       });
