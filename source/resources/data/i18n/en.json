@@ -300,7 +300,8 @@
     "pageMarkedPerfect": "Page {page} marked perfect! (+1)",
     "mistakeRemoved": "Mistake removed!",
     "mistakeMarked": "Mistake marked! (-1 score)",
-    "dailyGoalsUpdated": "Daily goals updated!"
+    "dailyGoalsUpdated": "Daily goals updated!",
+    "settingsUpdated": "Settings updated!"
   },
   "tips": {
     "recitationGuide": "Before starting memorization, listen to the target verses from your favorite reciter 5-10 times.",
