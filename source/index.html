@@ -1894,8 +1894,8 @@
                   <!-- Quiz Link -->
                  
                   <!-- Live -->
-                  <button @click.prevent="scrollToSection('live-section')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2" :title="'Live'">
-                    <span class="w-2.5 h-2.5 bg-red-600 rounded-full shadow-sm animate-pulse" aria-hidden="true"></span>
+                  <button @click.prevent="scrollToSection('live-section')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2" :title="liveActiveChannel ? (liveActiveChannel === 'quran' ? 'Live — Quran' : 'Live — Sunnah') : 'Live'">
+                    <span :class="['w-2.5 h-2.5 rounded-full shadow-sm', liveActiveChannel ? 'bg-green-500 animate-pulse' : 'bg-red-600 animate-pulse']" aria-hidden="true"></span>
                     <span class="text-sm font-medium text-gray-700">Live</span>
                   </button>
                   <a href="./quiz.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
@@ -2001,8 +2001,8 @@
                   <i class="fas fa-chart-line"></i>
                   {{ $t('header.sections.analytics') }}
                 </a>
-                <a href="#live-section" class="mobile-menu-item flex items-center gap-2" @click.prevent="scrollToSection('live-section')">
-                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-sm"></span>
+                <a href="#live-section" class="mobile-menu-item flex items-center gap-2" @click.prevent="scrollToSection('live-section')" :aria-label="liveActiveChannel ? (liveActiveChannel === 'quran' ? 'Live — Quran' : 'Live — Sunnah') : 'Live'">
+                  <span :class="['inline-block w-2.5 h-2.5 rounded-full shadow-sm', liveActiveChannel ? 'bg-green-500 animate-pulse' : 'bg-red-600 animate-pulse']"></span>
                   
                   <span class="font-medium">Live</span>
                 </a>
@@ -3746,11 +3746,11 @@
             </div>
 
               <!-- Live Section -->
-              <section id="live-section" class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+              <section id="live-section" v-if="viewMode === 'live'" class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
                 <div class="max-w-4xl mx-auto">
                   <div class="text-center mb-4">
                     <div class="flex items-center justify-center gap-3">
-                      <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-600 shadow-sm" aria-hidden="true"></span>
+                      <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-600 shadow-sm animate-pulse" aria-hidden="true"></span>
                       <h3 class="text-xl font-semibold text-gray-900">Live</h3>
                     </div>
                     <p class="text-sm text-gray-600 mt-2">Live stream of Kingdom of Saudi Arabia's Quran and Sunnah channels.</p>
@@ -3965,6 +3965,9 @@
           // Navigation state
           const showHomeDropdown = ref(false);
           const showMobileMenu = ref(false);
+
+          // track previous view when opening Live
+          const previousViewMode = ref(null);
           
           // Word interaction state
           const hoveredWordId = ref(null);
@@ -3987,7 +3990,8 @@
             sunnah: 'https://win.holol.com/live/sunnah/playlist.m3u8'
           };
 
-          const stopLivePlayback = () => {
+          // Destroy the HLS engine and clear media src but do NOT modify `liveActiveChannel`.
+          const destroyLiveEngine = () => {
             try {
               if (liveHls) {
                 liveHls.destroy();
@@ -3999,6 +4003,16 @@
                 vid.removeAttribute('src');
                 vid.load();
               }
+            } catch (e) {
+              console.warn('[Murajah][Live] Failed to destroy live engine', e);
+            }
+          };
+
+          const stopLivePlayback = () => {
+            try {
+              // destroy engine and also clear active channel state
+              destroyLiveEngine();
+              try { liveActiveChannel.value = null; } catch (e) { /* ignore */ }
             } catch (e) {
               console.warn('[Murajah][Live] Failed to stop playback', e);
             }
@@ -4021,11 +4035,12 @@
               return;
             }
 
-            // Switch to new channel
+            // Switch to new channel (playback only — do not change view mode)
             liveActiveChannel.value = channel;
 
             try {
-              stopLivePlayback();
+              // destroy any previous engine without clearing `liveActiveChannel`
+              destroyLiveEngine();
               // Prefer Hls.js when available and needed
               if (window.Hls && window.Hls.isSupported()) {
                 liveHls = new window.Hls();
@@ -4110,7 +4125,33 @@
           const scrollToSection = async (sectionId) => {
             showMobileMenu.value = false;
             showHomeDropdown.value = false;
-            
+
+            // Special handling for Live: open live view and remember previous
+            if (sectionId === 'live-section') {
+              if (viewMode.value !== 'live') {
+                previousViewMode.value = viewMode.value;
+                viewMode.value = 'live';
+              }
+              await nextTick();
+              const elLive = document.getElementById(sectionId);
+              if (elLive) elLive.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              // Auto-start Quran channel when opening Live (only if nothing playing)
+              try {
+                if (!liveActiveChannel.value) {
+                  playChannel('quran');
+                }
+              } catch (e) {
+                console.warn('[Murajah][Live] Auto-start failed', e);
+              }
+              return;
+            }
+
+            // If navigating away from Live (or navigating to any non-live section), stop live playback
+            if (sectionId !== 'live-section' && liveActiveChannel.value) {
+              try { stopLivePlayback(); } catch (e) { /* ignore */ }
+              previousViewMode.value = null;
+            }
+
             // Special handling for 'quran' section - user explicitly requested Quran
             if (sectionId === 'quran' || sectionId === 'quran-text-section') {
               // Mark that user explicitly chose Quran; keep Quran active across navigation
