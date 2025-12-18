@@ -1921,9 +1921,9 @@
                     type="button"
                     @click="switchFont"
                     class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                    :title="'Current font: ' + fontModeNames[currentFontMode] + ' (Click to cycle)'"
+                    :title="'Current font: ' + layoutLabel + ' (Click to cycle)'"
                   >
-                    {{ fontModeNames[currentFontMode] }}
+                    {{ layoutLabel }}
                   </button>
 
                   <!-- Language Toggle -->
@@ -2044,7 +2044,7 @@
                     {{ $t('layout.label') }}
                   </span>
                   <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                    {{ fontModeNames[currentFontMode] }}
+                    {{ layoutLabel }}
                   </span>
                 </button>
 
@@ -3752,7 +3752,7 @@
                       <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-600 shadow-sm animate-pulse" aria-hidden="true"></span>
                       <h3 class="text-xl font-semibold text-gray-900">{{ $t('header.sections.live') }}</h3>
                     </div>
-                    <p class="text-sm text-gray-600 mt-2">Live stream of Kingdom of Saudi Arabia's Quran and Sunnah channels.</p>
+                    <p class="text-sm text-gray-600 mt-2">{{ $t('live.description') }}</p>
                   </div>
 
                   <div class="flex flex-col items-center gap-3 mb-4">
@@ -5063,11 +5063,6 @@
           });
 
           const fontModes = ['indopak', 'tajweed', 'uthmani'];
-          const fontModeNames = {
-            indopak: 'Indopak',
-            tajweed: 'Tajweed',
-            uthmani: 'Uthmani'
-          };
 
           const currentFontMode = computed(() => {
             if (settingsStore.layout === 'indopak') return 'indopak';
@@ -5080,7 +5075,10 @@
           });
 
           const layoutLabel = computed(() => {
-            return fontModeNames[currentFontMode.value];
+            const mode = currentFontMode.value;
+            if (mode === 'indopak') return t('layout.indopak');
+            if (mode === 'tajweed') return t('layout.tajweed');
+            return t('layout.uthmani');
           });
 
           const switchFont = async () => {
@@ -5135,7 +5133,7 @@
               // Reload font for new layout
               loadPageFont(appStore.currentPage);
               
-              appStore.successMessage = `Switched to ${fontModeNames[nextMode]} font`;
+              appStore.successMessage = t('settings.fontSwitched', { font: t(`layout.${nextMode}`) });
               setTimeout(() => appStore.successMessage = '', 2000);
               
               // Save the settings
@@ -7273,7 +7271,6 @@ Display:
             isIndopak,
             totalPages,
             layoutLabel,
-            fontModeNames,
             currentFontMode,
             switchFont,
             currentPagePerfectCount,

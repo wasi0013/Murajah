@@ -114,6 +114,7 @@
     "clearCache": "Clear Cache",
     "cacheStarting": "Downloading resources for offline use...",
     "cacheSuccess": "Successfully downloaded {count} resources! App now works offline.",
+    "fontSwitched": "Switched to {font} font",
     "cachePartial": "Downloaded {loaded} resources, {failed} failed",
     "cacheFailed": "Download failed: {error}",
     "clearCacheConfirm": "Are you sure you want to clear all cached resources? The app will need to re-download resources.",
@@ -130,6 +131,7 @@
     "label": "Layout",
     "uthmani": "Uthmani",
     "qpc": "Uthmani",
+      "tajweed": "Tajweed",
     "indopak": "Indopak",
     "switchToUthmani": "Switch to Uthmani Layout (604 pages)",
     "switchToQpc": "Switch to QPC Uthmani Layout (604 pages)",
@@ -310,15 +312,16 @@
     "sunnahLabel": "Live from Madinah",
     "playQuran": "Quran Channel",
     "playSunnah": "Sunnah Channel",
-    "stop": "Stop"
+    "toggleHint": "Click an active channel button again to stop playback.",
+    "stop": "Stop",
+    "description": "Listen Quran recitations and hadiths & watch Daily prayers of Makkah and Madinah live from Kingdom of Saudi Arabia's official channels."
   },
   "tips": {
     "recitationGuide": "Before starting memorization, listen to the target verses from your favorite reciter 5-10 times.",
     "reciterTip": "Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization."
   },
   "helpModal": {
-    "playSunnah": "Sunnah Channel",
-    "toggleHint": "Click an active channel button again to stop playback.",
+    "title": "How to Use Murajah Effectively",
     "close": "Got it!",
     "sections": {
       "intention": {
