@@ -20,6 +20,7 @@
       "audio": "Audio",
       "mistakes": "Mistakes",
       "dailyGoals": "Daily Goals",
+      "live": "Live",
       "analytics": "Analytics",
       "timeline": "Timeline",
       "achievements": "Achievements",
@@ -303,12 +304,21 @@
     "dailyGoalsUpdated": "Daily goals updated!",
     "settingsUpdated": "Settings updated!"
   },
+  "live": {
+    "nowPlayingPrefix": "Now playing:",
+    "quranLabel": "Live from Makkah",
+    "sunnahLabel": "Live from Madinah",
+    "playQuran": "Quran Channel",
+    "playSunnah": "Sunnah Channel",
+    "stop": "Stop"
+  },
   "tips": {
     "recitationGuide": "Before starting memorization, listen to the target verses from your favorite reciter 5-10 times.",
     "reciterTip": "Tip: Choose a reciter whose style resonates with you. Consistency helps with memorization."
   },
   "helpModal": {
-    "title": "How to Use Murajah Effectively",
+    "playSunnah": "Sunnah Channel",
+    "toggleHint": "Click an active channel button again to stop playback.",
     "close": "Got it!",
     "sections": {
       "intention": {
