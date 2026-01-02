@@ -1926,16 +1926,18 @@
                     {{ layoutLabel }}
                   </button>
 
-                  <!-- Language Toggle -->
-                  <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                    @click="toggleLocale"
+                  <!-- Language Dropdown -->
+                  <select
+                    class="px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-full text-gray-700 hover:bg-gray-100 transition-colors bg-white cursor-pointer"
+                    :value="currentLocale"
+                    @change="handleLocaleChange"
                     :aria-label="localeToggleLabel"
                     :title="localeToggleLabel"
                   >
-                    {{ currentLocale === 'bn' ? $t('language.english') : $t('language.bangla') }}
-                  </button>
+                    <option v-for="locale in SUPPORTED_LOCALES" :key="locale" :value="locale">
+                      {{ $t(languageLabelKey(locale)) }}
+                    </option>
+                  </select>
                   
                   <!-- Settings -->
                   <button @click="openSettingsModal" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.settings')">
@@ -2048,16 +2050,22 @@
                   </span>
                 </button>
 
-                <!-- Language Toggle -->
-                <button class="mobile-menu-item w-full text-left flex items-center justify-between" @click="toggleLocale">
+                <!-- Language Dropdown -->
+                <div class="mobile-menu-item w-full flex items-center justify-between">
                   <span class="flex items-center gap-3">
                     <i class="fas fa-language"></i>
                     {{ $t('language.label') }}
                   </span>
-                  <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                    {{ currentLocale === 'bn' ? $t('language.bangla') : $t('language.english') }}
-                  </span>
-                </button>
+                  <select
+                    class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full border-0 cursor-pointer"
+                    :value="currentLocale"
+                    @change="handleLocaleChange"
+                  >
+                    <option v-for="locale in SUPPORTED_LOCALES" :key="locale" :value="locale">
+                      {{ $t(languageLabelKey(locale)) }}
+                    </option>
+                  </select>
+                </div>
 
                 <!-- Settings Modal -->
                 <button class="mobile-menu-item w-full text-left" @click="openSettingsModal(); showMobileMenu = false">
@@ -4090,7 +4098,8 @@
           const languageLabelKey = (locale) => {
             const map = {
               en: 'language.english',
-              bn: 'language.bangla'
+              bn: 'language.bangla',
+              ar: 'language.arabic'
             };
             return map[locale] || locale;
           };

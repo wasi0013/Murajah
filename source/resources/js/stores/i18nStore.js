@@ -4,7 +4,8 @@ const DEFAULT_LOCALE = 'en';
 const FALLBACK_LOCALE = 'bn';
 const LOCALE_FILES = {
   en: './resources/data/i18n/en.json',
-  bn: './resources/data/i18n/bn.json'
+  bn: './resources/data/i18n/bn.json',
+  ar: './resources/data/i18n/ar.json'
 };
 
 const i18nState = reactive({

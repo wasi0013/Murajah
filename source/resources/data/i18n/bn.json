@@ -125,7 +125,8 @@
   "language": {
     "label": "ভাষা",
     "english": "English",
-    "bangla": "বাংলা"
+    "bangla": "বাংলা",
+    "arabic": "العربية"
   },
   "layout": {
     "label": "লেআউট",
