@@ -31,6 +31,7 @@ export const RESOURCE_MANIFEST = {
     { id: 'quran-json', url: './resources/data/quran/quran.json', critical: true },
     { id: 'i18n-en', url: './resources/data/i18n/en.json', critical: true },
     { id: 'i18n-bn', url: './resources/data/i18n/bn.json', critical: false },
+    { id: 'i18n-ar', url: './resources/data/i18n/ar.json', critical: false },
     { id: 'badges', url: './resources/data/badges.json', critical: false }
   ],
   

@@ -77,6 +77,7 @@ const APP_SHELL = [
   './resources/data/quran/en.json',
   './resources/data/i18n/en.json',
   './resources/data/i18n/bn.json',
+  './resources/data/i18n/ar.json',
   './resources/data/indopak/indopak-nastaleeq.json',
   './resources/data/tafsir/qpc-page-tafsir-mapping.json',
   './resources/data/tafsir/indopak-page-tafsir-mapping.json',
