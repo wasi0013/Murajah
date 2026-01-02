@@ -128,6 +128,16 @@
     "bangla": "বাংলা",
     "arabic": "العربية"
   },
+  "languageModal": {
+    "title": "Select Your Language",
+    "subtitle": "Choose your preferred language to get started",
+    "confirm": "Continue"
+  },
+  "languages": {
+    "english": "English",
+    "bengali": "বাংলা (Bengali)",
+    "arabic": "العربية (Arabic)"
+  },
   "layout": {
     "label": "Layout",
     "uthmani": "Uthmani",

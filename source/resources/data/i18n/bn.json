@@ -128,6 +128,16 @@
     "bangla": "বাংলা",
     "arabic": "العربية"
   },
+  "languageModal": {
+    "title": "আপনার ভাষা নির্বাচন করুন",
+    "subtitle": "শুরু করতে আপনার পছন্দের ভাষা চয়ন করুন",
+    "confirm": "চালিয়ে যান"
+  },
+  "languages": {
+    "english": "English",
+    "bengali": "বাংলা (Bengali)",
+    "arabic": "العربية (Arabic)"
+  },
   "layout": {
     "label": "লেআউট",
     "uthmani": "ওসমানী",
