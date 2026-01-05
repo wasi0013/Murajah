@@ -77,6 +77,11 @@ const SHARED_CONFIGS = {
     key: 'tafsirEn',
     cacheId: 'en-tafsir',
     url: './resources/data/tafsir/en-tafsir.json'
+  },
+  tafsirAr: {
+    key: 'tafsirAr',
+    cacheId: 'ar-tafsir',
+    url: './resources/data/tafsir/ar-tafsir.json'
   }
 };
 
@@ -99,6 +104,7 @@ const dataCaches = {
     translations: null,
     tafsirBn: null,
     tafsirEn: null,
+    tafsirAr: null,
     isLoaded: false
   }
 };
@@ -216,7 +222,7 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
     };
   }
 
-  const [surahNamesData, translationsData, tafsirBnData, tafsirEnData] = await Promise.all([
+  const [surahNamesData, translationsData, tafsirBnData, tafsirEnData, tafsirArData] = await Promise.all([
     loadResourceWithCache({ 
       resourceConfig: SHARED_CONFIGS.surahNames, 
       murajahDB, 
@@ -244,6 +250,13 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
       onBackgroundUpdate,
       cacheTarget: dataCaches.shared,
       cacheKey: 'tafsirEn'
+    }),
+    loadResourceWithCache({ 
+      resourceConfig: SHARED_CONFIGS.tafsirAr, 
+      murajahDB, 
+      onBackgroundUpdate,
+      cacheTarget: dataCaches.shared,
+      cacheKey: 'tafsirAr'
     })
   ]);
 
@@ -251,13 +264,15 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
   dataCaches.shared.translations = translationsData;
   dataCaches.shared.tafsirBn = tafsirBnData;
   dataCaches.shared.tafsirEn = tafsirEnData;
+  dataCaches.shared.tafsirAr = tafsirArData;
   dataCaches.shared.isLoaded = true;
 
   return {
     surahNames: surahNamesData,
     translations: translationsData,
     tafsirBn: tafsirBnData,
-    tafsirEn: tafsirEnData
+    tafsirEn: tafsirEnData,
+    tafsirAr: tafsirArData
   };
 };
 
@@ -349,6 +364,7 @@ export const loadAllQuranData = async (layout = 'qpc', { murajahDB, onTranslatio
       translations: sharedData.translations,
       tafsirBn: sharedData.tafsirBn,
       tafsirEn: sharedData.tafsirEn,
+      tafsirAr: sharedData.tafsirAr,
       tafsirMapping: tafsirMappingData,
       pageLines: [],
       layoutConfig

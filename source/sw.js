@@ -83,6 +83,7 @@ const APP_SHELL = [
   './resources/data/tafsir/indopak-page-tafsir-mapping.json',
   './resources/data/tafsir/bn-tafsir.json',
   './resources/data/tafsir/en-tafsir.json',
+  './resources/data/tafsir/ar-tafsir.json',
   './resources/data/badges.json'
 ];
 

@@ -360,6 +360,23 @@
       letter-spacing: 0.05em;
     }
 
+    /* Tafsir Text Direction and Alignment Classes */
+    .text-rtl {
+      direction: rtl;
+      text-align: right;
+    }
+
+    /* Tafsir Emphasis and Color Classes */
+    .tafsir-blue {
+      color: #2563eb;
+      font-weight: 500;
+    }
+
+    .tafsir-brown {
+      color: #92400e;
+      font-weight: 500;
+    }
+
     /* Audio Player Arabic Text Styling - Always Indopak */
     .audio-arabic-text {
       font-family: 'IndopakNastaleeq', 'Traditional Arabic', 'Arial Unicode MS', sans-serif;
@@ -2253,9 +2270,7 @@
                       </div>
                       
                       <!-- Tafsir Text -->
-                      <p class="text-sm sm:text-base text-gray-700 leading-relaxed sm:leading-loose pl-1" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;" dir="ltr">
-                        {{ item.text }}
-                      </p>
+                      <div class="text-sm sm:text-base text-gray-700 leading-relaxed sm:leading-loose pl-1" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;" :dir="currentLocale === 'ar' ? 'rtl' : 'ltr'" v-html="item.text"></div>
                     </div>
                   </div>
                 </div>
@@ -6561,7 +6576,9 @@
           const currentPageTafsir = computed(() => {
             const tafsirData = i18nState.currentLocale === 'bn' 
               ? quranData.value?.tafsirBn 
-              : quranData.value?.tafsirEn;
+              : i18nState.currentLocale === 'ar'
+                ? quranData.value?.tafsirAr
+                : quranData.value?.tafsirEn;
             if (!quranData.value || !tafsirData || !quranData.value.tafsirMapping) {
               return [];
             }
