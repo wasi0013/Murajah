@@ -16,6 +16,7 @@
     "menu": "Menu",
     "sections": {
       "quran": "Quran",
+      "wordByWord": "Word by Word",
       "tafsir": "Tafsir",
       "audio": "Audio",
       "mistakes": "Mistakes",

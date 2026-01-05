@@ -1911,6 +1911,10 @@
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
                       </a>
+                      <a href="#wordbyword-section" class="nav-dropdown-item" @click.prevent="scrollToSection('wordbyword-section')">
+                        <i class="fas fa-language"></i>
+                        {{ $t('header.sections.wordByWord') || 'Word by Word' }}
+                      </a>
                       <a href="#tafsir-section" class="nav-dropdown-item" @click.prevent="scrollToSection('tafsir-section')">
                         <i class="fas fa-book-open"></i>
                         {{ $t('header.sections.tafsir') }}
@@ -2035,6 +2039,10 @@
                 <a href="#quran-text-section" class="mobile-menu-item" @click.prevent="scrollToSection('quran-text-section')">
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
+                </a>
+                <a href="#wordbyword-section" class="mobile-menu-item" @click.prevent="scrollToSection('wordbyword-section')">
+                  <i class="fas fa-language"></i>
+                  {{ $t('header.sections.wordByWord') || 'Word by Word' }}
                 </a>
                 <a href="#tafsir-section" class="mobile-menu-item" @click.prevent="scrollToSection('tafsir-section')">
                   <i class="fas fa-book-open"></i>
@@ -2276,7 +2284,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="!settingsStore.showTafsir && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
+                <div v-if="!settingsStore.showTafsir && !settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
@@ -2312,8 +2320,44 @@
                   </div>
                 </div>
 
+                <!-- Word-by-Word Quran View with Translations -->
+                <div v-if="settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-4 sm:space-y-6 relative', { 'layout-indopak': isIndopak }]">
+
+                  <!-- Mistakes Counter Badge -->
+                  <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
+                    {{ currentPageMistakeCount }}
+                  </div>
+
+                  <div v-for="(line, lineIdx) in currentPageWords" :key="'wbw-'+lineIdx" class="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5">
+                    <!-- Surah Name Display -->
+                    <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl text-black my-2 sm:my-3 md:my-4 text-center">
+                      <span class="surah-name" aria-hidden="true">
+                        {{ (isNaN(parseInt((line.text || '').replace('Surah ', '').trim(), 10)) ? (line.text || '') : String(parseInt((line.text || '').replace('Surah ', '').trim(), 10)).padStart(3, '0')) }}surah
+                      </span>
+                      <div v-if="parseInt((line.text || '').replace('Surah ', '').trim(), 10) !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
+                    </div>
+                    
+                    <!-- Word with Translation Display -->
+                    <div 
+                      v-for="word in line.words" 
+                      :key="'wbw-word-'+word.id"
+                      @click="highlightWord(word)"
+                      :class="{
+                        'bg-blue-100 rounded-lg': hoveredWordId === word.id,
+                        'bg-red-100 rounded-lg': currentPageMistakes.includes(word.id)
+                      }"
+                      class="flex flex-col items-center cursor-pointer transition-all duration-200 px-2 py-1 hover:bg-gray-100 rounded-lg"
+                    >
+                      <!-- Arabic Word -->
+                      <span class="quran-word text-xl sm:text-2xl md:text-3xl leading-relaxed">{{ word.text }}</span>
+                      <!-- Translation -->
+                      <span class="text-xs sm:text-sm text-gray-600 mt-1 max-w-[80px] sm:max-w-[100px] text-center leading-tight" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;">{{ getWordTranslation(word) }}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Empty State -->
-                <div v-else-if="!settingsStore.showTafsir" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
+                <div v-else-if="!settingsStore.showTafsir && !settingsStore.showWordByWord" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
                   <p class="text-gray-600 ">Loading Quran text...</p>
                 </div>
@@ -3935,6 +3979,7 @@
             fontSize: 'medium',
             tajweedEnabled: true,
             showTafsir: false,
+            showWordByWord: false,
             layout: 'indopak', // 'qpc' (604 pages) or 'indopak' (610 pages)
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
             quranBackgroundColor: '#f1ece7'
@@ -4223,17 +4268,23 @@
               viewMode.value = 'core';
               try {
                 settingsStore.showTafsir = false;
+                settingsStore.showWordByWord = false;
                 await murajahDB.setSetting('showTafsir', false);
+                await murajahDB.setSetting('showWordByWord', false);
               } catch (e) {
                 settingsStore.showTafsir = false;
+                settingsStore.showWordByWord = false;
               }
-              // Remove tafsir param from URL (preserve other params)
+              // Remove tafsir and wordbyword params from URL (preserve other params)
               try {
                 const url = new URL(window.location.href);
                 if (url.searchParams.has('tafsir')) {
                   url.searchParams.delete('tafsir');
-                  history.replaceState(null, '', url.toString());
                 }
+                if (url.searchParams.has('wordbyword')) {
+                  url.searchParams.delete('wordbyword');
+                }
+                history.replaceState(null, '', url.toString());
               } catch (e) {
                 // ignore URL errors
               }
@@ -4259,15 +4310,47 @@
               forceQuranMode.value = false;
               try {
                 settingsStore.showTafsir = true;
+                settingsStore.showWordByWord = false; // Disable word-by-word when tafsir is enabled
                 await murajahDB.setSetting('showTafsir', true);
               } catch (e) {
                 settingsStore.showTafsir = true;
+                settingsStore.showWordByWord = false;
               }
 
               // Add/replace URL query param tafsir=true while preserving other params
               try {
                 const url = new URL(window.location.href);
                 url.searchParams.set('tafsir', 'true');
+                url.searchParams.delete('wordbyword');
+                // Use replaceState so navigation history isn't cluttered by repeated clicks
+                history.replaceState(null, '', url.toString());
+              } catch (e) {
+                // ignore URL update errors
+              }
+
+              // Scroll to top (same behavior as quran navigation)
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+
+            // Special handling for word-by-word - enable it and add URL param, then scroll to top
+            if (sectionId === 'wordbyword-section') {
+              // Clear explicit Quran override so Word-by-Word stays active across navigation
+              forceQuranMode.value = false;
+              try {
+                settingsStore.showWordByWord = true;
+                settingsStore.showTafsir = false; // Disable tafsir when word-by-word is enabled
+                await murajahDB.setSetting('showWordByWord', true);
+              } catch (e) {
+                settingsStore.showWordByWord = true;
+                settingsStore.showTafsir = false;
+              }
+
+              // Add/replace URL query param wordbyword=true while preserving other params
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('wordbyword', 'true');
+                url.searchParams.delete('tafsir');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
               } catch (e) {
@@ -4329,6 +4412,21 @@
               } catch (e) {
                 // In case URL parsing fails for any reason, default to hiding tafsir
                 settingsStore.showTafsir = false;
+              }
+
+              // Override word-by-word visibility based on URL parameter `wordbyword`
+              // Only enable when the query param is exactly `wordbyword=true`.
+              try {
+                const wbwParam = new URLSearchParams(window.location.search).get('wordbyword');
+                if (wbwParam === 'true') {
+                  settingsStore.showWordByWord = true;
+                  // Ensure tafsir is disabled when word-by-word is enabled
+                  settingsStore.showTafsir = false;
+                } else {
+                  settingsStore.showWordByWord = false;
+                }
+              } catch (e) {
+                settingsStore.showWordByWord = false;
               }
               
               // Update totalPages based on layout
@@ -5328,6 +5426,19 @@
             const score = getHifzScore(appStore.currentPage);
             return getScoreColors(score);
           });
+
+          // Get word translation for word-by-word view
+          const getWordTranslation = (word) => {
+            if (!quranData.value || !quranData.value.translations) {
+              return '';
+            }
+            const key = `${word.surah}:${word.ayah}:${word.word}`;
+            // Use Bangla translation when locale is 'bn', otherwise use English
+            const translationsSource = currentLocale.value === 'bn' && quranData.value.translationsBn
+              ? quranData.value.translationsBn
+              : quranData.value.translations;
+            return translationsSource[key] || '';
+          };
 
           // Word interaction functions
           const highlightWord = (word) => {
@@ -7387,6 +7498,7 @@ Display:
             showWordTooltip,
             updateTooltipPosition,
             hideWordTooltip,
+            getWordTranslation,
             getSurahNameArabic,
             getSurahNameTranslated,
             updateSettings,
