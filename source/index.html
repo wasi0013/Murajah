@@ -1911,7 +1911,7 @@
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
                       </a>
-                      <a href="#wordbyword-section" class="nav-dropdown-item" @click.prevent="scrollToSection('wordbyword-section')">
+                      <a v-if="currentLocale !== 'ar'" href="#wordbyword-section" class="nav-dropdown-item" @click.prevent="scrollToSection('wordbyword-section')">
                         <i class="fas fa-language"></i>
                         {{ $t('header.sections.wordByWord') || 'Word by Word' }}
                       </a>
@@ -2040,7 +2040,7 @@
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
                 </a>
-                <a href="#wordbyword-section" class="mobile-menu-item" @click.prevent="scrollToSection('wordbyword-section')">
+                <a v-if="currentLocale !== 'ar'" href="#wordbyword-section" class="mobile-menu-item" @click.prevent="scrollToSection('wordbyword-section')">
                   <i class="fas fa-language"></i>
                   {{ $t('header.sections.wordByWord') || 'Word by Word' }}
                 </a>
