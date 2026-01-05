@@ -2328,7 +2328,7 @@
                     {{ currentPageMistakeCount }}
                   </div>
 
-                  <div v-for="(line, lineIdx) in currentPageWords" :key="'wbw-'+lineIdx" class="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5">
+                  <div v-for="(line, lineIdx) in currentPageWords" :key="'wbw-'+lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-2 md:gap-2.5 pb-4 sm:pb-6 md:pb-8" :style="{ borderBottom: lineIdx < currentPageWords.length - 1 ? '1px solid #e5e7eb' : 'none' }">
                     <!-- Surah Name Display -->
                     <div v-if="line.type === 'surah_name'" class="w-full text-2xl sm:text-3xl md:text-4xl text-black my-2 sm:my-3 md:my-4 text-center">
                       <span class="surah-name" aria-hidden="true">
@@ -2346,10 +2346,10 @@
                         'bg-blue-100 rounded-lg': hoveredWordId === word.id,
                         'bg-red-100 rounded-lg': currentPageMistakes.includes(word.id)
                       }"
-                      class="flex flex-col items-center cursor-pointer transition-all duration-200 px-2 py-1 hover:bg-gray-100 rounded-lg"
+                      class="flex flex-col items-center cursor-pointer transition-all duration-200 px-1.5 py-1 hover:bg-gray-100 rounded-lg"
                     >
                       <!-- Arabic Word -->
-                      <span class="quran-word text-xl sm:text-2xl md:text-3xl leading-relaxed">{{ word.text }}</span>
+                      <span class="quran-word leading-relaxed">{{ word.text }}</span>
                       <!-- Translation -->
                       <span class="text-xs sm:text-sm text-gray-600 mt-1 max-w-[80px] sm:max-w-[100px] text-center leading-tight" style="font-family: 'Noto Sans Bengali', 'Kalpurush', sans-serif;">{{ getWordTranslation(word) }}</span>
                     </div>
