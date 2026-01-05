@@ -2357,7 +2357,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else-if="!settingsStore.showTafsir && !settingsStore.showWordByWord" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
+                <div v-else-if="!settingsStore.showTafsir && !settingsStore.showWordByWord && (!quranData || currentPageWords.length === 0)" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
                   <p class="text-gray-600 ">Loading Quran text...</p>
                 </div>
