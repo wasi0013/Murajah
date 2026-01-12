@@ -28,7 +28,7 @@ export const formatScore = (num, decimals = 1) => {
 
   for (const tier of tiers) {
     if (absNum >= tier.threshold) {
-      const scaled = num / tier.threshold;
+      const scaled = absNum / tier.threshold;
       const sign = num < 0 ? '-' : '';
       
       // Round to specified decimals

@@ -1,0 +1,42 @@
+{
+  "name": "murajah",
+  "version": "26.01.12",
+  "description": "Quran memorization and revision tracking app",
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:quick": "vitest run --reporter=dot",
+    "setup-hooks": "bash ./scripts/setup-hooks.sh",
+    "setup-hooks:fast": "bash ./scripts/setup-hooks.sh fast",
+    "serve": "npx serve source -p 3000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "fake-indexeddb": "^5.0.0",
+    "happy-dom": "^12.0.0",
+    "husky": "^9.1.7",
+    "msw": "^2.0.0",
+    "serve": "^14.0.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "quran",
+    "memorization",
+    "hifz",
+    "revision",
+    "pwa"
+  ],
+  "author": "wasi0013",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wasi0013/Murajah.git"
+  }
+}
