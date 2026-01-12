@@ -2439,7 +2439,7 @@
 
                   <!-- Next Page Arrow -->
                   <button 
-                    v-if="appStore.currentPage < appStore.totalPages"
+                    v-if="appStore.currentPage < totalPages"
                     @click="nextPage" 
                     class="p-3 rounded-full bg-blue-100 hover:bg-blue-300 text-white shadow-lg transition-all pointer-events-auto"
                     style="opacity: 0.75;"
@@ -3946,7 +3946,6 @@
           // State Stores
           const appStore = reactive({
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
-            totalPages: 604, // Will be updated based on layout
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
             appVersion: '25.12.12',
@@ -4409,9 +4408,6 @@
               } catch (e) {
                 settingsStore.showWordByWord = false;
               }
-              
-              // Update totalPages based on layout
-              appStore.totalPages = totalPages.value;
               
               // Load Quran data with layout parameter (translations come from cache with background refresh)
               // The unified loader now includes tafsir data
@@ -5191,7 +5187,7 @@
           });
 
           const totalPages = computed(() => {
-            return appStore.totalPages || (isIndopak.value ? 610 : 604);
+            return isIndopak.value ? 610 : 604;
           });
 
           const layoutLabel = computed(() => {
@@ -5243,11 +5239,9 @@
                 quranData.value.translationsBn = preservedData.translationsBn;
               }
               
-              appStore.totalPages = settingsStore.layout === 'indopak' ? 610 : 604;
-              
               // Adjust current page if it exceeds new layout's total pages
-              if (appStore.currentPage > appStore.totalPages) {
-                await goToPageNumber(appStore.totalPages);
+              if (appStore.currentPage > totalPages.value) {
+                await goToPageNumber(totalPages.value);
               }
               
               // Reload font for new layout
@@ -5614,8 +5608,8 @@
 
           const getJuzRange = (juzNum) => JUZ_RANGES[juzNum] || [1, 21];
 
-          // Surah starting pages mapping (surah number -> starting page) - Extracted from actual Quran data
-          const SURAH_PAGES = {
+          // Surah starting pages mapping for QPC/Tajweed/Uthmani layout (604 pages)
+          const SURAH_PAGES_QPC = {
             1: 1, 2: 2, 3: 50, 4: 76, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 207,
             11: 221, 12: 235, 13: 249, 14: 255, 15: 262, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
             21: 322, 22: 331, 23: 341, 24: 349, 25: 359, 26: 366, 27: 376, 28: 385, 29: 396, 30: 404,
@@ -5630,7 +5624,27 @@
             111: 603, 112: 604, 113: 604, 114: 604
           };
 
-          const getSurahStartPage = (surahNum) => SURAH_PAGES[surahNum] || 1;
+          // Surah starting pages mapping for Indopak layout (610 pages)
+          const SURAH_PAGES_INDOPAK = {
+            1: 1, 2: 2, 3: 50, 4: 77, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 208,
+            11: 221, 12: 235, 13: 249, 14: 255, 15: 261, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
+            21: 322, 22: 331, 23: 342, 24: 350, 25: 359, 26: 366, 27: 376, 28: 385, 29: 396, 30: 404,
+            31: 411, 32: 415, 33: 418, 34: 428, 35: 434, 36: 440, 37: 445, 38: 452, 39: 458, 40: 467,
+            41: 477, 42: 483, 43: 489, 44: 495, 45: 498, 46: 502, 47: 506, 48: 511, 49: 515, 50: 518,
+            51: 520, 52: 523, 53: 526, 54: 528, 55: 531, 56: 534, 57: 537, 58: 542, 59: 545, 60: 549,
+            61: 551, 62: 553, 63: 554, 64: 556, 65: 558, 66: 560, 67: 562, 68: 564, 69: 567, 70: 569,
+            71: 571, 72: 573, 73: 576, 74: 578, 75: 580, 76: 582, 77: 584, 78: 586, 79: 587, 80: 589,
+            81: 590, 82: 591, 83: 592, 84: 594, 85: 595, 86: 596, 87: 597, 88: 597, 89: 598, 90: 600,
+            91: 600, 92: 601, 93: 602, 94: 602, 95: 603, 96: 603, 97: 604, 98: 604, 99: 605, 100: 605,
+            101: 606, 102: 606, 103: 607, 104: 607, 105: 607, 106: 608, 107: 608, 108: 608, 109: 608, 110: 609,
+            111: 609, 112: 609, 113: 610, 114: 610
+          };
+
+          // Get the correct surah pages mapping based on current layout
+          const getSurahStartPage = (surahNum) => {
+            const mapping = isIndopak.value ? SURAH_PAGES_INDOPAK : SURAH_PAGES_QPC;
+            return mapping[surahNum] || 1;
+          };
 
           const juzMemorizedCount = (juzNum) => {
             const [startPage, endPage] = getJuzRange(juzNum);
