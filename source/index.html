@@ -1740,11 +1740,102 @@
             request.onerror = () => reject(request.error);
           });
         }
+
+        // Generic setting setter (stores individual settings by key)
+        async setSetting(key, value) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: `setting-${key}`, value: value });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        // Generic setting getter
+        async getSetting(key, defaultValue = null) {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get(`setting-${key}`);
+            request.onsuccess = () => {
+              const result = request.result;
+              resolve(result ? result.value : defaultValue);
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        // Save current URL state (page, tafsir, wordbyword) for session restoration
+        async saveUrlState(state) {
+          const tx = this.db.transaction(['appData'], 'readwrite');
+          const store = tx.objectStore('appData');
+          store.put({ id: 'murajah-url-state', ...state, savedAt: new Date().toISOString() });
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              console.log('[Murajah] URL state saved:', state);
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+
+        // Load saved URL state for session restoration
+        async loadUrlState() {
+          const tx = this.db.transaction(['appData'], 'readonly');
+          const store = tx.objectStore('appData');
+          return new Promise((resolve, reject) => {
+            const request = store.get('murajah-url-state');
+            request.onsuccess = () => {
+              const result = request.result;
+              if (result) {
+                const { id, savedAt, ...state } = result;
+                resolve(state);
+              } else {
+                resolve(null);
+              }
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }
       }
 
       // Initialize IndexedDB
       const murajahDB = new MurajahDB();
       await murajahDB.init();
+
+      // Restore URL state from IndexedDB if no URL parameters are present
+      // This allows users to resume where they left off
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasPageParam = urlParams.has('page');
+        const hasTafsirParam = urlParams.has('tafsir');
+        const hasWordByWordParam = urlParams.has('wordbyword');
+        
+        // Only restore if URL has no relevant parameters (fresh visit)
+        if (!hasPageParam && !hasTafsirParam && !hasWordByWordParam) {
+          const savedState = await murajahDB.loadUrlState();
+          if (savedState && (savedState.page || savedState.tafsir || savedState.wordbyword)) {
+            const newUrl = new URL(window.location.href);
+            if (savedState.page && savedState.page > 1) {
+              newUrl.searchParams.set('page', savedState.page);
+            }
+            if (savedState.tafsir === true) {
+              newUrl.searchParams.set('tafsir', 'true');
+            }
+            if (savedState.wordbyword === true) {
+              newUrl.searchParams.set('wordbyword', 'true');
+            }
+            // Only redirect if we actually have parameters to restore
+            if (newUrl.searchParams.toString()) {
+              console.log('[Murajah] Restoring URL state:', savedState);
+              window.history.replaceState({}, '', newUrl.toString());
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('[Murajah] Failed to restore URL state:', error);
+      }
 
       // Initialize Resource Cache for offline support
       const resourceCacheModule = await import('./resources/js/utils/resourceCache.js');
@@ -4265,6 +4356,13 @@
                   url.searchParams.delete('wordbyword');
                 }
                 history.replaceState(null, '', url.toString());
+                
+                // Persist URL state to IndexedDB for session restoration
+                murajahDB.saveUrlState({
+                  page: appStore.currentPage,
+                  tafsir: false,
+                  wordbyword: false
+                }).catch(err => console.warn('[Murajah] Failed to save URL state:', err));
               } catch (e) {
                 // ignore URL errors
               }
@@ -4304,6 +4402,13 @@
                 url.searchParams.delete('wordbyword');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
+                
+                // Persist URL state to IndexedDB for session restoration
+                murajahDB.saveUrlState({
+                  page: appStore.currentPage,
+                  tafsir: true,
+                  wordbyword: false
+                }).catch(err => console.warn('[Murajah] Failed to save URL state:', err));
               } catch (e) {
                 // ignore URL update errors
               }
@@ -4333,6 +4438,13 @@
                 url.searchParams.delete('tafsir');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
+                
+                // Persist URL state to IndexedDB for session restoration
+                murajahDB.saveUrlState({
+                  page: appStore.currentPage,
+                  tafsir: false,
+                  wordbyword: true
+                }).catch(err => console.warn('[Murajah] Failed to save URL state:', err));
               } catch (e) {
                 // ignore URL update errors
               }
@@ -5140,6 +5252,16 @@
               }
               // Use replaceState to avoid extra history entries
               history.replaceState({}, '', url.pathname + (params.toString() ? `?${params.toString()}` : ''));
+              
+              // Persist URL state to IndexedDB for session restoration
+              const urlState = {
+                page: appStore.currentPage,
+                tafsir: settingsStore.showTafsir && !(forceQuranMode && forceQuranMode.value),
+                wordbyword: settingsStore.showWordByWord
+              };
+              murajahDB.saveUrlState(urlState).catch(err => {
+                console.warn('[Murajah] Failed to save URL state:', err);
+              });
             } catch (e) {
               // Fallback to simple replace
               window.history.replaceState({}, '', `?page=${appStore.currentPage}`);
