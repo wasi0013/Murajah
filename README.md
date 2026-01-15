@@ -198,6 +198,74 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
    http://localhost:8000/index.html
    ```
 
+## ✅ Running Tests
+
+Prerequisites: `Node.js` (recommended v16+) and `npm` or `npx` available.
+
+1. Install project dependencies (from the repository root):
+
+```bash
+# install deps (use npm ci in CI for reproducible installs)
+npm install
+# or
+npm ci
+```
+
+2. (Playwright only) Install browser dependencies used by Playwright:
+
+```bash
+# installs required browser binaries
+npx playwright install
+```
+
+3. Run tests:
+
+- Run unit tests (Vitest):
+
+```bash
+npm run test:unit
+```
+
+- Run end-to-end tests (Playwright). Playwright will start a local server automatically
+   using the configured `webServer` in `playwright.config.js`:
+
+```bash
+npm run test:e2e
+```
+
+- Run all tests (unit + e2e):
+
+```bash
+npm test
+```
+
+4. Useful variants:
+
+```bash
+# Run unit tests in watch mode
+npm run test:unit:watch
+
+# Run Playwright in headed mode (visible browser)
+npm run test:e2e:headed
+
+# Run Playwright with debugger
+npm run test:e2e:debug
+
+# Generate unit test coverage report
+npm run test:unit:coverage
+```
+
+Notes:
+- Playwright's `webServer` will serve the `source` folder at `http://localhost:3000` during tests
+   (configured in `playwright.config.js`). If you prefer, start the server yourself with:
+
+```bash
+npx serve source -p 3000
+```
+
+- Some tests (audio/recording) may require granting microphone permissions to the browser.
+- On CI, use `npm ci` and ensure Playwright browsers are installed before running `npm run test:e2e`.
+
 ## 💾 Data Management
 
 ### Local Storage
