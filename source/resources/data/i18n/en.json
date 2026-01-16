@@ -552,6 +552,15 @@
     "collapse": "Collapse",
     "expand": "Expand"
   },
+  "morphology": {
+    "title": "Word Morphology",
+    "loading": "Loading morphology...",
+    "noData": "No morphology data available for this word",
+    "error": "Failed to load morphology data",
+    "close": "Close",
+    "clickToView": "Click any word to see its morphological analysis",
+    "wordPosition": "Word {word} of verse {surah}:{ayah}"
+  },
   "pwa": {
     "offlineMode": "You're offline. Some features may be limited.",
     "updateAvailable": "A new version is available!",

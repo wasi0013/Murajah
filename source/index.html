@@ -1356,6 +1356,254 @@
         display: none;
       }
     }
+
+    /* ===== MORPHOLOGY MODAL STYLES ===== */
+    .morphology-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      backdrop-filter: blur(2px);
+    }
+
+    .morphology-modal {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      width: 90%;
+      max-width: 600px;
+      max-height: 85vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e7eb;
+    }
+
+    .morphology-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: linear-gradient(to right, #eef2ff, #e0e7ff);
+      border-bottom: 1px solid #c7d2fe;
+    }
+
+    .morphology-word-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .morphology-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1e3a8a;
+      margin: 0;
+    }
+
+    .morphology-word-ref {
+      font-size: 0.85rem;
+      color: #6366f1;
+      font-weight: 500;
+    }
+
+    .morphology-close-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid #c7d2fe;
+      color: #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+    }
+
+    .morphology-close-btn:hover {
+      background: #eef2ff;
+      color: #4338ca;
+      transform: scale(1.05);
+    }
+
+    .morphology-word-display {
+      padding: 24px;
+      background: linear-gradient(to bottom, #fafbff, #f5f7ff);
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .morphology-arabic-word {
+      font-size: 3rem;
+      color: #1e3a8a;
+      line-height: 1.5;
+      direction: rtl;
+      text-align: center;
+    }
+
+    /* Font-specific classes for morphology modal */
+    .morphology-arabic-word.font-indopak {
+      font-family: 'IndopakNastaleeq', 'Noto Nastaliq Urdu', 'Traditional Arabic', serif;
+      font-size: 3.5rem;
+      line-height: 2;
+    }
+
+    .morphology-arabic-word.font-tajweed,
+    .morphology-arabic-word.font-uthmani {
+      /* Uses dynamic page font via inline style */
+      font-size: 3rem;
+      line-height: 1.5;
+    }
+
+    .morphology-modal-content {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 150px;
+    }
+
+    .morphology-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 32px;
+      color: #6b7280;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .morphology-loading {
+      color: #6366f1;
+    }
+
+    .morphology-error {
+      color: #dc2626;
+    }
+
+    .morphology-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #374151;
+    }
+
+    .morphology-text .ab {
+      font-style: italic;
+      color: #4338ca;
+      font-weight: 500;
+    }
+
+    .morphology-text .at {
+      font-family: 'Traditional Arabic', 'IndopakNastaleeq', serif;
+      font-size: 1.2em;
+      color: #1e3a8a;
+      direction: rtl;
+      unicode-bidi: bidi-override;
+    }
+
+    .morphology-modal-footer {
+      padding: 16px 24px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .morphology-done-btn {
+      padding: 10px 24px;
+      background: linear-gradient(to right, #4f46e5, #6366f1);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .morphology-done-btn:hover {
+      background: linear-gradient(to right, #4338ca, #4f46e5);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Morphology modal transition */
+    .morphology-modal-enter-active,
+    .morphology-modal-leave-active {
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .morphology-modal-enter-from,
+    .morphology-modal-leave-to {
+      opacity: 0;
+    }
+
+    .morphology-modal-enter-from .morphology-modal,
+    .morphology-modal-leave-to .morphology-modal {
+      transform: scale(0.9) translateY(20px);
+    }
+
+    /* Mobile responsive morphology modal */
+    @media (max-width: 640px) {
+      .morphology-modal-overlay {
+        padding: 1rem;
+      }
+
+      .morphology-modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 12px;
+      }
+
+      .morphology-modal-header {
+        padding: 16px 20px;
+      }
+
+      .morphology-title {
+        font-size: 1.1rem;
+      }
+
+      .morphology-word-display {
+        padding: 20px;
+      }
+
+      .morphology-arabic-word {
+        font-size: 2.5rem;
+      }
+
+      .morphology-arabic-word.font-indopak {
+        font-size: 2.75rem;
+      }
+
+      .morphology-modal-content {
+        padding: 20px;
+      }
+
+      .morphology-text {
+        font-size: 1rem;
+      }
+
+      .morphology-modal-footer {
+        padding: 12px 20px;
+      }
+
+      .morphology-done-btn {
+        width: 100%;
+        padding: 12px;
+      }
+    }
     
   </style>
 </head>
@@ -1896,6 +2144,13 @@
 
       const languageSelectionModalModule = await import('./resources/js/components/LanguageSelectionModal.js');
       const LanguageSelectionModal = languageSelectionModalModule.default;
+
+      // Morphology feature - lazy loaded per-surah for performance
+      const morphologyLoaderModule = await import('./resources/js/utils/morphologyLoader.js');
+      const { getMorphologyForWord, preloadMorphologyForPage, getMorphologyCacheStats, clearMorphologyCache } = morphologyLoaderModule;
+
+      const morphologyPopupModule = await import('./resources/js/components/MorphologyPopupComponent.js');
+      const MorphologyPopupComponent = morphologyPopupModule.default;
 
       /* Achievement System (coming soon - not developed yet)
       const achievementStoreModule = await import('./resources/js/stores/achievementStore.js');
@@ -2456,7 +2711,7 @@
                     <span 
                       v-for="word in line.words" 
                       :key="word.id"
-                      @click="highlightWord(word)"
+                      @click="handleWordClick(word, $event)"
                       @mouseenter="showWordTooltip(word, $event)"
                       @mousemove="updateTooltipPosition($event)"
                       @mouseleave="hideWordTooltip()"
@@ -2493,7 +2748,7 @@
                     <div 
                       v-for="word in line.words" 
                       :key="'wbw-word-'+word.id"
-                      @click="highlightWord(word)"
+                      @click="handleWordClick(word, $event)"
                       :class="{
                         'bg-blue-100 rounded-lg': hoveredWordId === word.id,
                         'bg-red-100 rounded-lg': currentPageMistakes.includes(word.id)
@@ -3036,6 +3291,15 @@
                       </div>
 
                       <!-- showTafsir setting removed: tafsir visibility controlled via URL and navbar -->
+
+                      <!-- Morphology Toggle -->
+                      <div class="flex items-center sm:col-span-2">
+                        <input v-model="settingsStore.showMorphology" @change="updateSettings" type="checkbox" id="morphology" class="rounded">
+                        <label for="morphology" class="ml-3 text-sm font-medium text-gray-700">
+                          {{ $t('morphology.title') }}
+                          <span class="text-xs text-gray-500 ml-1">({{ $t('morphology.clickToView') }})</span>
+                        </label>
+                      </div>
 
                       <div class="sm:col-span-2">
                         <label class="block text-sm font-medium mb-2 text-gray-700 ">{{ $t('language.label') }}</label>
@@ -4030,6 +4294,18 @@
             <div v-if="showTooltip" class="word-tooltip" :style="{ left: tooltipX + 'px', top: (tooltipY - 50) + 'px' }">
               {{ tooltipText }}
             </div>
+
+            <!-- Morphology Popup -->
+            <MorphologyPopup
+              :visible="morphologyPopupVisible"
+              :word="morphologySelectedWord"
+              :morphology="morphologyContent"
+              :loading="morphologyLoading"
+              :error="morphologyError"
+              :font-mode="currentFontMode"
+              :current-page="appStore.currentPage"
+              @close="hideMorphologyPopup"
+            />
           </div>
         `,
 
@@ -4051,6 +4327,7 @@
             tajweedEnabled: true,
             showTafsir: false,
             showWordByWord: false,
+            showMorphology: false, // Enable morphology popup on word click
             layout: 'indopak', // 'qpc' (604 pages) or 'indopak' (610 pages)
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
             quranBackgroundColor: '#f1ece7'
@@ -4155,6 +4432,13 @@
           const tooltipX = ref(0);
           const tooltipY = ref(0);
           const tooltipText = ref('');
+
+          // Morphology popup state
+          const morphologyPopupVisible = ref(false);
+          const morphologySelectedWord = ref(null);
+          const morphologyContent = ref(null);
+          const morphologyLoading = ref(false);
+          const morphologyError = ref(null);
 
           // Live streaming state using YouTube embeds
           const liveContainer = ref(null);
@@ -4690,6 +4974,7 @@
               fontSize: String(settingsStore.fontSize),
               tajweedEnabled: Boolean(settingsStore.tajweedEnabled),
               showTafsir: Boolean(settingsStore.showTafsir),
+              showMorphology: Boolean(settingsStore.showMorphology),
               layout: String(settingsStore.layout),
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
@@ -5575,6 +5860,51 @@
           const hideWordTooltip = () => {
             hoveredWordId.value = null;
             showTooltip.value = false;
+          };
+
+          // Morphology popup functions
+          const showMorphologyPopup = async (word, event) => {
+            if (!settingsStore.showMorphology) return;
+            if (!word || !word.surah || !word.ayah || !word.word) {
+              console.warn('[Murajah] Invalid word info for morphology:', word);
+              return;
+            }
+
+            morphologySelectedWord.value = word;
+            morphologyLoading.value = true;
+            morphologyError.value = null;
+            morphologyContent.value = null;
+            morphologyPopupVisible.value = true;
+
+            try {
+              const content = await getMorphologyForWord(word.surah, word.ayah, word.word);
+              morphologyContent.value = content;
+              if (!content) {
+                morphologyError.value = t('morphology.noData');
+              }
+              console.log('[Murajah] Morphology loaded for', `${word.surah}:${word.ayah}:${word.word}`);
+            } catch (error) {
+              console.error('[Murajah] Failed to load morphology:', error);
+              morphologyError.value = t('morphology.error');
+            } finally {
+              morphologyLoading.value = false;
+            }
+          };
+
+          const hideMorphologyPopup = () => {
+            morphologyPopupVisible.value = false;
+            morphologySelectedWord.value = null;
+            morphologyContent.value = null;
+            morphologyError.value = null;
+          };
+
+          // Combined word click handler - morphology OR mistake marking
+          const handleWordClick = (word, event) => {
+            if (settingsStore.showMorphology) {
+              showMorphologyPopup(word, event);
+            } else {
+              highlightWord(word);
+            }
           };
 
           // Settings functions
@@ -7538,6 +7868,15 @@ Display:
             tooltipX,
             tooltipY,
             tooltipText,
+            // Morphology popup state and functions
+            morphologyPopupVisible,
+            morphologySelectedWord,
+            morphologyContent,
+            morphologyLoading,
+            morphologyError,
+            showMorphologyPopup,
+            hideMorphologyPopup,
+            handleWordClick,
             isCurrentPageMemorized,
             isIndopak,
             totalPages,
@@ -7677,6 +8016,7 @@ Display:
       // Register components
       app.component('LanguageSelectionModal', LanguageSelectionModal);
       app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
+      app.component('MorphologyPopup', MorphologyPopupComponent);
       /* Achievement components (coming soon - not developed yet)
       app.component('achievement-navbar-component', AchievementNavbarComponent);
       app.component('achievement-grid-component', AchievementGridComponent);
