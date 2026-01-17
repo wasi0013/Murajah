@@ -273,6 +273,7 @@ export const QuranAudioPlayerComponent = {
         { id: 'shuraim', name: 'Sheikh Shuraim' },
         { id: 'ali_jaber', name: 'Ali Jaber' },
         { id: 'abdullah_matrood', name: 'Abdullah Al Matrood' },
+        { id: 'ahmed_al_ajmi', name: 'Sheikh Ahmed Al Ajmi' },
         { id: 'maher_muaiqly', name: 'Maher Al Muaiqly' },
         { id: 'khalifa_al_tunaiji', name: 'Khalifa Al Tunaiji' },
         { id: 'abdur_rahman_as_sudais', name: 'Abdur Rahman As Sudais' },
@@ -735,6 +736,10 @@ export const QuranAudioPlayerComponent = {
           break;
         case 'abdullah_matrood':
           primaryUrl = `https://everyayah.com/data/Abdullah_Matroud_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
+          break;
+        case 'ahmed_al_ajmi':
+          primaryUrl = `https://everyayah.com/data/ahmed_ibn_ali_al_ajamy_128kbps/${surahPadded}${ayahPadded}.mp3`;
           fallbackUrl = `https://everyayah.com/data/Shuraim_128kbps/${surahPadded}${ayahPadded}.mp3`;
           break;
         case 'maher_muaiqly':
