@@ -41,21 +41,8 @@ export class AudioRecorder {
    * @returns {string} Supported MIME type
    */
   static getSupportedMimeType() {
-    // Priority order for MIME types
-    // iOS Safari/Chrome only supports mp4/aac, not webm
-    const mimeTypes = [
-      'audio/mp4',           // Best for iOS compatibility
-      'audio/aac',           // AAC codec
-      'audio/webm;codecs=opus', // Best quality for Chrome/Firefox
-      'audio/webm',          // Fallback webm
-      'audio/ogg;codecs=opus',  // Firefox fallback
-      'audio/wav',           // Universal but large
-      ''                     // Empty string = browser default
-    ];
-
-    // On iOS, prioritize mp4/aac
+    // On iOS, prioritize mp4/aac (iOS doesn't support webm)
     if (AudioRecorder.isIOS()) {
-      // iOS Safari prefers these formats
       const iosMimeTypes = ['audio/mp4', 'audio/aac', 'audio/wav', ''];
       for (const mimeType of iosMimeTypes) {
         if (mimeType === '' || MediaRecorder.isTypeSupported(mimeType)) {
@@ -65,7 +52,16 @@ export class AudioRecorder {
       }
     }
 
-    // For other browsers, use standard priority
+    // For other browsers (Android, Desktop), prefer webm
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/wav',
+      ''
+    ];
+
     for (const mimeType of mimeTypes) {
       if (mimeType === '' || MediaRecorder.isTypeSupported(mimeType)) {
         Logger.info(Logger.MODULES.AUDIO, `Using MIME type: ${mimeType || 'browser default'}`);

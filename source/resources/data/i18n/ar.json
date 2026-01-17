@@ -566,5 +566,23 @@
     "updateAvailable": "نسخة جديدة متاحة!",
     "refresh": "تحديث",
     "dismiss": "تجاهل"
+  },
+  "floatingPlayer": {
+    "show": "إظهار مشغل الصوت",
+    "hide": "إخفاء مشغل الصوت",
+    "page": "صفحة",
+    "selectRecording": "اختر تسجيلاً",
+    "showPlaylist": "إظهار قائمة التشغيل",
+    "hidePlaylist": "إخفاء قائمة التشغيل",
+    "play": "تشغيل",
+    "pause": "إيقاف مؤقت",
+    "stop": "إيقاف",
+    "previous": "السابق",
+    "next": "التالي",
+    "delete": "حذف",
+    "deleteConfirm": "حذف التسجيل للصفحة {page}؟",
+    "playbackSpeed": "سرعة التشغيل",
+    "recentRecordings": "التسجيلات الأخيرة",
+    "noRecordings": "لا توجد تسجيلات بعد"
   }
 }

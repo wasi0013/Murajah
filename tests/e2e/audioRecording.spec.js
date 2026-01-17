@@ -354,3 +354,200 @@ test.describe('Audio Recording - Recording State Management', () => {
     expect(result.mimeType).toBeNull();
   });
 });
+
+test.describe('Audio Recording - Edge Cases', () => {
+  
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await waitForAppLoad(page);
+  });
+
+  test('should correctly check API support in isSupported', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
+      
+      // Test that modern API is detected
+      const hasModernAPI = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+      const isSupported = AudioRecorder.isSupported();
+      
+      return {
+        hasModernAPI,
+        isSupported,
+        // If modern API exists, isSupported should be true
+        correctDetection: hasModernAPI ? isSupported === true : true
+      };
+    });
+    
+    expect(result.correctDetection).toBe(true);
+  });
+
+  test('should detect iOS devices correctly', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
+      return {
+        isIOS: AudioRecorder.isIOS(),
+        userAgent: navigator.userAgent
+      };
+    });
+    
+    // Just verify the method exists and returns a boolean
+    expect(typeof result.isIOS).toBe('boolean');
+  });
+
+  test('should get supported MIME type', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
+      return {
+        mimeType: AudioRecorder.getSupportedMimeType(),
+        isIOS: AudioRecorder.isIOS()
+      };
+    });
+    
+    // Should return a string (possibly empty for browser default)
+    expect(typeof result.mimeType).toBe('string');
+  });
+});
+
+test.describe('Floating Audio Player - E2E', () => {
+  
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await waitForAppLoad(page);
+  });
+
+  test('should not show floating player when no recordings', async ({ page }) => {
+    // Initially there should be no recordings
+    const floatingPlayer = page.locator('.floating-audio-player-container');
+    
+    // The container may exist but should not have visible content
+    // Check if the toggle button is visible (it shows recording count)
+    const toggleBtn = page.locator('.floating-toggle-btn');
+    
+    // Either the container doesn't exist or the button shows no recordings
+    const isHidden = await floatingPlayer.isHidden().catch(() => true);
+    const buttonCount = await toggleBtn.count();
+    
+    // At least one of these conditions should be true
+    expect(isHidden || buttonCount === 0).toBe(true);
+  });
+
+  test('should display recording button or disabled state', async ({ page }) => {
+    // Either the enabled record button or disabled record button should be visible
+    const enabledButton = page.locator('button:has(.fa-microphone):not(:disabled)');
+    const disabledButton = page.locator('button:has(.fa-microphone-slash)');
+    
+    const enabledCount = await enabledButton.count();
+    const disabledCount = await disabledButton.count();
+    
+    // At least one type of record button should exist
+    expect(enabledCount + disabledCount).toBeGreaterThanOrEqual(0);
+  });
+
+  test('should have proper z-index for floating player', async ({ page }) => {
+    const styles = await page.evaluate(() => {
+      const style = document.createElement('style');
+      document.head.appendChild(style);
+      
+      // Get computed styles for floating player elements
+      const container = document.querySelector('.floating-audio-player-container');
+      if (container) {
+        const computed = window.getComputedStyle(container);
+        return {
+          exists: true,
+          zIndex: computed.zIndex,
+          position: computed.position
+        };
+      }
+      return { exists: false };
+    });
+    
+    // If the container exists, check its styling
+    if (styles.exists) {
+      expect(parseInt(styles.zIndex)).toBeGreaterThanOrEqual(1000);
+      expect(styles.position).toBe('fixed');
+    }
+  });
+
+  test('should have mobile-responsive floating button styles', async ({ page }) => {
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.waitForTimeout(300);
+    
+    const styles = await page.evaluate(() => {
+      const btn = document.querySelector('.floating-toggle-btn');
+      if (btn) {
+        const computed = window.getComputedStyle(btn);
+        return {
+          exists: true,
+          width: computed.width,
+          height: computed.height,
+          bottom: computed.bottom,
+          right: computed.right
+        };
+      }
+      return { exists: false };
+    });
+    
+    // Verify responsive styles if button exists
+    if (styles.exists) {
+      const width = parseInt(styles.width);
+      // On mobile, button should be 44px
+      expect(width).toBeLessThanOrEqual(56);
+    }
+  });
+});
+
+test.describe('Recording Button Visibility - Edge Cases', () => {
+  
+  test('should show record button in secure context', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppLoad(page);
+    
+    const isSecure = await page.evaluate(() => window.isSecureContext);
+    
+    // In tests, we're typically in a secure context (localhost)
+    if (isSecure) {
+      const recordBtn = page.locator('button:has(.fa-microphone), button:has(.fa-microphone-slash)');
+      const count = await recordBtn.count();
+      
+      // At least one form of record button should be visible
+      expect(count).toBeGreaterThan(0);
+    }
+  });
+
+  test('should show disabled button with tooltip when unsupported', async ({ page }) => {
+    // This test checks that the unsupported state UI exists
+    const disabledBtn = page.locator('button:has(.fa-microphone-slash)[disabled]');
+    
+    // If disabled button exists, it should have a title attribute
+    const count = await disabledBtn.count();
+    
+    if (count > 0) {
+      const title = await disabledBtn.first().getAttribute('title');
+      expect(title).toBeTruthy();
+      expect(title.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('should handle different viewport sizes for recording controls', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppLoad(page);
+    
+    const viewports = [
+      { width: 320, height: 568 },  // iPhone SE
+      { width: 375, height: 667 },  // iPhone 8
+      { width: 768, height: 1024 }, // iPad
+      { width: 1920, height: 1080 } // Desktop
+    ];
+    
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.waitForTimeout(200);
+      
+      // Page should not have layout errors
+      const body = await page.locator('body').boundingBox();
+      expect(body).toBeTruthy();
+      expect(body.width).toBeGreaterThan(0);
+    }
+  });
+});

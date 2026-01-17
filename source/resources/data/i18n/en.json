@@ -567,5 +567,23 @@
     "updateAvailable": "A new version is available!",
     "refresh": "Refresh",
     "dismiss": "Dismiss"
+  },
+  "floatingPlayer": {
+    "show": "Show audio player",
+    "hide": "Hide audio player",
+    "page": "Page",
+    "selectRecording": "Select a recording",
+    "showPlaylist": "Show playlist",
+    "hidePlaylist": "Hide playlist",
+    "play": "Play",
+    "pause": "Pause",
+    "stop": "Stop",
+    "previous": "Previous",
+    "next": "Next",
+    "delete": "Delete",
+    "deleteConfirm": "Delete recording for page {page}?",
+    "playbackSpeed": "Playback speed",
+    "recentRecordings": "Recent Recordings",
+    "noRecordings": "No recordings yet"
   }
 }

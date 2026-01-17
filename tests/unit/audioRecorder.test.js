@@ -53,6 +53,7 @@ describe('AudioRecorder', () => {
         }
       };
       global.MediaRecorder = vi.fn();
+      global.window = { MediaRecorder: vi.fn() };
 
       expect(AudioRecorder.isSupported()).toBe(true);
     });
@@ -64,7 +65,7 @@ describe('AudioRecorder', () => {
       expect(AudioRecorder.isSupported()).toBe(false);
     });
 
-    it('should return false when getUserMedia is missing', () => {
+    it('should return false when getUserMedia is missing from mediaDevices', () => {
       global.navigator = {
         mediaDevices: {}
       };
@@ -80,6 +81,7 @@ describe('AudioRecorder', () => {
         }
       };
       global.MediaRecorder = undefined;
+      global.window = { MediaRecorder: undefined };
 
       expect(AudioRecorder.isSupported()).toBe(false);
     });
@@ -186,7 +188,7 @@ describe('AudioRecorder', () => {
       expect(mimeType).toBe('');
     });
 
-    it('should check mp4 first even on non-iOS when supported', () => {
+    it('should prefer webm for non-iOS browsers', () => {
       global.navigator = {
         userAgent: 'Mozilla/5.0 (Linux; Android 12; Pixel 6) Chrome/100',
         platform: 'Linux armv8l',
@@ -198,12 +200,12 @@ describe('AudioRecorder', () => {
         )
       };
 
-      // mp4 is first in priority, so it should be selected
+      // webm is preferred for non-iOS
       const mimeType = AudioRecorder.getSupportedMimeType();
-      expect(mimeType).toBe('audio/mp4');
+      expect(mimeType).toBe('audio/webm;codecs=opus');
     });
 
-    it('should return audio/mp4 when it is supported (priority)', () => {
+    it('should prefer webm on desktop browsers', () => {
       global.navigator = {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         platform: 'Win32',
@@ -215,24 +217,23 @@ describe('AudioRecorder', () => {
         )
       };
 
+      // webm is first priority for non-iOS
       const mimeType = AudioRecorder.getSupportedMimeType();
-      expect(mimeType).toBe('audio/mp4');
+      expect(mimeType).toBe('audio/webm');
     });
 
-    it('should fallback to webm when mp4 not supported', () => {
+    it('should fallback to mp4 when webm not supported on non-iOS', () => {
       global.navigator = {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         platform: 'Win32',
         maxTouchPoints: 0
       };
       global.MediaRecorder = {
-        isTypeSupported: vi.fn((type) => 
-          type === 'audio/webm;codecs=opus' || type === 'audio/webm'
-        )
+        isTypeSupported: vi.fn((type) => type === 'audio/mp4')
       };
 
       const mimeType = AudioRecorder.getSupportedMimeType();
-      expect(mimeType).toBe('audio/webm;codecs=opus');
+      expect(mimeType).toBe('audio/mp4');
     });
 
     it('should return empty string when no formats supported', () => {

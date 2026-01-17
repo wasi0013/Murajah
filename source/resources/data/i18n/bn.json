@@ -567,5 +567,23 @@
     "updateAvailable": "নতুন সংস্করণ পাওয়া গেছে!",
     "refresh": "রিফ্রেশ",
     "dismiss": "বাতিল"
+  },
+  "floatingPlayer": {
+    "show": "অডিও প্লেয়ার দেখান",
+    "hide": "অডিও প্লেয়ার লুকান",
+    "page": "পৃষ্ঠা",
+    "selectRecording": "একটি রেকর্ডিং নির্বাচন করুন",
+    "showPlaylist": "প্লেলিস্ট দেখান",
+    "hidePlaylist": "প্লেলিস্ট লুকান",
+    "play": "চালান",
+    "pause": "বিরতি",
+    "stop": "থামান",
+    "previous": "পূর্ববর্তী",
+    "next": "পরবর্তী",
+    "delete": "মুছুন",
+    "deleteConfirm": "পৃষ্ঠা {page} এর রেকর্ডিং মুছবেন?",
+    "playbackSpeed": "প্লেব্যাক গতি",
+    "recentRecordings": "সাম্প্রতিক রেকর্ডিং",
+    "noRecordings": "এখনো কোনো রেকর্ডিং নেই"
   }
 }
