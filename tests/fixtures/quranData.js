@@ -276,7 +276,7 @@ export function createMockAppState() {
       currentPage: 1,
       isLoading: false,
       theme: 'light',
-      appVersion: '26.01.12',
+      appVersion: '26.01.17',
       errorMessage: '',
       successMessage: ''
     },

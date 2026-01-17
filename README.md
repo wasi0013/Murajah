@@ -3,7 +3,7 @@
 # Murajah - Quran Memorization & Revision Tool
 
 [![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
-[![version](https://img.shields.io/badge/V-26.01.12-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
+[![version](https://img.shields.io/badge/V-26.01.17-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
 
 [![Playstore Link](https://img.shields.io/badge/Download%20App-black?logo=Google%20Play&logoColor=white&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.murajah.webview)
 [![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)

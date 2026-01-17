@@ -7,7 +7,7 @@
  * - Handles redirected responses properly
  */
 
-const CACHE_VERSION = '2.0.3';
+const CACHE_VERSION = '26.01.17';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = 'murajah-fonts-v2'; // Separate cache for fonts
 
