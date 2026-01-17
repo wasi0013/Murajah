@@ -6323,10 +6323,28 @@
           // Audio functions
           const playAudio = async (recording) => {
             try {
+              // Log playback attempt for debugging
+              console.log('[Murajah] Attempting playback', {
+                blobType: recording.blob?.type,
+                mimeType: recording.mimeType,
+                blobSize: recording.blob?.size,
+                pageNumber: recording.pageNumber
+              });
               await AudioRecorder.playAudio(recording.blob);
             } catch (error) {
-              console.error('[Murajah] Playback error:', error);
-              appStore.errorMessage = 'Failed to play recording';
+              console.error('[Murajah] Playback error:', error, {
+                blobType: recording.blob?.type,
+                mimeType: recording.mimeType,
+                blobSize: recording.blob?.size
+              });
+              // Provide more helpful error message
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+              if (isIOS) {
+                appStore.errorMessage = 'Failed to play recording. iOS may not support this audio format.';
+              } else {
+                appStore.errorMessage = 'Failed to play recording';
+              }
             }
           };
 
@@ -6386,6 +6404,7 @@
                   }),
                   duration: Number(result.duration) || 0, // Ensure it's a number
                   blob: result.blob,
+                  mimeType: result.mimeType || result.blob.type || 'audio/webm', // Store MIME type for iOS compatibility
                   timestamp: Date.now()
                 };
 
