@@ -16,6 +16,7 @@
     "menu": "Menu",
     "sections": {
       "quran": "Quran",
+      "surahView": "Surahs",
       "wordByWord": "Word by Word",
       "tafsir": "Tafsir",
       "audio": "Audio",
@@ -27,6 +28,17 @@
       "achievements": "Achievements",
       "community": "Community & Support"
     }
+  },
+  "surahView": {
+    "title": "Surahs",
+    "subtitle": "Browse the Quran by Surah",
+    "backToGrid": "All Surahs",
+    "verses": "verses",
+    "page": "Page",
+    "loading": "Loading verses...",
+    "loadingMore": "Loading more pages...",
+    "endOfSurah": "End of Surah",
+    "close": "Close"
   },
   "quickTest": {
     "title": "Quick test",

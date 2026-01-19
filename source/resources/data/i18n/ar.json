@@ -16,6 +16,7 @@
     "menu": "القائمة",
     "sections": {
       "quran": "القرآن",
+      "surahView": "السور",
       "wordByWord": "كلمة بكلمة",
       "tafsir": "التفسير",
       "audio": "صوت",
@@ -27,6 +28,17 @@
       "achievements": "الإنجازات",
       "community": "المجتمع والدعم"
     }
+  },
+  "surahView": {
+    "title": "السور",
+    "subtitle": "تصفح القرآن حسب السورة",
+    "backToGrid": "جميع السور",
+    "verses": "آيات",
+    "page": "صفحة",
+    "loading": "جاري تحميل الآيات...",
+    "loadingMore": "جاري تحميل المزيد من الصفحات...",
+    "endOfSurah": "نهاية السورة",
+    "close": "إغلاق"
   },
   "quickTest": {
     "title": "اختبار سريع",

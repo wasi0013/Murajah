@@ -1,5 +1,5 @@
 /**
- * Murajah Service Worker v2.0.3
+ * Murajah Service Worker v26.01.17
  * Implements Stale-While-Revalidate pattern with proper font handling
  * - Serves cached resources immediately for instant loading
  * - Fetches fresh copies in background and updates cache

@@ -16,6 +16,7 @@
     "menu": "মেনু",
     "sections": {
       "quran": "কুরআন",
+      "surahView": "সূরাসমূহ",
       "wordByWord": "শব্দে শব্দে",
       "tafsir": "তাফসীর",
       "audio": "অডিও",
@@ -27,6 +28,17 @@
       "achievements": "অর্জনসমূহ",
       "community": "কমিউনিটি ও সাপোর্ট"
     }
+  },
+  "surahView": {
+    "title": "সূরাসমূহ",
+    "subtitle": "সূরা অনুযায়ী কুরআন পড়ুন",
+    "backToGrid": "সব সূরা",
+    "verses": "আয়াত",
+    "page": "পৃষ্ঠা",
+    "loading": "আয়াত লোড হচ্ছে...",
+    "loadingMore": "আরও পৃষ্ঠা লোড হচ্ছে...",
+    "endOfSurah": "সূরা শেষ",
+    "close": "বন্ধ করুন"
   },
   "quickTest": {
     "title": "দ্রুত পরীক্ষা",

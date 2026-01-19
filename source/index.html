@@ -2774,6 +2774,10 @@
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
                       </a>
+                      <a href="#surah-section" class="nav-dropdown-item" @click.prevent="scrollToSection('surah-section')">
+                        <i class="fas fa-list-ol"></i>
+                        {{ $t('header.sections.surahView') || 'Surahs' }}
+                      </a>
                       <a v-if="currentLocale !== 'ar'" href="#wordbyword-section" class="nav-dropdown-item" @click.prevent="scrollToSection('wordbyword-section')">
                         <i class="fas fa-language"></i>
                         {{ $t('header.sections.wordByWord') || 'Word by Word' }}
@@ -2871,8 +2875,8 @@
                 <!-- Mobile Navigation -->
                 <div class="mobile-nav flex items-center">
                   <!-- Hamburger Menu Button -->
-                  <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" :title="$t('header.menu')">
-                    <i class="fas fa-bars text-gray-700 text-xl"></i>
+                  <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-300 bg-gray-200 rounded-lg transition-colors" :title="$t('header.menu')">
+                    <i class="fas fa-ellipsis-vertical text-gray-900 text-xl"></i>
                   </button>
                 </div>
               </div>
@@ -2902,6 +2906,10 @@
                 <a href="#quran-text-section" class="mobile-menu-item" @click.prevent="scrollToSection('quran-text-section')">
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
+                </a>
+                <a href="#surah-section" class="mobile-menu-item" @click.prevent="scrollToSection('surah-section')">
+                  <i class="fas fa-list-ol"></i>
+                  {{ $t('header.sections.surahView') || 'Surahs' }}
                 </a>
                 <a v-if="currentLocale !== 'ar'" href="#wordbyword-section" class="mobile-menu-item" @click.prevent="scrollToSection('wordbyword-section')">
                   <i class="fas fa-language"></i>
@@ -3032,6 +3040,168 @@
 
               <!-- Quran Text Display with Overlay Navigation -->
               <div v-if="viewMode === 'core'">
+              
+              <!-- Surah View Mode - Surah-by-Surah Browsing -->
+              <div v-if="settingsStore.showSurahView" class="mb-6">
+                <!-- Surah View Header -->
+                <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-t-xl p-4 text-white">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-list-ol"></i>
+                      </div>
+                      <div>
+                        <h2 class="text-lg sm:text-xl font-bold">{{ $t('surahView.title') || 'Surahs' }}</h2>
+                        <p class="text-sm text-white/80">{{ $t('surahView.subtitle') || 'Browse the Quran by Surah' }}</p>
+                      </div>
+                    </div>
+                    <button 
+                      @click="settingsStore.showSurahView = false; scrollToSection('quran-text-section')"
+                      class="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <i class="fas fa-times mr-1"></i>
+                      {{ $t('surahView.close') || 'Close' }}
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Surah Grid (when no surah is selected) -->
+                <div v-if="!surahViewState.selectedSurah" 
+                  class="bg-white rounded-b-xl shadow-lg p-4 sm:p-6"
+                  :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
+                >
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+                    <button 
+                      v-for="n in 114" 
+                      :key="'surah-grid-' + n"
+                      @click="selectSurah(n)"
+                      class="group relative flex flex-col items-center justify-center p-3 sm:p-4 bg-white border border-gray-200 rounded-xl hover:border-emerald-400 hover:shadow-md transition-all duration-200 cursor-pointer"
+                    >
+                      <!-- Surah Number Badge -->
+                      <div class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm">
+                        {{ n }}
+                      </div>
+                      
+                      <!-- Surah Name (Arabic) -->
+                      <span class="text-xl sm:text-2xl font-bold text-gray-800 mb-1" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                        {{ getSurahNameArabic(n) }}
+                      </span>
+                      
+                      <!-- Surah Name (Translated) -->
+                      <span class="text-xs text-gray-500 text-center line-clamp-1">
+                        {{ getSurahNameTranslated(n) }}
+                      </span>
+                      
+                      <!-- Verse Count -->
+                      <span class="text-xs text-gray-400 mt-0.5">
+                        {{ getSurahVerseCount(n) }} {{ $t('surahView.verses') || 'verses' }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Selected Surah Verses Display -->
+                <div v-else 
+                  class="bg-white rounded-b-xl shadow-lg overflow-hidden relative"
+                  :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
+                >
+                  <!-- Surah Header with Back Button -->
+                  <div class="sticky top-0 z-10 bg-gradient-to-r from-emerald-50 to-teal-50 p-3 sm:p-4 border-b border-emerald-200 flex items-center justify-between">
+                    <!-- Color Palette Toggle -->
+                    <button 
+                      @click="cycleQuranBackgroundColor"
+                      class="w-10 h-10 sm:w-12 sm:h-12 bg-white border border-gray-200 rounded-lg cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 shadow-sm flex items-center justify-center"
+                      :title="'Current background: ' + settingsStore.quranBackgroundColor + ' (Click to cycle)'">
+                      <div 
+                        class="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300"
+                        :style="{ backgroundColor: settingsStore.quranBackgroundColor }">
+                      </div>
+                    </button>
+                    
+                    <div class="text-center flex-1 px-4">
+                      <h3 class="text-xl sm:text-2xl font-bold text-emerald-800" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                        {{ getSurahNameArabic(surahViewState.selectedSurah) }}
+                      </h3>
+                      <p class="text-sm text-emerald-600">
+                        {{ getSurahNameTranslated(surahViewState.selectedSurah) }} • {{ surahViewState.totalVerseCount }} {{ $t('surahView.verses') || 'verses' }}
+                      </p>
+                    </div>
+                    
+                    <!-- All Surahs Button on Right -->
+                    <button 
+                      @click="backToSurahGrid"
+                      class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <i class="fas fa-th text-gray-600"></i>
+                      {{ $t('surahView.backToGrid') || 'All Surahs' }}
+                    </button>
+                  </div>
+                  
+                  <!-- Bismillah (except for Surah 9) -->
+                  <div v-if="surahViewState.selectedSurah !== 9" class="text-center py-4 sm:py-6 border-b border-gray-100" :class="['quran-text', { 'layout-indopak': isIndopak }]">
+                    <span class="text-2xl sm:text-3xl text-gray-800 quran-word" :style="fontSizeStyle">﷽</span>
+                  </div>
+                  
+                  <!-- Verses Container - No internal scrollbar, uses page scroll -->
+                  <div class="p-2 sm:p-4">
+                    <!-- Loading State -->
+                    <div v-if="surahViewState.isLoading && surahViewState.pages.length === 0" class="flex flex-col items-center justify-center py-12">
+                      <i class="fas fa-spinner fa-spin text-4xl text-emerald-600 mb-4"></i>
+                      <p class="text-gray-600">{{ $t('surahView.loading') || 'Loading...' }}</p>
+                    </div>
+                    
+                    <!-- Pages Container - Rendered like Quran View -->
+                    <div 
+                      v-for="(page, pageIdx) in surahViewState.pages" 
+                      :key="'surah-page-' + page.pageNum"
+                      class="mb-8"
+                    >
+                      <!-- Page Header -->
+                      <div class="flex items-center justify-center py-2 mb-4">
+                        <div class="flex-1 h-px bg-emerald-200"></div>
+                        <span class="px-4 text-sm text-emerald-600 font-medium">
+                          {{ $t('surahView.page') || 'Page' }} {{ page.pageNum }}
+                        </span>
+                        <div class="flex-1 h-px bg-emerald-200"></div>
+                      </div>
+                      
+                      <!-- Page Content - Same layout as Quran View -->
+                      <div 
+                        :style="fontSizeStyle" 
+                        :class="['quran-text text-center p-2 sm:p-4 rounded-lg space-y-1 sm:space-y-2', { 'layout-indopak': isIndopak }, 'font-page-' + page.pageNum]"
+                      >
+                        <div v-for="(line, lineIdx) in page.lines" :key="'line-' + page.pageNum + '-' + lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-1.5 md:gap-2">
+                          <!-- Skip surah_name lines since header already shows surah info and we filter by surah -->
+                          <template v-if="line.type !== 'surah_name'">
+                            <!-- Words Display -->
+                            <span 
+                              v-for="word in line.words" 
+                              :key="word.id"
+                              class="quran-word inline-block"
+                            >
+                              {{ word.text }}
+                            </span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Load More Indicator -->
+                    <div v-if="surahViewState.hasMore && surahViewState.pages.length > 0" class="flex items-center justify-center py-4">
+                      <i class="fas fa-spinner fa-spin text-2xl text-emerald-400 mr-2"></i>
+                      <span class="text-gray-500 text-sm">{{ $t('surahView.loadingMore') || 'Loading more pages...' }}</span>
+                    </div>
+                    
+                    <!-- End of Surah -->
+                    <div v-if="!surahViewState.hasMore && surahViewState.pages.length > 0" class="text-center py-4">
+                      <span class="text-gray-400 text-sm">— {{ $t('surahView.endOfSurah') || 'End of Surah' }} —</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Regular Page Navigation (hidden in Surah View mode) -->
+              <template v-if="!settingsStore.showSurahView">
               
               <!-- Compact Quick Navigation Bar -->
               <div class="flex items-center justify-between gap-2 mb-3 px-2 py-2 bg-white rounded-lg shadow-md border border-gray-200">
@@ -3575,6 +3745,7 @@
                 </button>
               </div>
 
+              </template>
               </div>
               <!-- Analytics -->
               <div id="analytics-section" v-if="viewMode === 'analytics'" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
@@ -4852,6 +5023,7 @@
             tajweedEnabled: true,
             showTafsir: false,
             showWordByWord: false,
+            showSurahView: false, // Show Surah-by-Surah view mode
             showMorphology: false, // Enable morphology popup on word click
             layout: 'indopak', // 'qpc' (604 pages) or 'indopak' (610 pages)
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
@@ -4964,6 +5136,19 @@
           const morphologyContent = ref(null);
           const morphologyLoading = ref(false);
           const morphologyError = ref(null);
+
+          // Surah View state - for Surah-by-Surah browsing mode (page-based for font loading)
+          const surahViewState = reactive({
+            selectedSurah: null, // Currently selected surah number (1-114), null = show grid
+            pages: [], // Loaded pages with their verses for the selected surah
+            allPages: [], // All page numbers for this surah
+            loadedPageCount: 0, // Number of pages currently displayed
+            pageBatchSize: 1, // Load 1 page at a time for optimal font loading
+            isLoading: false, // Loading state
+            hasMore: true, // Whether there are more pages to load
+            loadedFonts: new Set(), // Track which page fonts have been loaded
+            totalVerseCount: 0 // Total verse count for display
+          });
 
           // Live streaming state using YouTube embeds
           const liveContainer = ref(null);
@@ -5149,11 +5334,14 @@
               try {
                 settingsStore.showTafsir = false;
                 settingsStore.showWordByWord = false;
+                settingsStore.showSurahView = false;
                 await murajahDB.setSetting('showTafsir', false);
                 await murajahDB.setSetting('showWordByWord', false);
+                await murajahDB.setSetting('showSurahView', false);
               } catch (e) {
                 settingsStore.showTafsir = false;
                 settingsStore.showWordByWord = false;
+                settingsStore.showSurahView = false;
               }
               // Remove tafsir and wordbyword params from URL (preserve other params)
               try {
@@ -5163,6 +5351,12 @@
                 }
                 if (url.searchParams.has('wordbyword')) {
                   url.searchParams.delete('wordbyword');
+                }
+                if (url.searchParams.has('surahview')) {
+                  url.searchParams.delete('surahview');
+                }
+                if (url.searchParams.has('surah')) {
+                  url.searchParams.delete('surah');
                 }
                 history.replaceState(null, '', url.toString());
                 
@@ -5198,10 +5392,13 @@
               try {
                 settingsStore.showTafsir = true;
                 settingsStore.showWordByWord = false; // Disable word-by-word when tafsir is enabled
+                settingsStore.showSurahView = false;
                 await murajahDB.setSetting('showTafsir', true);
+                await murajahDB.setSetting('showSurahView', false);
               } catch (e) {
                 settingsStore.showTafsir = true;
                 settingsStore.showWordByWord = false;
+                settingsStore.showSurahView = false;
               }
 
               // Add/replace URL query param tafsir=true while preserving other params
@@ -5209,6 +5406,8 @@
                 const url = new URL(window.location.href);
                 url.searchParams.set('tafsir', 'true');
                 url.searchParams.delete('wordbyword');
+                url.searchParams.delete('surahview');
+                url.searchParams.delete('surah');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
                 
@@ -5234,10 +5433,13 @@
               try {
                 settingsStore.showWordByWord = true;
                 settingsStore.showTafsir = false; // Disable tafsir when word-by-word is enabled
+                settingsStore.showSurahView = false;
                 await murajahDB.setSetting('showWordByWord', true);
+                await murajahDB.setSetting('showSurahView', false);
               } catch (e) {
                 settingsStore.showWordByWord = true;
                 settingsStore.showTafsir = false;
+                settingsStore.showSurahView = false;
               }
 
               // Add/replace URL query param wordbyword=true while preserving other params
@@ -5245,6 +5447,7 @@
                 const url = new URL(window.location.href);
                 url.searchParams.set('wordbyword', 'true');
                 url.searchParams.delete('tafsir');
+                url.searchParams.delete('surahview');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
                 
@@ -5259,6 +5462,38 @@
               }
 
               // Scroll to top (same behavior as quran navigation)
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+
+            // Special handling for surah view - show surah-by-surah browsing mode
+            if (sectionId === 'surah-section') {
+              // Clear explicit Quran override
+              forceQuranMode.value = false;
+              try {
+                settingsStore.showSurahView = true;
+                settingsStore.showTafsir = false;
+                settingsStore.showWordByWord = false;
+                await murajahDB.setSetting('showSurahView', true);
+              } catch (e) {
+                settingsStore.showSurahView = true;
+                settingsStore.showTafsir = false;
+                settingsStore.showWordByWord = false;
+              }
+
+              // Update URL - remove other view params
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('surahview', 'true');
+                url.searchParams.delete('tafsir');
+                url.searchParams.delete('wordbyword');
+                url.searchParams.delete('page');
+                history.replaceState(null, '', url.toString());
+              } catch (e) {
+                // ignore URL update errors
+              }
+
+              // Scroll to top
               window.scrollTo({ top: 0, behavior: 'smooth' });
               return;
             }
@@ -5328,6 +5563,33 @@
                 }
               } catch (e) {
                 settingsStore.showWordByWord = false;
+              }
+
+              // Override surah view visibility based on URL parameters
+              // Enable surah view when `surahview=true` or `surah=N` is present
+              try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const surahViewParam = urlParams.get('surahview');
+                const surahParam = urlParams.get('surah');
+                
+                if (surahViewParam === 'true' || surahParam) {
+                  settingsStore.showSurahView = true;
+                  settingsStore.showTafsir = false;
+                  settingsStore.showWordByWord = false;
+                  
+                  // If a specific surah is requested, select it after data loads
+                  if (surahParam) {
+                    const surahNum = parseInt(surahParam, 10);
+                    if (surahNum >= 1 && surahNum <= 114) {
+                      // Defer surah selection until after data is loaded
+                      setTimeout(() => selectSurah(surahNum), 500);
+                    }
+                  }
+                } else {
+                  settingsStore.showSurahView = false;
+                }
+              } catch (e) {
+                settingsStore.showSurahView = false;
               }
               
               // Load Quran data with layout parameter (translations come from cache with background refresh)
@@ -6299,6 +6561,348 @@
               : quranData.value.translations;
             return translationsSource[key] || '';
           };
+
+          // ========== SURAH VIEW FUNCTIONS ==========
+          
+          // Cached detailed quran data for surah view
+          let detailedQuranCache = null;
+          
+          // Get QPC font-mapped text for a verse (surah:ayah)
+          // Uses the word-by-word data to get proper font characters for QPC/Tajweed fonts
+          const getVerseQPCText = (surahNum, ayahNum) => {
+            if (!quranData.value || !quranData.value.words) {
+              return null;
+            }
+            
+            const words = [];
+            // Word keys are in format "surah:ayah:word" e.g., "2:158:7"
+            // Iterate through word numbers until no more found
+            let wordNum = 1;
+            while (true) {
+              const key = `${surahNum}:${ayahNum}:${wordNum}`;
+              const word = quranData.value.words[key];
+              if (!word) break;
+              words.push(word.text);
+              wordNum++;
+            }
+            
+            return words.length > 0 ? words.join(' ') : null;
+          };
+          
+          // Load detailed quran data for surah view
+          const loadDetailedQuranData = async () => {
+            if (detailedQuranCache) {
+              return detailedQuranCache;
+            }
+            try {
+              const response = await fetch('./resources/detailed_quran.json');
+              if (!response.ok) {
+                throw new Error(`Failed to fetch detailed quran: ${response.status}`);
+              }
+              detailedQuranCache = await response.json();
+              console.log('[Murajah] Detailed Quran data loaded successfully');
+              return detailedQuranCache;
+            } catch (error) {
+              console.error('[Murajah] Failed to load detailed quran data:', error);
+              throw error;
+            }
+          };
+          
+          // Get page range for a surah (start and end page numbers)
+          const getSurahPageRange = (surahNum) => {
+            const mapping = isIndopak.value ? SURAH_PAGES_INDOPAK : SURAH_PAGES_QPC;
+            const maxPage = isIndopak.value ? 610 : 604;
+            const startPage = mapping[surahNum] || 1;
+            
+            // End page calculation:
+            // - Include the page where the next surah starts, because the current surah
+            //   may have content that extends onto that shared page
+            // - The filtering logic in loadMoreSurahPages will filter out words from other surahs
+            let endPage;
+            if (surahNum >= 114) {
+              endPage = maxPage;
+            } else {
+              const nextSurahStart = mapping[surahNum + 1] || maxPage;
+              // Include the page where next surah starts (current surah may end there)
+              // The surah filtering will handle showing only this surah's content
+              endPage = nextSurahStart;
+            }
+            
+            return { startPage, endPage };
+          };
+          
+          // Load font for a specific page in Surah View
+          // Uses unique font-family name per page so multiple pages can be displayed at once
+          const loadSurahViewPageFont = (pageNum) => {
+            // Skip if already loaded or if using Indopak (single font file)
+            if (surahViewState.loadedFonts.has(pageNum) || isIndopak.value) {
+              return;
+            }
+            
+            const tajweed = settingsStore.tajweedEnabled;
+            const fontFamily = tajweed ? `TajweedPage-${pageNum}` : `QPCPage-${pageNum}`;
+            const fontId = `surahViewFont-${tajweed ? 'tajweed' : 'qpc'}-p${pageNum}`;
+            
+            // Check if this font is already in the document
+            if (document.getElementById(fontId)) {
+              surahViewState.loadedFonts.add(pageNum);
+              return;
+            }
+            
+            const styleTag = document.createElement('style');
+            styleTag.id = fontId;
+            
+            // Create @font-face with page-specific font-family name + CSS class to use it
+            if (tajweed) {
+              styleTag.innerHTML = `
+                @font-face { 
+                  font-family: '${fontFamily}'; 
+                  src: url('./resources/styles/fonts/tajweed/p${pageNum}.woff2') format('woff2'); 
+                  font-weight: normal; 
+                  font-style: normal; 
+                  font-display: swap; 
+                }
+                .font-page-${pageNum} .quran-word { 
+                  font-family: '${fontFamily}', 'Traditional Arabic', 'Arial Unicode MS', sans-serif !important; 
+                }
+              `;
+            } else {
+              styleTag.innerHTML = `
+                @font-face { 
+                  font-family: '${fontFamily}'; 
+                  src: url('./resources/styles/fonts/qpc-v2/p${pageNum}.woff2') format('woff2'); 
+                  font-weight: normal; 
+                  font-style: normal; 
+                  font-display: swap; 
+                }
+                .font-page-${pageNum} .quran-word { 
+                  font-family: '${fontFamily}', 'Traditional Arabic', 'Arial Unicode MS', sans-serif !important; 
+                }
+              `;
+            }
+            
+            document.head.appendChild(styleTag);
+            surahViewState.loadedFonts.add(pageNum);
+            console.log(`[Murajah] Surah View: Loaded font for page ${pageNum} (tajweed: ${tajweed}, font-family: ${fontFamily})`);
+          };
+          
+          // Get verses for a specific page from the detailed quran data
+          const getVersesForPage = (surahNum, pageNum, allVerses) => {
+            // Filter verses that belong to this page
+            return allVerses.filter(verse => verse.page === pageNum).map(verse => ({
+              ...verse,
+              qpcText: getVerseQPCText(surahNum, verse.verse)
+            }));
+          };
+          
+          // Select a surah and load its pages lazily
+          const selectSurah = async (surahNum) => {
+            if (surahNum < 1 || surahNum > 114) {
+              console.warn('[Murajah] Invalid surah number:', surahNum);
+              return;
+            }
+            
+            surahViewState.isLoading = true;
+            surahViewState.selectedSurah = surahNum;
+            surahViewState.pages = [];
+            surahViewState.allPages = [];
+            surahViewState.loadedPageCount = 0;
+            surahViewState.hasMore = true;
+            surahViewState.loadedFonts = new Set();
+            
+            try {
+              const data = await loadDetailedQuranData();
+              const surahVerses = data[surahNum.toString()];
+              
+              if (!surahVerses || !Array.isArray(surahVerses)) {
+                console.warn('[Murajah] No verses found for surah:', surahNum);
+                surahViewState.isLoading = false;
+                return;
+              }
+              
+              surahViewState.totalVerseCount = surahVerses.length;
+              
+              // Get page range for this surah
+              const { startPage, endPage } = getSurahPageRange(surahNum);
+              
+              // Create array of page numbers for this surah
+              const pageNumbers = [];
+              for (let p = startPage; p <= endPage; p++) {
+                pageNumbers.push(p);
+              }
+              surahViewState.allPages = pageNumbers;
+              
+              // Store all verses for reference when loading pages
+              detailedQuranCache._surahVerses = detailedQuranCache._surahVerses || {};
+              detailedQuranCache._surahVerses[surahNum] = surahVerses;
+              
+              // Update URL with surah parameter
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('surah', surahNum.toString());
+                url.searchParams.delete('page');
+                url.searchParams.delete('tafsir');
+                url.searchParams.delete('wordbyword');
+                history.replaceState(null, '', url.toString());
+              } catch (e) {
+                // Ignore URL update errors
+              }
+              
+              console.log(`[Murajah] Loaded surah ${surahNum} with ${surahVerses.length} verses across ${pageNumbers.length} pages (${startPage}-${endPage})`);
+            } catch (error) {
+              console.error('[Murajah] Failed to load surah:', error);
+              appStore.errorMessage = 'Failed to load surah. Please try again.';
+              setTimeout(() => appStore.errorMessage = '', 5000);
+            } finally {
+              surahViewState.isLoading = false;
+              // Load first page immediately
+              loadMoreSurahPages();
+              // Start background loading of remaining pages
+              scheduleBackgroundPageLoad();
+            }
+          };
+          
+          // Load more pages for lazy loading - renders pages like the main Quran view
+          const loadMoreSurahPages = () => {
+            if (!surahViewState.hasMore || surahViewState.isLoading || !quranData.value) {
+              return;
+            }
+            
+            const currentCount = surahViewState.loadedPageCount;
+            const totalPages = surahViewState.allPages.length;
+            const nextPageNumbers = surahViewState.allPages.slice(currentCount, currentCount + surahViewState.pageBatchSize);
+            const selectedSurah = surahViewState.selectedSurah;
+            
+            if (nextPageNumbers.length > 0 && quranData.value.layout && quranData.value.words) {
+              nextPageNumbers.forEach((pageNum, pageIdx) => {
+                // Load font for this page
+                loadSurahViewPageFont(pageNum);
+                
+                // Get page lines using the same function as main Quran view
+                let pageLines = getPageWordsDetailed(pageNum, quranData.value.layout, quranData.value.words);
+                
+                if (pageLines && pageLines.length > 0) {
+                  // Filter lines to only show content from the selected surah
+                  // Skip surah_name lines as they are decorative - we show surah info in the header
+                  const filteredLines = pageLines.map(line => {
+                    // Skip surah_name decoration lines - header already shows surah info
+                    if (line.type === 'surah_name') {
+                      return null;
+                    }
+                    
+                    // For ayah lines, filter words to only include those from the selected surah
+                    if (line.type === 'ayah' && line.words && line.words.length > 0) {
+                      // Compare as strings since word.surah may be string or number
+                      const selectedSurahStr = String(selectedSurah);
+                      const filteredWords = line.words.filter(word => String(word.surah) === selectedSurahStr);
+                      
+                      // If no words from this surah, skip the line
+                      if (filteredWords.length === 0) {
+                        return null;
+                      }
+                      
+                      return {
+                        ...line,
+                        words: filteredWords
+                      };
+                    }
+                    
+                    return line;
+                  }).filter(line => line !== null);
+                  
+                  // Only add the page if it has content for this surah
+                  if (filteredLines.length > 0) {
+                    surahViewState.pages.push({
+                      pageNum,
+                      lines: filteredLines
+                    });
+                  }
+                }
+              });
+              
+              surahViewState.loadedPageCount += nextPageNumbers.length;
+            }
+            
+            surahViewState.hasMore = surahViewState.loadedPageCount < totalPages;
+            console.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for surah ${selectedSurah}`);
+          };
+          
+          // Background page loading - loads remaining pages automatically without blocking UI
+          let backgroundLoadTimer = null;
+          const scheduleBackgroundPageLoad = () => {
+            // Clear any existing timer
+            if (backgroundLoadTimer) {
+              clearTimeout(backgroundLoadTimer);
+              backgroundLoadTimer = null;
+            }
+            
+            // If no more pages to load, exit
+            if (!surahViewState.hasMore || !surahViewState.selectedSurah) {
+              return;
+            }
+            
+            // Schedule next page load with a small delay to keep UI responsive
+            backgroundLoadTimer = setTimeout(() => {
+              if (surahViewState.hasMore && surahViewState.selectedSurah) {
+                loadMoreSurahPages();
+                // Continue loading more pages
+                scheduleBackgroundPageLoad();
+              }
+            }, 100); // 100ms delay between page loads for smooth UI
+          };
+          
+          // Cancel background loading (used when navigating away)
+          const cancelBackgroundLoading = () => {
+            if (backgroundLoadTimer) {
+              clearTimeout(backgroundLoadTimer);
+              backgroundLoadTimer = null;
+            }
+          };
+          
+          // Go back to surah grid
+          const backToSurahGrid = () => {
+            // Cancel any ongoing background loading
+            cancelBackgroundLoading();
+            
+            surahViewState.selectedSurah = null;
+            surahViewState.pages = [];
+            surahViewState.allPages = [];
+            surahViewState.loadedPageCount = 0;
+            surahViewState.hasMore = true;
+            surahViewState.loadedFonts = new Set();
+            surahViewState.totalVerseCount = 0;
+            
+            // Update URL - remove surah parameter
+            try {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('surah');
+              history.replaceState(null, '', url.toString());
+            } catch (e) {
+              // Ignore URL update errors
+            }
+          };
+          
+          // Get verse count for a surah (for grid display)
+          const getSurahVerseCount = (surahNum) => {
+            // Standard verse counts for all 114 surahs
+            const verseCounts = {
+              1: 7, 2: 286, 3: 200, 4: 176, 5: 120, 6: 165, 7: 206, 8: 75, 9: 129, 10: 109,
+              11: 123, 12: 111, 13: 43, 14: 52, 15: 99, 16: 128, 17: 111, 18: 110, 19: 98, 20: 135,
+              21: 112, 22: 78, 23: 118, 24: 64, 25: 77, 26: 227, 27: 93, 28: 88, 29: 69, 30: 60,
+              31: 34, 32: 30, 33: 73, 34: 54, 35: 45, 36: 83, 37: 182, 38: 88, 39: 75, 40: 85,
+              41: 54, 42: 53, 43: 89, 44: 59, 45: 37, 46: 35, 47: 38, 48: 29, 49: 18, 50: 45,
+              51: 60, 52: 49, 53: 62, 54: 55, 55: 78, 56: 96, 57: 29, 58: 22, 59: 24, 60: 13,
+              61: 14, 62: 11, 63: 11, 64: 18, 65: 12, 66: 12, 67: 30, 68: 52, 69: 52, 70: 44,
+              71: 28, 72: 28, 73: 20, 74: 56, 75: 40, 76: 31, 77: 50, 78: 40, 79: 46, 80: 42,
+              81: 29, 82: 19, 83: 36, 84: 25, 85: 22, 86: 17, 87: 19, 88: 26, 89: 30, 90: 20,
+              91: 15, 92: 21, 93: 11, 94: 8, 95: 8, 96: 19, 97: 5, 98: 8, 99: 8, 100: 11,
+              101: 11, 102: 8, 103: 3, 104: 9, 105: 5, 106: 4, 107: 7, 108: 3, 109: 6, 110: 3,
+              111: 5, 112: 4, 113: 5, 114: 6
+            };
+            return verseCounts[surahNum] || 0;
+          };
+          
+          // ========== END SURAH VIEW FUNCTIONS ==========
 
           // Word interaction functions
           const highlightWord = (word) => {
@@ -8062,7 +8666,39 @@
           // Watch tajweed setting and reload font when toggled
           watch(() => settingsStore.tajweedEnabled, () => {
             loadPageFont(appStore.currentPage);
+            // Also reload Surah View fonts if in surah view
+            if (surahViewState.selectedSurah && surahViewState.pages.length > 0) {
+              reloadSurahViewFonts();
+            }
           });
+
+          // Watch layout setting and reload Surah View when changed
+          watch(() => settingsStore.layout, () => {
+            // If in Surah View, reload the current surah with new layout
+            if (surahViewState.selectedSurah) {
+              const currentSurah = surahViewState.selectedSurah;
+              backToSurahGrid();
+              // Re-select the surah after a brief delay to allow state reset
+              setTimeout(() => selectSurah(currentSurah), 100);
+            }
+          });
+
+          // Function to reload Surah View fonts when font settings change
+          const reloadSurahViewFonts = () => {
+            // Clear all existing surah view font style tags
+            const existingFonts = document.querySelectorAll('[id^="surahViewFont-"]');
+            existingFonts.forEach(font => font.remove());
+            
+            // Clear loaded fonts set
+            surahViewState.loadedFonts = new Set();
+            
+            // Reload fonts for all currently loaded pages
+            surahViewState.pages.forEach(page => {
+              loadSurahViewPageFont(page.pageNum);
+            });
+            
+            console.log('[Murajah] Surah View fonts reloaded');
+          };
 
           // Watch fontSize setting and save changes
           watch(() => settingsStore.fontSize, (newFontSize) => {
@@ -8107,16 +8743,42 @@
               setTimeout(() => appStore.successMessage = '', 2000);
             }
             
-            // Left Arrow - Previous Page
+            // Left Arrow - Previous Page (or Previous Surah in Surah View)
             if (event.key === 'ArrowLeft') {
               event.preventDefault();
-              previousPage();
+              // If in Surah View with a surah selected, go to previous surah
+              if (settingsStore.showSurahView && surahViewState.selectedSurah) {
+                const currentSurah = surahViewState.selectedSurah;
+                if (currentSurah > 1) {
+                  selectSurah(currentSurah - 1);
+                  appStore.successMessage = `Surah ${currentSurah - 1}`;
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                } else {
+                  appStore.successMessage = 'Already at first surah';
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                }
+              } else {
+                previousPage();
+              }
             }
             
-            // Right Arrow - Next Page
+            // Right Arrow - Next Page (or Next Surah in Surah View)
             if (event.key === 'ArrowRight') {
               event.preventDefault();
-              nextPage();
+              // If in Surah View with a surah selected, go to next surah
+              if (settingsStore.showSurahView && surahViewState.selectedSurah) {
+                const currentSurah = surahViewState.selectedSurah;
+                if (currentSurah < 114) {
+                  selectSurah(currentSurah + 1);
+                  appStore.successMessage = `Surah ${currentSurah + 1}`;
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                } else {
+                  appStore.successMessage = 'Already at last surah';
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                }
+              } else {
+                nextPage();
+              }
             }
             
             // M - Toggle Memorized
@@ -8202,7 +8864,7 @@
 Murajah Keyboard Shortcuts:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Navigation:
-  ← / → Arrow Keys   Navigate between pages
+  ← / → Arrow Keys   Navigate pages (or surahs in Surah View)
   G                  Go to specific page
   R                  Random memorized page
 
@@ -8379,6 +9041,13 @@ Display:
             showReviewPagesOverlay,
             analyticsActiveTab,
             viewMode,
+            // Surah View state and functions
+            surahViewState,
+            selectSurah,
+            loadMoreSurahPages,
+            backToSurahGrid,
+            cancelBackgroundLoading,
+            getSurahVerseCount,
             statistics,
             totalPerfectRevisionsPoints,
             formattedTotalScore,
