@@ -481,6 +481,7 @@ export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
       if (line.line_type === 'surah_name' && line.surah_number) {
         return {
           type: 'surah_name',
+          surah: line.surah_number,
           text: `Surah ${line.surah_number}`,
           words: []
         };

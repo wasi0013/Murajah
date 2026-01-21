@@ -3048,25 +3048,59 @@
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                       <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="fas fa-list-ol"></i>
+                        <i :class="['fas', surahViewState.activeTab === 'juzs' ? 'fa-book-open' : 'fa-list-ol']"></i>
                       </div>
                       <div>
-                        <h2 class="text-lg sm:text-xl font-bold">{{ $t('surahView.title') || 'Surahs' }}</h2>
-                        <p class="text-sm text-white/80">{{ $t('surahView.subtitle') || 'Browse the Quran by Surah' }}</p>
+                        <h2 class="text-lg sm:text-xl font-bold">
+                          {{ surahViewState.activeTab === 'juzs' ? ($t('juzView.title') || 'Juzs') : ($t('surahView.title') || 'Surahs') }}
+                        </h2>
+                        <p class="text-sm text-white/80">
+                          {{ surahViewState.activeTab === 'juzs' ? ($t('juzView.subtitle') || 'Browse the Quran by Juz') : ($t('surahView.subtitle') || 'Browse the Quran by Surah') }}
+                        </p>
                       </div>
                     </div>
                     <button 
-                      @click="settingsStore.showSurahView = false; scrollToSection('quran-text-section')"
+                      @click="closeSurahView(); scrollToSection('quran-text-section')"
                       class="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                     >
                       <i class="fas fa-times mr-1"></i>
                       {{ $t('surahView.close') || 'Close' }}
                     </button>
                   </div>
+                  
+                  <!-- Toggle Tabs (only show when no surah or juz is selected) -->
+                  <div v-if="!surahViewState.selectedSurah && !surahViewState.selectedJuz" class="mt-4 flex justify-center">
+                    <div class="inline-flex bg-white/20 rounded-lg p-1">
+                      <button 
+                        @click="surahViewState.activeTab = 'surahs'; backToSurahGrid()"
+                        :class="[
+                          'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                          surahViewState.activeTab === 'surahs' 
+                            ? 'bg-white text-emerald-700 shadow-sm' 
+                            : 'text-white/90 hover:bg-white/10'
+                        ]"
+                      >
+                        <i class="fas fa-list-ol mr-1.5"></i>
+                        {{ $t('surahView.tabSurahs') || 'Surahs' }}
+                      </button>
+                      <button 
+                        @click="surahViewState.activeTab = 'juzs'; backToSurahGrid()"
+                        :class="[
+                          'px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                          surahViewState.activeTab === 'juzs' 
+                            ? 'bg-white text-emerald-700 shadow-sm' 
+                            : 'text-white/90 hover:bg-white/10'
+                        ]"
+                      >
+                        <i class="fas fa-book-open mr-1.5"></i>
+                        {{ $t('juzView.tabJuzs') || 'Juzs' }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 
-                <!-- Surah Grid (when no surah is selected) -->
-                <div v-if="!surahViewState.selectedSurah" 
+                <!-- Surah Grid (when no surah/juz is selected and surahs tab active) -->
+                <div v-if="!surahViewState.selectedSurah && !surahViewState.selectedJuz && surahViewState.activeTab === 'surahs'" 
                   class="bg-white rounded-b-xl shadow-lg p-4 sm:p-6"
                   :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
                 >
@@ -3100,8 +3134,210 @@
                   </div>
                 </div>
                 
+                <!-- Juz Grid (when no surah/juz is selected and juzs tab active) -->
+                <div v-if="!surahViewState.selectedSurah && !surahViewState.selectedJuz && surahViewState.activeTab === 'juzs'" 
+                  class="bg-white rounded-b-xl shadow-lg p-4 sm:p-6"
+                  :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
+                >
+                  <!-- Layout Info Badge -->
+                  <div class="mb-4 flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <i class="fas fa-info-circle"></i>
+                    <span>{{ $t('juzView.layoutInfo') || 'Page ranges shown for' }}: <strong>{{ layoutLabel }}</strong> ({{ totalPages }} {{ $t('juzView.pages') || 'pages' }})</span>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                    <div 
+                      v-for="juzNum in 30" 
+                      :key="'juz-grid-' + juzNum"
+                      class="group relative flex flex-col bg-white border border-gray-200 rounded-xl hover:border-cyan-400 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                      :class="{
+                        'ring-2 ring-green-500': juzMemorizedCount(juzNum) === (getJuzPageRange(juzNum)[1] - getJuzPageRange(juzNum)[0] + 1),
+                        'ring-1 ring-yellow-400': juzMemorizedCount(juzNum) > 0 && juzMemorizedCount(juzNum) < (getJuzPageRange(juzNum)[1] - getJuzPageRange(juzNum)[0] + 1)
+                      }"
+                    >
+                      <!-- Juz Number Badge -->
+                      <div class="absolute -top-1 -right-1 w-7 h-7 bg-cyan-600 text-white text-xs font-bold rounded-bl-xl rounded-tr-xl flex items-center justify-center shadow-sm z-10">
+                        {{ juzNum }}
+                      </div>
+                      
+                      <!-- Progress Indicator -->
+                      <div 
+                        v-if="juzMemorizedCount(juzNum) > 0"
+                        class="absolute top-0 left-0 h-1 bg-gradient-to-r from-green-500 to-emerald-400"
+                        :style="{ width: getJuzMemorizedPercentage(juzNum) + '%' }"
+                      ></div>
+                      
+                      <!-- Clickable Juz Header - Opens Juz View -->
+                      <button 
+                        @click="selectJuz(juzNum)"
+                        class="bg-gradient-to-r from-cyan-50 to-teal-50 px-3 py-2 border-b border-gray-100 hover:from-cyan-100 hover:to-teal-100 transition-colors cursor-pointer w-full"
+                      >
+                        <div class="text-center">
+                          <span class="text-lg font-bold text-cyan-800">{{ $t('juzView.juzLabel') || 'Juz' }} {{ juzNum }}</span>
+                          <div class="text-xs text-cyan-600 mt-0.5">
+                            {{ $t('juzView.pagesLabel') || 'Pages' }} {{ getJuzPageRange(juzNum)[0] }}-{{ getJuzPageRange(juzNum)[1] }}
+                          </div>
+                        </div>
+                      </button>
+                      
+                      <!-- Surahs in this Juz (Collapsible) -->
+                      <div class="p-2 flex-1">
+                        <div class="space-y-1">
+                          <!-- Always show first 3 surahs -->
+                          <div 
+                            v-for="(surahInfo, idx) in (isJuzCardExpanded(juzNum) ? getJuzSurahs(juzNum) : getJuzSurahs(juzNum).slice(0, 3))" 
+                            :key="'juz-' + juzNum + '-surah-' + surahInfo.surah + '-' + idx"
+                            class="flex items-center justify-between text-xs px-1.5 py-0.5 rounded bg-gray-50 hover:bg-gray-100"
+                          >
+                            <span class="font-arabic text-sm text-gray-700 truncate flex-1" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                              {{ surahInfo.name }}
+                            </span>
+                            <span class="text-gray-400 ml-1 whitespace-nowrap">
+                              <template v-if="surahInfo.isPartial">
+                                {{ surahInfo.startVerse }}-{{ surahInfo.endVerse }}
+                              </template>
+                              <template v-else>
+                                {{ surahInfo.verseCount }} <i class="fas fa-align-left text-[8px]"></i>
+                              </template>
+                            </span>
+                          </div>
+                          <!-- Expand/Collapse button if there are more than 3 surahs -->
+                          <button 
+                            v-if="getJuzSurahs(juzNum).length > 3"
+                            @click.stop="toggleJuzCardExpanded(juzNum)"
+                            class="w-full text-center text-xs text-cyan-600 hover:text-cyan-800 py-1 hover:bg-cyan-50 rounded transition-colors"
+                          >
+                            <template v-if="isJuzCardExpanded(juzNum)">
+                              <i class="fas fa-chevron-up mr-1"></i>
+                              {{ $t('juzView.showLess') || 'Show less' }}
+                            </template>
+                            <template v-else>
+                              <i class="fas fa-chevron-down mr-1"></i>
+                              +{{ getJuzSurahs(juzNum).length - 3 }} {{ $t('juzView.moreSurahs') || 'more' }}
+                            </template>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <!-- Footer with verse count -->
+                      <div class="bg-gray-50 px-2 py-1.5 border-t border-gray-100 text-center">
+                        <span class="text-xs text-gray-500">
+                          {{ getJuzTotalVerses(juzNum) }} {{ $t('surahView.verses') || 'verses' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Selected Juz Pages Display -->
+                <div v-if="surahViewState.selectedJuz" 
+                  class="bg-white rounded-b-xl shadow-lg overflow-hidden relative"
+                  :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
+                >
+                  <!-- Juz Header with Back Button -->
+                  <div class="sticky top-0 z-10 bg-gradient-to-r from-cyan-50 to-teal-50 p-3 sm:p-4 border-b border-cyan-200 flex items-center justify-between">
+                    <!-- Color Palette Toggle -->
+                    <button 
+                      @click="cycleQuranBackgroundColor"
+                      class="w-10 h-10 sm:w-12 sm:h-12 bg-white border border-gray-200 rounded-lg cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 shadow-sm flex items-center justify-center"
+                      :title="'Current background: ' + settingsStore.quranBackgroundColor + ' (Click to cycle)'">
+                      <div 
+                        class="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-gray-300"
+                        :style="{ backgroundColor: settingsStore.quranBackgroundColor }">
+                      </div>
+                    </button>
+                    
+                    <div class="text-center flex-1 px-4">
+                      <h3 class="text-xl sm:text-2xl font-bold text-cyan-800">
+                        {{ $t('juzView.juzLabel') || 'Juz' }} {{ surahViewState.selectedJuz }}
+                      </h3>
+                      <p class="text-sm text-cyan-600">
+                        {{ $t('juzView.pagesLabel') || 'Pages' }} {{ getJuzPageRange(surahViewState.selectedJuz)[0] }}-{{ getJuzPageRange(surahViewState.selectedJuz)[1] }} 
+                        • {{ surahViewState.totalVerseCount }} {{ $t('surahView.verses') || 'verses' }}
+                      </p>
+                    </div>
+                    
+                    <!-- Back to All Juzs Button -->
+                    <button 
+                      @click="backToSurahGrid"
+                      class="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <i class="fas fa-th text-gray-600"></i>
+                      {{ $t('juzView.backToGrid') || 'All Juzs' }}
+                    </button>
+                  </div>
+                  
+                  <!-- Juz Pages Container -->
+                  <div class="p-2 sm:p-4">
+                    <!-- Loading State -->
+                    <div v-if="surahViewState.isLoading && surahViewState.pages.length === 0" class="flex flex-col items-center justify-center py-12">
+                      <i class="fas fa-spinner fa-spin text-4xl text-cyan-600 mb-4"></i>
+                      <p class="text-gray-600">{{ $t('surahView.loading') || 'Loading...' }}</p>
+                    </div>
+                    
+                    <!-- Pages Container - Rendered like Quran View -->
+                    <div 
+                      v-for="(page, pageIdx) in surahViewState.pages" 
+                      :key="'juz-page-' + page.pageNum"
+                      class="mb-8"
+                    >
+                      <!-- Page Header -->
+                      <div class="flex items-center justify-center py-2 mb-4">
+                        <div class="flex-1 h-px bg-cyan-200"></div>
+                        <span class="px-4 text-sm text-cyan-600 font-medium">
+                          {{ $t('surahView.page') || 'Page' }} {{ page.pageNum }}
+                        </span>
+                        <div class="flex-1 h-px bg-cyan-200"></div>
+                      </div>
+                      
+                      <!-- Page Content - Same layout as Quran View -->
+                      <div 
+                        :style="fontSizeStyle" 
+                        :class="['quran-text text-center p-2 sm:p-4 rounded-lg space-y-1 sm:space-y-2', { 'layout-indopak': isIndopak }, 'font-page-' + page.pageNum]"
+                      >
+                        <div v-for="(line, lineIdx) in page.lines" :key="'juz-line-' + page.pageNum + '-' + lineIdx" class="flex flex-wrap justify-center gap-1 sm:gap-1.5 md:gap-2">
+                          <!-- Surah Name Headers -->
+                          <template v-if="line.type === 'surah_name'">
+                            <div class="w-full py-4 my-2 text-center">
+                              <div class="text-2xl sm:text-3xl font-bold text-cyan-800 mb-1" style="font-family: 'SurahNames', 'Traditional Arabic', serif;">
+                                {{ getSurahNameArabic(line.surah) }}
+                              </div>
+                              <div class="text-sm text-cyan-600">
+                                {{ getSurahNameTranslated(line.surah) }}
+                              </div>
+                              <!-- Bismillah (except for Surah 9 At-Tawbah) -->
+                              <div v-if="line.surah !== 9" class="text-2xl sm:text-3xl md:text-4xl mt-1 sm:mt-2">﷽</div>
+                            </div>
+                          </template>
+                          <!-- Words Display (only if line has words array) -->
+                          <template v-else-if="line.words && line.words.length > 0">
+                            <span 
+                              v-for="word in line.words" 
+                              :key="word.id"
+                              class="quran-word inline-block"
+                            >
+                              {{ word.text }}
+                            </span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Load More Indicator -->
+                    <div v-if="surahViewState.hasMore && surahViewState.pages.length > 0" class="flex items-center justify-center py-4">
+                      <i class="fas fa-spinner fa-spin text-2xl text-cyan-400 mr-2"></i>
+                      <span class="text-gray-500 text-sm">{{ $t('surahView.loadingMore') || 'Loading more pages...' }}</span>
+                    </div>
+                    
+                    <!-- End of Juz -->
+                    <div v-if="!surahViewState.hasMore && surahViewState.pages.length > 0" class="text-center py-4">
+                      <span class="text-gray-400 text-sm">— {{ $t('juzView.endOfJuz') || 'End of Juz' }} —</span>
+                    </div>
+                  </div>
+                </div>
+                
                 <!-- Selected Surah Verses Display -->
-                <div v-else 
+                <div v-if="surahViewState.selectedSurah" 
                   class="bg-white rounded-b-xl shadow-lg overflow-hidden relative"
                   :style="{ backgroundColor: settingsStore.quranBackgroundColor }"
                 >
@@ -5140,15 +5376,92 @@
           // Surah View state - for Surah-by-Surah browsing mode (page-based for font loading)
           const surahViewState = reactive({
             selectedSurah: null, // Currently selected surah number (1-114), null = show grid
-            pages: [], // Loaded pages with their verses for the selected surah
-            allPages: [], // All page numbers for this surah
+            selectedJuz: null, // Currently selected juz number (1-30), null = show grid
+            pages: [], // Loaded pages with their verses for the selected surah/juz
+            allPages: [], // All page numbers for this surah/juz
             loadedPageCount: 0, // Number of pages currently displayed
             pageBatchSize: 1, // Load 1 page at a time for optimal font loading
             isLoading: false, // Loading state
             hasMore: true, // Whether there are more pages to load
             loadedFonts: new Set(), // Track which page fonts have been loaded
-            totalVerseCount: 0 // Total verse count for display
+            totalVerseCount: 0, // Total verse count for display
+            activeTab: 'surahs', // 'surahs' or 'juzs' - controls which grid to show
+            expandedJuzCards: new Set() // Track which juz cards have expanded surah lists
           });
+
+          // Juz to Surahs mapping - maps each juz number to the surahs it contains
+          // Format: { juzNum: [{ surah: N, startVerse: X, endVerse: Y }] }
+          // This mapping is based on standard Quran division
+          const JUZ_TO_SURAHS = {
+            1: [{ surah: 1, startVerse: 1, endVerse: 7 }, { surah: 2, startVerse: 1, endVerse: 141 }],
+            2: [{ surah: 2, startVerse: 142, endVerse: 252 }],
+            3: [{ surah: 2, startVerse: 253, endVerse: 286 }, { surah: 3, startVerse: 1, endVerse: 92 }],
+            4: [{ surah: 3, startVerse: 93, endVerse: 200 }, { surah: 4, startVerse: 1, endVerse: 23 }],
+            5: [{ surah: 4, startVerse: 24, endVerse: 147 }],
+            6: [{ surah: 4, startVerse: 148, endVerse: 176 }, { surah: 5, startVerse: 1, endVerse: 81 }],
+            7: [{ surah: 5, startVerse: 82, endVerse: 120 }, { surah: 6, startVerse: 1, endVerse: 110 }],
+            8: [{ surah: 6, startVerse: 111, endVerse: 165 }, { surah: 7, startVerse: 1, endVerse: 87 }],
+            9: [{ surah: 7, startVerse: 88, endVerse: 206 }, { surah: 8, startVerse: 1, endVerse: 40 }],
+            10: [{ surah: 8, startVerse: 41, endVerse: 75 }, { surah: 9, startVerse: 1, endVerse: 92 }],
+            11: [{ surah: 9, startVerse: 93, endVerse: 129 }, { surah: 10, startVerse: 1, endVerse: 109 }, { surah: 11, startVerse: 1, endVerse: 5 }],
+            12: [{ surah: 11, startVerse: 6, endVerse: 123 }, { surah: 12, startVerse: 1, endVerse: 52 }],
+            13: [{ surah: 12, startVerse: 53, endVerse: 111 }, { surah: 13, startVerse: 1, endVerse: 43 }, { surah: 14, startVerse: 1, endVerse: 52 }],
+            14: [{ surah: 15, startVerse: 1, endVerse: 99 }, { surah: 16, startVerse: 1, endVerse: 128 }],
+            15: [{ surah: 17, startVerse: 1, endVerse: 111 }, { surah: 18, startVerse: 1, endVerse: 74 }],
+            16: [{ surah: 18, startVerse: 75, endVerse: 110 }, { surah: 19, startVerse: 1, endVerse: 98 }, { surah: 20, startVerse: 1, endVerse: 135 }],
+            17: [{ surah: 21, startVerse: 1, endVerse: 112 }, { surah: 22, startVerse: 1, endVerse: 78 }],
+            18: [{ surah: 23, startVerse: 1, endVerse: 118 }, { surah: 24, startVerse: 1, endVerse: 64 }, { surah: 25, startVerse: 1, endVerse: 20 }],
+            19: [{ surah: 25, startVerse: 21, endVerse: 77 }, { surah: 26, startVerse: 1, endVerse: 227 }, { surah: 27, startVerse: 1, endVerse: 55 }],
+            20: [{ surah: 27, startVerse: 56, endVerse: 93 }, { surah: 28, startVerse: 1, endVerse: 88 }, { surah: 29, startVerse: 1, endVerse: 45 }],
+            21: [{ surah: 29, startVerse: 46, endVerse: 69 }, { surah: 30, startVerse: 1, endVerse: 60 }, { surah: 31, startVerse: 1, endVerse: 34 }, { surah: 32, startVerse: 1, endVerse: 30 }, { surah: 33, startVerse: 1, endVerse: 30 }],
+            22: [{ surah: 33, startVerse: 31, endVerse: 73 }, { surah: 34, startVerse: 1, endVerse: 54 }, { surah: 35, startVerse: 1, endVerse: 45 }, { surah: 36, startVerse: 1, endVerse: 27 }],
+            23: [{ surah: 36, startVerse: 28, endVerse: 83 }, { surah: 37, startVerse: 1, endVerse: 182 }, { surah: 38, startVerse: 1, endVerse: 88 }, { surah: 39, startVerse: 1, endVerse: 31 }],
+            24: [{ surah: 39, startVerse: 32, endVerse: 75 }, { surah: 40, startVerse: 1, endVerse: 85 }, { surah: 41, startVerse: 1, endVerse: 46 }],
+            25: [{ surah: 41, startVerse: 47, endVerse: 54 }, { surah: 42, startVerse: 1, endVerse: 53 }, { surah: 43, startVerse: 1, endVerse: 89 }, { surah: 44, startVerse: 1, endVerse: 59 }, { surah: 45, startVerse: 1, endVerse: 37 }],
+            26: [{ surah: 46, startVerse: 1, endVerse: 35 }, { surah: 47, startVerse: 1, endVerse: 38 }, { surah: 48, startVerse: 1, endVerse: 29 }, { surah: 49, startVerse: 1, endVerse: 18 }, { surah: 50, startVerse: 1, endVerse: 45 }, { surah: 51, startVerse: 1, endVerse: 30 }],
+            27: [{ surah: 51, startVerse: 31, endVerse: 60 }, { surah: 52, startVerse: 1, endVerse: 49 }, { surah: 53, startVerse: 1, endVerse: 62 }, { surah: 54, startVerse: 1, endVerse: 55 }, { surah: 55, startVerse: 1, endVerse: 78 }, { surah: 56, startVerse: 1, endVerse: 96 }, { surah: 57, startVerse: 1, endVerse: 29 }],
+            28: [{ surah: 58, startVerse: 1, endVerse: 22 }, { surah: 59, startVerse: 1, endVerse: 24 }, { surah: 60, startVerse: 1, endVerse: 13 }, { surah: 61, startVerse: 1, endVerse: 14 }, { surah: 62, startVerse: 1, endVerse: 11 }, { surah: 63, startVerse: 1, endVerse: 11 }, { surah: 64, startVerse: 1, endVerse: 18 }, { surah: 65, startVerse: 1, endVerse: 12 }, { surah: 66, startVerse: 1, endVerse: 12 }],
+            29: [{ surah: 67, startVerse: 1, endVerse: 30 }, { surah: 68, startVerse: 1, endVerse: 52 }, { surah: 69, startVerse: 1, endVerse: 52 }, { surah: 70, startVerse: 1, endVerse: 44 }, { surah: 71, startVerse: 1, endVerse: 28 }, { surah: 72, startVerse: 1, endVerse: 28 }, { surah: 73, startVerse: 1, endVerse: 20 }, { surah: 74, startVerse: 1, endVerse: 56 }, { surah: 75, startVerse: 1, endVerse: 40 }, { surah: 76, startVerse: 1, endVerse: 31 }, { surah: 77, startVerse: 1, endVerse: 50 }],
+            30: [{ surah: 78, startVerse: 1, endVerse: 40 }, { surah: 79, startVerse: 1, endVerse: 46 }, { surah: 80, startVerse: 1, endVerse: 42 }, { surah: 81, startVerse: 1, endVerse: 29 }, { surah: 82, startVerse: 1, endVerse: 19 }, { surah: 83, startVerse: 1, endVerse: 36 }, { surah: 84, startVerse: 1, endVerse: 25 }, { surah: 85, startVerse: 1, endVerse: 22 }, { surah: 86, startVerse: 1, endVerse: 17 }, { surah: 87, startVerse: 1, endVerse: 19 }, { surah: 88, startVerse: 1, endVerse: 26 }, { surah: 89, startVerse: 1, endVerse: 30 }, { surah: 90, startVerse: 1, endVerse: 20 }, { surah: 91, startVerse: 1, endVerse: 15 }, { surah: 92, startVerse: 1, endVerse: 21 }, { surah: 93, startVerse: 1, endVerse: 11 }, { surah: 94, startVerse: 1, endVerse: 8 }, { surah: 95, startVerse: 1, endVerse: 8 }, { surah: 96, startVerse: 1, endVerse: 19 }, { surah: 97, startVerse: 1, endVerse: 5 }, { surah: 98, startVerse: 1, endVerse: 8 }, { surah: 99, startVerse: 1, endVerse: 8 }, { surah: 100, startVerse: 1, endVerse: 11 }, { surah: 101, startVerse: 1, endVerse: 11 }, { surah: 102, startVerse: 1, endVerse: 8 }, { surah: 103, startVerse: 1, endVerse: 3 }, { surah: 104, startVerse: 1, endVerse: 9 }, { surah: 105, startVerse: 1, endVerse: 5 }, { surah: 106, startVerse: 1, endVerse: 4 }, { surah: 107, startVerse: 1, endVerse: 7 }, { surah: 108, startVerse: 1, endVerse: 3 }, { surah: 109, startVerse: 1, endVerse: 6 }, { surah: 110, startVerse: 1, endVerse: 3 }, { surah: 111, startVerse: 1, endVerse: 5 }, { surah: 112, startVerse: 1, endVerse: 4 }, { surah: 113, startVerse: 1, endVerse: 5 }, { surah: 114, startVerse: 1, endVerse: 6 }]
+          };
+
+          // Get surahs info for a specific juz - returns array of { surah, name, verseCount } 
+          const getJuzSurahs = (juzNum) => {
+            const surahs = JUZ_TO_SURAHS[juzNum] || [];
+            return surahs.map(s => ({
+              surah: s.surah,
+              name: getSurahNameArabic(s.surah),
+              translatedName: getSurahNameTranslated(s.surah),
+              startVerse: s.startVerse,
+              endVerse: s.endVerse,
+              verseCount: s.endVerse - s.startVerse + 1,
+              isPartial: s.startVerse !== 1 || s.endVerse !== getSurahVerseCount(s.surah)
+            }));
+          };
+
+          // Get total verse count for a juz
+          const getJuzTotalVerses = (juzNum) => {
+            const surahs = JUZ_TO_SURAHS[juzNum] || [];
+            return surahs.reduce((total, s) => total + (s.endVerse - s.startVerse + 1), 0);
+          };
+
+          // Get page range for a juz based on current layout (QPC vs Indopak)
+          const getJuzPageRange = (juzNum) => {
+            if (isIndopak.value) {
+              // Indopak layout has 610 pages
+              const INDOPAK_JUZ_RANGES = {
+                1: [1, 21], 2: [22, 41], 3: [42, 62], 4: [63, 82], 5: [83, 102],
+                6: [103, 122], 7: [123, 142], 8: [143, 162], 9: [163, 182], 10: [183, 202],
+                11: [203, 222], 12: [223, 242], 13: [243, 262], 14: [263, 282], 15: [283, 302],
+                16: [303, 322], 17: [323, 342], 18: [343, 362], 19: [363, 383], 20: [384, 403],
+                21: [404, 423], 22: [424, 443], 23: [444, 463], 24: [464, 483], 25: [484, 504],
+                26: [505, 524], 27: [525, 545], 28: [546, 565], 29: [566, 585], 30: [586, 610]
+              };
+              return INDOPAK_JUZ_RANGES[juzNum] || [1, 21];
+            }
+            // QPC/Uthmani layout - use existing JUZ_RANGES
+            return JUZ_RANGES[juzNum] || [1, 21];
+          };
 
           // Live streaming state using YouTube embeds
           const liveContainer = ref(null);
@@ -5358,6 +5671,9 @@
                 if (url.searchParams.has('surah')) {
                   url.searchParams.delete('surah');
                 }
+                if (url.searchParams.has('juz')) {
+                  url.searchParams.delete('juz');
+                }
                 history.replaceState(null, '', url.toString());
                 
                 // Persist URL state to IndexedDB for session restoration
@@ -5373,6 +5689,12 @@
               await nextTick();
               window.scrollTo({ top: 0, behavior: 'smooth' });
               return;
+            }
+            
+            // Close surah view when navigating to any section that's not surah-section
+            // This ensures clean state and URL parameters
+            if (sectionId !== 'surah-section' && settingsStore.showSurahView) {
+              closeSurahView();
             }
             
             // Determine view mode based on target section
@@ -5408,6 +5730,7 @@
                 url.searchParams.delete('wordbyword');
                 url.searchParams.delete('surahview');
                 url.searchParams.delete('surah');
+                url.searchParams.delete('juz');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
                 
@@ -5448,6 +5771,8 @@
                 url.searchParams.set('wordbyword', 'true');
                 url.searchParams.delete('tafsir');
                 url.searchParams.delete('surahview');
+                url.searchParams.delete('surah');
+                url.searchParams.delete('juz');
                 // Use replaceState so navigation history isn't cluttered by repeated clicks
                 history.replaceState(null, '', url.toString());
                 
@@ -5566,13 +5891,14 @@
               }
 
               // Override surah view visibility based on URL parameters
-              // Enable surah view when `surahview=true` or `surah=N` is present
+              // Enable surah view when `surahview=true` or `surah=N` or `juz=N` is present
               try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const surahViewParam = urlParams.get('surahview');
                 const surahParam = urlParams.get('surah');
+                const juzParam = urlParams.get('juz');
                 
-                if (surahViewParam === 'true' || surahParam) {
+                if (surahViewParam === 'true' || surahParam || juzParam) {
                   settingsStore.showSurahView = true;
                   settingsStore.showTafsir = false;
                   settingsStore.showWordByWord = false;
@@ -5583,6 +5909,15 @@
                     if (surahNum >= 1 && surahNum <= 114) {
                       // Defer surah selection until after data is loaded
                       setTimeout(() => selectSurah(surahNum), 500);
+                    }
+                  }
+                  // If a specific juz is requested, select it after data loads
+                  else if (juzParam) {
+                    const juzNum = parseInt(juzParam, 10);
+                    if (juzNum >= 1 && juzNum <= 30) {
+                      // Switch to juzs tab and defer juz selection until after data is loaded
+                      surahViewState.activeTab = 'juzs';
+                      setTimeout(() => selectJuz(juzNum), 500);
                     }
                   }
                 } else {
@@ -6704,6 +7039,8 @@
             
             surahViewState.isLoading = true;
             surahViewState.selectedSurah = surahNum;
+            surahViewState.selectedJuz = null; // Clear any selected juz
+            surahViewState.activeTab = 'surahs'; // Ensure we're on surahs tab
             surahViewState.pages = [];
             surahViewState.allPages = [];
             surahViewState.loadedPageCount = 0;
@@ -6740,6 +7077,7 @@
               try {
                 const url = new URL(window.location.href);
                 url.searchParams.set('surah', surahNum.toString());
+                url.searchParams.delete('juz');
                 url.searchParams.delete('page');
                 url.searchParams.delete('tafsir');
                 url.searchParams.delete('wordbyword');
@@ -6851,11 +7189,18 @@
             }, 100); // 100ms delay between page loads for smooth UI
           };
           
+          // Background page loading for juz - timer variable (declared early for cancelBackgroundLoading)
+          let backgroundJuzLoadTimer = null;
+          
           // Cancel background loading (used when navigating away)
           const cancelBackgroundLoading = () => {
             if (backgroundLoadTimer) {
               clearTimeout(backgroundLoadTimer);
               backgroundLoadTimer = null;
+            }
+            if (backgroundJuzLoadTimer) {
+              clearTimeout(backgroundJuzLoadTimer);
+              backgroundJuzLoadTimer = null;
             }
           };
           
@@ -6865,6 +7210,7 @@
             cancelBackgroundLoading();
             
             surahViewState.selectedSurah = null;
+            surahViewState.selectedJuz = null;
             surahViewState.pages = [];
             surahViewState.allPages = [];
             surahViewState.loadedPageCount = 0;
@@ -6872,14 +7218,174 @@
             surahViewState.loadedFonts = new Set();
             surahViewState.totalVerseCount = 0;
             
-            // Update URL - remove surah parameter
+            // Update URL - remove surah/juz parameter
             try {
               const url = new URL(window.location.href);
               url.searchParams.delete('surah');
+              url.searchParams.delete('juz');
               history.replaceState(null, '', url.toString());
             } catch (e) {
               // Ignore URL update errors
             }
+          };
+          
+          // Completely close surah view and clean up all related URL parameters
+          const closeSurahView = () => {
+            // Cancel any ongoing background loading
+            cancelBackgroundLoading();
+            
+            // Reset all surah view state
+            settingsStore.showSurahView = false;
+            surahViewState.selectedSurah = null;
+            surahViewState.selectedJuz = null;
+            surahViewState.pages = [];
+            surahViewState.allPages = [];
+            surahViewState.loadedPageCount = 0;
+            surahViewState.hasMore = true;
+            surahViewState.loadedFonts = new Set();
+            surahViewState.totalVerseCount = 0;
+            surahViewState.activeTab = 'surahs';
+            surahViewState.expandedJuzCards = new Set();
+            
+            // Clean up all surah/juz related URL parameters
+            try {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('surah');
+              url.searchParams.delete('juz');
+              url.searchParams.delete('surahview');
+              history.replaceState(null, '', url.toString());
+            } catch (e) {
+              // Ignore URL update errors
+            }
+          };
+          
+          // Select a juz and load its pages lazily
+          const selectJuz = async (juzNum) => {
+            if (juzNum < 1 || juzNum > 30) {
+              console.warn('[Murajah] Invalid juz number:', juzNum);
+              return;
+            }
+            
+            surahViewState.isLoading = true;
+            surahViewState.selectedJuz = juzNum;
+            surahViewState.selectedSurah = null; // Clear any selected surah
+            surahViewState.activeTab = 'juzs'; // Ensure we're on juzs tab
+            surahViewState.pages = [];
+            surahViewState.allPages = [];
+            surahViewState.loadedPageCount = 0;
+            surahViewState.hasMore = true;
+            surahViewState.loadedFonts = new Set();
+            
+            try {
+              // Get page range for this juz
+              const [startPage, endPage] = getJuzPageRange(juzNum);
+              
+              // Create array of page numbers for this juz
+              const pageNumbers = [];
+              for (let p = startPage; p <= endPage; p++) {
+                pageNumbers.push(p);
+              }
+              surahViewState.allPages = pageNumbers;
+              
+              // Calculate total verses in this juz
+              surahViewState.totalVerseCount = getJuzTotalVerses(juzNum);
+              
+              // Update URL with juz parameter
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('juz', juzNum.toString());
+                url.searchParams.delete('surah');
+                url.searchParams.delete('page');
+                url.searchParams.delete('tafsir');
+                url.searchParams.delete('wordbyword');
+                history.replaceState(null, '', url.toString());
+              } catch (e) {
+                // Ignore URL update errors
+              }
+              
+              console.log(`[Murajah] Loading juz ${juzNum} across ${pageNumbers.length} pages (${startPage}-${endPage})`);
+            } catch (error) {
+              console.error('[Murajah] Failed to load juz:', error);
+              appStore.errorMessage = 'Failed to load juz. Please try again.';
+              setTimeout(() => appStore.errorMessage = '', 5000);
+            } finally {
+              surahViewState.isLoading = false;
+              // Load first page immediately
+              loadMoreJuzPages();
+              // Start background loading of remaining pages
+              scheduleBackgroundJuzPageLoad();
+            }
+          };
+          
+          // Load more pages for juz lazy loading - renders all content on the page
+          const loadMoreJuzPages = () => {
+            if (!surahViewState.hasMore || surahViewState.isLoading || !quranData.value) {
+              return;
+            }
+            
+            const currentCount = surahViewState.loadedPageCount;
+            const totalPages = surahViewState.allPages.length;
+            const nextPageNumbers = surahViewState.allPages.slice(currentCount, currentCount + surahViewState.pageBatchSize);
+            
+            if (nextPageNumbers.length > 0 && quranData.value.layout && quranData.value.words) {
+              nextPageNumbers.forEach((pageNum) => {
+                // Load font for this page
+                loadSurahViewPageFont(pageNum);
+                
+                // Get page lines using the same function as main Quran view
+                let pageLines = getPageWordsDetailed(pageNum, quranData.value.layout, quranData.value.words);
+                
+                if (pageLines && pageLines.length > 0) {
+                  // For juz view, we show all content on the page (no filtering)
+                  surahViewState.pages.push({
+                    pageNum,
+                    lines: pageLines
+                  });
+                }
+              });
+              
+              surahViewState.loadedPageCount += nextPageNumbers.length;
+            }
+            
+            surahViewState.hasMore = surahViewState.loadedPageCount < totalPages;
+            console.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for juz ${surahViewState.selectedJuz}`);
+          };
+          
+          // Background page loading for juz - loads remaining pages automatically without blocking UI
+          const scheduleBackgroundJuzPageLoad = () => {
+            // Clear any existing timer
+            if (backgroundJuzLoadTimer) {
+              clearTimeout(backgroundJuzLoadTimer);
+              backgroundJuzLoadTimer = null;
+            }
+            
+            // If no more pages to load, exit
+            if (!surahViewState.hasMore || !surahViewState.selectedJuz) {
+              return;
+            }
+            
+            // Schedule next page load with a small delay to keep UI responsive
+            backgroundJuzLoadTimer = setTimeout(() => {
+              if (surahViewState.hasMore && surahViewState.selectedJuz) {
+                loadMoreJuzPages();
+                // Continue loading more pages
+                scheduleBackgroundJuzPageLoad();
+              }
+            }, 100); // 100ms delay between page loads for smooth UI
+          };
+          
+          // Toggle expanded state for juz card surah list
+          const toggleJuzCardExpanded = (juzNum) => {
+            if (surahViewState.expandedJuzCards.has(juzNum)) {
+              surahViewState.expandedJuzCards.delete(juzNum);
+            } else {
+              surahViewState.expandedJuzCards.add(juzNum);
+            }
+          };
+          
+          // Check if juz card is expanded
+          const isJuzCardExpanded = (juzNum) => {
+            return surahViewState.expandedJuzCards.has(juzNum);
           };
           
           // Get verse count for a surah (for grid display)
@@ -8743,11 +9249,23 @@
               setTimeout(() => appStore.successMessage = '', 2000);
             }
             
-            // Left Arrow - Previous Page (or Previous Surah in Surah View)
+            // Left Arrow - Previous Page (or Previous Surah/Juz in their respective views)
             if (event.key === 'ArrowLeft') {
               event.preventDefault();
+              // If in Surah View with a juz selected, go to previous juz
+              if (settingsStore.showSurahView && surahViewState.selectedJuz) {
+                const currentJuz = surahViewState.selectedJuz;
+                if (currentJuz > 1) {
+                  selectJuz(currentJuz - 1);
+                  appStore.successMessage = `Juz ${currentJuz - 1}`;
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                } else {
+                  appStore.successMessage = 'Already at first juz';
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                }
+              }
               // If in Surah View with a surah selected, go to previous surah
-              if (settingsStore.showSurahView && surahViewState.selectedSurah) {
+              else if (settingsStore.showSurahView && surahViewState.selectedSurah) {
                 const currentSurah = surahViewState.selectedSurah;
                 if (currentSurah > 1) {
                   selectSurah(currentSurah - 1);
@@ -8762,11 +9280,23 @@
               }
             }
             
-            // Right Arrow - Next Page (or Next Surah in Surah View)
+            // Right Arrow - Next Page (or Next Surah/Juz in their respective views)
             if (event.key === 'ArrowRight') {
               event.preventDefault();
+              // If in Surah View with a juz selected, go to next juz
+              if (settingsStore.showSurahView && surahViewState.selectedJuz) {
+                const currentJuz = surahViewState.selectedJuz;
+                if (currentJuz < 30) {
+                  selectJuz(currentJuz + 1);
+                  appStore.successMessage = `Juz ${currentJuz + 1}`;
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                } else {
+                  appStore.successMessage = 'Already at last juz';
+                  setTimeout(() => appStore.successMessage = '', 1500);
+                }
+              }
               // If in Surah View with a surah selected, go to next surah
-              if (settingsStore.showSurahView && surahViewState.selectedSurah) {
+              else if (settingsStore.showSurahView && surahViewState.selectedSurah) {
                 const currentSurah = surahViewState.selectedSurah;
                 if (currentSurah < 114) {
                   selectSurah(currentSurah + 1);
@@ -9046,8 +9576,18 @@ Display:
             selectSurah,
             loadMoreSurahPages,
             backToSurahGrid,
+            closeSurahView,
             cancelBackgroundLoading,
             getSurahVerseCount,
+            // Juz View functions
+            JUZ_TO_SURAHS,
+            getJuzSurahs,
+            getJuzTotalVerses,
+            getJuzPageRange,
+            selectJuz,
+            loadMoreJuzPages,
+            toggleJuzCardExpanded,
+            isJuzCardExpanded,
             statistics,
             totalPerfectRevisionsPoints,
             formattedTotalScore,

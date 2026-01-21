@@ -16,7 +16,7 @@
     "menu": "মেনু",
     "sections": {
       "quran": "কুরআন",
-      "surahView": "সূরাসমূহ",
+      "surahView": "সূরা/পারা",
       "wordByWord": "শব্দে শব্দে",
       "tafsir": "তাফসীর",
       "audio": "অডিও",
@@ -38,7 +38,22 @@
     "loading": "আয়াত লোড হচ্ছে...",
     "loadingMore": "আরও পৃষ্ঠা লোড হচ্ছে...",
     "endOfSurah": "সূরা শেষ",
-    "close": "বন্ধ করুন"
+    "close": "বন্ধ করুন",
+    "tabSurahs": "সূরাসমূহ"
+  },
+  "juzView": {
+    "title": "পারাসমূহ",
+    "subtitle": "পারা অনুযায়ী কুরআন পড়ুন",
+    "tabJuzs": "পারাসমূহ",
+    "juzLabel": "পারা",
+    "pagesLabel": "পৃষ্ঠা",
+    "layoutInfo": "পৃষ্ঠা সীমা",
+    "pages": "পৃষ্ঠা",
+    "moreSurahs": "আরও",
+    "showLess": "কম দেখুন",
+    "backToGrid": "সব পারা",
+    "endOfJuz": "পারা শেষ",
+    "juzNumber": "পারা {number}"
   },
   "quickTest": {
     "title": "দ্রুত পরীক্ষা",

@@ -16,7 +16,7 @@
     "menu": "القائمة",
     "sections": {
       "quran": "القرآن",
-      "surahView": "السور",
+      "surahView": "السور/الأجزاء",
       "wordByWord": "كلمة بكلمة",
       "tafsir": "التفسير",
       "audio": "صوت",
@@ -38,7 +38,22 @@
     "loading": "جاري تحميل الآيات...",
     "loadingMore": "جاري تحميل المزيد من الصفحات...",
     "endOfSurah": "نهاية السورة",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "tabSurahs": "السور"
+  },
+  "juzView": {
+    "title": "الأجزاء",
+    "subtitle": "تصفح القرآن حسب الجزء",
+    "tabJuzs": "الأجزاء",
+    "juzLabel": "الجزء",
+    "pagesLabel": "الصفحات",
+    "layoutInfo": "نطاق الصفحات لـ",
+    "pages": "صفحة",
+    "moreSurahs": "المزيد",
+    "showLess": "عرض أقل",
+    "backToGrid": "جميع الأجزاء",
+    "endOfJuz": "نهاية الجزء",
+    "juzNumber": "الجزء {number}"
   },
   "quickTest": {
     "title": "اختبار سريع",

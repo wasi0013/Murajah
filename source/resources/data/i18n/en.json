@@ -16,7 +16,7 @@
     "menu": "Menu",
     "sections": {
       "quran": "Quran",
-      "surahView": "Surahs",
+      "surahView": "Surahs/Juzs",
       "wordByWord": "Word by Word",
       "tafsir": "Tafsir",
       "audio": "Audio",
@@ -38,7 +38,22 @@
     "loading": "Loading verses...",
     "loadingMore": "Loading more pages...",
     "endOfSurah": "End of Surah",
-    "close": "Close"
+    "close": "Close",
+    "tabSurahs": "Surahs"
+  },
+  "juzView": {
+    "title": "Juzs",
+    "subtitle": "Browse the Quran by Juz",
+    "tabJuzs": "Juzs",
+    "juzLabel": "Juz",
+    "pagesLabel": "Pages",
+    "layoutInfo": "Page ranges shown for",
+    "pages": "pages",
+    "moreSurahs": "more",
+    "showLess": "Show less",
+    "backToGrid": "All Juzs",
+    "endOfJuz": "End of Juz",
+    "juzNumber": "Juz {number}"
   },
   "quickTest": {
     "title": "Quick test",
