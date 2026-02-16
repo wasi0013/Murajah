@@ -10332,17 +10332,17 @@ Display:
             scope: './'
           });
           
-          Logger.log('[Murajah] Service Worker registered:', registration.scope);
+          console.log('[Murajah] Service Worker registered:', registration.scope);
           
           // Check for updates
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
-            Logger.log('[Murajah] Service Worker update found');
+            console.log('[Murajah] Service Worker update found');
             
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New version available
-                Logger.log('[Murajah] New version available');
+                console.log('[Murajah] New version available');
                 // Show update notification to user
                 if (window.showUpdateNotification) {
                   window.showUpdateNotification();
@@ -10353,13 +10353,13 @@ Display:
           
           // Listen for controller change (new SW activated)
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            Logger.log('[Murajah] Service Worker controller changed');
+            console.log('[Murajah] Service Worker controller changed');
           });
           
           // Listen for content update messages from SW (stale-while-revalidate)
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'CONTENT_UPDATED') {
-              Logger.log('[Murajah] Content updated in background:', event.data.url);
+              console.log('[Murajah] Content updated in background:', event.data.url);
               // For HTML updates, optionally notify user or auto-refresh
               // Currently we just log - the cache is already updated for next load
             }

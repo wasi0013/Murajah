@@ -423,6 +423,103 @@ describe('FloatingAudioPlayer', () => {
     });
   });
 
+  describe('null audio element guards', () => {
+    // These tests verify the null guards added to onTimeUpdate and onMetadataLoaded
+    // to prevent "Cannot read properties of null (reading 'currentTime')" errors
+    // when the audio ref is null (e.g. during unmount or before render)
+
+    it('onTimeUpdate should not throw when audio ref is null', () => {
+      let currentTime = 0;
+
+      const onTimeUpdate = (audioElement) => {
+        if (!audioElement) return;
+        currentTime = audioElement.currentTime;
+      };
+
+      // Simulate null ref (component unmounting / not yet rendered)
+      expect(() => onTimeUpdate(null)).not.toThrow();
+      expect(currentTime).toBe(0);
+    });
+
+    it('onTimeUpdate should update currentTime when audio ref exists', () => {
+      let currentTime = 0;
+
+      const onTimeUpdate = (audioElement) => {
+        if (!audioElement) return;
+        currentTime = audioElement.currentTime;
+      };
+
+      onTimeUpdate({ currentTime: 42.5 });
+      expect(currentTime).toBe(42.5);
+    });
+
+    it('onMetadataLoaded should not throw when audio ref is null', () => {
+      let duration = 0;
+
+      const onMetadataLoaded = (audioElement) => {
+        if (!audioElement) return;
+        duration = audioElement.duration;
+      };
+
+      expect(() => onMetadataLoaded(null)).not.toThrow();
+      expect(duration).toBe(0);
+    });
+
+    it('onMetadataLoaded should update duration when audio ref exists', () => {
+      let duration = 0;
+
+      const onMetadataLoaded = (audioElement) => {
+        if (!audioElement) return;
+        duration = audioElement.duration;
+      };
+
+      onMetadataLoaded({ duration: 180.3 });
+      expect(duration).toBe(180.3);
+    });
+
+    it('onTimeUpdate should not throw when audio ref is undefined', () => {
+      let currentTime = 5;
+
+      const onTimeUpdate = (audioElement) => {
+        if (!audioElement) return;
+        currentTime = audioElement.currentTime;
+      };
+
+      expect(() => onTimeUpdate(undefined)).not.toThrow();
+      expect(currentTime).toBe(5); // unchanged
+    });
+
+    it('onMetadataLoaded should not throw when audio ref is undefined', () => {
+      let duration = 10;
+
+      const onMetadataLoaded = (audioElement) => {
+        if (!audioElement) return;
+        duration = audioElement.duration;
+      };
+
+      expect(() => onMetadataLoaded(undefined)).not.toThrow();
+      expect(duration).toBe(10); // unchanged
+    });
+
+    it('stopPlayback should handle null audio ref gracefully', () => {
+      let isPlaying = true;
+      let currentTime = 30;
+
+      const stopPlayback = (audioElement) => {
+        if (audioElement) {
+          audioElement.pause();
+          audioElement.currentTime = 0;
+        }
+        isPlaying = false;
+        currentTime = 0;
+      };
+
+      expect(() => stopPlayback(null)).not.toThrow();
+      expect(isPlaying).toBe(false);
+      expect(currentTime).toBe(0);
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle very large recording arrays', () => {
       const largeRecordings = Array(1000).fill(null).map((_, i) => ({

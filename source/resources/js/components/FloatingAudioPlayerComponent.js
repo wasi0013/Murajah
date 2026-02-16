@@ -419,11 +419,13 @@ export const FloatingAudioPlayerComponent = {
 
     onTimeUpdate() {
       const audio = this.$refs.audioElement;
+      if (!audio) return;
       this.currentTime = audio.currentTime;
     },
 
     onMetadataLoaded() {
       const audio = this.$refs.audioElement;
+      if (!audio) return;
       this.duration = audio.duration;
     },
 

@@ -21,6 +21,30 @@ test.describe('PWA Features', () => {
     expect(hasServiceWorker).toBe(true);
   });
 
+  test('should register service worker without console errors', async ({ page }) => {
+    const consoleErrors = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on('pageerror', err => {
+      consoleErrors.push(err.message);
+    });
+
+    await page.goto('/');
+    await waitForAppLoad(page);
+
+    // Wait for SW to register
+    await page.waitForTimeout(2000);
+
+    const swErrors = consoleErrors.filter(e =>
+      e.toLowerCase().includes('logger is not defined') ||
+      e.toLowerCase().includes('service worker registration failed')
+    );
+    expect(swErrors).toEqual([]);
+  });
+
   test('should have valid manifest.json', async ({ page }) => {
     const response = await page.request.get('/manifest.json');
     expect(response.status()).toBe(200);
