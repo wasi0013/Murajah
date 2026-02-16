@@ -26,6 +26,7 @@
       "analytics": "Analytics",
       "timeline": "Timeline",
       "achievements": "Achievements",
+      "notes": "Journal",
       "community": "Community & Support"
     }
   },
@@ -289,7 +290,8 @@
     "memorized": "Forgot",
     "perfect": "Recited without mistakes",
     "record": "Record",
-    "recording": "Recording..."
+    "recording": "Recording...",
+    "note": "Note"
   },
   "achievements": {
     "title": "Achievements",
@@ -612,5 +614,40 @@
     "playbackSpeed": "Playback speed",
     "recentRecordings": "Recent Recordings",
     "noRecordings": "No recordings yet"
+  },
+  "notes": {
+    "title": "Journal",
+    "new": "New",
+    "searchPlaceholder": "Search journal entries...",
+    "noResults": "No journal entries match your search",
+    "empty": "No journal entries yet",
+    "emptyHint": "Create your first journal entry to start capturing reflections",
+    "untitled": "Untitled",
+    "page": "Page",
+    "backToList": "Back to journal",
+    "edit": "Edit",
+    "delete": "Delete",
+    "download": "Download",
+    "deleteConfirm": "Are you sure you want to delete this note?",
+    "confirmYes": "Yes, delete",
+    "confirmNo": "Cancel",
+    "cancel": "Cancel",
+    "save": "Save",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Note title (leave blank for auto-generated)",
+    "surahLabel": "Surah",
+    "selectSurah": "Select a surah...",
+    "searchSurah": "Search surah...",
+    "versesLabel": "Verses",
+    "versesPlaceholder": "e.g. 1-5 or 2:255",
+    "pageLabel": "Page Numbers",
+    "pagePlaceholder": "e.g. 1, 2-5",
+    "reflectionLabel": "Reflection",
+    "reflectionPlaceholder": "Write your journal entries, reflections, or thoughts here...\n\nMarkdown formatting is supported:\n# Heading\n**bold** *italic*\n- bullet points\n> blockquotes",
+    "markdownSupported": "(Markdown supported)",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Enter comma-separated tags",
+    "createdAt": "Created",
+    "updatedAt": "Updated"
   }
 }

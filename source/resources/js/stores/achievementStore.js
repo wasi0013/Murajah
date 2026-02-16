@@ -3,6 +3,8 @@
  * Manages all badge/achievement state and operations
  */
 
+import Logger from '../utils/logger.js';
+
 const { reactive, computed } = Vue;
 
 export const achievementStore = reactive({
@@ -33,7 +35,7 @@ export const loadBadgesData = async () => {
       achievementStore.badgesData.set(badge.id, badge);
     });
     
-    console.log(`[Murajah] Loaded ${achievementStore.badgesList.length} badge definitions`);
+    Logger.log(`[Murajah] Loaded ${achievementStore.badgesList.length} badge definitions`);
     return achievementStore.badgesList;
   } catch (error) {
     console.error('[Murajah] Failed to load badges.json:', error);
@@ -53,20 +55,20 @@ export const getBadgeData = (badgeId) => {
  */
 export const loadUnlockedBadges = async (murajahDB) => {
   try {
-    console.log('[Murajah] loadUnlockedBadges: Starting...');
+    Logger.log('[Murajah] loadUnlockedBadges: Starting...');
     const data = await murajahDB.loadData();
-    console.log('[Murajah] loadUnlockedBadges: Loaded data from DB:', data);
+    Logger.log('[Murajah] loadUnlockedBadges: Loaded data from DB:', data);
     
     if (data && data.unlockedBadges && Array.isArray(data.unlockedBadges)) {
-      console.log('[Murajah] loadUnlockedBadges: Found unlockedBadges array:', data.unlockedBadges);
+      Logger.log('[Murajah] loadUnlockedBadges: Found unlockedBadges array:', data.unlockedBadges);
       // Clear existing set and add items (preserves reactivity)
       achievementStore.unlockedBadges.clear();
-      console.log('[Murajah] loadUnlockedBadges: Cleared existing set');
+      Logger.log('[Murajah] loadUnlockedBadges: Cleared existing set');
       
       data.unlockedBadges.forEach(badgeId => {
         achievementStore.unlockedBadges.add(badgeId);
       });
-      console.log('[Murajah] loadUnlockedBadges: Added all badges, set size:', achievementStore.unlockedBadges.size);
+      Logger.log('[Murajah] loadUnlockedBadges: Added all badges, set size:', achievementStore.unlockedBadges.size);
       
       // Update reactive properties to trigger Vue reactivity
       achievementStore.totalUnlocked = achievementStore.unlockedBadges.size;
@@ -74,16 +76,16 @@ export const loadUnlockedBadges = async (murajahDB) => {
       
       // lastUpdated acts as an additional reactive ping
       achievementStore.lastUpdated = Date.now();
-      console.log('[Murajah] Updated unlocked badges set:', achievementStore.unlockedBadges.size);
+      Logger.log('[Murajah] Updated unlocked badges set:', achievementStore.unlockedBadges.size);
       
-      console.log(`[Murajah] Loaded ${achievementStore.totalUnlocked} unlocked badges, store state:`, {
+      Logger.log(`[Murajah] Loaded ${achievementStore.totalUnlocked} unlocked badges, store state:`, {
         size: achievementStore.unlockedBadges.size,
         totalUnlocked: achievementStore.totalUnlocked,
         completionPercentage: achievementStore.completionPercentage,
         setContents: Array.from(achievementStore.unlockedBadges)
       });
     } else {
-      console.log('[Murajah] loadUnlockedBadges: No unlockedBadges data found', {
+      Logger.log('[Murajah] loadUnlockedBadges: No unlockedBadges data found', {
         hasData: !!data,
         hasUnlockedBadges: data?.unlockedBadges,
         isArray: Array.isArray(data?.unlockedBadges)
@@ -102,7 +104,7 @@ export const saveUnlockedBadges = async (murajahDB) => {
     const data = await murajahDB.loadData() || {};
     data.unlockedBadges = Array.from(achievementStore.unlockedBadges);
     await murajahDB.saveData(data);
-    console.log(`[Murajah] Saved ${achievementStore.unlockedBadges.size} unlocked badges`);
+    Logger.log(`[Murajah] Saved ${achievementStore.unlockedBadges.size} unlocked badges`);
   } catch (error) {
     console.error('[Murajah] Failed to save unlocked badges:', error);
   }
@@ -124,7 +126,7 @@ export const unlockBadge = (badgeId) => {
   achievementStore.completionPercentage = Math.round((achievementStore.totalUnlocked / 100) * 100);
   achievementStore.lastUpdated = Date.now();
   
-  console.log(`[Murajah] Badge unlocked: ${badgeId} (${achievementStore.totalUnlocked}/100)`);
+  Logger.log(`[Murajah] Badge unlocked: ${badgeId} (${achievementStore.totalUnlocked}/100)`);
   return true;
 };
 
@@ -149,7 +151,7 @@ export const unlockBadges = (badgeIds) => {
     achievementStore.completionPercentage = Math.round((achievementStore.totalUnlocked / 100) * 100);
   achievementStore.lastUpdated = Date.now();
     
-    console.log(`[Murajah] ${newlyUnlocked.length} badges unlocked:`, newlyUnlocked);
+    Logger.log(`[Murajah] ${newlyUnlocked.length} badges unlocked:`, newlyUnlocked);
   }
   
   return newlyUnlocked;
@@ -202,7 +204,7 @@ export const clearAllBadges = () => {
   achievementStore.completionPercentage = 0;
   achievementStore.lastUnlockedBadgeId = null;
   achievementStore.lastUnlockedTime = null;
-  console.log('[Murajah] All badges cleared');
+  Logger.log('[Murajah] All badges cleared');
 };
 
 /**
@@ -214,7 +216,7 @@ export const unlockAllBadges = () => {
   }
   achievementStore.totalUnlocked = 100;
   achievementStore.completionPercentage = 100;
-  console.log('[Murajah] All badges unlocked (debug)');
+  Logger.log('[Murajah] All badges unlocked (debug)');
 };
 
 /**

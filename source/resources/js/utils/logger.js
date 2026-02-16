@@ -23,6 +23,13 @@ const MODULES = {
 
 let enabledLevels = new Set([LOG_LEVELS.INFO.name, LOG_LEVELS.WARN.name, LOG_LEVELS.ERROR.name]);
 
+// Auto-enable DEBUG via localStorage: localStorage.setItem('murajah-debug', 'true')
+try {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('murajah-debug') === 'true') {
+    enabledLevels.add(LOG_LEVELS.DEBUG.name);
+  }
+} catch (e) { /* localStorage unavailable */ }
+
 export const Logger = {
   /**
    * Set minimum log level (DEBUG, INFO, WARN, ERROR)
@@ -101,6 +108,22 @@ export const Logger = {
     } else {
       this.debug(MODULES.PERFORMANCE, `${operation} completed in ${durationMs.toFixed(2)}ms`);
     }
+  },
+
+  /**
+   * Drop-in replacement for console.log - silent unless DEBUG enabled.
+   * Preserves original call signature for easy migration.
+   * Enable via: localStorage.setItem('murajah-debug', 'true') then refresh.
+   */
+  log(...args) {
+    if (enabledLevels.has('DEBUG')) console.log(...args);
+  },
+
+  /**
+   * Drop-in replacement for console.warn for verbose warnings - silent unless DEBUG enabled.
+   */
+  logWarn(...args) {
+    if (enabledLevels.has('DEBUG')) console.warn(...args);
   },
 
   // Convenience shortcuts

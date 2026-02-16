@@ -4,6 +4,8 @@
  * Features: play/pause/stop, playback speed, expandable playlist, hideable
  */
 
+import Logger from '../utils/logger.js';
+
 export const FloatingAudioPlayerComponent = {
   template: `
     <div v-if="recordings.length > 0" class="floating-audio-player-container">
@@ -308,7 +310,7 @@ export const FloatingAudioPlayerComponent = {
         await audio.play();
         this.isPlaying = true;
         
-        console.log('[Murajah] Playing recording', {
+        Logger.log('[Murajah] Playing recording', {
           page: recording.pageNumber,
           duration: recording.duration,
           mimeType: recording.mimeType || recording.blob.type

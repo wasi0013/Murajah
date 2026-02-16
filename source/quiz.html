@@ -1611,6 +1611,12 @@
 
     <!-- Database Setup -->
     <script>
+        // Debug-gated Logger (enable via: localStorage.setItem('murajah-debug', 'true'))
+        const Logger = {
+            log(...args) { try { if (localStorage.getItem('murajah-debug') === 'true') Logger.log(...args); } catch(e) {} },
+            logWarn(...args) { try { if (localStorage.getItem('murajah-debug') === 'true') console.warn(...args); } catch(e) {} }
+        };
+
         // IndexedDB Setup
         const QuizDB = {
             db: null,
@@ -1636,7 +1642,7 @@
 
                     request.onsuccess = () => {
                         this.db = request.result;
-                        console.log('Database opened successfully');
+                        Logger.log('Database opened successfully');
                         resolve(this.db);
                     };
 
@@ -1932,7 +1938,7 @@
                         el.style.pointerEvents = 'none';
                     });
                     
-                    console.log('[Quiz] Tooltips disabled for touch device');
+                    Logger.log('[Quiz] Tooltips disabled for touch device');
                 };
 
                 // Get random verses excluding current verse
@@ -2162,11 +2168,11 @@
 
                 // Load font for a specific page
                 const loadFontForPage = async (pageNum) => {
-                    console.log('[QUIZ DEBUG] Loading font for page:', pageNum);
+                    Logger.log('[QUIZ DEBUG] Loading font for page:', pageNum);
                     const fontFamily = `QPCPage${pageNum}`;
                     const fontId = `qpc-page-${pageNum}`;
                     if (document.getElementById(fontId)) {
-                        console.log('[QUIZ DEBUG] Font already loaded for page:', pageNum);
+                        Logger.log('[QUIZ DEBUG] Font already loaded for page:', pageNum);
                         return fontFamily; // Already loaded
                     }
 
@@ -2178,12 +2184,12 @@
                         styleTag.innerHTML = `@font-face { font-family: '${fontFamily}'; ${src}; font-weight: normal; font-style: normal; font-display: swap; } .quran-word{ font-family: '${fontFamily}' !important; }`;
                         document.head.appendChild(styleTag);
 
-                        console.log('[QUIZ DEBUG] Font CSS added for page:', pageNum);
+                        Logger.log('[QUIZ DEBUG] Font CSS added for page:', pageNum);
 
                         // Wait for font to load
                         if ('fonts' in document) {
                             document.fonts.load(`12px ${fontFamily}`).then(() => {
-                                console.log('[QUIZ DEBUG] Font loaded successfully for page:', pageNum);
+                                Logger.log('[QUIZ DEBUG] Font loaded successfully for page:', pageNum);
                                 resolve(fontFamily);
                             }).catch((error) => {
                                 console.warn('[QUIZ DEBUG] Font loading failed for page:', pageNum, error);
@@ -2192,7 +2198,7 @@
                         } else {
                             // Fallback: wait a bit for font to load
                             setTimeout(() => {
-                                console.log('[QUIZ DEBUG] Font loading timeout for page:', pageNum);
+                                Logger.log('[QUIZ DEBUG] Font loading timeout for page:', pageNum);
                                 resolve(fontFamily);
                             }, 500);
                         }
@@ -2216,7 +2222,7 @@
                     completionIsCorrect.value = false;
 
                     try {
-                        console.log('[QUIZ DEBUG] Starting verse completion question generation');
+                        Logger.log('[QUIZ DEBUG] Starting verse completion question generation');
 
                         // Pick a random verse from quran.json
                         const availableVerses = [];
@@ -2233,16 +2239,16 @@
 
                         // Select random verse
                         const randomVerse = availableVerses[Math.floor(Math.random() * availableVerses.length)];
-                        console.log('[QUIZ DEBUG] Selected verse:', randomVerse);
+                        Logger.log('[QUIZ DEBUG] Selected verse:', randomVerse);
 
                         // Load the font for this verse's page
                         const fontFamily = await loadFontForPage(randomVerse.page);
                         completionFontFamily.value = fontFamily;
-                        console.log('[QUIZ DEBUG] Font loaded for page:', randomVerse.page, 'with family:', fontFamily);
+                        Logger.log('[QUIZ DEBUG] Font loaded for page:', randomVerse.page, 'with family:', fontFamily);
 
                         // Split verse text into words (Arabic is space-separated)
                         const verseWords = randomVerse.text.trim().split(/\s+/).filter(word => word.length > 0);
-                        console.log('[QUIZ DEBUG] Verse words:', verseWords);
+                        Logger.log('[QUIZ DEBUG] Verse words:', verseWords);
 
                         if (verseWords.length < 3) {
                             console.warn('Selected verse has fewer than 3 words, using it anyway');
@@ -2251,14 +2257,14 @@
                         // Determine how many words to blank (between 2-5, but not more than available words)
                         const maxBlanks = Math.min(5, Math.max(2, verseWords.length - 1)); // Leave at least 1 word visible
                         const blankCount = Math.floor(2 + Math.random() * (maxBlanks - 1)); // Random between 2-maxBlanks
-                        console.log('[QUIZ DEBUG] Will blank', blankCount, 'out of', verseWords.length, 'words');
+                        Logger.log('[QUIZ DEBUG] Will blank', blankCount, 'out of', verseWords.length, 'words');
 
                         // Randomly select which words to blank
                         const blankIndices = new Set();
                         while (blankIndices.size < blankCount) {
                             blankIndices.add(Math.floor(Math.random() * verseWords.length));
                         }
-                        console.log('[QUIZ DEBUG] Blank indices:', Array.from(blankIndices));
+                        Logger.log('[QUIZ DEBUG] Blank indices:', Array.from(blankIndices));
 
                         // Create display array with blanks
                         const display = verseWords.map((word, index) => ({
@@ -2287,7 +2293,7 @@
                         completionTotalMissing.value = blankCount;
                         completionMissingCount.value = 0;
 
-                        console.log('[QUIZ DEBUG] Correct answers (RTL order):', correctAnswersArray);
+                        Logger.log('[QUIZ DEBUG] Correct answers (RTL order):', correctAnswersArray);
 
                         // Get random wrong words from the SAME PAGE only
                         const wrongWords = new Set();
@@ -2295,7 +2301,7 @@
 
                         // Find all words on the same page as the selected verse
                         const pageData = quranData.value.layout.pages.find(page => page.page_number === randomVerse.page);
-                        console.log('[QUIZ DEBUG] Looking for page data for page:', randomVerse.page, 'found:', !!pageData);
+                        Logger.log('[QUIZ DEBUG] Looking for page data for page:', randomVerse.page, 'found:', !!pageData);
                         
                         if (!pageData) {
                             console.warn('[QUIZ DEBUG] Could not find page data for page:', randomVerse.page, 'falling back to global list');
@@ -2308,14 +2314,14 @@
                                 wrongWords.add(word);
                             }
                         } else {
-                            console.log('[QUIZ DEBUG] Page data found:', pageData);
+                            Logger.log('[QUIZ DEBUG] Page data found:', pageData);
                             
                             // Get all words on this page by filtering words with IDs in the page range
                             const pageWords = Object.values(quranData.value.words).filter(word => 
                                 word.id >= pageData.first_word_id && word.id <= pageData.last_word_id
                             );
 
-                            console.log('[QUIZ DEBUG] Found', pageWords.length, 'words on page', randomVerse.page);
+                            Logger.log('[QUIZ DEBUG] Found', pageWords.length, 'words on page', randomVerse.page);
 
                             // Get unique word texts from this page
                             const pageWordTexts = new Set();
@@ -2325,12 +2331,12 @@
                                 }
                             });
 
-                            console.log('[QUIZ DEBUG] Found', pageWordTexts.size, 'unique words on page, correct answers:', correctAnswersArray);
+                            Logger.log('[QUIZ DEBUG] Found', pageWordTexts.size, 'unique words on page, correct answers:', correctAnswersArray);
 
                             // Convert to array and filter out correct answers
                             const availableWrongWords = Array.from(pageWordTexts).filter(word => !correctAnswersSet.has(word));
                             
-                            console.log('[QUIZ DEBUG] After filtering correct answers:', availableWrongWords.length, 'words available');
+                            Logger.log('[QUIZ DEBUG] After filtering correct answers:', availableWrongWords.length, 'words available');
 
                             // Add wrong words until we have enough
                             const maxWrongWordsNeeded = blankCount * 2;
@@ -2344,11 +2350,11 @@
                                 iterations++;
                             }
 
-                            console.log('[QUIZ DEBUG] Selected', wrongWords.size, 'wrong words from same page');
+                            Logger.log('[QUIZ DEBUG] Selected', wrongWords.size, 'wrong words from same page');
                             
                             // If we still don't have enough wrong words, supplement with global list
                             if (wrongWords.size < maxWrongWordsNeeded) {
-                                console.log('[QUIZ DEBUG] Not enough words from same page, supplementing with global list');
+                                Logger.log('[QUIZ DEBUG] Not enough words from same page, supplementing with global list');
                                 const globalWords = Array.from(quranData.value.allWordTexts).filter(word => 
                                     !correctAnswersSet.has(word) && !wrongWords.has(word)
                                 );
@@ -2374,7 +2380,7 @@
                         }
 
                         completionOptions.value = options;
-                        console.log('[QUIZ DEBUG] Generated', options.length, 'options with', correctAnswersArray.length, 'correct answers');
+                        Logger.log('[QUIZ DEBUG] Generated', options.length, 'options with', correctAnswersArray.length, 'correct answers');
 
                     } catch (err) {
                         console.error('Error generating completion question:', err);
@@ -2526,12 +2532,12 @@
                             isCorrect: true
                         });
 
-                        console.log('🟦 QUESTION GENERATED:');
-                        console.log('  Type (badge):', continuationType.value);
-                        console.log('  Display Verse Index:', selectedVerseIndex, '(shows verse', selectedVerseIndex + 1, ')');
-                        console.log('  Correct Verse Index:', correctVerseIndex, '(verse', correctVerseIndex + 1, ')');
-                        console.log('  Correct answer text:', surahVerses[correctVerseIndex].text);
-                        console.log('  Correct answer object:', options[0]);
+                        Logger.log('🟦 QUESTION GENERATED:');
+                        Logger.log('  Type (badge):', continuationType.value);
+                        Logger.log('  Display Verse Index:', selectedVerseIndex, '(shows verse', selectedVerseIndex + 1, ')');
+                        Logger.log('  Correct Verse Index:', correctVerseIndex, '(verse', correctVerseIndex + 1, ')');
+                        Logger.log('  Correct answer text:', surahVerses[correctVerseIndex].text);
+                        Logger.log('  Correct answer object:', options[0]);
 
                         // Add wrong answers from different verses (avoid adjacent verses)
                         const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
@@ -2567,12 +2573,12 @@
                     continuationAnswerRevealed.value = true;
                     const isCorrect = continuationOptions.value[index].isCorrect;
                     
-                    console.log('🟩 ANSWER SUBMITTED:');
-                    console.log('  Selected option index:', index);
-                    console.log('  Selected option text:', continuationOptions.value[index].text);
-                    console.log('  Selected option verse:', continuationOptions.value[index].verse);
-                    console.log('  isCorrect flag:', isCorrect);
-                    console.log('  Correct answer was:', continuationOptions.value.find(opt => opt.isCorrect));
+                    Logger.log('🟩 ANSWER SUBMITTED:');
+                    Logger.log('  Selected option index:', index);
+                    Logger.log('  Selected option text:', continuationOptions.value[index].text);
+                    Logger.log('  Selected option verse:', continuationOptions.value[index].verse);
+                    Logger.log('  isCorrect flag:', isCorrect);
+                    Logger.log('  Correct answer was:', continuationOptions.value.find(opt => opt.isCorrect));
                     
                     if (!isCorrect) {
                         selectedWrongContinuation.value = index;
@@ -2899,12 +2905,12 @@
                     document.documentElement.style.color = '#111827'
                     document.body.style.backgroundColor = '#ffffff'
                     document.body.style.color = '#111827'
-                    console.log('[Quiz] Light mode applied to DOM')
+                    Logger.log('[Quiz] Light mode applied to DOM')
                 }
 
                 // Toggle dark mode disabled - always use light mode
                 const toggleDarkMode = async () => {
-                    console.log('[Quiz] Dark mode toggle disabled - light mode is always active')
+                    Logger.log('[Quiz] Dark mode toggle disabled - light mode is always active')
                 }
 
                 // Handle tab changes and save last active tab
@@ -2994,7 +3000,7 @@
                             quranData.value.surahAyahs[surah] = Array.from(quranData.value.surahAyahs[surah]);
                         });
 
-                        console.log('[Murajah] Built optimized indexes for verse completion');
+                        Logger.log('[Murajah] Built optimized indexes for verse completion');
 
                     } catch (err) {
                         console.error('Failed to load quiz data:', err);

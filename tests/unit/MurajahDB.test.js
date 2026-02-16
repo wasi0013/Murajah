@@ -26,7 +26,7 @@ describe('MurajahDB', () => {
   describe('init()', () => {
     it('should initialize IndexedDB with correct version', async () => {
       expect(db.db).toBeDefined();
-      expect(db.db.version).toBe(4);
+      expect(db.db.version).toBe(5);
     });
 
     it('should create all required object stores', async () => {

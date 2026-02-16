@@ -3,6 +3,8 @@
  * Plays all verses of the current page sequentially
  */
 
+import Logger from '../utils/logger.js';
+
 export const QuranAudioPlayerComponent = {
   template: `
     <div class="bg-white rounded-lg shadow-md p-6 mt-6">
@@ -356,13 +358,13 @@ export const QuranAudioPlayerComponent = {
      * Handle reciter change and save to IndexedDB/localStorage
      */
     async onReciterChange() {
-      console.log('[Murajah-Audio] Reciter changed to:', this.selectedReciter);
+      Logger.log('[Murajah-Audio] Reciter changed to:', this.selectedReciter);
       // Always save to localStorage as reliable fallback
       try {
         localStorage.setItem('murajah-reciter', this.selectedReciter);
-        console.log('[Murajah-Audio] Reciter saved to localStorage');
+        Logger.log('[Murajah-Audio] Reciter saved to localStorage');
       } catch (e) {
-        console.warn('[Murajah-Audio] localStorage not available');
+        Logger.logWarn('[Murajah-Audio] localStorage not available');
       }
       // Also try IndexedDB if available
       if (this.db) {
@@ -384,10 +386,10 @@ export const QuranAudioPlayerComponent = {
       try {
         savedReciter = localStorage.getItem('murajah-reciter');
         if (savedReciter) {
-          console.log('[Murajah-Audio] Found reciter in localStorage:', savedReciter);
+          Logger.log('[Murajah-Audio] Found reciter in localStorage:', savedReciter);
         }
       } catch (e) {
-        console.warn('[Murajah-Audio] localStorage not available');
+        Logger.logWarn('[Murajah-Audio] localStorage not available');
       }
       
       // Fallback to IndexedDB if localStorage didn't have it
@@ -395,7 +397,7 @@ export const QuranAudioPlayerComponent = {
         try {
           savedReciter = await this.db.loadReciter(null);
           if (savedReciter) {
-            console.log('[Murajah-Audio] Found reciter in IndexedDB:', savedReciter);
+            Logger.log('[Murajah-Audio] Found reciter in IndexedDB:', savedReciter);
           }
         } catch (error) {
           console.error('[Murajah-Audio] Failed to load reciter from IndexedDB:', error);
@@ -407,9 +409,9 @@ export const QuranAudioPlayerComponent = {
         const validReciter = this.availableReciters.find(r => r.id === savedReciter);
         if (validReciter) {
           this.selectedReciter = savedReciter;
-          console.log('[Murajah-Audio] Applied saved reciter:', savedReciter);
+          Logger.log('[Murajah-Audio] Applied saved reciter:', savedReciter);
         } else {
-          console.warn('[Murajah-Audio] Saved reciter not found in available list, using default');
+          Logger.logWarn('[Murajah-Audio] Saved reciter not found in available list, using default');
         }
       }
     },
@@ -418,7 +420,7 @@ export const QuranAudioPlayerComponent = {
      * Load verses for the current page
      */
     loadPageVerses() {
-      console.log('[Murajah-Audio] loadPageVerses called', {
+      Logger.log('[Murajah-Audio] loadPageVerses called', {
         currentPage: this.currentPage,
         quranDataReceived: !!this.quranData,
         quranDataType: typeof this.quranData,
@@ -427,7 +429,7 @@ export const QuranAudioPlayerComponent = {
       });
 
       if (!this.quranData) {
-        console.warn(`[Murajah-Audio] Missing quran data for page ${this.currentPage}`);
+        Logger.logWarn(`[Murajah-Audio] Missing quran data for page ${this.currentPage}`);
         this.pageVerses = [];
         return;
       }
@@ -437,30 +439,30 @@ export const QuranAudioPlayerComponent = {
       let allVerses = [];
       
       if (Array.isArray(this.quranData)) {
-        console.log('[Murajah-Audio] Data is an array');
+        Logger.log('[Murajah-Audio] Data is an array');
         allVerses = this.quranData;
       } else if (typeof this.quranData === 'object') {
-        console.log('[Murajah-Audio] Data is an object, flattening...');
+        Logger.log('[Murajah-Audio] Data is an object, flattening...');
         const surahKeys = Object.keys(this.quranData);
-        console.log('[Murajah-Audio] Found surahs:', surahKeys.length);
+        Logger.log('[Murajah-Audio] Found surahs:', surahKeys.length);
         
         Object.values(this.quranData).forEach((surahVerses, idx) => {
           if (Array.isArray(surahVerses)) {
             allVerses.push(...surahVerses);
             if (idx === 0) {
-              console.log('[Murajah-Audio] First surah has', surahVerses.length, 'verses');
+              Logger.log('[Murajah-Audio] First surah has', surahVerses.length, 'verses');
               if (surahVerses[0]) {
-                console.log('[Murajah-Audio] First verse structure:', surahVerses[0]);
+                Logger.log('[Murajah-Audio] First verse structure:', surahVerses[0]);
               }
             }
           }
         });
       }
 
-      console.log('[Murajah-Audio] Total verses after flattening:', allVerses.length);
+      Logger.log('[Murajah-Audio] Total verses after flattening:', allVerses.length);
 
       if (allVerses.length === 0) {
-        console.warn(`[Murajah-Audio] No verses found in quran data`);
+        Logger.logWarn(`[Murajah-Audio] No verses found in quran data`);
         this.pageVerses = [];
         return;
       }
@@ -476,7 +478,7 @@ export const QuranAudioPlayerComponent = {
           return a.verse - b.verse;
         });
 
-      console.log(`[Murajah-Audio] Loaded ${this.pageVerses.length} verses for page ${this.currentPage} (filtered from ${versesBeforeFilter} total)`);
+      Logger.log(`[Murajah-Audio] Loaded ${this.pageVerses.length} verses for page ${this.currentPage} (filtered from ${versesBeforeFilter} total)`);
 
       // Reset to first verse
       this.currentVerseIndex = 0;
@@ -515,7 +517,7 @@ export const QuranAudioPlayerComponent = {
       }
 
       if (!this.quranData) {
-        console.warn('[Murajah-Audio] Missing quran data for surah selection');
+        Logger.logWarn('[Murajah-Audio] Missing quran data for surah selection');
         this.selectedSurahVerses = [];
         return;
       }
@@ -537,7 +539,7 @@ export const QuranAudioPlayerComponent = {
       // Convert to number - selectedSurahForAudio comes as string from select element
       const surahNum = Number(this.selectedSurahForAudio);
       
-      console.log('[Murajah-Audio] loadSurahVerses called with:', {
+      Logger.log('[Murajah-Audio] loadSurahVerses called with:', {
         selectedSurahForAudio: this.selectedSurahForAudio,
         surahNum,
         totalVerses: allVerses.length,
@@ -548,7 +550,7 @@ export const QuranAudioPlayerComponent = {
         .filter(verse => verse && verse.chapter === surahNum)
         .sort((a, b) => a.verse - b.verse);
 
-      console.log(`[Murajah-Audio] Loaded ${this.selectedSurahVerses.length} verses for surah ${surahNum}`);
+      Logger.log(`[Murajah-Audio] Loaded ${this.selectedSurahVerses.length} verses for surah ${surahNum}`);
 
       // Reset playback state
       this.currentVerseIndex = 0;
@@ -603,7 +605,7 @@ export const QuranAudioPlayerComponent = {
         this.spacedPlaylist.push(cumulativeItem);
       }
 
-      console.log('[Murajah-Audio] Generated spaced playlist with', this.spacedPlaylist.length, 'items');
+      Logger.log('[Murajah-Audio] Generated spaced playlist with', this.spacedPlaylist.length, 'items');
     },
 
     /**
@@ -611,13 +613,13 @@ export const QuranAudioPlayerComponent = {
      */
     playSpacedItem(playlistIndex) {
       if (!this.spacedPlaylist || playlistIndex >= this.spacedPlaylist.length) {
-        console.warn('[Murajah-Audio] Invalid playlist index:', playlistIndex);
+        Logger.logWarn('[Murajah-Audio] Invalid playlist index:', playlistIndex);
         return;
       }
 
       const item = this.spacedPlaylist[playlistIndex];
       
-      console.log('[Murajah-Audio] playSpacedItem:', {
+      Logger.log('[Murajah-Audio] playSpacedItem:', {
         playlistIndex,
         label: item.label,
         verseIndices: item.verseIndices,
@@ -640,7 +642,7 @@ export const QuranAudioPlayerComponent = {
      */
     playNextVerseInSequence() {
       if (!this.currentSequenceIndices || this.currentSequenceIndices.length === 0) {
-        console.warn('[Murajah-Audio] No sequence indices set');
+        Logger.logWarn('[Murajah-Audio] No sequence indices set');
         return;
       }
 
@@ -649,7 +651,7 @@ export const QuranAudioPlayerComponent = {
       
       const verse = this.pageVerses[verseIndex];
       
-      console.log('[Murajah-Audio] playNextVerseInSequence:', {
+      Logger.log('[Murajah-Audio] playNextVerseInSequence:', {
         sequencePosition: this.currentSequencePosition,
         sequenceRepeat: this.currentSequenceRepeatPosition + 1,
         totalRepeats: this.currentSequenceRepeatCount,
@@ -664,7 +666,7 @@ export const QuranAudioPlayerComponent = {
       this.audioElement.src = primaryUrl;
       this.audioElement.onloadstart = () => {
         this.audioElement.addEventListener('error', () => {
-          console.log('[Murajah-Audio] Primary URL failed, trying fallback');
+          Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
           this.audioElement.src = fallbackUrl;
         }, { once: true });
       };
@@ -808,13 +810,13 @@ export const QuranAudioPlayerComponent = {
      */
     playVerse(index) {
       if (index < 0 || index >= this.versesToPlay.length) {
-        console.log('[Murajah-Audio] Invalid verse index:', index, 'versesToPlay length:', this.versesToPlay.length);
+        Logger.log('[Murajah-Audio] Invalid verse index:', index, 'versesToPlay length:', this.versesToPlay.length);
         return;
       }
 
       this.currentVerseIndex = index;
       const verse = this.versesToPlay[index];
-      console.log('[Murajah-Audio] Playing verse:', verse.chapter + ':' + verse.verse);
+      Logger.log('[Murajah-Audio] Playing verse:', verse.chapter + ':' + verse.verse);
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
       // Try primary URL first, fallback to fallback URL
@@ -822,7 +824,7 @@ export const QuranAudioPlayerComponent = {
       this.audioElement.onloadstart = () => {
         // If primary fails, try fallback
         this.audioElement.addEventListener('error', () => {
-          console.log('[Murajah-Audio] Primary URL failed, trying fallback');
+          Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
           this.audioElement.src = fallbackUrl;
         }, { once: true });
       };
@@ -841,7 +843,7 @@ export const QuranAudioPlayerComponent = {
     togglePlayPause() {
       // Use versesToPlay which returns either surah verses or page verses
       if (this.versesToPlay.length === 0) {
-        console.log('[Murajah-Audio] No verses to play');
+        Logger.log('[Murajah-Audio] No verses to play');
         return;
       }
 
@@ -851,7 +853,7 @@ export const QuranAudioPlayerComponent = {
       } else {
         // Check if we need to load a new verse
         if (this.needsReload) {
-          console.log('[Murajah-Audio] Loading fresh verse, index:', this.currentVerseIndex);
+          Logger.log('[Murajah-Audio] Loading fresh verse, index:', this.currentVerseIndex);
           // Start playback
           if (this.useSpacedRepetition && this.spacedPlaylist.length > 0) {
             this.playSpacedItem(0); // Start from first spaced item
@@ -912,7 +914,7 @@ export const QuranAudioPlayerComponent = {
       // Automatically enable auto-play when repeat is enabled
       if (this.repeatPlaylist && !this.autoPlayNext) {
         this.repeatPlaylist = false;
-        console.log('[Murajah-Audio] Disabled repeat playlist with auto play toggle');
+        Logger.log('[Murajah-Audio] Disabled repeat playlist with auto play toggle');
       }
     },
 
@@ -925,7 +927,7 @@ export const QuranAudioPlayerComponent = {
       // Automatically enable auto-play when repeat is enabled
       if (this.repeatPlaylist && !this.autoPlayNext) {
         this.autoPlayNext = true;
-        console.log('[Murajah-Audio] Auto-play enabled with repeat playlist');
+        Logger.log('[Murajah-Audio] Auto-play enabled with repeat playlist');
       }
     },
 
@@ -957,7 +959,7 @@ export const QuranAudioPlayerComponent = {
      * Handle audio end
      */
     onAudioEnded() {
-      console.log('[Murajah-Audio] onAudioEnded called', {
+      Logger.log('[Murajah-Audio] onAudioEnded called', {
         autoPlayNext: this.autoPlayNext,
         useSpacedRepetition: this.useSpacedRepetition,
         spacedPlaylistLength: this.spacedPlaylist.length,
@@ -970,7 +972,7 @@ export const QuranAudioPlayerComponent = {
 
       if (!this.autoPlayNext) {
         this.isPlaying = false;
-        console.log('[Murajah-Audio] AutoPlay disabled, stopping');
+        Logger.log('[Murajah-Audio] AutoPlay disabled, stopping');
         return;
       }
 
@@ -980,12 +982,12 @@ export const QuranAudioPlayerComponent = {
         // Check if there are more verses in the current sequence to play
         if (this.currentSequencePosition < this.currentSequenceIndices.length - 1) {
           // Move to next verse in the current sequence
-          console.log('[Murajah-Audio] Moving to next verse in sequence');
+          Logger.log('[Murajah-Audio] Moving to next verse in sequence');
           this.currentSequencePosition++;
           this.playNextVerseInSequence();
         } else if (this.currentSequenceRepeatPosition < this.currentSequenceRepeatCount - 1) {
           // Current sequence finished, but need to repeat it again
-          console.log('[Murajah-Audio] Repeating sequence:', {
+          Logger.log('[Murajah-Audio] Repeating sequence:', {
             from: this.currentSequenceRepeatPosition + 1,
             to: this.currentSequenceRepeatPosition + 2,
             total: this.currentSequenceRepeatCount
@@ -995,7 +997,7 @@ export const QuranAudioPlayerComponent = {
           this.playNextVerseInSequence();
         } else {
           // Finished all repetitions of current sequence, move to next playlist item
-          console.log('[Murajah-Audio] Sequence complete, moving to next playlist item', {
+          Logger.log('[Murajah-Audio] Sequence complete, moving to next playlist item', {
             current: this.currentPlaylistIndex,
             total: this.spacedPlaylist.length
           });
@@ -1003,7 +1005,7 @@ export const QuranAudioPlayerComponent = {
             this.playSpacedItem(this.currentPlaylistIndex + 1);
           } else {
             this.isPlaying = false;
-            console.log('[Murajah-Audio] Spaced repetition completed!');
+            Logger.log('[Murajah-Audio] Spaced repetition completed!');
           }
         }
       } else {
@@ -1014,7 +1016,7 @@ export const QuranAudioPlayerComponent = {
           // Reached end of playlist
           if (this.repeatPlaylist) {
             // Restart from beginning
-            console.log('[Murajah-Audio] Restarting playlist from beginning');
+            Logger.log('[Murajah-Audio] Restarting playlist from beginning');
             this.playVerse(0);
           } else {
             this.isPlaying = false;
@@ -1090,7 +1092,7 @@ export const QuranAudioPlayerComponent = {
       }
 
       this.availableSurahs = surahMap;
-      console.log('[Murajah-Audio] Populated', Object.keys(this.availableSurahs).length, 'surahs', surahMap);
+      Logger.log('[Murajah-Audio] Populated', Object.keys(this.availableSurahs).length, 'surahs', surahMap);
     }
   },
 
@@ -1121,14 +1123,14 @@ export const QuranAudioPlayerComponent = {
       // Generate or clear playlist
       if (newVal && this.pageVerses.length > 0) {
         this.generateSpacedPlaylist();
-        console.log('[Murajah-Audio] Spaced repetition enabled, generated playlist with', this.spacedPlaylist.length, 'items');
+        Logger.log('[Murajah-Audio] Spaced repetition enabled, generated playlist with', this.spacedPlaylist.length, 'items');
       } else {
         this.spacedPlaylist = [];
-        console.log('[Murajah-Audio] Spaced repetition disabled');
+        Logger.log('[Murajah-Audio] Spaced repetition disabled');
       }
     },
     repeatCount(newVal, oldVal) {
-      console.log('[Murajah-Audio] repeatCount changed from', oldVal, 'to', newVal);
+      Logger.log('[Murajah-Audio] repeatCount changed from', oldVal, 'to', newVal);
       
       if (this.useSpacedRepetition && this.pageVerses.length > 0) {
         // Stop current playback
@@ -1147,7 +1149,7 @@ export const QuranAudioPlayerComponent = {
         
         // Regenerate playlist with new repeat count
         this.generateSpacedPlaylist();
-        console.log('[Murajah-Audio] Playlist regenerated with', this.spacedPlaylist.length, 'items');
+        Logger.log('[Murajah-Audio] Playlist regenerated with', this.spacedPlaylist.length, 'items');
       }
     },
     selectedSurahForAudio() {
@@ -1162,7 +1164,7 @@ export const QuranAudioPlayerComponent = {
     this.populateAvailableSurahs();
     // Load saved reciter from IndexedDB
     this.loadSavedReciter();
-    console.log('[Murajah] Audio player component mounted', {
+    Logger.log('[Murajah] Audio player component mounted', {
       currentPage: this.currentPage,
       quranDataType: typeof this.quranData,
       quranDataIsArray: Array.isArray(this.quranData),

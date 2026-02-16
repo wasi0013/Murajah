@@ -26,6 +26,7 @@ const APP_SHELL = [
   './resources/js/vendor/vue.global.js',
   './resources/js/vendor/tailwind.3.4.7.js',
   './resources/js/vendor/confetti-js.0.0.18.min.js',
+  './resources/js/vendor/marked.min.js',
   
   // Vendor CSS
   './resources/js/vendor/fontawesome/all.min.css',
@@ -49,6 +50,7 @@ const APP_SHELL = [
   './resources/js/utils/audioRecorder.js',
   './resources/js/utils/audioLoader.js',
   './resources/js/utils/dailyGoalsManager.js',
+  './resources/js/utils/morphologyLoader.js',
   './resources/js/utils/pageHasanah.js',
   './resources/js/utils/achievementLogic.js',
   './resources/js/utils/badgeShareUtil.js',
@@ -57,9 +59,14 @@ const APP_SHELL = [
   // App JS modules - Stores
   './resources/js/stores/i18nStore.js',
   './resources/js/stores/achievementStore.js',
+  './resources/js/stores/notesStore.js',
   
   // App JS modules - Components
   './resources/js/components/QuranAudioPlayerComponent.js',
+  './resources/js/components/FloatingAudioPlayerComponent.js',
+  './resources/js/components/LanguageSelectionModal.js',
+  './resources/js/components/MorphologyPopupComponent.js',
+  './resources/js/components/NotesComponent.js',
   './resources/js/components/AchievementGridComponent.js',
   './resources/js/components/AchievementDetailComponent.js',
   './resources/js/components/AchievementNavbarComponent.js',

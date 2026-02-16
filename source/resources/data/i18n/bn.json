@@ -26,6 +26,7 @@
       "analytics": "বিশ্লেষণ",
       "timeline": "টাইমলাইন",
       "achievements": "অর্জনসমূহ",
+      "notes": "নোটস",
       "community": "কমিউনিটি ও সাপোর্ট"
     }
   },
@@ -289,7 +290,8 @@
     "memorized": "ভুলে গেছি",
     "perfect": "আজকে কোন ভুল করি নি",
     "record": "রেকর্ড",
-    "recording": "রেকর্ড হচ্ছে..."
+    "recording": "রেকর্ড হচ্ছে...",
+    "note": "নোট"
   },
   "achievements": {
     "title": "অর্জনসমূহ",
@@ -612,5 +614,40 @@
     "playbackSpeed": "প্লেব্যাক গতি",
     "recentRecordings": "সাম্প্রতিক রেকর্ডিং",
     "noRecordings": "এখনো কোনো রেকর্ডিং নেই"
+  },
+  "notes": {
+    "title": "নোটস",
+    "new": "নতুন",
+    "searchPlaceholder": "নোটস খুঁজুন...",
+    "noResults": "আপনার অনুসন্ধানের সাথে কোনো নোট মেলেনি",
+    "empty": "এখনো কোনো নোট নেই",
+    "emptyHint": "তাদাব্বুর লিখতে আপনার প্রথম নোট তৈরি করুন",
+    "untitled": "শিরোনামহীন",
+    "page": "পৃষ্ঠা",
+    "backToList": "নোটসে ফিরে যান",
+    "edit": "সম্পাদনা",
+    "delete": "মুছুন",
+    "download": "ডাউনলোড",
+    "deleteConfirm": "আপনি কি এই নোটটি মুছতে চান?",
+    "confirmYes": "হ্যাঁ, মুছুন",
+    "confirmNo": "বাতিল",
+    "cancel": "বাতিল",
+    "save": "সেভ করুন",
+    "titleLabel": "শিরোনাম",
+    "titlePlaceholder": "নোটের শিরোনাম (খালি রাখলে স্বতঃ তৈরি হবে)",
+    "surahLabel": "সূরা",
+    "selectSurah": "সূরা নির্বাচন করুন...",
+    "searchSurah": "সূরা খুঁজুন...",
+    "versesLabel": "আয়াতসমূহ",
+    "versesPlaceholder": "যেমন: ১-৫ বা ২:২৫৫",
+    "pageLabel": "পৃষ্ঠা নম্বর",
+    "pagePlaceholder": "যেমন: ১, ২-৫",
+    "reflectionLabel": "তাদাব্বুর",
+    "reflectionPlaceholder": "আপনার নোট, তাদাব্বুর বা চিন্তা এখানে লিখুন...",
+    "markdownSupported": "(Markdown সমর্থিত)",
+    "tagsLabel": "ট্যাগ",
+    "tagsPlaceholder": "কমা দিয়ে আলাদা ট্যাগ লিখুন",
+    "createdAt": "তৈরির তারিখ",
+    "updatedAt": "আপডেটের তারিখ"
   }
 }

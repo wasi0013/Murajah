@@ -3,6 +3,8 @@
  * Handles conversion of badge cards to PNG images and clipboard operations
  */
 
+import Logger from './logger.js';
+
 /**
  * Convert a DOM element containing the badge card to a PNG blob
  * Uses html2canvas to render the card directly
@@ -37,7 +39,7 @@ export const cardElementToBlob = async (cardElement, scale = 2) => {
     return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
         if (blob) {
-          console.log('[Murajah] Badge card rendered successfully');
+          Logger.log('[Murajah] Badge card rendered successfully');
           resolve(blob);
         } else {
           reject(new Error('Failed to convert canvas to blob'));
@@ -62,7 +64,7 @@ export const copyImageToClipboard = async (imageBlob) => {
     if (navigator.clipboard && navigator.clipboard.write) {
       const data = [new ClipboardItem({ 'image/png': imageBlob })];
       await navigator.clipboard.write(data);
-      console.log('[Murajah] Badge card image copied to clipboard');
+      Logger.log('[Murajah] Badge card image copied to clipboard');
       return true;
     } else {
       console.warn('[Murajah] Clipboard API not fully supported, attempting fallback');
@@ -90,7 +92,7 @@ export const downloadImageBlob = (imageBlob, filename = 'murajah-badge.png') => 
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    console.log('[Murajah] Badge image downloaded');
+    Logger.log('[Murajah] Badge image downloaded');
   } catch (error) {
     console.error('[Murajah] Failed to download image:', error);
   }
@@ -139,7 +141,7 @@ export const loadHtml2Canvas = async () => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
     script.onload = () => {
-      console.log('[Murajah] html2canvas library loaded');
+      Logger.log('[Murajah] html2canvas library loaded');
       resolve();
     };
     script.onerror = () => {

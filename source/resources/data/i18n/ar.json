@@ -26,6 +26,7 @@
       "analytics": "التحليلات",
       "timeline": "الخط الزمني",
       "achievements": "الإنجازات",
+      "notes": "ملاحظات",
       "community": "المجتمع والدعم"
     }
   },
@@ -288,7 +289,8 @@
     "memorized": "نسيت",
     "perfect": "تلا دون أخطاء",
     "record": "تسجيل",
-    "recording": "جارٍ التسجيل..."
+    "recording": "جارٍ التسجيل...",
+    "note": "ملاحظة"
   },
   "achievements": {
     "title": "الإنجازات",
@@ -611,5 +613,40 @@
     "playbackSpeed": "سرعة التشغيل",
     "recentRecordings": "التسجيلات الأخيرة",
     "noRecordings": "لا توجد تسجيلات بعد"
+  },
+  "notes": {
+    "title": "الملاحظات",
+    "new": "جديد",
+    "searchPlaceholder": "البحث في الملاحظات...",
+    "noResults": "لا توجد ملاحظات تطابق بحثك",
+    "empty": "لا توجد ملاحظات بعد",
+    "emptyHint": "أنشئ أول ملاحظة لبدء تدوين تأملاتك",
+    "untitled": "بدون عنوان",
+    "page": "صفحة",
+    "backToList": "العودة إلى الملاحظات",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "download": "تحميل",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الملاحظة؟",
+    "confirmYes": "نعم، احذف",
+    "confirmNo": "إلغاء",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "عنوان الملاحظة (اتركه فارغاً للتوليد التلقائي)",
+    "surahLabel": "السورة",
+    "selectSurah": "اختر سورة...",
+    "searchSurah": "البحث عن سورة...",
+    "versesLabel": "الآيات",
+    "versesPlaceholder": "مثال: ١-٥ أو ٢:٢٥٥",
+    "pageLabel": "أرقام الصفحات",
+    "pagePlaceholder": "مثال: ١، ٢-٥",
+    "reflectionLabel": "التأمل",
+    "reflectionPlaceholder": "اكتب ملاحظاتك أو تأملاتك هنا...",
+    "markdownSupported": "(يدعم تنسيق Markdown)",
+    "tagsLabel": "الوسوم",
+    "tagsPlaceholder": "أدخل وسوماً مفصولة بفواصل",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث"
   }
 }

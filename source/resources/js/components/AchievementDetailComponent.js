@@ -3,6 +3,7 @@
  * Displays detailed information about a selected badge
  */
 
+import Logger from '../utils/logger.js';
 import { generateBadgeSVG, generateLockedBadgeSVG, getRarityColorScheme } from '../utils/badgeSVGGenerator.js';
 import ShareBadgeModal from './ShareBadgeModal.js';
 
@@ -208,7 +209,7 @@ export default {
     const copyBadgeInfo = () => {
       const text = `🏆 Achievement Unlocked: ${props.badge.name}\n\n${props.badge.backstory}\n\nCategory: ${props.badge.category}\nRarity: ${props.badge.rarity}`;
       navigator.clipboard.writeText(text).then(() => {
-        console.log('[Murajah] Badge info copied to clipboard');
+        Logger.log('[Murajah] Badge info copied to clipboard');
         // Show toast notification
         alert('Achievement copied to clipboard!');
       });

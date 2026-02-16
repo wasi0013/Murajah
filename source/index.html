@@ -35,6 +35,9 @@
   <!-- Vue 3 -->
   <script src="./resources/js/vendor/vue.global.js"></script>
 
+  <!-- Markdown Parser -->
+  <script src="./resources/js/vendor/marked.min.js"></script>
+
   <!-- Confetti Library (for achievement animations) -->
   <script async src="./resources/js/vendor/confetti-js.0.0.18.min.js"></script>
 
@@ -741,6 +744,11 @@
     /* Buttons */
     button {
       color: inherit;
+    }
+
+    button.text-white,
+    button[class*="text-white"] {
+      color: white !important;
     }
 
     .dark-mode button {
@@ -2118,6 +2126,169 @@
         height: 28px;
       }
     }
+
+    /* ── Markdown / Note Content Styling ── */
+    .note-content h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.375rem;
+      border-bottom: 1px solid #e5e7eb;
+      line-height: 1.3;
+    }
+
+    .note-content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.35;
+    }
+
+    .note-content h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #374151;
+      margin-top: 1rem;
+      margin-bottom: 0.375rem;
+      line-height: 1.4;
+    }
+
+    .note-content h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #374151;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+      line-height: 1.4;
+    }
+
+    .note-content h5,
+    .note-content h6 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #4b5563;
+      margin-top: 0.5rem;
+      margin-bottom: 0.25rem;
+      line-height: 1.4;
+    }
+
+    .note-content p {
+      margin-bottom: 0.75rem;
+      line-height: 1.75;
+      color: #374151;
+    }
+
+    .note-content blockquote {
+      border-left: 3px solid #10b981;
+      padding: 0.625rem 1rem;
+      margin: 1rem 0;
+      background: #f0fdf4;
+      border-radius: 0 0.375rem 0.375rem 0;
+      color: #065f46;
+      font-style: italic;
+      line-height: 1.7;
+    }
+
+    .note-content pre {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 1rem 1.25rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.65;
+    }
+
+    .note-content code {
+      background: #f3f4f6;
+      color: #dc2626;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.875em;
+    }
+
+    .note-content pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-size: inherit;
+    }
+
+    .note-content ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .note-content ol {
+      list-style-type: decimal;
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .note-content li {
+      margin-bottom: 0.25rem;
+      line-height: 1.7;
+      color: #374151;
+    }
+
+    .note-content hr {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 1.5rem 0;
+    }
+
+    .note-content a {
+      color: #059669;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .note-content a:hover {
+      color: #047857;
+    }
+
+    .note-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    .note-content th,
+    .note-content td {
+      border: 1px solid #e5e7eb;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+
+    .note-content th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+
+    .note-content img {
+      max-width: 100%;
+      border-radius: 0.375rem;
+      margin: 0.5rem 0;
+    }
+
+    .note-content strong {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .note-content em {
+      font-style: italic;
+      color: #4b5563;
+    }
     
   </style>
 </head>
@@ -2134,13 +2305,16 @@
     // Access Vue from global scope since it's loaded as a script tag
   const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
 
+    // Centralized logger (DEBUG silent by default; enable via localStorage.setItem('murajah-debug', 'true'))
+    const { default: Logger } = await import('./resources/js/utils/logger.js');
+
     // IIFE to handle async imports
     (async () => {
       // ==================== IndexedDB Manager ====================
       class MurajahDB {
         constructor() {
           this.dbName = 'murajah-db';
-          this.version = 4; // Bumped version for new resourceCache store
+          this.version = 5; // Bumped version for notes store
           this.db = null;
         }
 
@@ -2148,36 +2322,236 @@
           return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
 
-            request.onerror = () => reject(request.error);
+            request.onerror = () => {
+              const error = request.error;
+              if (error?.name === 'VersionError') {
+                // Requested version differs from existing DB version.
+                // This can happen when the service worker serves cached older code.
+                // NEVER delete the database — recover safely instead.
+                console.warn('[Murajah] DB version mismatch — recovering without data loss...');
+                this._handleVersionMismatch().then(resolve).catch(reject);
+              } else {
+                reject(error);
+              }
+            };
             request.onsuccess = () => {
               this.db = request.result;
-              console.log('[Murajah] IndexedDB initialized');
+              Logger.log('[Murajah] IndexedDB initialized v' + this.db.version);
               resolve();
             };
 
-            request.onupgradeneeded = (event) => {
-              const db = event.target.result;
-              
-              // Create object stores if they don't exist
-              if (!db.objectStoreNames.contains('appData')) {
-                db.createObjectStore('appData', { keyPath: 'id' });
+            request.onupgradeneeded = (event) => this._createSchema(event);
+          });
+        }
+
+        /**
+         * Safely handle VersionError without data loss.
+         * Strategy:
+         *   1. Open DB at whatever version it already has (no version = accept any)
+         *   2. If all required stores exist → use as-is (most common case)
+         *   3. If stores are missing → backup data, upgrade version to add them
+         *   4. Only as absolute last resort → delete + recreate + restore from backup
+         */
+        async _handleVersionMismatch() {
+          // Step 1: Open without specifying version — accepts whatever version exists
+          let existingDB;
+          try {
+            existingDB = await new Promise((resolve, reject) => {
+              const req = indexedDB.open(this.dbName);
+              req.onerror = () => reject(req.error);
+              req.onsuccess = () => resolve(req.result);
+            });
+          } catch (e) {
+            // Can't even open the DB — nothing to lose, recreate fresh
+            console.error('[Murajah] Cannot open existing DB at all:', e.message);
+            await this._recreateDatabase();
+            return;
+          }
+
+          const existingVersion = existingDB.version;
+          const requiredStores = this._getRequiredStoreNames();
+          const missingStores = requiredStores.filter(
+            name => !existingDB.objectStoreNames.contains(name)
+          );
+
+          if (missingStores.length === 0) {
+            // All required stores already exist — use the DB as-is.
+            // This is the most common case: cached old code (v4) opens a v5 DB.
+            this.db = existingDB;
+            Logger.log(`[Murajah] Opened existing DB v${existingVersion} — all stores present, no migration needed`);
+            return;
+          }
+
+          // Step 2: Some stores are missing — backup everything first
+          Logger.log(`[Murajah] Missing stores: [${missingStores.join(', ')}] — upgrading with data preservation`);
+          const backup = await this._exportAllData(existingDB);
+          existingDB.close();
+
+          // Step 3: Reopen at a higher version to trigger onupgradeneeded.
+          // IndexedDB automatically preserves data in existing stores during upgrades.
+          const upgradeVersion = Math.max(this.version, existingVersion + 1);
+          try {
+            await new Promise((resolve, reject) => {
+              const req = indexedDB.open(this.dbName, upgradeVersion);
+              req.onerror = () => reject(req.error);
+              req.onsuccess = () => {
+                this.db = req.result;
+                resolve();
+              };
+              req.onupgradeneeded = (event) => this._createSchema(event);
+            });
+            Logger.log(`[Murajah] DB safely upgraded to v${this.db.version} — existing data preserved`);
+            return;
+          } catch (upgradeError) {
+            console.error('[Murajah] In-place upgrade failed:', upgradeError.message);
+          }
+
+          // Step 4: Last resort — delete, recreate, and restore from backup
+          console.warn('[Murajah] Last resort: recreating DB and restoring backup...');
+          await this._recreateDatabase();
+
+          if (backup && Object.keys(backup).length > 0) {
+            const restored = await this._importData(backup);
+            Logger.log(`[Murajah] Restored ${restored} records from backup after DB recreation`);
+          }
+        }
+
+        /**
+         * Export all data from every object store in the database.
+         * Individual store failures are logged but don't block other stores.
+         * Returns { storeName: [ ...records ] }
+         */
+        async _exportAllData(db) {
+          const backup = {};
+          const storeNames = Array.from(db.objectStoreNames);
+
+          for (const storeName of storeNames) {
+            try {
+              backup[storeName] = await new Promise((resolve) => {
+                const tx = db.transaction([storeName], 'readonly');
+                const request = tx.objectStore(storeName).getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => {
+                  console.warn(`[Murajah] Backup: could not read "${storeName}"`);
+                  resolve([]);
+                };
+              });
+            } catch (e) {
+              console.warn(`[Murajah] Backup: skipped "${storeName}":`, e.message);
+              backup[storeName] = [];
+            }
+          }
+
+          const summary = Object.entries(backup)
+            .filter(([, v]) => v.length > 0)
+            .map(([k, v]) => `${k}(${v.length} records)`)
+            .join(', ');
+          Logger.log(`[Murajah] Backup complete: ${summary || '(empty database)'}`);
+          return backup;
+        }
+
+        /**
+         * Import backed-up data into the current database.
+         * - Skips stores that don't exist in the current schema
+         * - Skips individual records that are incompatible with the store's keyPath
+         * - Returns the total number of records successfully restored
+         */
+        async _importData(backup) {
+          let totalRestored = 0;
+
+          for (const [storeName, records] of Object.entries(backup)) {
+            if (!this.db.objectStoreNames.contains(storeName) || !records.length) continue;
+
+            try {
+              const tx = this.db.transaction([storeName], 'readwrite');
+              const store = tx.objectStore(storeName);
+              let storeCount = 0;
+
+              for (const record of records) {
+                try {
+                  store.put(record);
+                  storeCount++;
+                } catch (e) {
+                  // Record doesn't match store schema (e.g., missing keyPath)
+                  console.warn(`[Murajah] Restore: skipped incompatible record in "${storeName}":`, e.message);
+                }
               }
-              if (!db.objectStoreNames.contains('recordings')) {
-                db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
-              }
-              if (!db.objectStoreNames.contains('dailyGoals')) {
-                db.createObjectStore('dailyGoals', { keyPath: 'date' });
-              }
-              if (!db.objectStoreNames.contains('quranCache')) {
-                db.createObjectStore('quranCache', { keyPath: 'id' });
-              }
-              // New store for caching all static resources (JS, CSS, JSON, fonts)
-              if (!db.objectStoreNames.contains('resourceCache')) {
-                db.createObjectStore('resourceCache', { keyPath: 'id' });
-              }
-              console.log('[Murajah] IndexedDB schema created/upgraded');
+
+              await new Promise((resolve) => {
+                tx.oncomplete = () => {
+                  totalRestored += storeCount;
+                  resolve();
+                };
+                tx.onerror = () => {
+                  console.warn(`[Murajah] Restore: transaction failed for "${storeName}":`, tx.error?.message);
+                  resolve(); // Don't block other stores
+                };
+              });
+            } catch (e) {
+              console.warn(`[Murajah] Restore: could not restore "${storeName}":`, e.message);
+            }
+          }
+
+          return totalRestored;
+        }
+
+        /**
+         * Delete and recreate the database from scratch.
+         * Only called as an absolute last resort after data has been backed up.
+         */
+        async _recreateDatabase() {
+          await new Promise((resolve) => {
+            const req = indexedDB.deleteDatabase(this.dbName);
+            req.onsuccess = resolve;
+            req.onerror = resolve;
+            req.onblocked = () => {
+              console.warn('[Murajah] DB delete blocked — another connection may be open');
+              resolve();
             };
           });
+
+          await new Promise((resolve, reject) => {
+            const req = indexedDB.open(this.dbName, this.version);
+            req.onerror = () => reject(req.error);
+            req.onsuccess = () => {
+              this.db = req.result;
+              Logger.log('[Murajah] DB recreated fresh at v' + this.version);
+              resolve();
+            };
+            req.onupgradeneeded = (event) => this._createSchema(event);
+          });
+        }
+
+        /** All object stores required by the app */
+        _getRequiredStoreNames() {
+          return ['appData', 'recordings', 'dailyGoals', 'quranCache', 'resourceCache', 'notes'];
+        }
+
+        _createSchema(event) {
+          const db = event.target.result;
+          
+          // Create object stores if they don't exist
+          if (!db.objectStoreNames.contains('appData')) {
+            db.createObjectStore('appData', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('recordings')) {
+            db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+          }
+          if (!db.objectStoreNames.contains('dailyGoals')) {
+            db.createObjectStore('dailyGoals', { keyPath: 'date' });
+          }
+          if (!db.objectStoreNames.contains('quranCache')) {
+            db.createObjectStore('quranCache', { keyPath: 'id' });
+          }
+          // New store for caching all static resources (JS, CSS, JSON, fonts)
+          if (!db.objectStoreNames.contains('resourceCache')) {
+            db.createObjectStore('resourceCache', { keyPath: 'id' });
+          }
+          // Notes store for user reflections and annotations
+          if (!db.objectStoreNames.contains('notes')) {
+            db.createObjectStore('notes', { keyPath: 'id' });
+          }
+          Logger.log('[Murajah] IndexedDB schema created/upgraded');
         }
 
         async saveData(data) {
@@ -2186,7 +2560,7 @@
           store.put({ id: 'murajah-data', ...data });
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] Data saved to IndexedDB');
+              Logger.log('[Murajah] Data saved to IndexedDB');
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2212,14 +2586,22 @@
         }
 
         async clearAll() {
-          const tx = this.db.transaction(['appData', 'recordings', 'dailyGoals', 'resourceCache'], 'readwrite');
+          const storeNames = ['appData', 'recordings', 'dailyGoals', 'resourceCache'];
+          // Include notes store if it exists
+          if (this.db.objectStoreNames.contains('notes')) {
+            storeNames.push('notes');
+          }
+          const tx = this.db.transaction(storeNames, 'readwrite');
           tx.objectStore('appData').clear();
           tx.objectStore('recordings').clear();
           tx.objectStore('dailyGoals').clear();
           tx.objectStore('resourceCache').clear();
+          if (this.db.objectStoreNames.contains('notes')) {
+            tx.objectStore('notes').clear();
+          }
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] IndexedDB cleared (including resource cache)');
+              Logger.log('[Murajah] IndexedDB cleared (including resource cache and notes)');
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2316,7 +2698,7 @@
           store.put({ id: 'murajah-reciter', value: reciterId });
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] Reciter saved:', reciterId);
+              Logger.log('[Murajah] Reciter saved:', reciterId);
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2343,7 +2725,7 @@
           store.put({ ...dailyGoal, savedAt: new Date().toISOString() });
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log(`[Murajah] Daily goal saved for ${dailyGoal.date}`);
+              Logger.log(`[Murajah] Daily goal saved for ${dailyGoal.date}`);
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2388,7 +2770,7 @@
           store.delete(date);
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log(`[Murajah] Daily goal deleted for ${date}`);
+              Logger.log(`[Murajah] Daily goal deleted for ${date}`);
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2415,7 +2797,7 @@
                 recordsToDelete.forEach(record => deleteStore.delete(record.date));
                 
                 deleteTx.oncomplete = () => {
-                  console.log(`[Murajah] Cleaned up ${recordsToDelete.length} old daily goal records`);
+                  Logger.log(`[Murajah] Cleaned up ${recordsToDelete.length} old daily goal records`);
                   resolve(recordsToDelete.length);
                 };
                 deleteTx.onerror = () => reject(deleteTx.error);
@@ -2483,7 +2865,7 @@
           store.put({ id: 'murajah-language-selected', value: true });
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] Language selection flag set');
+              Logger.log('[Murajah] Language selection flag set');
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2535,7 +2917,7 @@
           store.put({ id: 'murajah-url-state', ...state, savedAt: new Date().toISOString() });
           return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-              console.log('[Murajah] URL state saved:', state);
+              Logger.log('[Murajah] URL state saved:', state);
               resolve();
             };
             tx.onerror = () => reject(tx.error);
@@ -2558,6 +2940,70 @@
               }
             };
             request.onerror = () => reject(request.error);
+          });
+        }
+
+        // ── Notes CRUD ──
+
+        async saveNote(note) {
+          // Deep clone to plain object — Vue reactive Proxy objects fail IndexedDB's structured clone
+          const plainNote = JSON.parse(JSON.stringify(note));
+          if (!plainNote || !plainNote.id) {
+            throw new Error('Cannot save note: missing id field');
+          }
+          const tx = this.db.transaction(['notes'], 'readwrite');
+          const store = tx.objectStore('notes');
+          const request = store.put(plainNote);
+          return new Promise((resolve, reject) => {
+            request.onerror = (event) => {
+              console.error('[Murajah] Note put request failed:', event.target.error);
+              reject(event.target.error);
+            };
+            tx.oncomplete = () => {
+              Logger.log('[Murajah] Note saved:', plainNote.id);
+              resolve();
+            };
+            tx.onerror = (event) => {
+              console.error('[Murajah] Note save transaction failed:', event.target.error);
+              reject(tx.error);
+            };
+            tx.onabort = () => {
+              console.error('[Murajah] Note save transaction aborted');
+              reject(new Error('Transaction aborted'));
+            };
+          });
+        }
+
+        async loadNote(noteId) {
+          const tx = this.db.transaction(['notes'], 'readonly');
+          const store = tx.objectStore('notes');
+          return new Promise((resolve, reject) => {
+            const request = store.get(noteId);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async loadAllNotes() {
+          const tx = this.db.transaction(['notes'], 'readonly');
+          const store = tx.objectStore('notes');
+          return new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+          });
+        }
+
+        async deleteNote(noteId) {
+          const tx = this.db.transaction(['notes'], 'readwrite');
+          const store = tx.objectStore('notes');
+          store.delete(noteId);
+          return new Promise((resolve, reject) => {
+            tx.oncomplete = () => {
+              Logger.log('[Murajah] Note deleted:', noteId);
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
           });
         }
       }
@@ -2590,7 +3036,7 @@
             }
             // Only redirect if we actually have parameters to restore
             if (newUrl.searchParams.toString()) {
-              console.log('[Murajah] Restoring URL state:', savedState);
+              Logger.log('[Murajah] Restoring URL state:', savedState);
               window.history.replaceState({}, '', newUrl.toString());
             }
           }
@@ -2607,7 +3053,7 @@
       // Check if cache needs refresh due to version change
       const needsCacheRefresh = await resourceCache.needsVersionRefresh();
       if (needsCacheRefresh) {
-        console.log('[Murajah] Cache version changed, will refresh on next preload');
+        Logger.log('[Murajah] Cache version changed, will refresh on next preload');
       }
 
       // Import utility modules - Using unified data loader for both QPC and Indopak layouts
@@ -2697,6 +3143,13 @@
       const shareBadgeModalModule = await import('./resources/js/components/ShareBadgeModal.js');
       const ShareBadgeModal = shareBadgeModalModule.default;
       */
+
+      // Notes feature
+      const notesStoreModule = await import('./resources/js/stores/notesStore.js');
+      const { loadNotes } = notesStoreModule;
+
+      const notesComponentModule = await import('./resources/js/components/NotesComponent.js');
+      const NotesComponent = notesComponentModule.default;
 
       const i18nStoreModule = await import('./resources/js/stores/i18nStore.js');
       const {
@@ -2806,6 +3259,10 @@
                       <a v-if="hasDailyTasks" href="#timeline-section" class="nav-dropdown-item" @click.prevent="scrollToSection('timeline-section')">
                         <i class="fas fa-calendar-alt"></i>
                         {{ $t('header.sections.timeline') }}
+                      </a>
+                      <a href="#notes-section" class="nav-dropdown-item" @click.prevent="scrollToSection('notes-section')">
+                        <i class="fas fa-sticky-note"></i>
+                        {{ $t('header.sections.notes') }}
                       </a>
                       <!-- Achievements (coming soon)
                       <button class="nav-dropdown-item w-full text-left" @click="showAchievementsPanel = true; showHomeDropdown = false">
@@ -2944,6 +3401,10 @@
                 <a v-if="hasDailyTasks" href="#timeline-section" class="mobile-menu-item" @click.prevent="scrollToSection('timeline-section')">
                   <i class="fas fa-calendar-alt"></i>
                   {{ $t('header.sections.timeline') }}
+                </a>
+                <a href="#notes-section" class="mobile-menu-item" @click.prevent="scrollToSection('notes-section')">
+                  <i class="fas fa-sticky-note"></i>
+                  {{ $t('header.sections.notes') }}
                 </a>
                 <!-- Achievements (coming soon)
                 <button class="mobile-menu-item w-full text-left" @click="showAchievementsPanel = true; showMobileMenu = false">
@@ -3815,6 +4276,11 @@
                     <i class="fas fa-microphone"></i>
                     <span>{{ $t('actions.record') }}</span>
                   </button>
+
+                  <button v-if="!audioStore.isRecording" @click="scrollToSection('notes-section'); openNewNoteFromPage()" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>{{ $t('actions.note') }}</span>
+                  </button>
                 </div>
 
                 <!-- Recording Countdown Overlay -->
@@ -4259,7 +4725,7 @@
                           @change="async () => { 
                             updateSettings(); 
                             await reinitializeDailyGoalsWithNewSettings(); 
-                            console.log('[Murajah] Settings changed | Pages per day: ' + settingsStore.pagesPerDay);
+                            Logger.log('[Murajah] Settings changed | Pages per day: ' + settingsStore.pagesPerDay);
                           }" 
                           type="number" 
                           min="1" 
@@ -4277,7 +4743,7 @@
                           @change="async () => { 
                             updateSettings(); 
                             await reinitializeDailyGoalsWithNewSettings(); 
-                            console.log('[Murajah] Settings changed | Revision days: ' + settingsStore.finishRevisionDays);
+                            Logger.log('[Murajah] Settings changed | Revision days: ' + settingsStore.finishRevisionDays);
                           }" 
                           type="number" 
                           min="1" 
@@ -5174,6 +5640,21 @@
               </div>
             </div>
 
+            <!-- Notes Section -->
+            <div id="notes-section" class="max-w-4xl mx-auto px-2 sm:px-4 py-4">
+              <notes-component
+                :notes-store="notesStore"
+                :current-page="appStore.currentPage"
+                :surah-names="quranData && quranData.surahNames ? quranData.surahNames : {}"
+                :locale-surahs="currentLocaleSurahs"
+                :current-locale="currentLocale"
+                :current-surah-number="currentSurahNumber"
+                :current-surah-name="currentSurahName"
+                :db="murajahDB"
+                ref="notesComponentRef"
+              ></notes-component>
+            </div>
+
 
             </main>
 
@@ -5295,6 +5776,30 @@
             selectedTasks: ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily'], // Default tasks in correct order
             lastUpdated: null
           });
+
+          // Notes store
+          const notesStore = reactive({
+            notes: [],
+            allTags: [],
+            isEditing: false,
+            currentNote: null,
+            showNotesPanel: false,
+            searchQuery: '',
+            currentPage: 1,
+            pageSize: 10,
+            lastUpdated: null
+          });
+          const notesComponentRef = ref(null);
+
+          // Helper to open a new note from the action button on a Quran page
+          const openNewNoteFromPage = () => {
+            // Wait for the component to be available after scroll
+            nextTick(() => {
+              if (notesComponentRef.value) {
+                notesComponentRef.value.openNewNote();
+              }
+            });
+          };
 
           // Local state
           const isInitializing = ref(true);
@@ -5541,7 +6046,7 @@
               return;
             }
             quranData.value.translations = freshTranslations;
-            console.log('[Murajah] Translations updated from background cache');
+            Logger.log('[Murajah] Translations updated from background cache');
           };
 
           const updateViewportWidth = () => {
@@ -5596,7 +6101,7 @@
             showLanguageSelectionModal.value = false;
             try {
               await murajahDB.setLanguageSelectionFlag();
-              console.log('[Murajah] Language selection saved, modal closed');
+              Logger.log('[Murajah] Language selection saved, modal closed');
             } catch (error) {
               console.error('[Murajah] Failed to save language selection flag:', error);
             }
@@ -5934,7 +6439,7 @@
                 onTranslationUpdate: handleTranslationUpdate
               });
               
-              console.log('[Murajah] Loaded Quran data for layout:', settingsStore.layout, {
+              Logger.log('[Murajah] Loaded Quran data for layout:', settingsStore.layout, {
                 pages: quranData.value.layout?.pages?.length,
                 words: Object.keys(quranData.value.words || {}).length,
                 tafsirMapping: Object.keys(quranData.value.tafsirMapping || {}).length
@@ -5946,7 +6451,7 @@
                 const quranJson = await quranJsonResponse.json();
                 // Store it in quranData for use by the audio player component
                 quranData.value.quranWithPages = quranJson;
-                console.log('[Murajah] Loaded quran.json for audio player', {
+                Logger.log('[Murajah] Loaded quran.json for audio player', {
                   type: typeof quranJson,
                   isArray: Array.isArray(quranJson),
                   keys: Object.keys(quranJson).length,
@@ -5961,7 +6466,7 @@
                 const bnTranslationsResponse = await fetch('./resources/data/quran/bangali-word-by-word-translation.json');
                 const bnTranslations = await bnTranslationsResponse.json();
                 quranData.value.translationsBn = bnTranslations;
-                console.log('[Murajah] Loaded Bangla word-by-word translations', {
+                Logger.log('[Murajah] Loaded Bangla word-by-word translations', {
                   keys: Object.keys(bnTranslations).length
                 });
               } catch (error) {
@@ -5980,7 +6485,7 @@
                 preloadLayout(otherLayout, murajahDB);
               }, 5000);
               
-              console.log('[Murajah] App initialized | Layout:', settingsStore.layout, '| Memorized pages:', memorizedStore.memorizedPages.size);
+              Logger.log('[Murajah] App initialized | Layout:', settingsStore.layout, '| Memorized pages:', memorizedStore.memorizedPages.size);
               appStore.successMessage = t('app.loaded');
               setTimeout(() => appStore.successMessage = '', 3000);
 
@@ -5989,7 +6494,7 @@
                 const languageSelected = await murajahDB.hasLanguageBeenSelected();
                 if (!languageSelected) {
                   showLanguageSelectionModal.value = true;
-                  console.log('[Murajah] Showing language selection modal for new user');
+                  Logger.log('[Murajah] Showing language selection modal for new user');
                 }
               } catch (error) {
                 console.warn('[Murajah] Failed to check language selection flag:', error);
@@ -6069,6 +6574,14 @@
             } catch (error) {
               console.error('[Murajah] Failed to load stored data:', error);
             }
+
+            // Load notes from dedicated notes store
+            try {
+              await loadNotes(murajahDB, notesStore);
+            } catch (error) {
+              console.warn('[Murajah] Failed to load notes:', error);
+            }
+
             // Ensure fontSize is always a valid value
             if (!['small', 'medium', 'large'].includes(settingsStore.fontSize)) {
               settingsStore.fontSize = 'medium';
@@ -6271,7 +6784,7 @@
               dailyGoalsStore.longestStreak = streakInfo.longestStreak;
 
               dailyGoalsStore.lastUpdated = new Date().toISOString();
-              console.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
+              Logger.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
             } catch (error) {
               console.error('[Murajah] Error initializing daily goals:', error);
               appStore.errorMessage = t('app.dailyGoalInitError');
@@ -6283,7 +6796,7 @@
           const reinitializeDailyGoalsWithNewSettings = async () => {
             try {
               const today = getTodayDate();
-              console.log('[Murajah] Reinitializing daily goals with new settings');
+              Logger.log('[Murajah] Reinitializing daily goals with new settings');
               
               // Create combined settings object that includes selectedTasks from dailyGoalsStore
               const combinedSettings = {
@@ -6353,7 +6866,7 @@
                 goalToSave.tasks[taskName] = plainTask;
               }
               await murajahDB.saveDailyGoal(goalToSave);
-              console.log('[Murajah] Daily goals updated | Tasks: ' + Object.keys(newGoal.tasks).length);
+              Logger.log('[Murajah] Daily goals updated | Tasks: ' + Object.keys(newGoal.tasks).length);
               appStore.successMessage = 'Daily goals updated!';
               setTimeout(() => appStore.successMessage = '', 2000);
             } catch (error) {
@@ -6420,7 +6933,7 @@
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
             
-            console.log(`[Murajah] Task '${taskName}' completed | Streak: ${streakInfo.currentStreak}`);
+            Logger.log(`[Murajah] Task '${taskName}' completed | Streak: ${streakInfo.currentStreak}`);
             
             // Save the updated goalHistory to persist changes across page refreshes
             try {
@@ -6484,7 +6997,7 @@
             dailyGoalsStore.streak = streakInfo.currentStreak;
             dailyGoalsStore.longestStreak = streakInfo.longestStreak;
             
-            console.log(`[Murajah] Task '${taskName}' uncompleted | Streak: ${streakInfo.currentStreak}`);
+            Logger.log(`[Murajah] Task '${taskName}' uncompleted | Streak: ${streakInfo.currentStreak}`);
             
             // Save the updated goalHistory to persist changes across page refreshes
             try {
@@ -6935,7 +7448,7 @@
                 throw new Error(`Failed to fetch detailed quran: ${response.status}`);
               }
               detailedQuranCache = await response.json();
-              console.log('[Murajah] Detailed Quran data loaded successfully');
+              Logger.log('[Murajah] Detailed Quran data loaded successfully');
               return detailedQuranCache;
             } catch (error) {
               console.error('[Murajah] Failed to load detailed quran data:', error);
@@ -7018,7 +7531,7 @@
             
             document.head.appendChild(styleTag);
             surahViewState.loadedFonts.add(pageNum);
-            console.log(`[Murajah] Surah View: Loaded font for page ${pageNum} (tajweed: ${tajweed}, font-family: ${fontFamily})`);
+            Logger.log(`[Murajah] Surah View: Loaded font for page ${pageNum} (tajweed: ${tajweed}, font-family: ${fontFamily})`);
           };
           
           // Get verses for a specific page from the detailed quran data
@@ -7086,7 +7599,7 @@
                 // Ignore URL update errors
               }
               
-              console.log(`[Murajah] Loaded surah ${surahNum} with ${surahVerses.length} verses across ${pageNumbers.length} pages (${startPage}-${endPage})`);
+              Logger.log(`[Murajah] Loaded surah ${surahNum} with ${surahVerses.length} verses across ${pageNumbers.length} pages (${startPage}-${endPage})`);
             } catch (error) {
               console.error('[Murajah] Failed to load surah:', error);
               appStore.errorMessage = 'Failed to load surah. Please try again.';
@@ -7162,7 +7675,7 @@
             }
             
             surahViewState.hasMore = surahViewState.loadedPageCount < totalPages;
-            console.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for surah ${selectedSurah}`);
+            Logger.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for surah ${selectedSurah}`);
           };
           
           // Background page loading - loads remaining pages automatically without blocking UI
@@ -7303,7 +7816,7 @@
                 // Ignore URL update errors
               }
               
-              console.log(`[Murajah] Loading juz ${juzNum} across ${pageNumbers.length} pages (${startPage}-${endPage})`);
+              Logger.log(`[Murajah] Loading juz ${juzNum} across ${pageNumbers.length} pages (${startPage}-${endPage})`);
             } catch (error) {
               console.error('[Murajah] Failed to load juz:', error);
               appStore.errorMessage = 'Failed to load juz. Please try again.';
@@ -7348,7 +7861,7 @@
             }
             
             surahViewState.hasMore = surahViewState.loadedPageCount < totalPages;
-            console.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for juz ${surahViewState.selectedJuz}`);
+            Logger.log(`[Murajah] Loaded ${surahViewState.loadedPageCount}/${totalPages} pages for juz ${surahViewState.selectedJuz}`);
           };
           
           // Background page loading for juz - loads remaining pages automatically without blocking UI
@@ -7434,14 +7947,14 @@
             
             // Save after updating
             saveDataBackground();
-            console.log(`[Murajah] Word ${word.id} mistake toggled on page ${appStore.currentPage}`);
+            Logger.log(`[Murajah] Word ${word.id} mistake toggled on page ${appStore.currentPage}`);
           };
 
           // Tooltip functions for word translations
           const showWordTooltip = (word, event) => {
             // Don't show tooltip on touch devices
             if (isTouchDevice()) {
-              console.log('[Murajah] Tooltip blocked on touch device');
+              Logger.log('[Murajah] Tooltip blocked on touch device');
               return;
             }
 
@@ -7460,7 +7973,7 @@
               : quranData.value.translations;
             const translation = translationsSource[key];
             
-            console.log('[Murajah] Word tooltip lookup:', { 
+            Logger.log('[Murajah] Word tooltip lookup:', { 
               word: { id: word.id, surah: word.surah, ayah: word.ayah, word: word.word },
               key,
               locale: currentLocale.value,
@@ -7477,7 +7990,7 @@
               tooltipY.value = rect.top; // Top of the word
               
               showTooltip.value = true;
-              console.log('[Murajah] Word tooltip shown:', key, translation);
+              Logger.log('[Murajah] Word tooltip shown:', key, translation);
             } else {
               console.warn('[Murajah] Translation not found for key:', key);
               // Don't show tooltip if no translation found
@@ -7517,7 +8030,7 @@
               if (!content) {
                 morphologyError.value = t('morphology.noData');
               }
-              console.log('[Murajah] Morphology loaded for', `${word.surah}:${word.ayah}:${word.word}`);
+              Logger.log('[Murajah] Morphology loaded for', `${word.surah}:${word.ayah}:${word.word}`);
             } catch (error) {
               console.error('[Murajah] Failed to load morphology:', error);
               morphologyError.value = t('morphology.error');
@@ -7578,7 +8091,7 @@
             // Ensure adjustment is within valid range
             const newRotationIndex = Math.min(adjustment, totalChunks - 1);
             
-            console.log('[Murajah] Applying revision chunk adjustment:', {
+            Logger.log('[Murajah] Applying revision chunk adjustment:', {
               adjustment: adjustment,
               totalChunks: totalChunks,
               currentRotationIndex: dailyGoalsStore.todayGoal.rotationIndex,
@@ -7619,7 +8132,7 @@
             dailyGoalsStore.todayGoal.tasks.reviewRange.endPage = pagesForReview[pagesForReview.length - 1] || 0;
             dailyGoalsStore.todayGoal.tasks.reviewRange.description = `Revise these pages today: ${pagesForReview.join(', ')}`;
 
-            console.log('[Murajah] Revision chunk adjusted - new pages:', pagesForReview.join(', '));
+            Logger.log('[Murajah] Revision chunk adjusted - new pages:', pagesForReview.join(', '));
             
             // Persist the updated goal so tomorrow's rotation starts from this chunk
             await saveDailyGoal();
@@ -7863,7 +8376,7 @@
               
               appStore.successMessage = '🎉 All 100 badges unlocked!';
               setTimeout(() => appStore.successMessage = '', 3000);
-              console.log('[Murajah] All badges unlocked for testing');
+              Logger.log('[Murajah] All badges unlocked for testing');
             } catch (error) {
               console.error('[Murajah] Failed to unlock all badges:', error);
               appStore.errorMessage = 'Failed to unlock all badges';
@@ -7885,7 +8398,7 @@
               
               appStore.successMessage = '✓ All achievements cleared';
               setTimeout(() => appStore.successMessage = '', 3000);
-              console.log('[Murajah] All achievements cleared');
+              Logger.log('[Murajah] All achievements cleared');
             } catch (error) {
               console.error('[Murajah] Failed to clear achievements:', error);
               appStore.errorMessage = 'Failed to clear achievements';
@@ -7896,7 +8409,7 @@
             syncInProgress.value = true;
             
             try {
-              console.log('[Murajah] Starting achievement sync with current data...');
+              Logger.log('[Murajah] Starting achievement sync with current data...');
               
               if (achievementStore.badgesData.size === 0) {
                 await loadBadgesData();
@@ -7922,7 +8435,7 @@
                 if (checkBadgeUnlock(badge, stores)) {
                   unlockBadge(badge.id);
                   newUnlocks++;
-                  console.log(`[Murajah] Synced unlock: Badge #${badge.id} "${badge.name}"`);
+                  Logger.log(`[Murajah] Synced unlock: Badge #${badge.id} "${badge.name}"`);
                 }
               }
               
@@ -7939,7 +8452,7 @@
               
               appStore.successMessage = message;
               setTimeout(() => appStore.successMessage = '', 4000);
-              console.log(`[Murajah] Achievement sync complete: ${newUnlocks} badges unlocked`);
+              Logger.log(`[Murajah] Achievement sync complete: ${newUnlocks} badges unlocked`);
               
             } catch (error) {
               console.error('[Murajah] Achievement sync failed:', error);
@@ -7959,7 +8472,7 @@
           const playAudio = async (recording) => {
             try {
               // Log playback attempt for debugging
-              console.log('[Murajah] Attempting playback', {
+              Logger.log('[Murajah] Attempting playback', {
                 blobType: recording.blob?.type,
                 mimeType: recording.mimeType,
                 blobSize: recording.blob?.size,
@@ -8009,7 +8522,7 @@
                 quranSection.classList.add('blur-recording');
               }
               
-              console.log('[Murajah] Recording started | Page: ' + appStore.currentPage);
+              Logger.log('[Murajah] Recording started | Page: ' + appStore.currentPage);
             } catch (error) {
               // Remove blur if recording fails
               const quranSection = document.getElementById('quran-text-section');
@@ -8055,7 +8568,7 @@
                 }
 
                 saveDataBackground();
-                console.log(`[Murajah] Recording saved | Page: ${recording.pageNumber} | Duration: ${AudioRecorder.formatDuration(result.duration)}`);
+                Logger.log(`[Murajah] Recording saved | Page: ${recording.pageNumber} | Duration: ${AudioRecorder.formatDuration(result.duration)}`);
                 appStore.successMessage = `Recording saved! (${AudioRecorder.formatDuration(result.duration)})`;
                 setTimeout(() => appStore.successMessage = '', 3000);
                 
@@ -8151,10 +8664,11 @@
                 streak: dailyGoalsStore.streak,
                 longestStreak: dailyGoalsStore.longestStreak,
                 selectedTasks: dailyGoalsStore.selectedTasks
-              }
+              },
+              notes: (notesStore.notes || []).map(n => JSON.parse(JSON.stringify(n)))
             };
 
-            console.log('[Murajah] Exporting data:', {
+            Logger.log('[Murajah] Exporting data:', {
               memorizedCount: data.memorized.length,
               perfectRevisionsCount: Object.keys(data.perfectRevisions).length,
               mistakesCount: Object.keys(data.mistakes).length,
@@ -8192,12 +8706,12 @@
                   return;
                 }
 
-                console.log('[Murajah] Starting data import from backup');
+                Logger.log('[Murajah] Starting data import from backup');
 
                 // Import memorized pages
                 if (data.memorized && Array.isArray(data.memorized)) {
                   memorizedStore.memorizedPages = new Set(data.memorized);
-                  console.log(`[Murajah] Imported ${data.memorized.length} memorized pages`);
+                  Logger.log(`[Murajah] Imported ${data.memorized.length} memorized pages`);
                 } else {
                   console.warn('[Murajah] No memorized pages found in backup');
                 }
@@ -8207,7 +8721,7 @@
                   perfectRevisionsStore.perfectRevisions = new Map(
                     Object.entries(data.perfectRevisions).map(([k, v]) => [parseInt(k), Number(v)])
                   );
-                  console.log(`[Murajah] Imported ${perfectRevisionsStore.perfectRevisions.size} pages with revision tracking`);
+                  Logger.log(`[Murajah] Imported ${perfectRevisionsStore.perfectRevisions.size} pages with revision tracking`);
                 } else {
                   console.warn('[Murajah] No perfect revisions found in backup');
                 }
@@ -8220,7 +8734,7 @@
                       new Set(Array.isArray(v) ? v.map(word => Number(word)) : [])
                     ])
                   );
-                  console.log(`[Murajah] Imported mistake data for ${mistakesStore.mistakes.size} pages`);
+                  Logger.log(`[Murajah] Imported mistake data for ${mistakesStore.mistakes.size} pages`);
                 } else {
                   console.warn('[Murajah] No mistakes found in backup');
                 }
@@ -8238,7 +8752,7 @@
                   if (!['small', 'medium', 'large'].includes(settingsStore.fontSize)) {
                     settingsStore.fontSize = 'medium';
                   }
-                  console.log('[Murajah] Imported settings');
+                  Logger.log('[Murajah] Imported settings');
                 } else {
                   console.warn('[Murajah] No settings found in backup');
                 }
@@ -8260,10 +8774,10 @@
                   if (Array.isArray(data.dailyGoals.selectedTasks)) {
                     dailyGoalsStore.selectedTasks = data.dailyGoals.selectedTasks;
                   }
-                  console.log(`[Murajah] Imported daily goals - streak: ${dailyGoalsStore.streak}, history: ${dailyGoalsStore.goalHistory.length} days, longest streak: ${dailyGoalsStore.longestStreak}`);
+                  Logger.log(`[Murajah] Imported daily goals - streak: ${dailyGoalsStore.streak}, history: ${dailyGoalsStore.goalHistory.length} days, longest streak: ${dailyGoalsStore.longestStreak}`);
                   
                   // Save daily goals to IndexedDB
-                  console.log('[Murajah] Saving imported daily goals to database...');
+                  Logger.log('[Murajah] Saving imported daily goals to database...');
                   let savedGoalsCount = 0;
                   
                   // Save todayGoal if present
@@ -8271,7 +8785,7 @@
                     try {
                       await murajahDB.saveDailyGoal(data.dailyGoals.todayGoal);
                       savedGoalsCount++;
-                      console.log(`[Murajah] Saved todayGoal for ${data.dailyGoals.todayGoal.date}`);
+                      Logger.log(`[Murajah] Saved todayGoal for ${data.dailyGoals.todayGoal.date}`);
                     } catch (error) {
                       console.error('[Murajah] Failed to save todayGoal:', error);
                     }
@@ -8287,7 +8801,7 @@
                         console.error(`[Murajah] Failed to save goal for ${goal.date}:`, error);
                       }
                     }
-                    console.log(`[Murajah] Saved ${savedGoalsCount} daily goals to database`);
+                    Logger.log(`[Murajah] Saved ${savedGoalsCount} daily goals to database`);
                   }
                 } else {
                   console.warn('[Murajah] No daily goals found in backup');
@@ -8295,7 +8809,19 @@
 
                 // Save imported data to IndexedDB
                 await saveData();
-                console.log('[Murajah] Data saved to IndexedDB');
+                Logger.log('[Murajah] Data saved to IndexedDB');
+
+                // Import notes if present in backup
+                if (data.notes && Array.isArray(data.notes)) {
+                  for (const note of data.notes) {
+                    try {
+                      await murajahDB.saveNote(note);
+                    } catch (e) {
+                      console.warn('[Murajah] Failed to import note:', note.id, e);
+                    }
+                  }
+                  Logger.log(`[Murajah] Imported ${data.notes.length} notes`);
+                }
 
                 appStore.successMessage = 'Data imported successfully! Reloading...';
                 setTimeout(() => location.reload(), 2000);
@@ -8478,7 +9004,7 @@
               };
             }
             const fontSize = sizeMap[settingsStore.fontSize] || '24px';
-            console.log('[Murajah] fontSizeStyle computed:', {
+            Logger.log('[Murajah] fontSizeStyle computed:', {
               fontSize: settingsStore.fontSize,
               style: `font-size: ${fontSize}`,
               deviceWidth: window.innerWidth,
@@ -8673,7 +9199,7 @@
 
           const recentRecordings = computed(() => {
             const recent = audioStore.recordings.slice(-5).reverse();
-            console.log('[Murajah] recentRecordings computed, returning:', recent.map(r => ({
+            Logger.log('[Murajah] recentRecordings computed, returning:', recent.map(r => ({
               pageNumber: r.pageNumber,
               duration: r.duration,
               durationType: typeof r.duration
@@ -8786,7 +9312,7 @@
             // For Indopak layout, we use a single font file (already loaded via @font-face)
             // so we don't need to load per-page fonts
             if (isIndopak.value) {
-              console.log(`[Murajah] Indopak layout uses single font file - no per-page font needed`);
+              Logger.log(`[Murajah] Indopak layout uses single font file - no per-page font needed`);
               return;
             }
             
@@ -8814,7 +9340,7 @@
             }
             
             document.head.appendChild(styleTag);
-            console.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
+            Logger.log(`[Murajah] Loaded font for page ${pageNum} (tajweed: ${tajweed})`);
           };
 
           // ===== Calendar View Functions =====
@@ -9203,7 +9729,7 @@
               loadSurahViewPageFont(page.pageNum);
             });
             
-            console.log('[Murajah] Surah View fonts reloaded');
+            Logger.log('[Murajah] Surah View fonts reloaded');
           };
 
           // Watch fontSize setting and save changes
@@ -9224,7 +9750,7 @@
               isDevMode.value = !isDevMode.value;
               appStore.successMessage = `Developer Mode ${isDevMode.value ? 'enabled ⚙️' : 'disabled'}`;
               setTimeout(() => appStore.successMessage = '', 2000);
-              console.log(`[Murajah] Developer mode ${isDevMode.value ? 'enabled' : 'disabled'}`);
+              Logger.log(`[Murajah] Developer mode ${isDevMode.value ? 'enabled' : 'disabled'}`);
               return;
             }
 
@@ -9412,20 +9938,20 @@ Display:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             `;
             alert(shortcuts);
-            console.log('[Murajah] Keyboard shortcuts displayed');
+            Logger.log('[Murajah] Keyboard shortcuts displayed');
           };
 
           // Add keyboard event listener on mount
           onMounted(async () => {
             document.addEventListener('keydown', handleKeyboardShortcut);
-            console.log('[Murajah] Keyboard shortcuts enabled');
+            Logger.log('[Murajah] Keyboard shortcuts enabled');
             
             /* Achievements (coming soon - not developed yet)
             await initializeAchievements();
             
             document.addEventListener('open-achievements-modal', () => {
               showAchievementsPanel.value = !showAchievementsPanel.value;
-              console.log('[Murajah] Achievements panel toggled', { visible: showAchievementsPanel.value });
+              Logger.log('[Murajah] Achievements panel toggled', { visible: showAchievementsPanel.value });
               if (showAchievementsPanel.value) {
                 requestAnimationFrame(() => {
                   const el = document.getElementById('achievements-section');
@@ -9439,7 +9965,7 @@ Display:
             const handleResize = () => {
               // Force re-computation of fontSizeStyle by triggering reactivity
               // Vue will automatically update the computed property
-              console.log('[Murajah] Window resized, font size will be recalculated');
+              Logger.log('[Murajah] Window resized, font size will be recalculated');
             };
             window.addEventListener('resize', handleResize);
             // Respect URL hash on initial load (e.g., #analytics-section)
@@ -9452,22 +9978,24 @@ Display:
             } catch (e) {
               console.debug('[Murajah] No initial hash to navigate or scroll error', e);
             }
+
+
           });
 
           // Clean up keyboard listener before unmount (optional for Vue 3)
           const cleanupKeyboardListener = () => {
             document.removeEventListener('keydown', handleKeyboardShortcut);
-            console.log('[Murajah] Keyboard shortcuts disabled');
+            Logger.log('[Murajah] Keyboard shortcuts disabled');
           };
 
           /* ===== ACHIEVEMENT SYSTEM FUNCTIONS (coming soon - not developed yet) =====
           const initializeAchievements = async () => {
             try {
-              console.log('[Murajah] initializeAchievements: Starting...');
+              Logger.log('[Murajah] initializeAchievements: Starting...');
               await loadBadgesData();
-              console.log('[Murajah] initializeAchievements: Badge definitions loaded');
+              Logger.log('[Murajah] initializeAchievements: Badge definitions loaded');
               await loadUnlockedBadges(murajahDB);
-              console.log('[Murajah] Achievements initialized', {
+              Logger.log('[Murajah] Achievements initialized', {
                 totalUnlocked: achievementStore.totalUnlocked,
                 completionPercentage: achievementStore.completionPercentage,
                 setSize: achievementStore.unlockedBadges.size,
@@ -9476,7 +10004,7 @@ Display:
               if (Vue && Vue.nextTick) {
                 Vue.nextTick(() => {
                   achievementStore.lastUpdated = Date.now();
-                  console.log('[Murajah] Forced nextTick after achievements init.');
+                  Logger.log('[Murajah] Forced nextTick after achievements init.');
                 });
               }
             } catch (error) {
@@ -9515,7 +10043,7 @@ Display:
                       });
                     }
                     
-                    console.log('[Murajah] Badge unlocked:', badge.name);
+                    Logger.log('[Murajah] Badge unlocked:', badge.name);
                   }
                 }
               }
@@ -9741,6 +10269,11 @@ Display:
             showMobileMenu,
             showHomeDropdown,
             scrollToSection,
+            // Notes
+            notesStore,
+            notesComponentRef,
+            openNewNoteFromPage,
+            murajahDB,
             // Resource Cache
             cacheStats,
             cacheRefreshInProgress,
@@ -9771,6 +10304,7 @@ Display:
       app.component('QuranAudioPlayerComponent', QuranAudioPlayerComponent);
       app.component('FloatingAudioPlayerComponent', FloatingAudioPlayerComponent);
       app.component('MorphologyPopup', MorphologyPopupComponent);
+      app.component('notes-component', NotesComponent);
       /* Achievement components (coming soon - not developed yet)
       app.component('achievement-navbar-component', AchievementNavbarComponent);
       app.component('achievement-grid-component', AchievementGridComponent);
@@ -9798,17 +10332,17 @@ Display:
             scope: './'
           });
           
-          console.log('[Murajah] Service Worker registered:', registration.scope);
+          Logger.log('[Murajah] Service Worker registered:', registration.scope);
           
           // Check for updates
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
-            console.log('[Murajah] Service Worker update found');
+            Logger.log('[Murajah] Service Worker update found');
             
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New version available
-                console.log('[Murajah] New version available');
+                Logger.log('[Murajah] New version available');
                 // Show update notification to user
                 if (window.showUpdateNotification) {
                   window.showUpdateNotification();
@@ -9819,13 +10353,13 @@ Display:
           
           // Listen for controller change (new SW activated)
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('[Murajah] Service Worker controller changed');
+            Logger.log('[Murajah] Service Worker controller changed');
           });
           
           // Listen for content update messages from SW (stale-while-revalidate)
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'CONTENT_UPDATED') {
-              console.log('[Murajah] Content updated in background:', event.data.url);
+              Logger.log('[Murajah] Content updated in background:', event.data.url);
               // For HTML updates, optionally notify user or auto-refresh
               // Currently we just log - the cache is already updated for next load
             }
@@ -9902,7 +10436,7 @@ Display:
           
           const messageChannel = new MessageChannel();
           messageChannel.port1.onmessage = (event) => {
-            console.log('[Murajah Debug] Font cache:', event.data.payload);
+            Logger.log('[Murajah Debug] Font cache:', event.data.payload);
             resolve(event.data.payload);
           };
           
@@ -9923,7 +10457,7 @@ Display:
           
           const messageChannel = new MessageChannel();
           messageChannel.port1.onmessage = (event) => {
-            console.log('[Murajah Debug] Font match result:', event.data.payload);
+            Logger.log('[Murajah Debug] Font match result:', event.data.payload);
             resolve(event.data.payload);
           };
           
@@ -9937,7 +10471,7 @@ Display:
     
     // Online/Offline status tracking
     window.addEventListener('online', () => {
-      console.log('[Murajah] Back online');
+      Logger.log('[Murajah] Back online');
       document.body.classList.remove('offline-mode');
       if (window.updateOnlineStatus) {
         window.updateOnlineStatus(true);
@@ -9945,7 +10479,7 @@ Display:
     });
     
     window.addEventListener('offline', () => {
-      console.log('[Murajah] Gone offline');
+      Logger.log('[Murajah] Gone offline');
       document.body.classList.add('offline-mode');
       if (window.updateOnlineStatus) {
         window.updateOnlineStatus(false);

@@ -32,7 +32,7 @@ export async function clearAllDatabases() {
 export class MockMurajahDB {
   constructor() {
     this.dbName = 'murajah-db';
-    this.version = 4;
+    this.version = 5;
     this.db = null;
   }
 
@@ -63,6 +63,9 @@ export class MockMurajahDB {
         }
         if (!db.objectStoreNames.contains('resourceCache')) {
           db.createObjectStore('resourceCache', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('notes')) {
+          db.createObjectStore('notes', { keyPath: 'id' });
         }
       };
     });
@@ -97,11 +100,18 @@ export class MockMurajahDB {
   }
 
   async clearAll() {
-    const tx = this.db.transaction(['appData', 'recordings', 'dailyGoals', 'resourceCache'], 'readwrite');
+    const storeNames = ['appData', 'recordings', 'dailyGoals', 'resourceCache'];
+    if (this.db.objectStoreNames.contains('notes')) {
+      storeNames.push('notes');
+    }
+    const tx = this.db.transaction(storeNames, 'readwrite');
     tx.objectStore('appData').clear();
     tx.objectStore('recordings').clear();
     tx.objectStore('dailyGoals').clear();
     tx.objectStore('resourceCache').clear();
+    if (this.db.objectStoreNames.contains('notes')) {
+      tx.objectStore('notes').clear();
+    }
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -358,6 +368,48 @@ export class MockMurajahDB {
         resolve(result ? result.value : false);
       };
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  // ── Notes CRUD ──
+
+  async saveNote(note) {
+    const tx = this.db.transaction(['notes'], 'readwrite');
+    const store = tx.objectStore('notes');
+    store.put(note);
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async loadNote(noteId) {
+    const tx = this.db.transaction(['notes'], 'readonly');
+    const store = tx.objectStore('notes');
+    return new Promise((resolve, reject) => {
+      const request = store.get(noteId);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async loadAllNotes() {
+    const tx = this.db.transaction(['notes'], 'readonly');
+    const store = tx.objectStore('notes');
+    return new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deleteNote(noteId) {
+    const tx = this.db.transaction(['notes'], 'readwrite');
+    const store = tx.objectStore('notes');
+    store.delete(noteId);
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
   }
 }

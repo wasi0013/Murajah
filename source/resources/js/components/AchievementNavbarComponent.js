@@ -3,6 +3,8 @@
  * Displays trophy icon with badge count and percentage in the navbar
  */
 
+import Logger from '../utils/logger.js';
+
 // Use global Vue instance (already loaded in index.html) to ensure single reactivity system
 const { computed } = Vue;
 import { achievementStore } from '../stores/achievementStore.js';
@@ -64,7 +66,7 @@ export default {
       document.dispatchEvent(event);
       
       // Also log for debugging
-      console.log('[Murajah] Opening achievements modal', {
+      Logger.log('[Murajah] Opening achievements modal', {
         totalUnlocked: achievementStore.totalUnlocked,
         completionPercentage: achievementStore.completionPercentage
       });
@@ -74,7 +76,7 @@ export default {
     const totalUnlocked = computed(() => {
       // Direct primitive dependency
       const val = achievementStore.totalUnlocked;
-      console.log('[Murajah] Navbar totalUnlocked recomputed primitive value:', val);
+      Logger.log('[Murajah] Navbar totalUnlocked recomputed primitive value:', val);
       return val;
     });
 
