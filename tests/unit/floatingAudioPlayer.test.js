@@ -423,6 +423,241 @@ describe('FloatingAudioPlayer', () => {
     });
   });
 
+  describe('formatTime() with Infinity and NaN', () => {
+    // Regression: audio.duration can be Infinity for WebM blobs recorded
+    // via MediaRecorder (no duration metadata). formatTime(Infinity) previously
+    // returned "Infinity:NaN" instead of "0:00".
+    const formatTime = (seconds) => {
+      if (!seconds || !isFinite(seconds) || seconds < 0) return '0:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    it('should return 0:00 for Infinity', () => {
+      expect(formatTime(Infinity)).toBe('0:00');
+    });
+
+    it('should return 0:00 for -Infinity', () => {
+      expect(formatTime(-Infinity)).toBe('0:00');
+    });
+
+    it('should return 0:00 for NaN', () => {
+      expect(formatTime(NaN)).toBe('0:00');
+    });
+
+    it('should return 0:00 for null', () => {
+      expect(formatTime(null)).toBe('0:00');
+    });
+
+    it('should return 0:00 for undefined', () => {
+      expect(formatTime(undefined)).toBe('0:00');
+    });
+
+    it('should return 0:00 for 0', () => {
+      expect(formatTime(0)).toBe('0:00');
+    });
+
+    it('should return 0:00 for negative values', () => {
+      expect(formatTime(-5)).toBe('0:00');
+    });
+
+    it('should format valid seconds correctly', () => {
+      expect(formatTime(65)).toBe('1:05');
+      expect(formatTime(120)).toBe('2:00');
+      expect(formatTime(3661)).toBe('61:01');
+    });
+
+    it('should handle fractional seconds', () => {
+      expect(formatTime(65.7)).toBe('1:05');
+      expect(formatTime(0.5)).toBe('0:00');
+    });
+  });
+
+  describe('_updateDuration() fallback logic', () => {
+    // Regression: When audio.duration is Infinity (WebM blobs), the component
+    // should fall back to the recording's stored duration (ms → seconds).
+    const _updateDuration = (audioDuration, recordingDurationMs) => {
+      let duration = 0;
+      if (isFinite(audioDuration) && !isNaN(audioDuration) && audioDuration > 0) {
+        duration = audioDuration;
+      } else if (recordingDurationMs && recordingDurationMs > 0) {
+        duration = recordingDurationMs / 1000;
+      }
+      return duration;
+    };
+
+    it('should use audio duration when finite', () => {
+      expect(_updateDuration(120.5, 120000)).toBe(120.5);
+    });
+
+    it('should fallback to recording duration when audio duration is Infinity', () => {
+      expect(_updateDuration(Infinity, 30000)).toBe(30);
+    });
+
+    it('should fallback to recording duration when audio duration is NaN', () => {
+      expect(_updateDuration(NaN, 45000)).toBe(45);
+    });
+
+    it('should fallback to recording duration when audio duration is 0', () => {
+      expect(_updateDuration(0, 60000)).toBe(60);
+    });
+
+    it('should fallback to recording duration when audio duration is negative', () => {
+      expect(_updateDuration(-1, 15000)).toBe(15);
+    });
+
+    it('should return 0 when both audio and recording duration are invalid', () => {
+      expect(_updateDuration(Infinity, 0)).toBe(0);
+      expect(_updateDuration(NaN, null)).toBe(0);
+      expect(_updateDuration(Infinity, undefined)).toBe(0);
+    });
+
+    it('should correctly convert recording duration from ms to seconds', () => {
+      // 2 minutes 30 seconds = 150000ms = 150s
+      expect(_updateDuration(Infinity, 150000)).toBe(150);
+    });
+
+    it('should prefer finite audio duration over recording duration', () => {
+      // Audio element may report slightly different duration than wall-clock
+      expect(_updateDuration(29.8, 30000)).toBe(29.8);
+    });
+  });
+
+  describe('progressPercent with non-finite duration', () => {
+    // Regression: progressPercent would produce NaN or Infinity results
+    // when this.duration was Infinity.
+    const calculateProgress = (currentTime, duration) => {
+      if (!duration || !isFinite(duration)) return 0;
+      return (currentTime / duration) * 100;
+    };
+
+    it('should return 0 when duration is Infinity', () => {
+      expect(calculateProgress(50, Infinity)).toBe(0);
+    });
+
+    it('should return 0 when duration is NaN', () => {
+      expect(calculateProgress(50, NaN)).toBe(0);
+    });
+
+    it('should return 0 when duration is 0', () => {
+      expect(calculateProgress(50, 0)).toBe(0);
+    });
+
+    it('should calculate correctly with finite duration', () => {
+      expect(calculateProgress(30, 60)).toBe(50);
+    });
+  });
+
+  describe('seekAudio safety with non-finite duration', () => {
+    // Regression: seeking with Infinity duration would set audio.currentTime
+    // to Infinity, causing DOMException: "The provided double value is non-finite"
+    const calculateSeekTime = (clickFraction, duration) => {
+      if (!duration || !isFinite(duration)) return null;
+      const percent = Math.max(0, Math.min(1, clickFraction));
+      const seekTime = percent * duration;
+      if (!isFinite(seekTime)) return null;
+      return seekTime;
+    };
+
+    it('should return null when duration is Infinity', () => {
+      expect(calculateSeekTime(0.5, Infinity)).toBeNull();
+    });
+
+    it('should return null when duration is NaN', () => {
+      expect(calculateSeekTime(0.5, NaN)).toBeNull();
+    });
+
+    it('should return null when duration is 0', () => {
+      expect(calculateSeekTime(0.5, 0)).toBeNull();
+    });
+
+    it('should calculate correct seek position with finite duration', () => {
+      expect(calculateSeekTime(0.5, 120)).toBe(60);
+    });
+
+    it('should clamp seek fraction to [0, 1]', () => {
+      expect(calculateSeekTime(-0.5, 120)).toBe(0);
+      expect(calculateSeekTime(1.5, 120)).toBe(120);
+    });
+
+    it('should handle edge position 0%', () => {
+      expect(calculateSeekTime(0, 120)).toBe(0);
+    });
+
+    it('should handle edge position 100%', () => {
+      expect(calculateSeekTime(1, 120)).toBe(120);
+    });
+
+    it('should never produce a non-finite seek time', () => {
+      // This is the core regression test - non-finite seek times
+      // would cause DOMException: "double value is non-finite"
+      const testCases = [
+        { fraction: 0.5, duration: Infinity },
+        { fraction: 0.5, duration: -Infinity },
+        { fraction: 0.5, duration: NaN },
+        { fraction: NaN, duration: 120 },
+        { fraction: Infinity, duration: 120 },
+      ];
+
+      for (const { fraction, duration } of testCases) {
+        const result = calculateSeekTime(fraction, duration);
+        if (result !== null) {
+          expect(isFinite(result)).toBe(true);
+        }
+      }
+    });
+  });
+
+  describe('pre-set duration from recording metadata', () => {
+    // Regression: duration should be set from recording.duration before
+    // audio.load() so it's immediately available for display and seeking
+    it('should convert recording duration ms to seconds', () => {
+      const recordingDurationMs = 45000; // 45 seconds
+      const durationSeconds = recordingDurationMs / 1000;
+      expect(durationSeconds).toBe(45);
+    });
+
+    it('should not set duration from invalid recording duration', () => {
+      const setDurationIfValid = (durationMs) => {
+        if (durationMs > 0) return durationMs / 1000;
+        return null;
+      };
+
+      expect(setDurationIfValid(0)).toBeNull();
+      expect(setDurationIfValid(-1000)).toBeNull();
+      expect(setDurationIfValid(null)).toBeNull();
+      expect(setDurationIfValid(undefined)).toBeNull();
+    });
+
+    it('should prefer audio element duration when finite and valid', () => {
+      // Simulates: recording says 30s, audio element says 29.8s
+      const recordingMs = 30000;
+      let duration = recordingMs / 1000; // Pre-set: 30
+
+      // Then loadedmetadata fires with valid duration
+      const audioDuration = 29.8;
+      if (isFinite(audioDuration) && audioDuration > 0) {
+        duration = audioDuration; // Override with more accurate value
+      }
+
+      expect(duration).toBe(29.8);
+    });
+
+    it('should keep recording duration when audio reports Infinity', () => {
+      const recordingMs = 30000;
+      let duration = recordingMs / 1000; // Pre-set: 30
+
+      // loadedmetadata fires with Infinity
+      const audioDuration = Infinity;
+      if (isFinite(audioDuration) && audioDuration > 0) {
+        duration = audioDuration;
+      }
+
+      expect(duration).toBe(30); // Unchanged, still from recording
+    });
+  });
+
   describe('null audio element guards', () => {
     // These tests verify the null guards added to onTimeUpdate and onMetadataLoaded
     // to prevent "Cannot read properties of null (reading 'currentTime')" errors

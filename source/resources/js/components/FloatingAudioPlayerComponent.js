@@ -180,6 +180,7 @@ export const FloatingAudioPlayerComponent = {
         ref="audioElement"
         @timeupdate="onTimeUpdate"
         @loadedmetadata="onMetadataLoaded"
+        @durationchange="onDurationChange"
         @ended="onEnded"
         @error="onError"
         playsinline
@@ -229,7 +230,7 @@ export const FloatingAudioPlayerComponent = {
       return [...this.recordings].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     },
     progressPercent() {
-      if (this.duration === 0) return 0;
+      if (!this.duration || !isFinite(this.duration)) return 0;
       return (this.currentTime / this.duration) * 100;
     }
   },
@@ -302,6 +303,12 @@ export const FloatingAudioPlayerComponent = {
         // Create new blob URL
         this.currentBlobUrl = URL.createObjectURL(recording.blob);
         
+        // Pre-set duration from recording metadata (ms → seconds)
+        // This ensures duration is available even if audio.duration reports Infinity
+        if (recording.duration > 0) {
+          this.duration = recording.duration / 1000;
+        }
+        
         const audio = this.$refs.audioElement;
         audio.src = this.currentBlobUrl;
         audio.playbackRate = this.playbackSpeed;
@@ -323,6 +330,7 @@ export const FloatingAudioPlayerComponent = {
 
     togglePlayPause() {
       const audio = this.$refs.audioElement;
+      if (!audio) return;
       
       if (this.isPlaying) {
         audio.pause();
@@ -339,8 +347,10 @@ export const FloatingAudioPlayerComponent = {
 
     stopPlayback() {
       const audio = this.$refs.audioElement;
-      audio.pause();
-      audio.currentTime = 0;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
       this.isPlaying = false;
       this.currentTime = 0;
     },
@@ -380,11 +390,14 @@ export const FloatingAudioPlayerComponent = {
 
     seekAudio(event) {
       const audio = this.$refs.audioElement;
-      if (!audio || !this.duration) return;
+      if (!audio || !this.duration || !isFinite(this.duration)) return;
 
       const rect = event.currentTarget.getBoundingClientRect();
-      const percent = (event.clientX - rect.left) / rect.width;
-      audio.currentTime = percent * this.duration;
+      const percent = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const seekTime = percent * this.duration;
+      if (isFinite(seekTime)) {
+        audio.currentTime = seekTime;
+      }
     },
 
     confirmDelete() {
@@ -426,7 +439,26 @@ export const FloatingAudioPlayerComponent = {
     onMetadataLoaded() {
       const audio = this.$refs.audioElement;
       if (!audio) return;
-      this.duration = audio.duration;
+      this._updateDuration(audio.duration);
+    },
+
+    onDurationChange() {
+      const audio = this.$refs.audioElement;
+      if (!audio) return;
+      this._updateDuration(audio.duration);
+    },
+
+    /**
+     * Update duration, falling back to recording's stored duration
+     * when the audio element reports Infinity (common with WebM blobs)
+     */
+    _updateDuration(audioDuration) {
+      if (isFinite(audioDuration) && !isNaN(audioDuration) && audioDuration > 0) {
+        this.duration = audioDuration;
+      } else if (this.currentRecording && this.currentRecording.duration > 0) {
+        // Fallback: recording.duration is in milliseconds, convert to seconds
+        this.duration = this.currentRecording.duration / 1000;
+      }
     },
 
     onEnded() {
@@ -454,7 +486,7 @@ export const FloatingAudioPlayerComponent = {
     },
 
     formatTime(seconds) {
-      if (!seconds || seconds < 0) return '0:00';
+      if (!seconds || !isFinite(seconds) || seconds < 0) return '0:00';
       const mins = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${mins}:${secs.toString().padStart(2, '0')}`;
