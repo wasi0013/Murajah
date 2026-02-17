@@ -104,6 +104,8 @@ export class ResourceCache {
       lastUpdated: null
     };
     this.statsLoaded = false;
+    this._statsSaveTimer = null;
+    this._statsSaveDelay = 5000; // Debounce stat writes to every 5 seconds
   }
 
   /**
@@ -163,14 +165,22 @@ export class ResourceCache {
   }
 
   /**
-   * Set the cache stats
+   * Set the cache stats (debounced to avoid excessive IndexedDB writes)
    */
-  async setCacheStatsToDB(stats) {
+  debouncedSaveCacheStats() {
+    if (this._statsSaveTimer) return; // Already scheduled
+    this._statsSaveTimer = setTimeout(async () => {
+      this._statsSaveTimer = null;
+      await this._flushCacheStatsToDB();
+    }, this._statsSaveDelay);
+  }
+
+  async _flushCacheStatsToDB() {
     if (!this.db?.db) return;
     try {
       const tx = this.db.db.transaction(['appData'], 'readwrite');
       const store = tx.objectStore('appData');
-      store.put({ id: 'cache-stats', value: { ...stats, lastUpdated: new Date().toISOString() }, updatedAt: new Date().toISOString() });
+      store.put({ id: 'cache-stats', value: { ...this.cacheStats, lastUpdated: new Date().toISOString() }, updatedAt: new Date().toISOString() });
       return new Promise((resolve, reject) => {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
@@ -178,6 +188,12 @@ export class ResourceCache {
     } catch (error) {
       Logger.warn(Logger.MODULES.CACHE, 'Failed to set cache stats', error);
     }
+  }
+
+  /** @deprecated Use debouncedSaveCacheStats() instead */
+  async setCacheStatsToDB(stats) {
+    // Keep for backward compatibility but make it debounced
+    this.debouncedSaveCacheStats();
   }
 
   /**
@@ -207,24 +223,28 @@ export class ResourceCache {
     let fontsCached = 0;
     let fontsSize = 0;
 
-    // Count IndexedDB cached resources
+    // Count IndexedDB cached resources (use count + estimation instead of getAll + JSON.stringify)
     if (this.db?.db) {
       try {
         const tx = this.db.db.transaction(['resourceCache'], 'readonly');
         const store = tx.objectStore('resourceCache');
         
-        const records = await new Promise((resolve, reject) => {
-          const request = store.getAll();
-          request.onsuccess = () => resolve(request.result || []);
+        // Use count() instead of getAll() to avoid loading all records into memory
+        indexedDBCached = await new Promise((resolve, reject) => {
+          const request = store.count();
+          request.onsuccess = () => resolve(request.result || 0);
           request.onerror = () => reject(request.error);
         });
         
-        indexedDBCached = records.length;
-        records.forEach(r => {
-          if (r.data) {
-            indexedDBSize += typeof r.data === 'string' ? r.data.length : JSON.stringify(r.data).length;
+        // Estimate size from memory cache (avoids expensive JSON.stringify on all records)
+        this.memoryCache.forEach((data) => {
+          if (data) {
+            indexedDBSize += typeof data === 'string' ? data.length : 100000; // ~100KB avg estimate per record
           }
         });
+        // For records not in memory cache, use average estimate
+        const uncachedCount = Math.max(0, indexedDBCached - this.memoryCache.size);
+        indexedDBSize += uncachedCount * 100000; // ~100KB average
       } catch (error) {
         Logger.warn(Logger.MODULES.CACHE, 'Failed to get IndexedDB cache stats', error);
       }
@@ -329,7 +349,7 @@ export class ResourceCache {
     // Check memory cache first
     if (this.memoryCache.has(id)) {
       this.cacheStats.hits++;
-      await this.setCacheStatsToDB(this.cacheStats);
+      this.debouncedSaveCacheStats();
       return this.memoryCache.get(id);
     }
 
@@ -347,11 +367,11 @@ export class ResourceCache {
             this.cacheStats.hits++;
             // Store in memory cache for faster subsequent access
             this.memoryCache.set(id, record.data);
-            this.setCacheStatsToDB(this.cacheStats); // No await since it's fire-and-forget
+            this.debouncedSaveCacheStats();
             resolve(record.data);
           } else {
             this.cacheStats.misses++;
-            this.setCacheStatsToDB(this.cacheStats);
+            this.debouncedSaveCacheStats();
             resolve(null);
           }
         };
@@ -360,7 +380,7 @@ export class ResourceCache {
     } catch (error) {
       Logger.warn(Logger.MODULES.CACHE, `Failed to load cached ${id}`, error);
       this.cacheStats.misses++;
-      await this.setCacheStatsToDB(this.cacheStats);
+      this.debouncedSaveCacheStats();
       return null;
     }
   }
@@ -440,7 +460,8 @@ export class ResourceCache {
    * Fetch resource from network
    */
   async fetchResource(url, type = 'json') {
-    const response = await fetch(url, { cache: 'no-cache' });
+    // Use default browser caching (removed cache: 'no-cache' to leverage HTTP cache)
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url} (${response.status})`);
     }
@@ -477,8 +498,9 @@ export class ResourceCache {
     Logger.debug(Logger.MODULES.CACHE, `Fetching: ${id} from ${url}`);
     const data = await this.fetchResource(url, type);
     
-    // Cache the result (skip very large files)
-    const dataSize = typeof data === 'string' ? data.length : JSON.stringify(data).length;
+    // Cache the result (skip very large files - use rough estimation instead of JSON.stringify)
+    const dataSize = typeof data === 'string' ? data.length : 
+                     (typeof data === 'object' ? Object.keys(data).length * 200 : 0); // Rough estimation
     if (dataSize < 10000000) { // 10MB limit
       await this.saveResource(id, url, data, type);
     }
@@ -637,7 +659,7 @@ export class ResourceCache {
             id: r.id,
             type: r.type,
             cachedAt: r.cachedAt,
-            size: r.data ? (typeof r.data === 'string' ? r.data.length : JSON.stringify(r.data).length) : 0
+            size: r.data ? (typeof r.data === 'string' ? r.data.length : (Object.keys(r.data).length * 200)) : 0
           })));
         };
         request.onerror = () => reject(request.error);

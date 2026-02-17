@@ -111,22 +111,58 @@ const dataCaches = {
 
 const resourceRefreshState = {};
 
+// Cached wordById lookup maps to avoid O(n) rebuilds per page render
+const wordByIdCache = {
+  qpc: null,
+  indopak: null,
+  _wordsDataRef: { qpc: null, indopak: null }
+};
+
+/**
+ * Get or build a cached wordById lookup map
+ * Only rebuilds when the underlying wordsData reference changes
+ */
+const getWordByIdLookup = (wordsData, layout = 'qpc') => {
+  // Return cached map if wordsData reference hasn't changed
+  if (wordByIdCache[layout] && wordByIdCache._wordsDataRef[layout] === wordsData) {
+    return wordByIdCache[layout];
+  }
+  
+  // Build new lookup map
+  const wordById = {};
+  if (wordsData) {
+    const values = Object.values(wordsData);
+    for (let i = 0; i < values.length; i++) {
+      const word = values[i];
+      if (word && word.id) {
+        wordById[word.id] = word;
+      }
+    }
+  }
+  
+  // Cache it
+  wordByIdCache[layout] = wordById;
+  wordByIdCache._wordsDataRef[layout] = wordsData;
+  Logger.debug(Logger.MODULES.DATA, `Built wordById lookup for ${layout}: ${Object.keys(wordById).length} words`);
+  return wordById;
+};
+
 /**
  * Fetch resource from network and cache to IndexedDB
  */
 const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
-  const response = await fetch(resourceConfig.url, { cache: 'no-cache' });
+  const response = await fetch(resourceConfig.url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${resourceConfig.key} (${response.status})`);
   }
 
   const data = await response.json();
   
-  // Cache to IndexedDB (skip very large files >5MB to avoid quota issues)
+  // Cache to IndexedDB (use rough size estimation instead of expensive JSON.stringify)
   if (murajahDB) {
     try {
-      const dataSize = JSON.stringify(data).length;
-      if (dataSize < 5000000) {
+      const estimatedSize = typeof data === 'object' ? Object.keys(data).length * 200 : 0;
+      if (estimatedSize < 5000000) {
         const cacheRecord = {
           id: resourceConfig.cacheId,
           resourceKey: resourceConfig.key,
@@ -137,9 +173,9 @@ const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
           lastModified: response.headers.get('last-modified')
         };
         await murajahDB.saveCachedResource(cacheRecord);
-        Logger.debug(Logger.MODULES.DATA, `Cached ${resourceConfig.key} (${(dataSize/1024).toFixed(1)}KB)`);
+        Logger.debug(Logger.MODULES.DATA, `Cached ${resourceConfig.key} (~${(estimatedSize/1024).toFixed(1)}KB est)`);
       } else {
-        Logger.debug(Logger.MODULES.DATA, `Skipping cache for ${resourceConfig.key} - too large (${(dataSize/1024/1024).toFixed(2)}MB)`);
+        Logger.debug(Logger.MODULES.DATA, `Skipping cache for ${resourceConfig.key} - too large (~${(estimatedSize/1024/1024).toFixed(2)}MB est)`);
       }
     } catch (cacheError) {
       Logger.warn(Logger.MODULES.DATA, `Failed to cache ${resourceConfig.key}`, cacheError);
@@ -151,6 +187,7 @@ const fetchAndCacheResource = async (resourceConfig, murajahDB) => {
 
 /**
  * Schedule background refresh of cached resource
+ * Only refreshes after a significant delay to avoid competing with initial load
  */
 const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey) => {
   if (!resourceConfig) return;
@@ -159,6 +196,7 @@ const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, 
   if (resourceRefreshState[refreshKey]) return;
 
   resourceRefreshState[refreshKey] = true;
+  // Delay background refresh significantly to avoid competing with initial load (30s instead of 100ms)
   setTimeout(async () => {
     try {
       const freshData = await fetchAndCacheResource(resourceConfig, murajahDB);
@@ -174,7 +212,7 @@ const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, 
     } finally {
       resourceRefreshState[refreshKey] = false;
     }
-  }, 100);
+  }, 30000);
 };
 
 /**
@@ -210,7 +248,8 @@ const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUp
 };
 
 /**
- * Load shared resources (surahNames, translations, tafsir)
+ * Load shared resources (surahNames, translations)
+ * Tafsir resources are loaded lazily when needed
  */
 const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
   if (dataCaches.shared.isLoaded) {
@@ -222,7 +261,9 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
     };
   }
 
-  const [surahNamesData, translationsData, tafsirBnData, tafsirEnData, tafsirArData] = await Promise.all([
+  // Only load critical resources for initial render (surahNames + translations)
+  // Tafsir files are large and only needed when user opens tafsir view
+  const [surahNamesData, translationsData] = await Promise.all([
     loadResourceWithCache({ 
       resourceConfig: SHARED_CONFIGS.surahNames, 
       murajahDB, 
@@ -236,43 +277,61 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
       onBackgroundUpdate,
       cacheTarget: dataCaches.shared,
       cacheKey: 'translations'
-    }),
-    loadResourceWithCache({ 
-      resourceConfig: SHARED_CONFIGS.tafsirBn, 
-      murajahDB, 
-      onBackgroundUpdate,
-      cacheTarget: dataCaches.shared,
-      cacheKey: 'tafsirBn'
-    }),
-    loadResourceWithCache({ 
-      resourceConfig: SHARED_CONFIGS.tafsirEn, 
-      murajahDB, 
-      onBackgroundUpdate,
-      cacheTarget: dataCaches.shared,
-      cacheKey: 'tafsirEn'
-    }),
-    loadResourceWithCache({ 
-      resourceConfig: SHARED_CONFIGS.tafsirAr, 
-      murajahDB, 
-      onBackgroundUpdate,
-      cacheTarget: dataCaches.shared,
-      cacheKey: 'tafsirAr'
     })
   ]);
 
   dataCaches.shared.surahNames = surahNamesData;
   dataCaches.shared.translations = translationsData;
-  dataCaches.shared.tafsirBn = tafsirBnData;
-  dataCaches.shared.tafsirEn = tafsirEnData;
-  dataCaches.shared.tafsirAr = tafsirArData;
   dataCaches.shared.isLoaded = true;
+
+  // Defer tafsir loading to idle time (large files not needed for initial render)
+  const loadTafsirLazy = async () => {
+    try {
+      const [tafsirBnData, tafsirEnData, tafsirArData] = await Promise.all([
+        loadResourceWithCache({ 
+          resourceConfig: SHARED_CONFIGS.tafsirBn, 
+          murajahDB, 
+          onBackgroundUpdate,
+          cacheTarget: dataCaches.shared,
+          cacheKey: 'tafsirBn'
+        }),
+        loadResourceWithCache({ 
+          resourceConfig: SHARED_CONFIGS.tafsirEn, 
+          murajahDB, 
+          onBackgroundUpdate,
+          cacheTarget: dataCaches.shared,
+          cacheKey: 'tafsirEn'
+        }),
+        loadResourceWithCache({ 
+          resourceConfig: SHARED_CONFIGS.tafsirAr, 
+          murajahDB, 
+          onBackgroundUpdate,
+          cacheTarget: dataCaches.shared,
+          cacheKey: 'tafsirAr'
+        })
+      ]);
+      dataCaches.shared.tafsirBn = tafsirBnData;
+      dataCaches.shared.tafsirEn = tafsirEnData;
+      dataCaches.shared.tafsirAr = tafsirArData;
+      Logger.info(Logger.MODULES.DATA, 'Tafsir data loaded (deferred)');
+    } catch (error) {
+      Logger.warn(Logger.MODULES.DATA, 'Failed to load tafsir data (deferred)', error);
+    }
+  };
+
+  // Use requestIdleCallback if available, otherwise setTimeout with long delay
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(() => loadTafsirLazy(), { timeout: 10000 });
+  } else {
+    setTimeout(loadTafsirLazy, 5000);
+  }
 
   return {
     surahNames: surahNamesData,
     translations: translationsData,
-    tafsirBn: tafsirBnData,
-    tafsirEn: tafsirEnData,
-    tafsirAr: tafsirArData
+    tafsirBn: null,
+    tafsirEn: null,
+    tafsirAr: null
   };
 };
 
@@ -398,13 +457,8 @@ export const getPageText = (pageNum, layoutData, wordsData) => {
   }
 
   try {
-    // Create word ID lookup for fast access
-    const wordById = {};
-    Object.values(wordsData).forEach(word => {
-      if (word && word.id) {
-        wordById[word.id] = word;
-      }
-    });
+    // Use cached word ID lookup for fast access (avoids O(n) rebuild per call)
+    const wordById = getWordByIdLookup(wordsData);
 
     // Find all lines for this page
     const lines = layoutData.pages.filter(line => line.page_number === pageNum);
@@ -466,13 +520,8 @@ export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
   }
 
   try {
-    // Create word ID lookup for fast access
-    const wordById = {};
-    Object.values(wordsData).forEach(word => {
-      if (word && word.id) {
-        wordById[word.id] = word;
-      }
-    });
+    // Use cached word ID lookup for fast access (avoids O(n) rebuild per call)
+    const wordById = getWordByIdLookup(wordsData);
 
     // Find all lines for this page
     const lines = layoutData.pages.filter(line => line.page_number === pageNum);
@@ -573,8 +622,18 @@ export const clearDataCache = (layout = 'all') => {
     clearCache(dataCaches.qpc);
     clearCache(dataCaches.indopak);
     clearCache(dataCaches.shared);
+    // Clear wordById caches
+    wordByIdCache.qpc = null;
+    wordByIdCache.indopak = null;
+    wordByIdCache._wordsDataRef.qpc = null;
+    wordByIdCache._wordsDataRef.indopak = null;
   } else if (dataCaches[layout]) {
     clearCache(dataCaches[layout]);
+    // Clear wordById cache for this layout
+    if (wordByIdCache[layout]) {
+      wordByIdCache[layout] = null;
+      wordByIdCache._wordsDataRef[layout] = null;
+    }
   }
 
   Object.keys(resourceRefreshState).forEach(key => {

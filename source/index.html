@@ -26,17 +26,21 @@
   <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
   <link rel="apple-touch-icon" href="./resources/assets/images/logo-bg.png">
   
-  <!-- Tailwind CSS -->
-  <script src="./resources/js/vendor/tailwind.3.4.7.js"></script>
+  <!-- Preload critical resources for faster discovery -->
+  <link rel="preload" href="./resources/js/vendor/vue.global.js" as="script">
+  <link rel="preload" href="./resources/styles/fonts/surah_names.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <!-- Tailwind CSS (deferred to avoid render-blocking) -->
+  <script defer src="./resources/js/vendor/tailwind.3.4.7.js"></script>
   
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="./resources/js/vendor/fontawesome/all.min.css">
   
-  <!-- Vue 3 -->
-  <script src="./resources/js/vendor/vue.global.js"></script>
+  <!-- Vue 3 (deferred to avoid render-blocking) -->
+  <script defer src="./resources/js/vendor/vue.global.js"></script>
 
-  <!-- Markdown Parser -->
-  <script src="./resources/js/vendor/marked.min.js"></script>
+  <!-- Markdown Parser (deferred - only needed for notes rendering) -->
+  <script defer src="./resources/js/vendor/marked.min.js"></script>
 
   <!-- Confetti Library (for achievement animations) -->
   <script async src="./resources/js/vendor/confetti-js.0.0.18.min.js"></script>
@@ -3050,17 +3054,48 @@
       const { ResourceCache, initResourceCache, getResourceCache, CACHE_VERSION, RESOURCE_MANIFEST, getTotalResourceCount, generatePageFonts, generateTajweedFonts } = resourceCacheModule;
       const resourceCache = initResourceCache(murajahDB);
       
-      // Check if cache needs refresh due to version change
-      const needsCacheRefresh = await resourceCache.needsVersionRefresh();
-      if (needsCacheRefresh) {
-        Logger.log('[Murajah] Cache version changed, will refresh on next preload');
-      }
+      // Check if cache needs refresh due to version change (non-blocking)
+      resourceCache.needsVersionRefresh().then(needsCacheRefresh => {
+        if (needsCacheRefresh) {
+          Logger.log('[Murajah] Cache version changed, will refresh on next preload');
+        }
+      });
 
-      // Import utility modules - Using unified data loader for both QPC and Indopak layouts
-      const dataLoaderModule = await import('./resources/js/utils/unifiedDataLoader.js');
+      // Import all independent utility modules in parallel for faster startup
+      const [
+        dataLoaderModule,
+        calculationsModule,
+        scoreFormatterModule,
+        audioRecorderModule,
+        dailyGoalsManagerModule,
+        audioLoaderModule,
+        audioPlayerComponentModule,
+        floatingAudioPlayerModule,
+        languageSelectionModalModule,
+        morphologyLoaderModule,
+        morphologyPopupModule,
+        notesStoreModule,
+        notesComponentModule,
+        i18nStoreModule
+      ] = await Promise.all([
+        import('./resources/js/utils/unifiedDataLoader.js'),
+        import('./resources/js/utils/calculations.js'),
+        import('./resources/js/utils/scoreFormatter.js'),
+        import('./resources/js/utils/audioRecorder.js'),
+        import('./resources/js/utils/dailyGoalsManager.js'),
+        import('./resources/js/utils/audioLoader.js'),
+        import('./resources/js/components/QuranAudioPlayerComponent.js'),
+        import('./resources/js/components/FloatingAudioPlayerComponent.js'),
+        import('./resources/js/components/LanguageSelectionModal.js'),
+        import('./resources/js/utils/morphologyLoader.js'),
+        import('./resources/js/components/MorphologyPopupComponent.js'),
+        import('./resources/js/stores/notesStore.js'),
+        import('./resources/js/components/NotesComponent.js'),
+        import('./resources/js/stores/i18nStore.js')
+      ]);
+
+      // Destructure all module exports
       const { loadAllQuranData, getPageText, getPageWordsDetailed, getLayoutConfig, clearDataCache, preloadLayout } = dataLoaderModule;
-      
-      const calculationsModule = await import('./resources/js/utils/calculations.js');
       const { 
         calculateMemorizationPercentage, 
         calculateProgress,
@@ -3075,14 +3110,8 @@
         calculatePageScore,
         calculateTotalScore
       } = calculationsModule;
-      
-      const scoreFormatterModule = await import('./resources/js/utils/scoreFormatter.js');
       const { formatScore } = scoreFormatterModule;
-      
-      const audioRecorderModule = await import('./resources/js/utils/audioRecorder.js');
       const AudioRecorder = audioRecorderModule.default;
-      
-      const dailyGoalsManagerModule = await import('./resources/js/utils/dailyGoalsManager.js');
       const {
         initializeTodayGoals,
         calculateReviewRange,
@@ -3095,63 +3124,14 @@
         getTodayDate,
         getCompletionPercentage
       } = dailyGoalsManagerModule;
-
-      const audioLoaderModule = await import('./resources/js/utils/audioLoader.js');
       const { getVerseAudioUrl, getPageVerses, preloadAudio } = audioLoaderModule;
-
-      const audioPlayerComponentModule = await import('./resources/js/components/QuranAudioPlayerComponent.js');
       const { QuranAudioPlayerComponent } = audioPlayerComponentModule;
-
-      const floatingAudioPlayerModule = await import('./resources/js/components/FloatingAudioPlayerComponent.js');
       const FloatingAudioPlayerComponent = floatingAudioPlayerModule.default;
-
-      const languageSelectionModalModule = await import('./resources/js/components/LanguageSelectionModal.js');
       const LanguageSelectionModal = languageSelectionModalModule.default;
-
-      // Morphology feature - lazy loaded per-surah for performance
-      const morphologyLoaderModule = await import('./resources/js/utils/morphologyLoader.js');
       const { getMorphologyForWord, preloadMorphologyForPage, getMorphologyCacheStats, clearMorphologyCache } = morphologyLoaderModule;
-
-      const morphologyPopupModule = await import('./resources/js/components/MorphologyPopupComponent.js');
       const MorphologyPopupComponent = morphologyPopupModule.default;
-
-      /* Achievement System (coming soon - not developed yet)
-      const achievementStoreModule = await import('./resources/js/stores/achievementStore.js');
-      const { 
-        achievementStore, 
-        loadBadgesData, 
-        loadUnlockedBadges, 
-        unlockBadge, 
-        saveUnlockedBadges 
-      } = achievementStoreModule;
-
-      const achievementLogicModule = await import('./resources/js/utils/achievementLogic.js');
-      const { checkBadgeUnlock, checkAllBadges, getBadgeUnlockMessage } = achievementLogicModule;
-
-      const achievementNavbarComponentModule = await import('./resources/js/components/AchievementNavbarComponent.js');
-      const AchievementNavbarComponent = achievementNavbarComponentModule.default;
-
-      const achievementGridComponentModule = await import('./resources/js/components/AchievementGridComponent.js');
-      const AchievementGridComponent = achievementGridComponentModule.default;
-
-      const achievementDetailComponentModule = await import('./resources/js/components/AchievementDetailComponent.js');
-      const AchievementDetailComponent = achievementDetailComponentModule.default;
-
-      const badgeShareCardComponentModule = await import('./resources/js/components/BadgeShareCardComponent.js');
-      const BadgeShareCardComponent = badgeShareCardComponentModule.default;
-
-      const shareBadgeModalModule = await import('./resources/js/components/ShareBadgeModal.js');
-      const ShareBadgeModal = shareBadgeModalModule.default;
-      */
-
-      // Notes feature
-      const notesStoreModule = await import('./resources/js/stores/notesStore.js');
       const { loadNotes } = notesStoreModule;
-
-      const notesComponentModule = await import('./resources/js/components/NotesComponent.js');
       const NotesComponent = notesComponentModule.default;
-
-      const i18nStoreModule = await import('./resources/js/stores/i18nStore.js');
       const {
         i18nState,
         SUPPORTED_LOCALES,
@@ -3209,7 +3189,7 @@
               <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                  <a href="https://murajah.pages.dev/"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
+                  <a href="https://murajah.pages.dev/"><picture><source srcset="./resources/assets/images/logo-bg.webp" type="image/webp"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" width="40" height="40" style="border-radius: 15%;"></picture></a>
                 </div>
 
                 <!-- Desktop Navigation -->
@@ -3346,7 +3326,7 @@
             <div class="mobile-menu" :class="{ active: showMobileMenu }">
               <div class="mobile-menu-header">
                 <div class="flex items-center gap-2">
-                  <img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-8 w-auto" style="border-radius: 15%;">
+                  <picture><source srcset="./resources/assets/images/logo-bg.webp" type="image/webp"><img src="./resources/assets/images/logo-bg.png" alt="Murajah" class="h-8 w-auto" width="32" height="32" loading="lazy" style="border-radius: 15%;"></picture>
                   <span class="font-semibold text-gray-800">Murajah</span>
                 </div>
                 <button @click="showMobileMenu = false" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -6445,45 +6425,42 @@
                 tafsirMapping: Object.keys(quranData.value.tafsirMapping || {}).length
               });
               
-              // Load quran.json for audio player (contains surah, verse, page mapping)
-              try {
-                const quranJsonResponse = await fetch('./resources/data/quran/quran.json');
-                const quranJson = await quranJsonResponse.json();
-                // Store it in quranData for use by the audio player component
-                quranData.value.quranWithPages = quranJson;
-                Logger.log('[Murajah] Loaded quran.json for audio player', {
-                  type: typeof quranJson,
-                  isArray: Array.isArray(quranJson),
-                  keys: Object.keys(quranJson).length,
-                  stored: !!quranData.value.quranWithPages
-                });
-              } catch (error) {
-                console.error('[Murajah] Failed to load quran.json for audio player:', error);
-              }
+              // Load quran.json and Bangla translations in parallel (non-blocking for initial render)
+              const loadSecondaryData = async () => {
+                const [quranJsonResult, bnTranslationsResult] = await Promise.allSettled([
+                  fetch('./resources/data/quran/quran.json').then(r => r.json()),
+                  fetch('./resources/data/quran/bangali-word-by-word-translation.json').then(r => r.json())
+                ]);
+                
+                if (quranJsonResult.status === 'fulfilled') {
+                  quranData.value.quranWithPages = quranJsonResult.value;
+                  Logger.log('[Murajah] Loaded quran.json for audio player');
+                } else {
+                  console.error('[Murajah] Failed to load quran.json:', quranJsonResult.reason);
+                }
+                
+                if (bnTranslationsResult.status === 'fulfilled') {
+                  quranData.value.translationsBn = bnTranslationsResult.value;
+                  Logger.log('[Murajah] Loaded Bangla word-by-word translations');
+                } else {
+                  console.error('[Murajah] Failed to load Bangla translations:', bnTranslationsResult.reason);
+                }
+              };
               
-              // Load Bangla word-by-word translations for tooltip
-              try {
-                const bnTranslationsResponse = await fetch('./resources/data/quran/bangali-word-by-word-translation.json');
-                const bnTranslations = await bnTranslationsResponse.json();
-                quranData.value.translationsBn = bnTranslations;
-                Logger.log('[Murajah] Loaded Bangla word-by-word translations', {
-                  keys: Object.keys(bnTranslations).length
-                });
-              } catch (error) {
-                console.error('[Murajah] Failed to load Bangla translations:', error);
-              }
+              // Run secondary data loading and daily goals in parallel
+              await Promise.all([
+                loadSecondaryData(),
+                initializeDailyGoals()
+              ]);
               
-              // Initialize daily goals
-              await initializeDailyGoals();
+              // Defer cache stats to after initial render (expensive operation)
+              requestIdleCallback ? requestIdleCallback(() => updateCacheStats()) : setTimeout(() => updateCacheStats(), 2000);
               
-              // Initialize cache stats
-              await updateCacheStats();
-              
-              // Preload the other layout in background for faster switching
+              // Preload the other layout in background for faster switching (longer delay)
               setTimeout(() => {
                 const otherLayout = settingsStore.layout === 'qpc' ? 'indopak' : 'qpc';
                 preloadLayout(otherLayout, murajahDB);
-              }, 5000);
+              }, 10000);
               
               Logger.log('[Murajah] App initialized | Layout:', settingsStore.layout, '| Memorized pages:', memorizedStore.memorizedPages.size);
               appStore.successMessage = t('app.loaded');
