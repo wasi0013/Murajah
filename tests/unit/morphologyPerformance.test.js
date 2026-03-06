@@ -303,6 +303,21 @@ describe('Morphology Loader Performance Tests', () => {
   });
 
   describe('Error Handling and Recovery', () => {
+    let originalConsoleError;
+    let originalConsoleWarn;
+
+    beforeEach(() => {
+      originalConsoleError = console.error;
+      originalConsoleWarn = console.warn;
+      console.error = vi.fn();
+      console.warn = vi.fn();
+    });
+
+    afterEach(() => {
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
+    });
+
     it('should handle network failures gracefully', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
