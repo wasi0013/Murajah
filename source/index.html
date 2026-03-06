@@ -3141,6 +3141,8 @@
       } = i18nStoreModule;
 
       await initLocale(murajahDB);
+      // Seed localStorage so quiz.html can read the resolved locale without MurajahDB
+      try { localStorage.setItem('murajah-language', i18nState.currentLocale); } catch(e) { /* private mode */ }
 
       const app = createApp({
         template: `
@@ -5708,7 +5710,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '26.02.16',
+            appVersion: '26.03.06',
             errorMessage: '',
             successMessage: ''
           });

@@ -40,6 +40,13 @@ const sessionStorageMock = {
   }
 };
 
+// Vue CDN global mock — needed by i18nStore.js which uses `const { reactive } = Vue`
+global.Vue = {
+  reactive: (obj) => obj,
+  ref: (val) => ({ value: val }),
+  computed: (fn) => ({ value: fn() })
+};
+
 // Setup globals
 beforeAll(() => {
   // Setup storage mocks

@@ -14,7 +14,7 @@ import Logger from './logger.js';
  * @returns {Object} Today's goal object
  */
 export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDate();
   
   const todayGoal = {
     date: today,
@@ -113,7 +113,7 @@ export function calculateReviewRange(sortedMemorisedPages, finishRevisionDays, l
     return { startPage: 0, endPage: 0, pages: [], rotationIndex: 0, chunkNumber: 1, totalChunks: 1 };
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDate();
   const lastDate = lastDailyGoal?.date;
 
   // Total number of chunks = finishRevisionDays (each chunk represents one day's review)
@@ -370,7 +370,7 @@ export function getTaskCounts(todayGoal) {
  */
 export function isNewDay(lastDate) {
   if (!lastDate) return true;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDate();
   return today !== lastDate;
 }
 

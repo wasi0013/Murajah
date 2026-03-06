@@ -71,6 +71,8 @@ const setLocale = async (locale, murajahDB) => {
   }
   await fetchLocale(locale);
   i18nState.currentLocale = locale;
+  // Sync to localStorage so quiz.html (separate page) can read the preference
+  try { localStorage.setItem('murajah-language', locale); } catch(e) { /* private mode */ }
   if (murajahDB && typeof murajahDB.saveLanguage === 'function') {
     try {
       await murajahDB.saveLanguage(locale);
@@ -102,4 +104,24 @@ const initLocale = async (murajahDB) => {
   i18nState.currentLocale = locale;
 };
 
-export { i18nState, SUPPORTED_LOCALES, setLocale, initLocale, t };
+/**
+ * Initialises the locale from localStorage only — no IndexedDB required.
+ * Used by pages (e.g. quiz.html) that don't have access to MurajahDB but
+ * need to honour the user's language preference set on the main app.
+ */
+const initLocaleFromStorage = async () => {
+  let locale = DEFAULT_LOCALE;
+  try {
+    const stored = localStorage.getItem('murajah-language');
+    if (stored && SUPPORTED_LOCALES.includes(stored)) locale = stored;
+  } catch(e) { /* localStorage blocked */ }
+  // Always pre-fetch the fallback locale
+  await fetchLocale(FALLBACK_LOCALE);
+  // Pre-fetch English if it differs from the fallback
+  if (DEFAULT_LOCALE !== FALLBACK_LOCALE) await fetchLocale(DEFAULT_LOCALE);
+  // Fetch the target locale if it differs from those already loaded
+  if (locale !== DEFAULT_LOCALE && locale !== FALLBACK_LOCALE) await fetchLocale(locale);
+  i18nState.currentLocale = locale;
+};
+
+export { i18nState, SUPPORTED_LOCALES, setLocale, initLocale, initLocaleFromStorage, t };

@@ -1,5 +1,5 @@
 /**
- * Murajah Service Worker v26.02.16
+ * Murajah Service Worker v26.03.06
  * Implements Stale-While-Revalidate pattern with proper font handling
  * - Serves cached resources immediately for instant loading
  * - Fetches fresh copies in background and updates cache
@@ -7,7 +7,7 @@
  * - Handles redirected responses properly
  */
 
-const CACHE_VERSION = '26.02.16';
+const CACHE_VERSION = '26.03.05';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = 'murajah-fonts-v2'; // Separate cache for fonts
 
@@ -30,6 +30,14 @@ const APP_SHELL = [
   
   // Vendor CSS
   './resources/js/vendor/fontawesome/all.min.css',
+  
+  // FontAwesome webfonts (pre-cache to avoid 404 on first load)
+  './resources/js/vendor/fontawesome/webfonts/fa-brands-400.woff2',
+  './resources/js/vendor/fontawesome/webfonts/fa-brands-400.ttf',
+  './resources/js/vendor/fontawesome/webfonts/fa-solid-900.woff2',
+  './resources/js/vendor/fontawesome/webfonts/fa-solid-900.ttf',
+  './resources/js/vendor/fontawesome/webfonts/fa-regular-400.woff2',
+  './resources/js/vendor/fontawesome/webfonts/fa-regular-400.ttf',
   
   // App CSS
   './resources/styles/style.css',

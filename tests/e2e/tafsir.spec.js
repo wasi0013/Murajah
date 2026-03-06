@@ -10,14 +10,14 @@ test.describe('Tafsir Feature', () => {
   
   test('should enable tafsir mode via URL', async ({ page }) => {
     await page.goto('/?page=1&tafsir=true');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     
     expect(page.url()).toContain('tafsir=true');
   });
 
   test('should toggle tafsir panel from UI', async ({ page }) => {
     await page.goto('/?page=1');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     
     // Close any overlay first
     await page.keyboard.press('Escape');
@@ -25,13 +25,13 @@ test.describe('Tafsir Feature', () => {
     
     // Instead of clicking button, just verify we can enable via URL
     await page.goto('/?page=1&tafsir=true');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     expect(page.url()).toContain('tafsir=true');
   });
 
   test('should maintain tafsir setting on navigation', async ({ page }) => {
     await page.goto('/?page=5&tafsir=true');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     
     // Close any overlay first
     await page.keyboard.press('Escape');
@@ -44,7 +44,7 @@ test.describe('Tafsir Feature', () => {
 
   test('should work with word-by-word simultaneously', async ({ page }) => {
     await page.goto('/?page=1&tafsir=true&wordbyword=true');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     
     expect(page.url()).toContain('tafsir=true');
     expect(page.url()).toContain('wordbyword=true');
@@ -54,7 +54,7 @@ test.describe('Tafsir Feature', () => {
 
   test('should load tafsir for different Surahs', async ({ page }) => {
     await page.goto('/?page=50&tafsir=true');
-    await waitForQuranData(page);
+    await waitForAppLoad(page);
     
     await expect(page.locator('body')).toBeVisible();
   });

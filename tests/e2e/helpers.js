@@ -8,36 +8,51 @@
  * This modal shows for new users who haven't selected a language yet
  */
 export async function dismissLanguageModal(page, options = {}) {
-  const { timeout = 3000, retries = 3 } = options;
+  const { timeout = 3000, retries = 5 } = options;
   
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      // Check for the modal backdrop
-      const modalBackdrop = page.locator('.fixed.inset-0.bg-black\\/50');
-      const isModalVisible = await modalBackdrop.isVisible({ timeout: 500 }).catch(() => false);
-      
-      if (isModalVisible) {
-        // Wait for modal to possibly appear
-        const continueButton = page.locator('button:has-text("Continue"), button:has-text("متابعة"), button:has-text("চালিয়ে যান")').first();
-        
-        // Check if the button is visible
-        const isButtonVisible = await continueButton.isVisible({ timeout: 1000 }).catch(() => false);
-        
-        if (isButtonVisible) {
-          await continueButton.click({ force: true });
-          // Wait for modal to close
-          await page.waitForFunction(() => {
-            const modal = document.querySelector('.fixed.inset-0.bg-black\\/50');
-            return !modal || modal.offsetParent === null;
-          }, { timeout: 2000 }).catch(() => {});
-          await page.waitForTimeout(300);
-          console.log('[Test Helper] Language selection modal dismissed');
-          return true;
+      // Check for any fixed overlay with bg-black/50 (language modal or loading)
+      const hasOverlay = await page.evaluate(() => {
+        const overlays = document.querySelectorAll('.fixed.inset-0');
+        for (const el of overlays) {
+          // For position:fixed elements, offsetParent is always null,
+          // so use getComputedStyle to check visibility
+          const style = window.getComputedStyle(el);
+          const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+          if (el.className.includes('bg-black') && isVisible) return true;
         }
+        return false;
+      }).catch(() => false);
+      
+      if (!hasOverlay) return false; // No overlay, nothing to dismiss
+      
+      // Try clicking the Continue button (language modal)
+      const continueButton = page.locator('button:has-text("Continue"), button:has-text("متابعة"), button:has-text("চালিয়ে যান")').first();
+      const isButtonVisible = await continueButton.isVisible({ timeout: 1500 }).catch(() => false);
+      
+      if (isButtonVisible) {
+        await continueButton.click({ force: true });
+        // Wait for overlay to fully disappear
+        await page.waitForFunction(() => {
+          const overlays = document.querySelectorAll('.fixed.inset-0');
+          for (const el of overlays) {
+            const style = window.getComputedStyle(el);
+            const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+            if (el.className.includes('bg-black') && isVisible) return false;
+          }
+          return true;
+        }, { timeout: 3000 }).catch(() => {});
+        await page.waitForTimeout(300);
+        console.log('[Test Helper] Language selection modal dismissed');
+        return true;
+      } else {
+        // Maybe it's the loading overlay, not the language modal - wait for it
+        await page.waitForTimeout(500);
       }
     } catch (e) {
       // Modal not present or couldn't be dismissed, retry
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(300);
     }
   }
   return false;
@@ -58,6 +73,24 @@ export async function waitForAppLoad(page, options = {}) {
     return style.display === 'none' || style.opacity === '0' || loader.classList.contains('hidden');
   }, { timeout });
   
+  // Wait for the Vue isInitializing overlay to disappear
+  // This overlay shows "Loading Murajah..." with bg-black/50
+  await page.waitForFunction(() => {
+    // Check that no loading spinner overlay is active
+    const overlays = document.querySelectorAll('.fixed.inset-0');
+    for (const el of overlays) {
+      // Skip if it's the language selection modal (has a form-like child)
+      if (el.querySelector('.bg-gradient-to-r')) continue;
+      const style = window.getComputedStyle(el);
+      const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+      // If there's a spinner overlay still visible, wait
+      if (el.className.includes('bg-black') && el.querySelector('.fa-spinner') && isVisible) {
+        return false;
+      }
+    }
+    return true;
+  }, { timeout: 30000 }).catch(() => {});
+  
   // Give Vue a moment to finish mounting
   await page.waitForTimeout(500);
   
@@ -65,8 +98,19 @@ export async function waitForAppLoad(page, options = {}) {
   await dismissLanguageModal(page, { retries: 5 });
   
   // Wait a bit more and try again in case modal appears after initial load
-  await page.waitForTimeout(300);
-  await dismissLanguageModal(page, { retries: 3 });
+  await page.waitForTimeout(500);
+  await dismissLanguageModal(page, { retries: 5 });
+  
+  // Final check: ensure no overlays remain
+  await page.waitForFunction(() => {
+    const overlays = document.querySelectorAll('.fixed.inset-0');
+    for (const el of overlays) {
+      const style = window.getComputedStyle(el);
+      const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+      if (el.className.includes('bg-black') && isVisible) return false;
+    }
+    return true;
+  }, { timeout: 10000 }).catch(() => {});
 }
 
 /**
@@ -77,10 +121,14 @@ export async function waitForQuranData(page, options = {}) {
   
   await waitForAppLoad(page, { timeout });
   
-  // Wait for Quran text section to have content
+  // Wait for actual Arabic text to appear in the Quran section
+  // (not just "Loading Quran text..." placeholder)
   await page.waitForFunction(() => {
     const section = document.getElementById('quran-text-section');
-    return section && section.textContent && section.textContent.trim().length > 0;
+    if (!section) return false;
+    const text = section.textContent || '';
+    // Check for Arabic Unicode characters (U+0600 to U+06FF)
+    return /[\u0600-\u06FF]/.test(text);
   }, { timeout });
 }
 
@@ -151,4 +199,30 @@ export async function isAppLoaded(page) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Wait for the Quiz page (quiz.html) to finish loading.
+ * The Vue app renders a full-screen loading overlay (isLoading=true) while it
+ * initialises; this helper waits for that overlay to disappear from the DOM.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {object} options
+ * @param {number} [options.timeout=30000]
+ */
+export async function waitForQuizLoad(page, options = {}) {
+  const { timeout = 30000 } = options;
+
+  // Ensure the page content is ready before we start polling
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+
+  // The loading overlay: <div v-if="isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 ...">
+  // Vue removes it from the DOM when isLoading becomes false.
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('.fixed.bg-gray-900.bg-opacity-50');
+    return !overlay;
+  }, { timeout }).catch(() => {});
+
+  // Give Vue one tick to finish rendering after the overlay is removed
+  await page.waitForTimeout(400);
 }

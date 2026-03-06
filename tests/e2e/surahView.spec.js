@@ -22,10 +22,12 @@ test.describe('Surah View', () => {
       await page.goto('/?surahview=true');
       await waitForAppLoad(page);
       
-      // Should show surah grid - wait for grid to render
+      // Should show surah grid - wait for grid to render with Arabic names
       await page.waitForFunction(() => {
         const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0;
+        if (buttons.length === 0) return false;
+        // Wait for Arabic names to load (not just buttons)
+        return document.body.textContent?.includes('الفاتحة');
       }, { timeout: 15000 });
       
       // Check for Arabic surah names
@@ -68,10 +70,13 @@ test.describe('Surah View', () => {
       await page.goto('/?surahview=true');
       await waitForAppLoad(page);
       
-      // Wait for grid to render
+      // Wait for grid to render with Arabic names
       await page.waitForFunction(() => {
         const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0;
+        if (buttons.length === 0) return false;
+        // Wait for Arabic surah names to actually load
+        const text = document.body.textContent || '';
+        return text.includes('الفاتحة') && text.includes('الناس');
       }, { timeout: 15000 });
       
       // Check for Al-Fatihah and Al-Nas
@@ -143,7 +148,7 @@ test.describe('Surah View', () => {
       }, { timeout: 15000 });
       
       // Dismiss modal again in case it appeared after waitForAppLoad
-      await dismissLanguageModal(page, { retries: 3 });
+      await dismissLanguageModal(page, { retries: 5 });
       
       // Click back button
       const backButton = page.locator('button:has-text("All Surahs"), button:has-text("جميع السور"), button:has-text("সব সূরা")').first();
@@ -160,14 +165,14 @@ test.describe('Surah View', () => {
       await page.goto('/?surahview=true');
       await waitForAppLoad(page);
       
-      // Wait for grid to load
+      // Wait for grid to load with Arabic names
       await page.waitForFunction(() => {
         const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0;
+        return buttons.length > 0 && document.body.textContent?.includes('الفاتحة');
       }, { timeout: 15000 });
       
       // Dismiss modal again in case it appeared after waitForAppLoad
-      await dismissLanguageModal(page, { retries: 3 });
+      await dismissLanguageModal(page, { retries: 5 });
       
       // Click on first surah
       const firstSurah = page.locator('.grid button').first();
@@ -298,14 +303,14 @@ test.describe('Surah View', () => {
       await page.goto('/?surahview=true');
       await waitForAppLoad(page);
       
-      // Wait for surah view to load
+      // Wait for surah view to load with Arabic names
       await page.waitForFunction(() => {
         const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0;
+        return buttons.length > 0 && document.body.textContent?.includes('الفاتحة');
       }, { timeout: 15000 });
       
       // Dismiss modal again in case it appeared after waitForAppLoad
-      await dismissLanguageModal(page, { retries: 3 });
+      await dismissLanguageModal(page, { retries: 5 });
       
       // Click close button
       const closeButton = page.locator('button:has-text("Close"), button:has-text("إغلاق"), button:has-text("বন্ধ করুন")').first();
@@ -328,10 +333,13 @@ test.describe('Surah View', () => {
         return document.body.textContent?.includes('الفاتحة');
       }, { timeout: 15000 });
       
+      // Dismiss modal again in case it appeared
+      await dismissLanguageModal(page, { retries: 5 });
+      
       // Click back button
       const backButton = page.locator('button:has-text("All Surahs"), button:has-text("جميع السور"), button:has-text("সব সূরা")').first();
       if (await backButton.isVisible()) {
-        await backButton.click();
+        await backButton.click({ force: true });
         await page.waitForTimeout(1000);
         
         // URL should not contain surah parameter
