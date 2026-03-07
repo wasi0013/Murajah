@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="color-scheme" content="only light">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Murajah Quiz</title>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
@@ -401,73 +401,43 @@
         body:not(.dark) a { color: #2563eb !important; }
         body:not(.dark) a:hover { color: #1d4ed8 !important; }
 
-        /* ===== RESPONSIVE TABS ===== */
-        /* Tab navigation container */
+        /* ===== TABS: desktop only ===== */
         nav[aria-label="Quiz Types"] {
-            display: flex;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
+            display: none;
         }
-
-        /* Desktop tabs (>640px) */
-        @media (min-width: 641px) {
+        @media (min-width: 768px) {
             nav[aria-label="Quiz Types"] {
-                gap: 2rem; /* space-x-8 */
+                display: flex;
+                gap: 2rem;
             }
-
             nav[aria-label="Quiz Types"] button {
                 padding: 1rem 0.25rem;
                 font-size: 0.875rem;
                 white-space: nowrap;
                 flex-shrink: 0;
             }
-        }
-
-        /* Tablet tabs (500px - 640px) */
-        @media (max-width: 640px) and (min-width: 501px) {
-            nav[aria-label="Quiz Types"] {
-                gap: 0.75rem; /* Reduced gap */
-            }
-
-            nav[aria-label="Quiz Types"] button {
-                padding: 0.75rem 0.5rem;
-                font-size: 0.75rem;
-                white-space: nowrap;
-                flex-shrink: 0;
+            .mobile-tab-bar {
+                display: none;
             }
         }
 
-        /* Mobile tabs (<500px) */
-        @media (max-width: 500px) {
-            nav[aria-label="Quiz Types"] {
-                gap: 0.5rem; /* Minimal gap */
-            }
-
-            nav[aria-label="Quiz Types"] button {
-                padding: 0.5rem 0.4rem;
-                font-size: 0.65rem;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
+        /* ===== MOBILE TAB BAR ===== */
+        .mobile-tab-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 0.625rem 0.875rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
-
-        /* Hide scrollbar but keep scrolling functional */
-        nav[aria-label="Quiz Types"]::-webkit-scrollbar {
-            height: 2px;
-        }
-
-        nav[aria-label="Quiz Types"]::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        nav[aria-label="Quiz Types"]::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.5);
-            border-radius: 4px;
-        }
-
-        nav[aria-label="Quiz Types"]::-webkit-scrollbar-thumb:hover {
-            background: rgba(156, 163, 175, 0.8);
+        .mobile-tab-bar:active {
+            background: #f3f4f6;
         }
 
         /* ===== DISABLE HOVER/TOOLTIPS ON TOUCH DEVICES ===== */
@@ -668,6 +638,30 @@
           }
         }
 
+        /* WebView touch fixes: prevent text selection and double-tap zoom */
+        .quiz-touch-btn {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        .quiz-touch-btn:active {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .surah-grid-item {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        .surah-grid-item:active {
+            transform: scale(0.95);
+        }
+
     </style>
 </head>
 <body class="bg-gray-50 ">
@@ -713,11 +707,14 @@
                 </nav>
 
                 <!-- Mobile Navigation -->
-                <div class="mobile-nav flex items-center">
+                <div class="mobile-nav flex items-center gap-1">
                     <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
-                    </a>    
+                    </a>
+                    <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Menu">
+                        <i class="fas fa-bars text-gray-600 text-lg"></i>
+                    </button>
                 </div>
             </div>
         </header>
@@ -744,31 +741,55 @@
                     <i class="fas fa-home"></i>
                     {{ t('quiz.nav.home') }}
                 </a>
-                <span class="mobile-menu-item active">
-                    <i class="fas fa-question-circle"></i>
-                    {{ t('quiz.nav.quiz') }}
             </div>
 
-            
+            <!-- Quiz Mode Selection -->
+            <div class="mobile-menu-section">
+                <div class="mobile-menu-section-title">Quiz Mode</div>
+                <button
+                    v-for="tab in tabs"
+                    :key="tab.id"
+                    @touchend.prevent="currentTab = tab.id; showMobileMenu = false"
+                    @click="currentTab = tab.id; showMobileMenu = false"
+                    class="mobile-menu-item w-full text-left"
+                    :class="{ active: currentTab === tab.id }">
+                    <i :class="[tab.icon, currentTab === tab.id ? 'text-blue-500' : '']"></i>
+                    {{ tab.name }}
+                </button>
+            </div>
         </div>
 
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Quiz Type Tabs -->
-            <div class="mb-8">
-                <div class="border-b border-gray-200 ">
+            <div class="mb-6">
+                <!-- Mobile: current-mode pill — taps open the drawer -->
+                <div class="mobile-tab-bar" @click="showMobileMenu = true" @touchend.prevent="showMobileMenu = true">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i :class="[tabs.find(t => t.id === currentTab)?.icon || 'fas fa-bolt', 'text-primary flex-shrink-0']"></i>
+                        <span class="font-semibold text-gray-800 truncate">{{ tabs.find(t => t.id === currentTab)?.name }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0 ml-3 text-sm text-gray-500">
+                        <span>{{ tabs.findIndex(t => t.id === currentTab) + 1 }}/{{ tabs.length }}</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Desktop: border-bottom tab bar -->
+                <div class="border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8" aria-label="Quiz Types">
-                        <button 
-                            v-for="tab in tabs" 
+                        <button
+                            v-for="tab in tabs"
                             :key="tab.id"
                             @click="currentTab = tab.id"
                             :class="[
                                 currentTab === tab.id
-                                    ? 'border-primary text-primary rounded-lg'
-                                    : 'border-transparent text-gray-500  hover:text-gray-700  hover:border-gray-300 rounded-lg',
-                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5'
                             ]"
                         >
+                            <i :class="tab.icon"></i>
                             {{ tab.name }}
                         </button>
                     </nav>
@@ -949,10 +970,11 @@
                             <!-- Answer Options -->
                             <div class="grid gap-3">
                                 <button v-for="(option, index) in lightningOptions" :key="index"
+                                    @touchend.prevent="checkLightningAnswer(index)"
                                     @click="checkLightningAnswer(index)"
                                     :disabled="lightningAnswerRevealed"
                                     :class="[
-                                        'p-4 rounded-lg text-left transition-all border-2',
+                                        'p-4 rounded-lg text-left transition-all border-2 quiz-touch-btn',
                                         lightningAnswerRevealed
                                             ? (option.isCorrect 
                                                 ? 'bg-green-100  border-green-500 text-green-700 ' 
@@ -1144,10 +1166,11 @@
                                 <button v-for="(option, index) in (completionOptions || [])" 
                                     v-show="!completionSelectedWords.includes(index) || completionAnswerRevealed"
                                     :key="index"
+                                    @touchend.prevent="selectCompletionWord(index)"
                                     @click="selectCompletionWord(index)"
                                     :disabled="completionAnswerRevealed || completionSelectedWords.includes(index)"
                                     :class="[
-                                        'p-3 rounded-lg font-arabic transition-colors border-2',
+                                        'p-3 rounded-lg font-arabic transition-colors border-2 quiz-touch-btn',
                                         completionSelectedWords.includes(index)
                                             ? 'bg-gray-300  border-gray-400 text-gray-600  cursor-not-allowed'
                                             : completionAnswerRevealed
@@ -1173,7 +1196,7 @@
                                 <div v-if="completionSelectedWords.length === completionTotalMissing" class="text-right">
                                     <p class="text-sm text-purple-700  font-semibold animate-pulse">{{ t('quiz.completion.checking') }}</p>
                                 </div>
-                                <button v-else @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap">
+                                <button v-else @touchend.prevent="checkCompletionAnswer" @click="checkCompletionAnswer" class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap quiz-touch-btn">
                                     {{ t('quiz.completion.checkAnswer') }}
                                 </button>
                             </div>
@@ -1319,8 +1342,9 @@
                             <template v-if="!continuationAnswerRevealed">
                                 <button v-for="(option, index) in continuationOptions" 
                                     :key="index"
+                                    @touchend.prevent="checkContinuationAnswer(index)"
                                     @click="checkContinuationAnswer(index)"
-                                    class="p-4 rounded-lg text-right font-arabic transition-colors border-2 bg-white border-gray-200 hover:border-primary   ">
+                                    class="p-4 rounded-lg text-right font-arabic transition-colors border-2 bg-white border-gray-200 hover:border-primary quiz-touch-btn">
                                     <p class="text-2xl" style="line-height: 2;">{{ option.text }}</p>
                                 </button>
                             </template>
@@ -1466,8 +1490,9 @@
                                 <!-- Before answer selection -->
                                 <button v-for="(option, index) in translationOptions" 
                                     :key="index"
+                                    @touchend.prevent="checkAnswer(index)"
                                     @click="checkAnswer(index)"
-                                    class="p-4 rounded-lg text-left transition-colors border-2 bg-white border-gray-200 hover:border-primary   ">
+                                    class="p-4 rounded-lg text-left transition-colors border-2 bg-white border-gray-200 hover:border-primary quiz-touch-btn">
                                     <p class="text-lg">{{ option.text }}</p>
                                 </button>
                             </template>
@@ -1550,15 +1575,17 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <div v-for="(name, number) in surahs" 
                                 :key="number"
+                                @touchend.prevent="toggleSurah(number)"
                                 @click="toggleSurah(number)"
-                                class="p-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2"
+                                class="p-3 rounded-lg cursor-pointer transition-all border-2 surah-grid-item relative"
                                 :class="selectedSurahs.includes(number) 
-                                    ? 'bg-primary text-white border-primary shadow-lg' 
-                                    : 'bg-gray-50  text-gray-900  border-gray-200  hover:border-primary'">
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'">
                                 <div class="text-center">
                                     <p class="font-bold text-lg">{{ number }}</p>
                                     <p class="font-arabic text-sm leading-tight">{{ name }}</p>
                                 </div>
+                                <span v-if="selectedSurahs.includes(number)" class="absolute top-1 right-1.5 text-white text-xs font-bold leading-none">✓</span>
                             </div>
                         </div>
                     </div>
@@ -1805,6 +1832,24 @@
         // Load i18n store for multi-language support
         const { i18nState, t, initLocaleFromStorage } = await import('./resources/js/stores/i18nStore.js');
 
+        // Load touch utilities for WebView compatibility
+        const { debounceTouch } = await import('./resources/js/utils/touchHelper.js');
+
+        // Load optimized quiz helpers
+        const {
+            shuffleArray,
+            pickRandom,
+            buildVerseCache,
+            getRandomVerses,
+            buildPageWordIndex,
+            pickRandomWrongWords,
+            getContinuationOptionCount,
+            generateContinuationOptions,
+            generateTranslationOptions,
+            preloadFontsForPages,
+            getPagesForSurahs
+        } = await import('./resources/js/utils/quizHelpers.js');
+
         // Pre-load translations before createApp() so the initial render never
         // triggers "Missing translation" warnings.
         await initLocaleFromStorage();
@@ -1966,24 +2011,12 @@
                     return translationData.value;
                 };
 
-                // Get random verses excluding current verse
-                const getRandomVerses = (currentVerse, count) => {
-                    const activeTD = getActiveTranslationData();
-                    const allVerses = [];
-                    Object.keys(activeTD).forEach(surahNum => {
-                        Object.values(activeTD[surahNum]).forEach(verse => {
-                            if (verse.chapter !== currentVerse.chapter || verse.verse !== currentVerse.verse) {
-                                allVerses.push(verse);
-                            }
-                        });
-                    });
-                    
-                    const result = [];
-                    while (result.length < count && allVerses.length > 0) {
-                        const randomIndex = Math.floor(Math.random() * allVerses.length);
-                        result.push(allVerses.splice(randomIndex, 1)[0]);
+                // Get the cached verse array for the active locale
+                const getActiveCachedVerses = () => {
+                    if (i18nState.currentLocale === 'bn' && quranData.value._cachedBnVerses) {
+                        return quranData.value._cachedBnVerses;
                     }
-                    return result;
+                    return quranData.value._cachedEnVerses || [];
                 };
 
                 // Generate new question
@@ -2003,9 +2036,7 @@
                     
                     try {
                         // Select random surah from selected ones
-                        const randomSurahNum = selectedSurahs.value[
-                            Math.floor(Math.random() * selectedSurahs.value.length)
-                        ];
+                        const randomSurahNum = pickRandom(selectedSurahs.value);
                         
                         // Get random verse from that surah
                         const surahVerses = quranData.value[randomSurahNum];
@@ -2032,22 +2063,10 @@
                             return;
                         }
 
-                        // Get 3 random wrong translations
-                        const wrongTranslations = getRandomVerses(currentVerse.value, 3);
-
-                        // Combine and shuffle options
-                        const options = [
-                            { text: correctTranslation.text, isCorrect: true },
-                            ...wrongTranslations.map(t => ({ text: t.text, isCorrect: false }))
-                        ];
-                        
-                        // Fisher-Yates shuffle
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-
-                        translationOptions.value = options;
+                        // Generate shuffled options using cached verse data (O(count) instead of O(n))
+                        translationOptions.value = generateTranslationOptions(
+                            getActiveCachedVerses(), correctTranslation, currentVerse.value, 3
+                        );
                     } catch (err) {
                         console.error('Error generating question:', err);
                         error.value = t('quiz.status.questionFailed');
@@ -2142,6 +2161,13 @@
                 const saveConfig = async () => {
                     try {
                         await QuizDB.setSetting('selectedSurahs', selectedSurahs.value)
+
+                        // Preload fonts for selected surahs in the background (non-blocking)
+                        if (quranData.value && selectedSurahs.value.length > 0) {
+                            const pages = getPagesForSurahs(quranData.value, selectedSurahs.value);
+                            preloadFontsForPages(pages);
+                        }
+
                         // Show success message
                         const prevError = error.value
                         error.value = t('quiz.status.settingsSaved')
@@ -2330,89 +2356,35 @@
 
                         Logger.log('[QUIZ DEBUG] Correct answers (RTL order):', correctAnswersArray);
 
-                        // Get random wrong words from the SAME PAGE only
-                        const wrongWords = new Set();
-                        const correctAnswersSet = new Set(correctAnswersArray); // Use Set for O(1) lookup
+                        // Get random wrong words using pre-built page word index (O(1) lookup)
+                        const correctAnswersSet = new Set(correctAnswersArray);
+                        const maxWrongWordsNeeded = blankCount * 2;
+                        let wrongWordsArray = [];
 
-                        // Find all words on the same page as the selected verse
-                        const pageData = quranData.value.layout.pages.find(page => page.page_number === randomVerse.page);
-                        Logger.log('[QUIZ DEBUG] Looking for page data for page:', randomVerse.page, 'found:', !!pageData);
-                        
-                        if (!pageData) {
-                            console.warn('[QUIZ DEBUG] Could not find page data for page:', randomVerse.page, 'falling back to global list');
-                            // Fallback to global word list
-                            const availableWrongWords = Array.from(quranData.value.allWordTexts).filter(word => !correctAnswersSet.has(word));
-                            const maxWrongWordsNeeded = blankCount * 2;
-                            while (wrongWords.size < maxWrongWordsNeeded && availableWrongWords.length > 0) {
-                                const randomIndex = Math.floor(Math.random() * availableWrongWords.length);
-                                const word = availableWrongWords.splice(randomIndex, 1)[0];
-                                wrongWords.add(word);
-                            }
-                        } else {
-                            Logger.log('[QUIZ DEBUG] Page data found:', pageData);
-                            
-                            // Get all words on this page by filtering words with IDs in the page range
-                            const pageWords = Object.values(quranData.value.words).filter(word => 
-                                word.id >= pageData.first_word_id && word.id <= pageData.last_word_id
-                            );
+                        // Try page-specific words first (from pre-built index)
+                        const pageWordTexts = quranData.value._pageWordIndex?.get(randomVerse.page);
+                        if (pageWordTexts && pageWordTexts.length > 0) {
+                            Logger.log('[QUIZ DEBUG] Using pre-built page word index for page:', randomVerse.page, '—', pageWordTexts.length, 'unique words');
+                            wrongWordsArray = pickRandomWrongWords(pageWordTexts, correctAnswersSet, maxWrongWordsNeeded);
+                            Logger.log('[QUIZ DEBUG] Selected', wrongWordsArray.length, 'wrong words from same page');
+                        }
 
-                            Logger.log('[QUIZ DEBUG] Found', pageWords.length, 'words on page', randomVerse.page);
-
-                            // Get unique word texts from this page
-                            const pageWordTexts = new Set();
-                            pageWords.forEach(word => {
-                                if (word.text) {
-                                    pageWordTexts.add(word.text);
-                                }
-                            });
-
-                            Logger.log('[QUIZ DEBUG] Found', pageWordTexts.size, 'unique words on page, correct answers:', correctAnswersArray);
-
-                            // Convert to array and filter out correct answers
-                            const availableWrongWords = Array.from(pageWordTexts).filter(word => !correctAnswersSet.has(word));
-                            
-                            Logger.log('[QUIZ DEBUG] After filtering correct answers:', availableWrongWords.length, 'words available');
-
-                            // Add wrong words until we have enough
-                            const maxWrongWordsNeeded = blankCount * 2;
-                            const maxIterations = Math.min(availableWrongWords.length, maxWrongWordsNeeded * 2); // Reduced multiplier
-                            let iterations = 0;
-
-                            while (wrongWords.size < maxWrongWordsNeeded && iterations < maxIterations && availableWrongWords.length > 0) {
-                                const randomIndex = Math.floor(Math.random() * availableWrongWords.length);
-                                const word = availableWrongWords.splice(randomIndex, 1)[0]; // Remove to avoid duplicates
-                                wrongWords.add(word);
-                                iterations++;
-                            }
-
-                            Logger.log('[QUIZ DEBUG] Selected', wrongWords.size, 'wrong words from same page');
-                            
-                            // If we still don't have enough wrong words, supplement with global list
-                            if (wrongWords.size < maxWrongWordsNeeded) {
-                                Logger.log('[QUIZ DEBUG] Not enough words from same page, supplementing with global list');
-                                const globalWords = Array.from(quranData.value.allWordTexts).filter(word => 
-                                    !correctAnswersSet.has(word) && !wrongWords.has(word)
-                                );
-                                
-                                while (wrongWords.size < maxWrongWordsNeeded && globalWords.length > 0) {
-                                    const randomIndex = Math.floor(Math.random() * globalWords.length);
-                                    const word = globalWords.splice(randomIndex, 1)[0];
-                                    wrongWords.add(word);
-                                }
-                            }
+                        // Supplement with global word list if needed
+                        if (wrongWordsArray.length < maxWrongWordsNeeded) {
+                            Logger.log('[QUIZ DEBUG] Supplementing with global list');
+                            const usedWords = new Set([...correctAnswersSet, ...wrongWordsArray]);
+                            const globalTexts = Array.from(quranData.value.allWordTexts);
+                            const supplementary = pickRandomWrongWords(globalTexts, usedWords, maxWrongWordsNeeded - wrongWordsArray.length);
+                            wrongWordsArray = wrongWordsArray.concat(supplementary);
                         }
 
                         // Combine and shuffle options
                         const options = [
                             ...correctAnswersArray.map(text => ({ text, isCorrect: true })),
-                            ...Array.from(wrongWords).map(text => ({ text, isCorrect: false }))
+                            ...wrongWordsArray.map(text => ({ text, isCorrect: false }))
                         ];
 
-                        // Fisher-Yates shuffle
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
+                        shuffleArray(options);
 
                         completionOptions.value = options;
                         Logger.log('[QUIZ DEBUG] Generated', options.length, 'options with', correctAnswersArray.length, 'correct answers');
@@ -2526,18 +2498,19 @@
                     
                     try {
                         // Select random surah from selected ones
-                        const randomSurahNum = selectedSurahs.value[
-                            Math.floor(Math.random() * selectedSurahs.value.length)
-                        ];
+                        const randomSurahNum = pickRandom(selectedSurahs.value);
                         
                         // Get verses for this surah
                         const surahVerses = quranData.value[randomSurahNum];
-                        if (!surahVerses || surahVerses.length === 0) {
-                            throw new Error('No verses found for selected surah');
+                        if (!surahVerses || surahVerses.length < 3) {
+                            // Need at least 3 verses for continuation (displayed + correct + 1 wrong)
+                            // Retry with different surah
+                            isLoading.value = false;
+                            await generateContinuationQuestion();
+                            return;
                         }
                         
                         // Select a verse that has BOTH next and previous (not first, not last)
-                        // This ensures any question type (next or previous) is valid
                         const selectedVerseIndex = 1 + Math.floor(Math.random() * (surahVerses.length - 2));
                         
                         // NOW decide randomly if asking for next or previous
@@ -2557,44 +2530,17 @@
                             ? selectedVerseIndex + 1 
                             : selectedVerseIndex - 1;
 
-                        // Create options
-                        const options = [];
-                        
-                        // Add correct answer
-                        options.push({
-                            text: surahVerses[correctVerseIndex].text,
-                            verse: correctVerseIndex + 1,  // Display number (1-based)
-                            isCorrect: true
-                        });
-
                         Logger.log('🟦 QUESTION GENERATED:');
                         Logger.log('  Type (badge):', continuationType.value);
                         Logger.log('  Display Verse Index:', selectedVerseIndex, '(shows verse', selectedVerseIndex + 1, ')');
                         Logger.log('  Correct Verse Index:', correctVerseIndex, '(verse', correctVerseIndex + 1, ')');
                         Logger.log('  Correct answer text:', surahVerses[correctVerseIndex].text);
-                        Logger.log('  Correct answer object:', options[0]);
 
-                        // Add wrong answers from different verses (avoid adjacent verses)
-                        const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
-                        while (options.length < 4) {
-                            const randomIndex = Math.floor(Math.random() * surahVerses.length);
-                            if (!usedIndices.has(randomIndex)) {
-                                usedIndices.add(randomIndex);
-                                options.push({
-                                    text: surahVerses[randomIndex].text,
-                                    verse: randomIndex + 1,
-                                    isCorrect: false
-                                });
-                            }
-                        }
-
-                        // Fisher-Yates shuffle
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-
-                        continuationOptions.value = options;
+                        // Generate options with safe cap for small surahs (no infinite loop)
+                        const maxOptions = getContinuationOptionCount(surahVerses.length);
+                        continuationOptions.value = generateContinuationOptions(
+                            surahVerses, selectedVerseIndex, correctVerseIndex, maxOptions
+                        );
                     } catch (err) {
                         console.error('Error generating continuation question:', err);
                         error.value = t('quiz.status.questionFailed');
@@ -2708,60 +2654,34 @@
 
                 const generateLightningContinuationQuestion = async () => {
                     try {
-                        const randomSurahNum = selectedSurahs.value[
-                            Math.floor(Math.random() * selectedSurahs.value.length)
-                        ];
+                        const randomSurahNum = pickRandom(selectedSurahs.value);
                         
                         const surahVerses = quranData.value[randomSurahNum];
-                        if (!surahVerses || surahVerses.length === 0) {
-                            throw new Error('No verses found');
+                        if (!surahVerses || surahVerses.length < 3) {
+                            // Need at least 3 verses — retry
+                            await generateLightningQuestion();
+                            return;
                         }
                         
-                        // Select a verse that has BOTH next and previous (not first, not last)
                         const selectedVerseIndex = 1 + Math.floor(Math.random() * (surahVerses.length - 2));
-                        
-                        // NOW decide randomly if asking for next or previous
-                        const continuationType = Math.random() < 0.5 ? 'next' : 'previous';
+                        const contType = Math.random() < 0.5 ? 'next' : 'previous';
                         
                         const verseNumber = selectedVerseIndex + 1;
                         lightningCurrentQuestion.value = {
                             chapter: parseInt(randomSurahNum),
                             verse: verseNumber,
                             text: surahVerses[selectedVerseIndex].text,
-                            type: continuationType
+                            type: contType
                         };
                         
-                        const correctVerseIndex = continuationType === 'next' 
+                        const correctVerseIndex = contType === 'next' 
                             ? selectedVerseIndex + 1 
                             : selectedVerseIndex - 1;
                         
-                        const options = [];
-                        options.push({
-                            text: surahVerses[correctVerseIndex].text,
-                            verse: correctVerseIndex + 1,
-                            isCorrect: true
-                        });
-                        
-                        const usedIndices = new Set([selectedVerseIndex, correctVerseIndex]);
-                        while (options.length < 4) {
-                            const randomIndex = Math.floor(Math.random() * surahVerses.length);
-                            if (!usedIndices.has(randomIndex)) {
-                                options.push({
-                                    text: surahVerses[randomIndex].text,
-                                    verse: randomIndex + 1,
-                                    isCorrect: false
-                                });
-                                usedIndices.add(randomIndex);
-                            }
-                        }
-                        
-                        // Fisher-Yates shuffle
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-                        
-                        lightningOptions.value = options;
+                        const maxOptions = getContinuationOptionCount(surahVerses.length);
+                        lightningOptions.value = generateContinuationOptions(
+                            surahVerses, selectedVerseIndex, correctVerseIndex, maxOptions
+                        );
                     } catch (err) {
                         console.error('Error generating continuation question:', err);
                     }
@@ -2769,9 +2689,7 @@
 
                 const generateLightningTranslationQuestion = async () => {
                     try {
-                        const randomSurahNum = selectedSurahs.value[
-                            Math.floor(Math.random() * selectedSurahs.value.length)
-                        ];
+                        const randomSurahNum = pickRandom(selectedSurahs.value);
                         
                         const surahVerses = quranData.value[randomSurahNum];
                         const randomVerseIndex = Math.floor(Math.random() * surahVerses.length);
@@ -2789,24 +2707,14 @@
                         );
                         
                         if (!correctTranslation) {
-                            // No translation for this verse in the active locale — skip silently
+                            // No translation — retry with another question
+                            await generateLightningQuestion();
                             return;
                         }
 
-                        const wrongTranslations = getRandomVerses(lightningCurrentQuestion.value, 3);
-                        
-                        const options = [
-                            { text: correctTranslation.text, isCorrect: true },
-                            ...wrongTranslations.map(t => ({ text: t.text, isCorrect: false }))
-                        ];
-                        
-                        // Fisher-Yates shuffle
-                        for (let i = options.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [options[i], options[j]] = [options[j], options[i]];
-                        }
-                        
-                        lightningOptions.value = options;
+                        lightningOptions.value = generateTranslationOptions(
+                            getActiveCachedVerses(), correctTranslation, lightningCurrentQuestion.value, 3
+                        );
                     } catch (err) {
                         console.error('Error generating translation question:', err);
                     }
@@ -2904,11 +2812,11 @@
                 };
 
                 const tabs = computed(() => [
-                    { id: 'lightning-round', name: t('quiz.tabs.lightningRound') },
-                    { id: 'verse-completion', name: t('quiz.tabs.verseCompletion') },
-                    { id: 'multiple-choice', name: t('quiz.tabs.testContinuation') },
-                    { id: 'translation-match', name: t('quiz.tabs.translationMatch') },
-                    { id: 'config', name: t('quiz.tabs.settings') }
+                    { id: 'lightning-round',  name: t('quiz.tabs.lightningRound'),   icon: 'fas fa-bolt' },
+                    { id: 'verse-completion', name: t('quiz.tabs.verseCompletion'),  icon: 'fas fa-puzzle-piece' },
+                    { id: 'multiple-choice',  name: t('quiz.tabs.testContinuation'), icon: 'fas fa-random' },
+                    { id: 'translation-match',name: t('quiz.tabs.translationMatch'), icon: 'fas fa-language' },
+                    { id: 'config',           name: t('quiz.tabs.settings'),         icon: 'fas fa-cog' }
                 ])
 
                 // Locale-aware subtitle for Translation Match
@@ -3069,6 +2977,17 @@
                         });
 
                         Logger.log('[Murajah] Built optimized indexes for verse completion');
+
+                        // Build cached verse array for O(count) random selection (quiz helpers)
+                        quranData.value._cachedEnVerses = buildVerseCache(translationData.value);
+                        if (bnTranslationData.value) {
+                            quranData.value._cachedBnVerses = buildVerseCache(bnTranslationData.value);
+                        }
+                        Logger.log('[Murajah] Built verse cache:', quranData.value._cachedEnVerses.length, 'EN verses');
+
+                        // Build page-to-word-texts index for O(1) page word lookup (quiz helpers)
+                        quranData.value._pageWordIndex = buildPageWordIndex(wordByWordData, layoutData);
+                        Logger.log('[Murajah] Built page word index:', quranData.value._pageWordIndex.size, 'pages indexed');
 
                     } catch (err) {
                         console.error('Failed to load quiz data:', err);

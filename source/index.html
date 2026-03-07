@@ -2,7 +2,7 @@
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Murajah - Quran Memorization App">
   <meta name="theme-color" content="#3b82f6">
   <meta name="color-scheme" content="only light">
@@ -2312,6 +2312,9 @@
     // Centralized logger (DEBUG silent by default; enable via localStorage.setItem('murajah-debug', 'true'))
     const { default: Logger } = await import('./resources/js/utils/logger.js');
 
+    // Touch helper for WebView compatibility
+    const { createTouchHandler, isTouchDevice: isTouchDeviceHelper } = await import('./resources/js/utils/touchHelper.js');
+
     // IIFE to handle async imports
     (async () => {
       // ==================== IndexedDB Manager ====================
@@ -4077,7 +4080,9 @@
                     <span 
                       v-for="word in line.words" 
                       :key="word.id"
-                      @click="handleWordClick(word, $event)"
+                      @touchstart.prevent="handleWordTouchStart(word, $event)"
+                      @touchend.prevent="handleWordTouchEnd(word, $event)"
+                      @click="handleWordClickGuard(word, $event)"
                       @mouseenter="showWordTooltip(word, $event)"
                       @mousemove="updateTooltipPosition($event)"
                       @mouseleave="hideWordTooltip()"
@@ -4114,7 +4119,9 @@
                     <div 
                       v-for="word in line.words" 
                       :key="'wbw-word-'+word.id"
-                      @click="handleWordClick(word, $event)"
+                      @touchstart.prevent="handleWordTouchStart(word, $event)"
+                      @touchend.prevent="handleWordTouchEnd(word, $event)"
+                      @click="handleWordClickGuard(word, $event)"
                       :class="{
                         'bg-blue-100 rounded-lg': hoveredWordId === word.id,
                         'bg-red-100 rounded-lg': currentPageMistakes.includes(word.id)
@@ -8034,6 +8041,61 @@
             }
           };
 
+          // Touch-safe word click handler for WebView
+          // Tracks touch state to distinguish taps from scrolls/long-press
+          let wordTouchStartX = 0;
+          let wordTouchStartY = 0;
+          let wordTouchStartTime = 0;
+          let wordTouchHandled = false;
+
+          const handleWordTouchStart = (word, event) => {
+            if (event.touches && event.touches.length > 0) {
+              const touch = event.touches[0];
+              wordTouchStartX = touch.clientX;
+              wordTouchStartY = touch.clientY;
+              wordTouchStartTime = Date.now();
+              wordTouchHandled = false;
+            }
+          };
+
+          const handleWordTouchEnd = (word, event) => {
+            if (wordTouchStartTime === 0) return;
+
+            const duration = Date.now() - wordTouchStartTime;
+            if (duration > 400) {
+              wordTouchStartTime = 0;
+              return; // Long press — ignore
+            }
+
+            let distance = 0;
+            if (event.changedTouches && event.changedTouches.length > 0) {
+              const touch = event.changedTouches[0];
+              const dx = touch.clientX - wordTouchStartX;
+              const dy = touch.clientY - wordTouchStartY;
+              distance = Math.sqrt(dx * dx + dy * dy);
+            }
+
+            if (distance > 15) {
+              wordTouchStartTime = 0;
+              return; // Scroll/swipe — ignore
+            }
+
+            // Valid tap
+            wordTouchHandled = true;
+            wordTouchStartTime = 0;
+            handleWordClick(word, event);
+          };
+
+          const handleWordClickGuard = (word, event) => {
+            // Only fire click if touch didn't already handle it
+            if (wordTouchHandled) {
+              wordTouchHandled = false;
+              event.preventDefault();
+              return;
+            }
+            handleWordClick(word, event);
+          };
+
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
@@ -10137,6 +10199,9 @@ Display:
             showMorphologyPopup,
             hideMorphologyPopup,
             handleWordClick,
+            handleWordTouchStart,
+            handleWordTouchEnd,
+            handleWordClickGuard,
             isCurrentPageMemorized,
             isIndopak,
             totalPages,
