@@ -32,7 +32,8 @@ test.describe('Quiz Algorithm Correctness', () => {
 
     test('translation quiz should generate 4 options', async ({ page }) => {
         // Try to start a translation quiz
-        const translationTab = page.locator('button:has-text("Translation"), [data-quiz-type="translation"]').first();
+        // Scope to the desktop tab nav to avoid matching the hidden mobile drawer buttons
+        const translationTab = page.locator('nav[aria-label="Quiz Types"] button').filter({ hasText: /Translation/i }).first();
         const isTabVisible = await translationTab.isVisible({ timeout: 3000 }).catch(() => false);
 
         if (isTabVisible) {

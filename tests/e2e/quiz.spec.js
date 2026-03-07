@@ -60,7 +60,7 @@ test.describe('Quiz Page', () => {
       await page.waitForTimeout(1000);
     }
     
-    const answerOption = page.locator('button').nth(1);
+    const answerOption = page.locator('main button, .quiz-touch-btn').first();
     if (await answerOption.isVisible()) {
       await answerOption.click();
       await page.waitForTimeout(500);

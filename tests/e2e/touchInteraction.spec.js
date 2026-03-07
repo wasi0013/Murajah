@@ -36,7 +36,11 @@ test.describe('Touch Interaction - Main Page', () => {
 
         if (isVisible) {
             const userSelect = await wordElement.evaluate(el => {
-                return window.getComputedStyle(el).userSelect || window.getComputedStyle(el).webkitUserSelect;
+                const cs = window.getComputedStyle(el);
+                // Check both standard and webkit-prefixed property
+                const standard = cs.getPropertyValue('user-select');
+                const webkit = cs.getPropertyValue('-webkit-user-select');
+                return standard === 'none' || webkit === 'none' ? 'none' : (standard || webkit);
             });
             expect(userSelect).toBe('none');
         }
@@ -48,7 +52,7 @@ test.describe('Touch Interaction - Main Page', () => {
 
         if (isVisible) {
             const touchAction = await wordElement.evaluate(el => {
-                return window.getComputedStyle(el).touchAction;
+                return window.getComputedStyle(el).getPropertyValue('touch-action');
             });
             expect(touchAction).toBe('manipulation');
         }
