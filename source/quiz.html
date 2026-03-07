@@ -443,20 +443,16 @@
         /* ===== DISABLE HOVER/TOOLTIPS ON TOUCH DEVICES ===== */
         /* Use @media (hover: none) to detect touch devices without hover capability */
         @media (hover: none) and (pointer: coarse) {
-            /* Disable all hover effects on touch devices */
-            *:hover {
+            /* Disable hover effects on touch devices — but NOT on selection-stateful items */
+            *:not(.surah-grid-item):not(.quiz-touch-btn):hover {
                 background-color: inherit !important;
                 color: inherit !important;
                 border-color: inherit !important;
-            }
-
-            /* Disable hover scale transformations */
-            *:hover {
                 transform: none !important;
             }
 
-            /* Disable hover border changes */
-            button:hover,
+            /* Disable hover border changes on plain anchors/buttons */
+            button:not(.surah-grid-item):not(.quiz-touch-btn):hover,
             a:hover,
             .hover\:border-primary:hover,
             .hover\:bg-blue-50:hover {
@@ -466,14 +462,8 @@
 
             /* Prevent tooltips from showing on touch */
             [data-tooltip],
-            .tooltip,
-            [title] {
+            .tooltip {
                 pointer-events: none;
-            }
-
-            /* Disable all active/focus states that might trigger tooltips */
-            *:active {
-                background-color: inherit !important;
             }
         }
 
@@ -658,8 +648,22 @@
             touch-action: manipulation;
         }
 
-        .surah-grid-item:active {
-            transform: scale(0.95);
+        /* Selected state — uses !important to survive the touch hover-reset block */
+        .surah-grid-item.surah-selected {
+            background-color: #36ffbf !important; /* emerald-600 */
+            border-color: #36ffbf !important;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35) !important;
+        }
+
+        .surah-grid-item.surah-selected:active {
+            background-color: #36ffbf !important; /* emerald-700 */
+            border-color: #36ffbf !important;
+            
+        }
+
+        .surah-grid-item:not(.surah-selected):active {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
         }
 
     </style>
@@ -1579,8 +1583,8 @@
                                 @click="toggleSurah(number)"
                                 class="p-3 rounded-lg cursor-pointer transition-all border-2 surah-grid-item relative"
                                 :class="selectedSurahs.includes(number) 
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'">
+                                    ? 'surah-selected' 
+                                    : 'bg-white text-gray-700 border-gray-300'">
                                 <div class="text-center">
                                     <p class="font-bold text-lg">{{ number }}</p>
                                     <p class="font-arabic text-sm leading-tight">{{ name }}</p>
