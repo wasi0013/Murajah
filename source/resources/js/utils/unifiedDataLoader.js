@@ -251,13 +251,14 @@ const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUp
  * Load shared resources (surahNames, translations)
  * Tafsir resources are loaded lazily when needed
  */
-const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
+const loadSharedResources = async ({ murajahDB, onBackgroundUpdate, onTafsirUpdate }) => {
   if (dataCaches.shared.isLoaded) {
     return {
       surahNames: dataCaches.shared.surahNames,
       translations: dataCaches.shared.translations,
       tafsirBn: dataCaches.shared.tafsirBn,
-      tafsirEn: dataCaches.shared.tafsirEn
+      tafsirEn: dataCaches.shared.tafsirEn,
+      tafsirAr: dataCaches.shared.tafsirAr
     };
   }
 
@@ -314,6 +315,9 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate }) => {
       dataCaches.shared.tafsirEn = tafsirEnData;
       dataCaches.shared.tafsirAr = tafsirArData;
       Logger.info(Logger.MODULES.DATA, 'Tafsir data loaded (deferred)');
+      if (typeof onTafsirUpdate === 'function') {
+        onTafsirUpdate({ tafsirBn: tafsirBnData, tafsirEn: tafsirEnData, tafsirAr: tafsirArData });
+      }
     } catch (error) {
       Logger.warn(Logger.MODULES.DATA, 'Failed to load tafsir data (deferred)', error);
     }
@@ -368,6 +372,7 @@ export const loadAllQuranData = async (layout = 'qpc', { murajahDB, onTranslatio
       translations: dataCaches.shared.translations,
       tafsirBn: dataCaches.shared.tafsirBn,
       tafsirEn: dataCaches.shared.tafsirEn,
+      tafsirAr: dataCaches.shared.tafsirAr,
       tafsirMapping: cache.tafsirMapping,
       pageLines: [],
       layoutConfig
@@ -401,7 +406,11 @@ export const loadAllQuranData = async (layout = 'qpc', { murajahDB, onTranslatio
         cacheTarget: cache,
         cacheKey: 'tafsirMapping'
       }),
-      loadSharedResources({ murajahDB, onBackgroundUpdate: handleBackgroundUpdate })
+      loadSharedResources({ murajahDB, onBackgroundUpdate: handleBackgroundUpdate, onTafsirUpdate: (tafsirData) => {
+        if (typeof onResourceUpdate === 'function') {
+          onResourceUpdate({ key: 'tafsir', data: tafsirData, layout });
+        }
+      }})
     ]);
 
     cache.layout = layoutData;

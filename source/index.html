@@ -6442,7 +6442,15 @@
               // The unified loader now includes tafsir data
               quranData.value = await loadAllQuranData(settingsStore.layout, {
                 murajahDB,
-                onTranslationUpdate: handleTranslationUpdate
+                onTranslationUpdate: handleTranslationUpdate,
+                onResourceUpdate: ({ key, data }) => {
+                  if (key === 'tafsir' && quranData.value && data) {
+                    quranData.value.tafsirBn = data.tafsirBn;
+                    quranData.value.tafsirEn = data.tafsirEn;
+                    quranData.value.tafsirAr = data.tafsirAr;
+                    Logger.log('[Murajah] Tafsir data updated from deferred load');
+                  }
+                }
               });
               
               Logger.log('[Murajah] Loaded Quran data for layout:', settingsStore.layout, {
