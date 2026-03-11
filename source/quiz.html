@@ -508,15 +508,17 @@
           position: fixed;
           inset: 0;
           background: rgba(0, 0, 0, 0.5);
-          z-index: 999;
+          z-index: 9998;
           opacity: 0;
           visibility: hidden;
-          transition: all 0.3s ease;
+          transition: opacity 0.3s ease, visibility 0s 0.3s;
+          touch-action: none;
         }
 
         .mobile-menu-overlay.active {
           opacity: 1;
           visibility: visible;
+          transition: opacity 0.3s ease, visibility 0s 0s;
         }
 
         .mobile-menu {
@@ -526,15 +528,28 @@
           width: 280px;
           max-width: 85vw;
           height: 100vh;
+          height: 100dvh;
           background: white;
-          z-index: 1000;
+          z-index: 9999;
           transform: translateX(-100%);
-          transition: transform 0.3s ease;
+          transition: transform 0.3s ease, visibility 0s 0.3s;
           overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          visibility: hidden;
         }
 
         .mobile-menu.active {
           transform: translateX(0);
+          visibility: visible;
+          transition: transform 0.3s ease, visibility 0s 0s;
+        }
+
+        /* Lock body scroll when mobile menu is open */
+        body.mobile-menu-open {
+          overflow: hidden;
+          touch-action: none;
         }
 
         .dark .mobile-menu {
@@ -716,7 +731,7 @@
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
                     </a>
-                    <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Menu">
+                    <button @click="openMobileMenu" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Menu">
                         <i class="fas fa-bars text-gray-600 text-lg"></i>
                     </button>
                 </div>
@@ -724,7 +739,7 @@
         </header>
 
         <!-- Mobile Menu Overlay -->
-        <div class="mobile-menu-overlay" :class="{ active: showMobileMenu }" @click="showMobileMenu = false"></div>
+        <div class="mobile-menu-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
 
         <!-- Mobile Menu Sidebar -->
         <div class="mobile-menu" :class="{ active: showMobileMenu, dark: isDarkMode }">
@@ -733,7 +748,7 @@
                     <img src="resources/assets/images/logo-bg.png" alt="Murajah" class="h-8 w-auto" style="border-radius: 15%;">
                     <span class="font-semibold text-gray-800">{{ t('quiz.nav.quiz') }}</span>
                 </div>
-                <button @click="showMobileMenu = false" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <button @click="closeMobileMenu" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-times text-gray-600"></i>
                 </button>
             </div>
@@ -741,7 +756,7 @@
             <!-- Navigation Links -->
             <div class="mobile-menu-section">
                 <div class="mobile-menu-section-title">{{ t('quiz.nav.quiz') }}</div>
-                <a href="./index.html" class="mobile-menu-item" @click="showMobileMenu = false">
+                <a href="./index.html" class="mobile-menu-item" @click="closeMobileMenu">
                     <i class="fas fa-home"></i>
                     {{ t('quiz.nav.home') }}
                 </a>
@@ -753,8 +768,7 @@
                 <button
                     v-for="tab in tabs"
                     :key="tab.id"
-                    @touchend.prevent="currentTab = tab.id; showMobileMenu = false"
-                    @click="currentTab = tab.id; showMobileMenu = false"
+                    @click="selectTabAndClose(tab.id)"
                     class="mobile-menu-item w-full text-left"
                     :class="{ active: currentTab === tab.id }">
                     <i :class="[tab.icon, currentTab === tab.id ? 'text-blue-500' : '']"></i>
@@ -768,7 +782,7 @@
             <!-- Quiz Type Tabs -->
             <div class="mb-6">
                 <!-- Mobile: current-mode pill — taps open the drawer -->
-                <div class="mobile-tab-bar" @click="showMobileMenu = true" @touchend.prevent="showMobileMenu = true">
+                <div class="mobile-tab-bar" @click="openMobileMenu">
                     <div class="flex items-center gap-2 min-w-0">
                         <i :class="[tabs.find(t => t.id === currentTab)?.icon || 'fas fa-bolt', 'text-primary flex-shrink-0']"></i>
                         <span class="font-semibold text-gray-800 truncate">{{ tabs.find(t => t.id === currentTab)?.name }}</span>
@@ -1831,7 +1845,7 @@
 
     <!-- Vue App Script -->
     <script type="module">
-        const { createApp, ref, computed, watchEffect } = Vue
+        const { createApp, ref, computed, watch, watchEffect } = Vue
 
         // Load i18n store for multi-language support
         const { i18nState, t, initLocaleFromStorage } = await import('./resources/js/stores/i18nStore.js');
@@ -1886,6 +1900,32 @@
                 const isDarkMode = ref(false)
                 const showMobileMenu = ref(false)
                 const currentTab = ref('lightning-round')
+
+                // Lock body scroll when mobile menu is open
+                watch(showMobileMenu, (open) => {
+                    document.body.classList.toggle('mobile-menu-open', open);
+                })
+
+                // Debounced open to prevent race with close animation
+                let _menuCooldown = false;
+                const openMobileMenu = () => {
+                    if (_menuCooldown) return;
+                    showMobileMenu.value = true;
+                };
+                const closeMobileMenu = () => {
+                    showMobileMenu.value = false;
+                    _menuCooldown = true;
+                    setTimeout(() => { _menuCooldown = false; }, 350);
+                };
+                // Close menu first, then switch tab after slide-out animation finishes
+                const selectTabAndClose = (tabId) => {
+                    if (currentTab.value === tabId) {
+                        closeMobileMenu();
+                        return;
+                    }
+                    closeMobileMenu();
+                    setTimeout(() => { currentTab.value = tabId; }, 320);
+                };
                 const isLoading = ref(true)
                 const error = ref(null)
                 const surahs = ref({})
@@ -3015,6 +3055,9 @@
                     i18nState,
                     isDarkMode,
                     showMobileMenu,
+                    openMobileMenu,
+                    closeMobileMenu,
+                    selectTabAndClose,
                     currentTab,
                     tabs,
                     isLoading,

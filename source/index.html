@@ -1274,15 +1274,17 @@
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
+      z-index: 9998;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.3s ease;
+      transition: opacity 0.3s ease, visibility 0s 0.3s;
+      touch-action: none;
     }
 
     .mobile-menu-overlay.active {
       opacity: 1;
       visibility: visible;
+      transition: opacity 0.3s ease, visibility 0s 0s;
     }
 
     .mobile-menu {
@@ -1292,15 +1294,28 @@
       width: 280px;
       max-width: 85vw;
       height: 100vh;
+      height: 100dvh;
       background: white;
-      z-index: 1000;
+      z-index: 9999;
       transform: translateX(-100%);
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, visibility 0s 0.3s;
       overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      visibility: hidden;
     }
 
     .mobile-menu.active {
       transform: translateX(0);
+      visibility: visible;
+      transition: transform 0.3s ease, visibility 0s 0s;
+    }
+
+    /* Lock body scroll when mobile menu is open */
+    body.mobile-menu-open {
+      overflow: hidden;
+      touch-action: none;
     }
 
     .mobile-menu-header {
@@ -5872,6 +5887,11 @@
           const showHomeDropdown = ref(false);
           const showMobileMenu = ref(false);
 
+          // Lock body scroll when mobile menu is open
+          watch(showMobileMenu, (open) => {
+            document.body.classList.toggle('mobile-menu-open', open);
+          });
+
           // track previous view when opening Live
           const previousViewMode = ref(null);
           
@@ -6521,6 +6541,18 @@
             } catch (error) {
               console.error('[Murajah] Initialization error:', error);
               appStore.errorMessage = t('app.loadError');
+              // Auto-clear and attempt reload for stale cache recovery
+              setTimeout(() => {
+                appStore.errorMessage = '';
+                // If a service worker update is pending, reload to pick up fresh assets
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg && reg.waiting) {
+                      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                  });
+                }
+              }, 8000);
             } finally {
               isInitializing.value = false;
               isAppInitialized.value = true; // Now allow watch to trigger
