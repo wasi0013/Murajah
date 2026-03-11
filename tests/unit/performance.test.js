@@ -13,6 +13,9 @@
  * - FontAwesome uses font-display: swap (not block)
  * - wordById lookup is cached to avoid O(n) rebuilds
  * - Background resource refresh has adequate delay
+ * - Page line index avoids O(9000) filter per page navigation
+ * - Verse text index avoids O(77k) scan per verse lookup
+ * - Touch scroll is not blocked by @touchstart.prevent on word elements
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -378,5 +381,190 @@ describe('wordById cache runtime behavior', () => {
       // Should NOT have Object.values(wordsData).forEach for building wordById inline
       expect(getPageTextMatch[0]).not.toMatch(/Object\.values\(wordsData\)\.forEach/);
     }
+  });
+});
+
+// === Page Line Index Performance Tests ===
+
+describe('pageLineIndex cache', () => {
+  let loaderSource;
+
+  beforeEach(() => {
+    loaderSource = readSource('resources/js/utils/unifiedDataLoader.js');
+  });
+
+  it('should have a pageLineIndexCache object', () => {
+    expect(loaderSource).toMatch(/pageLineIndexCache\s*=\s*\{/);
+  });
+
+  it('should have a getPageLineIndex function', () => {
+    expect(loaderSource).toMatch(/const\s+getPageLineIndex\s*=/);
+  });
+
+  it('should use reference equality check for layout cache', () => {
+    const fn = loaderSource.match(/getPageLineIndex[\s\S]*?return\s+index/);
+    expect(fn).not.toBeNull();
+    expect(fn[0]).toMatch(/===\s*layoutData/);
+  });
+
+  it('should be used by getPageText instead of .filter()', () => {
+    const getPageTextMatch = loaderSource.match(/getPageText[\s\S]*?return\s+pageText/);
+    if (getPageTextMatch) {
+      expect(getPageTextMatch[0]).toMatch(/getPageLineIndex/);
+      expect(getPageTextMatch[0]).not.toMatch(/\.filter\s*\(\s*line\s*=>/);
+    }
+  });
+
+  it('should be used by getPageWordsDetailed instead of .filter() on layoutData.pages', () => {
+    const match = loaderSource.match(/getPageWordsDetailed[\s\S]*?return\s+pageWords/);
+    if (match) {
+      expect(match[0]).toMatch(/getPageLineIndex/);
+      // Should not filter layoutData.pages directly (the O(9000) scan)
+      expect(match[0]).not.toMatch(/layoutData\.pages\.filter/);
+    }
+  });
+});
+
+// === Page Line Index Runtime Tests ===
+
+describe('pageLineIndex runtime behavior', () => {
+  let mod;
+
+  beforeEach(async () => {
+    mod = await import('../../source/resources/js/utils/unifiedDataLoader.js');
+  });
+
+  it('getPageWordsDetailed should return correct words for a mock page', () => {
+    const layoutData = {
+      pages: [
+        { page_number: 1, line_number: 1, first_word_id: '1', last_word_id: '3' },
+        { page_number: 1, line_number: 2, first_word_id: '4', last_word_id: '5' },
+        { page_number: 2, line_number: 1, first_word_id: '6', last_word_id: '7' }
+      ]
+    };
+    const wordsData = {
+      w1: { id: 1, text: 'بِسْمِ', surah: 1, ayah: 1, position: 1 },
+      w2: { id: 2, text: 'اللَّهِ', surah: 1, ayah: 1, position: 2 },
+      w3: { id: 3, text: 'الرَّحْمَٰنِ', surah: 1, ayah: 1, position: 3 },
+      w4: { id: 4, text: 'الرَّحِيمِ', surah: 1, ayah: 1, position: 4 },
+      w5: { id: 5, text: 'الْحَمْدُ', surah: 1, ayah: 2, position: 1 },
+      w6: { id: 6, text: 'لِلَّهِ', surah: 1, ayah: 2, position: 2 },
+      w7: { id: 7, text: 'رَبِّ', surah: 1, ayah: 2, position: 3 }
+    };
+
+    const page1 = mod.getPageWordsDetailed(1, layoutData, wordsData);
+    expect(page1.length).toBe(2); // Two lines for page 1
+    expect(page1[0].words.length).toBe(3); // Words 1-3
+    expect(page1[1].words.length).toBe(2); // Words 4-5
+
+    const page2 = mod.getPageWordsDetailed(2, layoutData, wordsData);
+    expect(page2.length).toBe(1); // One line for page 2
+    expect(page2[0].words.length).toBe(2); // Words 6-7
+  });
+});
+
+// === Verse Text Index Performance Tests ===
+
+describe('verseTextIndex cache', () => {
+  let loaderSource;
+
+  beforeEach(() => {
+    loaderSource = readSource('resources/js/utils/unifiedDataLoader.js');
+  });
+
+  it('should have a verseTextIndexCache object', () => {
+    expect(loaderSource).toMatch(/verseTextIndexCache\s*=\s*\{/);
+  });
+
+  it('should have a getVerseTextIndex function', () => {
+    expect(loaderSource).toMatch(/const\s+getVerseTextIndex\s*=/);
+  });
+
+  it('should export a getVerseText function', () => {
+    expect(loaderSource).toMatch(/export\s+const\s+getVerseText\s*=/);
+  });
+
+  it('getVerseText should use the cached verseTextIndex', () => {
+    const fn = loaderSource.match(/export\s+const\s+getVerseText[\s\S]*?\};/);
+    expect(fn).not.toBeNull();
+    expect(fn[0]).toMatch(/getVerseTextIndex/);
+  });
+});
+
+// === Verse Text Index Runtime Tests ===
+
+describe('getVerseText runtime behavior', () => {
+  let mod;
+
+  beforeEach(async () => {
+    mod = await import('../../source/resources/js/utils/unifiedDataLoader.js');
+  });
+
+  it('should return joined text for a known surah/ayah', () => {
+    const wordsData = {
+      w1: { id: 1, text: 'بِسْمِ', surah: 1, ayah: 1, position: 1 },
+      w2: { id: 2, text: 'اللَّهِ', surah: 1, ayah: 1, position: 2 },
+      w3: { id: 3, text: 'الرَّحْمَٰنِ', surah: 1, ayah: 1, position: 3 },
+      w4: { id: 4, text: 'الرَّحِيمِ', surah: 1, ayah: 1, position: 4 },
+      w5: { id: 5, text: 'الْحَمْدُ', surah: 1, ayah: 2, position: 1 }
+    };
+
+    const result = mod.getVerseText(1, 1, wordsData);
+    expect(result).toBe('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
+  });
+
+  it('should return empty string for missing verse', () => {
+    const wordsData = {
+      w1: { id: 1, text: 'بِسْمِ', surah: 1, ayah: 1, position: 1 }
+    };
+    expect(mod.getVerseText(99, 99, wordsData)).toBe('');
+  });
+
+  it('should return empty string when wordsData is null', () => {
+    expect(mod.getVerseText(1, 1, null)).toBe('');
+  });
+});
+
+// === Touch Scroll Performance Tests ===
+
+describe('touch scroll not blocked', () => {
+  let indexHtml;
+
+  beforeEach(() => {
+    indexHtml = readSource('index.html');
+  });
+
+  it('should NOT use @touchstart.prevent on word elements', () => {
+    // @touchstart.prevent blocks native scroll — words should use plain @touchstart
+    const wordTouchPatterns = indexHtml.match(/@touchstart\.prevent="handleWordTouchStart/g);
+    expect(wordTouchPatterns).toBeNull();
+  });
+
+  it('should use @touchstart (without .prevent) on word elements', () => {
+    const wordTouchPatterns = indexHtml.match(/@touchstart="handleWordTouchStart/g);
+    expect(wordTouchPatterns).not.toBeNull();
+    expect(wordTouchPatterns.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// === clearDataCache clears all lookup caches ===
+
+describe('clearDataCache resets all caches', () => {
+  let loaderSource;
+
+  beforeEach(() => {
+    loaderSource = readSource('resources/js/utils/unifiedDataLoader.js');
+  });
+
+  it('should reset pageLineIndexCache in clearDataCache', () => {
+    const clearFn = loaderSource.match(/clearDataCache[\s\S]*?\n\};/);
+    expect(clearFn).not.toBeNull();
+    expect(clearFn[0]).toMatch(/pageLineIndexCache/);
+  });
+
+  it('should reset verseTextIndexCache in clearDataCache', () => {
+    const clearFn = loaderSource.match(/clearDataCache[\s\S]*?\n\};/);
+    expect(clearFn).not.toBeNull();
+    expect(clearFn[0]).toMatch(/verseTextIndexCache/);
   });
 });

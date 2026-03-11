@@ -147,6 +147,86 @@ const getWordByIdLookup = (wordsData, layout = 'qpc') => {
   return wordById;
 };
 
+// Cached page line index: Map<pageNumber, Line[]> — avoids O(9000) filter on every page load
+const pageLineIndexCache = {
+  qpc: null,
+  indopak: null,
+  _layoutRef: { qpc: null, indopak: null }
+};
+
+/**
+ * Get or build a cached page line index (Map<pageNum, Line[]>)
+ * Scans layoutData.pages once, groups by page_number for O(1) lookup per page
+ */
+const getPageLineIndex = (layoutData, layout = 'qpc') => {
+  if (pageLineIndexCache[layout] && pageLineIndexCache._layoutRef[layout] === layoutData) {
+    return pageLineIndexCache[layout];
+  }
+
+  const index = new Map();
+  if (layoutData && layoutData.pages) {
+    for (let i = 0; i < layoutData.pages.length; i++) {
+      const line = layoutData.pages[i];
+      const pn = line.page_number;
+      if (index.has(pn)) {
+        index.get(pn).push(line);
+      } else {
+        index.set(pn, [line]);
+      }
+    }
+  }
+
+  pageLineIndexCache[layout] = index;
+  pageLineIndexCache._layoutRef[layout] = layoutData;
+  Logger.debug(Logger.MODULES.DATA, `Built page line index for ${layout}: ${index.size} pages`);
+  return index;
+};
+
+// Cached verse text index: Map<"surah:ayah", joinedText> — avoids O(77k) scan per verse
+const verseTextIndexCache = {
+  qpc: null,
+  indopak: null,
+  _wordsRef: { qpc: null, indopak: null }
+};
+
+/**
+ * Get or build a cached verse text index
+ * Groups all words by surah:ayah and joins their text, ordered by position
+ */
+const getVerseTextIndex = (wordsData, layout = 'qpc') => {
+  if (verseTextIndexCache[layout] && verseTextIndexCache._wordsRef[layout] === wordsData) {
+    return verseTextIndexCache[layout];
+  }
+
+  const index = new Map();
+  if (wordsData) {
+    // Collect words grouped by surah:ayah
+    const groups = new Map();
+    const values = Object.values(wordsData);
+    for (let i = 0; i < values.length; i++) {
+      const word = values[i];
+      if (word && word.text && word.surah && word.ayah) {
+        const key = `${word.surah}:${word.ayah}`;
+        if (groups.has(key)) {
+          groups.get(key).push(word);
+        } else {
+          groups.set(key, [word]);
+        }
+      }
+    }
+    // Sort each group by position and join text
+    groups.forEach((words, key) => {
+      words.sort((a, b) => (a.position || 0) - (b.position || 0));
+      index.set(key, words.map(w => w.text).join(' '));
+    });
+  }
+
+  verseTextIndexCache[layout] = index;
+  verseTextIndexCache._wordsRef[layout] = wordsData;
+  Logger.debug(Logger.MODULES.DATA, `Built verse text index for ${layout}: ${index.size} verses`);
+  return index;
+};
+
 /**
  * Fetch resource from network and cache to IndexedDB
  */
@@ -469,8 +549,9 @@ export const getPageText = (pageNum, layoutData, wordsData) => {
     // Use cached word ID lookup for fast access (avoids O(n) rebuild per call)
     const wordById = getWordByIdLookup(wordsData);
 
-    // Find all lines for this page
-    const lines = layoutData.pages.filter(line => line.page_number === pageNum);
+    // Use cached page line index for O(1) lookup instead of O(9000) filter
+    const pageIndex = getPageLineIndex(layoutData);
+    const lines = pageIndex.get(pageNum) || [];
     
     const pageText = lines.map(line => {
       if (line.line_type === 'surah_name' && line.surah_number) {
@@ -532,8 +613,9 @@ export const getPageWordsDetailed = (pageNum, layoutData, wordsData) => {
     // Use cached word ID lookup for fast access (avoids O(n) rebuild per call)
     const wordById = getWordByIdLookup(wordsData);
 
-    // Find all lines for this page
-    const lines = layoutData.pages.filter(line => line.page_number === pageNum);
+    // Use cached page line index for O(1) lookup instead of O(9000) filter
+    const pageIndex = getPageLineIndex(layoutData);
+    const lines = pageIndex.get(pageNum) || [];
     
     const pageWords = lines.map(line => {
       if (line.line_type === 'surah_name' && line.surah_number) {
@@ -614,6 +696,20 @@ export const getWordTranslation = (ayahKey, translationsData) => {
 };
 
 /**
+ * Get Arabic text for a specific verse using cached index
+ * @param {number} surahNum - Surah number (1-114)
+ * @param {number} ayahNum - Ayah number
+ * @param {Object} wordsData - Words data object
+ * @param {string} [layout='qpc'] - Layout type
+ * @returns {string} Joined Arabic text for the verse
+ */
+export const getVerseText = (surahNum, ayahNum, wordsData, layout = 'qpc') => {
+  if (!wordsData) return '';
+  const index = getVerseTextIndex(wordsData, layout);
+  return index.get(`${surahNum}:${ayahNum}`) || '';
+};
+
+/**
  * Clear cache for a specific layout or all caches
  * @param {string} layout - 'qpc', 'indopak', 'shared', or 'all'
  */
@@ -631,17 +727,29 @@ export const clearDataCache = (layout = 'all') => {
     clearCache(dataCaches.qpc);
     clearCache(dataCaches.indopak);
     clearCache(dataCaches.shared);
-    // Clear wordById caches
-    wordByIdCache.qpc = null;
-    wordByIdCache.indopak = null;
-    wordByIdCache._wordsDataRef.qpc = null;
-    wordByIdCache._wordsDataRef.indopak = null;
+    // Clear all lookup caches
+    for (const l of ['qpc', 'indopak']) {
+      wordByIdCache[l] = null;
+      wordByIdCache._wordsDataRef[l] = null;
+      pageLineIndexCache[l] = null;
+      pageLineIndexCache._layoutRef[l] = null;
+      verseTextIndexCache[l] = null;
+      verseTextIndexCache._wordsRef[l] = null;
+    }
   } else if (dataCaches[layout]) {
     clearCache(dataCaches[layout]);
-    // Clear wordById cache for this layout
-    if (wordByIdCache[layout]) {
+    // Clear lookup caches for this layout
+    if (wordByIdCache[layout] !== undefined) {
       wordByIdCache[layout] = null;
       wordByIdCache._wordsDataRef[layout] = null;
+    }
+    if (pageLineIndexCache[layout] !== undefined) {
+      pageLineIndexCache[layout] = null;
+      pageLineIndexCache._layoutRef[layout] = null;
+    }
+    if (verseTextIndexCache[layout] !== undefined) {
+      verseTextIndexCache[layout] = null;
+      verseTextIndexCache._wordsRef[layout] = null;
     }
   }
 

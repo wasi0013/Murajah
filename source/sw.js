@@ -1,5 +1,5 @@
 /**
- * Murajah Service Worker v26.03.06
+ * Murajah Service Worker v26.03.11
  * Implements Stale-While-Revalidate pattern with proper font handling
  * - Serves cached resources immediately for instant loading
  * - Fetches fresh copies in background and updates cache
@@ -7,7 +7,7 @@
  * - Handles redirected responses properly
  */
 
-const CACHE_VERSION = '26.03.05';
+const CACHE_VERSION = '26.03.11';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = 'murajah-fonts-v2'; // Separate cache for fonts
 
