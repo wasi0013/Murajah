@@ -14,6 +14,7 @@
     "settings": "Settings",
     "home": "Home",
     "menu": "Menu",
+    "reload": "Reload",
     "sections": {
       "quran": "Quran",
       "surahView": "Surahs/Juzs",

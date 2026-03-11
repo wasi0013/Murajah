@@ -1,2 +1,2 @@
 echo "🧪 Running pre-commit tests..."
-npm run test:unit && npm run test:e2e -- --workers=10
+npm run test:unit && npm run test:e2e -- --workers=5

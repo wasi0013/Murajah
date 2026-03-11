@@ -3077,7 +3077,11 @@
       // Check if cache needs refresh due to version change (non-blocking)
       resourceCache.needsVersionRefresh().then(needsCacheRefresh => {
         if (needsCacheRefresh) {
-          Logger.log('[Murajah] Cache version changed, will refresh on next preload');
+          Logger.log('[Murajah] Cache version changed, showing update banner');
+          // Show update banner so user refreshes to get latest version
+          if (window.showUpdateNotification) {
+            window.showUpdateNotification();
+          }
         }
       });
 
@@ -3332,8 +3336,12 @@
                 </nav>
 
                 <!-- Mobile Navigation -->
-                <div class="mobile-nav flex items-center">
-                  <!-- Hamburger Menu Button -->
+                <div class="mobile-nav flex items-center gap-2">
+                  <!-- Reload Button (mobile only) -->
+                  <button @click="refreshApp" class="p-2 hover:bg-gray-300 bg-gray-200 rounded-lg transition-colors" :title="$t('header.reload')">
+                    <i class="fas fa-rotate-right text-gray-900 text-lg"></i>
+                  </button>
+                  <!-- Menu Button -->
                   <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-300 bg-gray-200 rounded-lg transition-colors" :title="$t('header.menu')">
                     <i class="fas fa-ellipsis-vertical text-gray-900 text-xl"></i>
                   </button>
@@ -10412,16 +10420,23 @@ Display:
           });
           
           // Listen for controller change (new SW activated)
+          // Auto-reload to avoid old HTML + new JS module mismatch that causes "failed to load"
+          let reloadingForSWUpdate = false;
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('[Murajah] Service Worker controller changed');
+            console.log('[Murajah] Service Worker controller changed, reloading');
+            if (reloadingForSWUpdate) return;
+            reloadingForSWUpdate = true;
+            window.location.reload();
           });
           
           // Listen for content update messages from SW (stale-while-revalidate)
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'CONTENT_UPDATED') {
               console.log('[Murajah] Content updated in background:', event.data.url);
-              // For HTML updates, optionally notify user or auto-refresh
-              // Currently we just log - the cache is already updated for next load
+              // For HTML updates, show update banner so user gets latest version
+              if (event.data.url?.endsWith('.html') && window.showUpdateNotification) {
+                window.showUpdateNotification();
+              }
             }
           });
           
