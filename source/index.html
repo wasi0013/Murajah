@@ -6525,8 +6525,6 @@
               }, 10000);
               
               Logger.log('[Murajah] App initialized | Layout:', settingsStore.layout, '| Memorized pages:', memorizedStore.memorizedPages.size);
-              appStore.successMessage = t('app.loaded');
-              setTimeout(() => appStore.successMessage = '', 3000);
 
               // Check if language has been selected, if not show modal to new user
               try {
@@ -6540,19 +6538,6 @@
               }
             } catch (error) {
               console.error('[Murajah] Initialization error:', error);
-              appStore.errorMessage = t('app.loadError');
-              // Auto-clear and attempt reload for stale cache recovery
-              setTimeout(() => {
-                appStore.errorMessage = '';
-                // If a service worker update is pending, reload to pick up fresh assets
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                  navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg && reg.waiting) {
-                      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    }
-                  });
-                }
-              }, 8000);
             } finally {
               isInitializing.value = false;
               isAppInitialized.value = true; // Now allow watch to trigger
