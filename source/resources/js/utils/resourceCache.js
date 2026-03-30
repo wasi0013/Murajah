@@ -460,8 +460,19 @@ export class ResourceCache {
    * Fetch resource from network
    */
   async fetchResource(url, type = 'json') {
-    // Use default browser caching (removed cache: 'no-cache' to leverage HTTP cache)
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error(`Network timeout fetching ${url} (15s)`);
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url} (${response.status})`);
     }

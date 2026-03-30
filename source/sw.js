@@ -320,6 +320,45 @@ async function staleWhileRevalidateFont(request) {
   return new Response(null, { status: 404, statusText: 'Font not cached' });
 }
 
+// Critical resources that MUST be cached for the app to work.
+// If any of these fail during install, skipWaiting() is NOT called
+// so the old SW continues serving until a successful install occurs.
+const CRITICAL_RESOURCES = [
+  './',
+  './index.html',
+  './quiz.html',
+  // Core vendor
+  './resources/js/vendor/vue.global.js',
+  // Core utils
+  './resources/js/utils/logger.js',
+  './resources/js/utils/resourceCache.js',
+  './resources/js/utils/unifiedDataLoader.js',
+  './resources/js/utils/dataLoader.js',
+  './resources/js/utils/calculations.js',
+  './resources/js/utils/audioRecorder.js',
+  './resources/js/utils/dailyGoalsManager.js',
+  './resources/js/utils/morphologyLoader.js',
+  // Core stores
+  './resources/js/stores/i18nStore.js',
+  './resources/js/stores/notesStore.js',
+  // Core components
+  './resources/js/components/QuranAudioPlayerComponent.js',
+  './resources/js/components/FloatingAudioPlayerComponent.js',
+  './resources/js/components/LanguageSelectionModal.js',
+  './resources/js/components/MorphologyPopupComponent.js',
+  './resources/js/components/NotesComponent.js',
+  // Critical JSON data
+  './resources/data/quran/qpc-v2-15-lines.json',
+  './resources/data/quran/qpc-v2-word-by-word.json',
+  './resources/data/quran/surah-names.json',
+  './resources/data/quran/english-wbw-translation.json',
+  // Core CSS
+  './resources/styles/style.css',
+  './resources/styles/qpc-v2-font.css',
+  // Core i18n
+  './resources/data/i18n/en.json'
+];
+
 // Install event - cache app shell
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing Service Worker v' + CACHE_VERSION);
@@ -329,6 +368,9 @@ self.addEventListener('install', (event) => {
       .then(async (cache) => {
         console.log('[SW] Caching app shell');
         
+        const failedCritical = [];
+        const failedNonCritical = [];
+
         for (const url of APP_SHELL) {
           try {
             const response = await fetch(url);
@@ -344,14 +386,36 @@ self.addEventListener('install', (event) => {
               await cache.put(url, responseToCache);
             } else {
               console.warn(`[SW] Got status ${response.status} for: ${url}`);
+              if (CRITICAL_RESOURCES.includes(url)) {
+                failedCritical.push(url);
+              } else {
+                failedNonCritical.push(url);
+              }
             }
           } catch (err) {
             console.warn(`[SW] Failed to cache: ${url}`, err.message);
+            if (CRITICAL_RESOURCES.includes(url)) {
+              failedCritical.push(url);
+            } else {
+              failedNonCritical.push(url);
+            }
           }
         }
+
+        if (failedNonCritical.length > 0) {
+          console.warn(`[SW] ${failedNonCritical.length} non-critical resources failed to cache (app will still work)`);
+        }
+
+        return { failedCritical };
       })
-      .then(() => {
-        console.log('[SW] App shell cached');
+      .then(({ failedCritical }) => {
+        if (failedCritical.length > 0) {
+          console.error(`[SW] ${failedCritical.length} CRITICAL resources failed to cache. NOT activating new SW.`, failedCritical);
+          // Do NOT call skipWaiting() — let the old SW continue serving
+          // The browser will retry installation on next page load
+          return;
+        }
+        console.log('[SW] App shell cached — all critical resources OK');
         return self.skipWaiting();
       })
       .catch(err => {
@@ -360,30 +424,46 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Minimum resources that must exist in the new cache before old caches are deleted
+const MINIMUM_CACHE_RESOURCES = ['./index.html', './resources/js/vendor/vue.global.js'];
+
+// Activate event - clean up old caches (with safety check)
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating Service Worker v' + CACHE_VERSION);
   
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((cacheName) => {
-              // Delete old caches (except current ones)
-              return (cacheName.startsWith('murajah-cache-') && cacheName !== CACHE_NAME) ||
-                     (cacheName.startsWith('murajah-fonts-') && cacheName !== FONTS_CACHE_NAME);
-            })
-            .map((cacheName) => {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Claiming clients');
+    (async () => {
+      // Safety check: verify new cache has minimum required resources
+      const newCache = await caches.open(CACHE_NAME);
+      const missingMinimum = [];
+      for (const url of MINIMUM_CACHE_RESOURCES) {
+        const match = await newCache.match(url);
+        if (!match) missingMinimum.push(url);
+      }
+
+      if (missingMinimum.length > 0) {
+        console.warn('[SW] New cache missing minimum resources — keeping old caches as fallback:', missingMinimum);
+        // Still claim clients but DON'T delete old caches
         return self.clients.claim();
-      })
+      }
+
+      // Safe to delete old caches
+      const allCacheNames = await caches.keys();
+      await Promise.all(
+        allCacheNames
+          .filter((cacheName) => {
+            return (cacheName.startsWith('murajah-cache-') && cacheName !== CACHE_NAME) ||
+                   (cacheName.startsWith('murajah-fonts-') && cacheName !== FONTS_CACHE_NAME);
+          })
+          .map((cacheName) => {
+            console.log('[SW] Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+      );
+
+      console.log('[SW] Claiming clients');
+      return self.clients.claim();
+    })()
   );
 });
 
@@ -394,6 +474,24 @@ self.addEventListener('fetch', (event) => {
   
   // Skip non-GET requests
   if (request.method !== 'GET') return;
+  
+  // Always serve hotfix.html from network (never cached) to ensure latest recovery logic
+  if (url.pathname.endsWith('/hotfix.html')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return new Response(
+          '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+          '<body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem">' +
+          '<div style="text-align:center;max-width:400px"><h2>Recovery Page Unavailable Offline</h2>' +
+          '<p style="color:#64748b;margin:1rem 0">Please connect to the internet and try again.</p>' +
+          '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer">Retry</button>' +
+          '</div></body></html>',
+          { status: 200, headers: { 'Content-Type': 'text/html' } }
+        );
+      })
+    );
+    return;
+  }
   
   // Skip requests that should never be cached
   if (shouldNeverCache(request.url)) return;
@@ -494,6 +592,26 @@ self.addEventListener('message', (event) => {
             matched: !!matched
           }
         });
+      })();
+      break;
+
+    case 'EMERGENCY_RESET':
+      (async () => {
+        try {
+          // Clear all caches
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          // Unregister this service worker
+          await self.registration.unregister();
+          if (event.ports[0]) {
+            event.ports[0].postMessage({ type: 'EMERGENCY_RESET_DONE' });
+          }
+        } catch (e) {
+          console.error('[SW] Emergency reset failed:', e);
+          if (event.ports[0]) {
+            event.ports[0].postMessage({ type: 'EMERGENCY_RESET_FAILED', error: e.message });
+          }
+        }
       })();
       break;
   }

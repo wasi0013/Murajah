@@ -2335,17 +2335,108 @@
       <p>Downloading data. Please wait...</p>
     </div>
   </div>
+  <!-- Error recovery UI (hidden by default, shown if initialization fails) -->
+  <div id="init-error" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;">
+      <div style="text-align:center;max-width:420px;background:#fff;border-radius:1rem;padding:2rem;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem;">⚠️</div>
+        <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:0.5rem;">Unable to Load App</h2>
+        <p style="color:#64748b;margin-bottom:0.25rem;font-size:0.9rem;">The app encountered an error during startup.</p>
+        <p id="init-error-detail" style="color:#94a3b8;font-size:0.8rem;margin-bottom:1.25rem;word-break:break-word;"></p>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;align-items:center;">
+          <button onclick="location.reload()"
+            style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:0.95rem;font-weight:600;cursor:pointer;width:100%;max-width:220px;">
+            Retry
+          </button>
+          <button onclick="location.href='./hotfix.html'"
+            style="padding:0.75rem 1.5rem;background:#dc2626;color:#fff;border:none;border-radius:0.5rem;font-size:0.95rem;font-weight:600;cursor:pointer;width:100%;max-width:220px;">
+            Reset Cache &amp; Repair
+          </button>
+          <p style="color:#94a3b8;font-size:0.75rem;margin-top:0.25rem;">Reset Cache preserves your memorization data</p>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="app"></div>
+
+  <!-- Initialization timeout safety net (runs BEFORE module script) -->
+  <script>
+    (function() {
+      var INIT_TIMEOUT_MS = 30000; // 30 seconds
+      var timerId = setTimeout(function() {
+        // If initial-loader is still in the DOM after 30s, app is stuck
+        var loader = document.getElementById('initial-loader');
+        if (loader && loader.parentNode) {
+          console.error('[Murajah] Initialization timeout — app stuck for ' + INIT_TIMEOUT_MS + 'ms');
+          loader.style.display = 'none';
+          var errorDiv = document.getElementById('init-error');
+          if (errorDiv) {
+            errorDiv.style.display = '';
+            var detail = document.getElementById('init-error-detail');
+            if (detail) detail.textContent = 'The app took too long to load. This may be a network or caching issue.';
+          }
+        }
+      }, INIT_TIMEOUT_MS);
+      // Allow the module script to cancel the timeout on successful init
+      window.__murajahCancelInitTimeout = function() {
+        clearTimeout(timerId);
+      };
+
+      // Detect repeated crash loops: if last load attempt did not succeed, show recovery immediately
+      try {
+        var lastAttempt = sessionStorage.getItem('murajah-load-attempt');
+        var lastSuccess = sessionStorage.getItem('murajah-load-success');
+        if (lastAttempt && !lastSuccess) {
+          var elapsed = Date.now() - parseInt(lastAttempt, 10);
+          if (elapsed > 5000 && elapsed < 120000) {
+            // Previous load crashed — show recovery UI immediately
+            console.warn('[Murajah] Previous load attempt failed (' + elapsed + 'ms ago). Showing recovery UI.');
+            var loader2 = document.getElementById('initial-loader');
+            if (loader2) loader2.style.display = 'none';
+            var errorDiv2 = document.getElementById('init-error');
+            if (errorDiv2) {
+              errorDiv2.style.display = '';
+              var detail2 = document.getElementById('init-error-detail');
+              if (detail2) detail2.textContent = 'The app failed to load on the previous attempt. You can retry or reset the cache.';
+            }
+            // Don't auto-reload — let user choose
+            clearTimeout(timerId);
+            return; // stop further execution in this script
+          }
+        }
+        // Mark load attempt (will be cleared on success)
+        sessionStorage.setItem('murajah-load-attempt', Date.now().toString());
+        sessionStorage.removeItem('murajah-load-success');
+      } catch (e) {
+        // sessionStorage not available (private mode etc) — skip crash detection
+      }
+    })();
+  </script>
 
   <script type="module">
     // Access Vue from global scope since it's loaded as a script tag
   const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
 
+  try {
     // Centralized logger (DEBUG silent by default; enable via localStorage.setItem('murajah-debug', 'true'))
     const { default: Logger } = await import('./resources/js/utils/logger.js');
 
     // Touch helper for WebView compatibility
     const { createTouchHandler, isTouchDevice: isTouchDeviceHelper } = await import('./resources/js/utils/touchHelper.js');
+
+    // Handle ?freshstart=true from hotfix.html redirect
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('freshstart') === 'true') {
+        // Remove the param from URL to prevent re-triggering on manual refresh
+        urlParams.delete('freshstart');
+        const cleanUrl = urlParams.toString()
+          ? window.location.pathname + '?' + urlParams.toString()
+          : window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        console.log('[Murajah] Fresh start after recovery — caches cleared');
+      }
+    } catch (e) { /* URL parsing error — ignore */ }
 
     // IIFE to handle async imports
     (async () => {
@@ -9038,10 +9129,34 @@
           };
 
           /**
-           * Refresh app when new version is available
+           * Refresh app when new version is available.
+           * Coordinates with SW: sends SKIP_WAITING if a waiting worker exists,
+           * then the controllerchange handler (in SW registration script) will reload.
+           * Sets a flag so controllerchange knows this is a user-initiated refresh.
            */
-          const refreshApp = () => {
+          const refreshApp = async () => {
             showUpdateBanner.value = false;
+            // Set flag so controllerchange handler knows a reload is already planned
+            window.__murajahManualRefresh = true;
+            try {
+              const reg = await navigator.serviceWorker?.getRegistration();
+              if (reg?.waiting) {
+                // Tell the waiting SW to activate immediately
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                // controllerchange will fire and handle the reload
+                // But add a fallback timeout in case controllerchange doesn't fire
+                setTimeout(() => {
+                  if (!window.__murajahReloadTriggered) {
+                    window.__murajahReloadTriggered = true;
+                    window.location.reload();
+                  }
+                }, 2000);
+                return;
+              }
+            } catch (e) {
+              console.warn('[Murajah] Error during refreshApp SW communication:', e);
+            }
+            // No waiting worker — just reload directly
             window.location.reload();
           };
 
@@ -10404,7 +10519,25 @@ Display:
           initialLoader.remove();
         }, 300);
       }
+      // Mark successful load — clears crash-loop detection
+      try { sessionStorage.setItem('murajah-load-success', Date.now().toString()); } catch(e) {}
+      // Cancel the initialization timeout
+      if (window.__murajahCancelInitTimeout) window.__murajahCancelInitTimeout();
     })();
+  } catch (initError) {
+    // Outer error boundary — catches module import failures, IndexedDB errors, etc.
+    console.error('[Murajah] Fatal initialization error:', initError);
+    const loader = document.getElementById('initial-loader');
+    if (loader) loader.style.display = 'none';
+    const errorDiv = document.getElementById('init-error');
+    if (errorDiv) {
+      errorDiv.style.display = '';
+      const detail = document.getElementById('init-error-detail');
+      if (detail) detail.textContent = initError?.message || 'Unknown error during startup';
+    }
+    // Cancel the timeout since we're already showing error UI
+    if (window.__murajahCancelInitTimeout) window.__murajahCancelInitTimeout();
+  }
   </script>
 
   <!-- Service Worker Registration for Offline Support -->
@@ -10438,12 +10571,28 @@ Display:
           
           // Listen for controller change (new SW activated)
           // Auto-reload to avoid old HTML + new JS module mismatch that causes "failed to load"
+          // Coordinates with refreshApp() to prevent double-reload races
           let reloadingForSWUpdate = false;
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('[Murajah] Service Worker controller changed, reloading');
+            console.log('[Murajah] Service Worker controller changed');
             if (reloadingForSWUpdate) return;
-            reloadingForSWUpdate = true;
-            window.location.reload();
+
+            // If the app hasn't finished mounting (initial-loader still visible), delay reload
+            // to avoid reload loops when SW installs during first-ever page load
+            const initialLoader = document.getElementById('initial-loader');
+            if (initialLoader && initialLoader.parentNode && !window.__murajahManualRefresh) {
+              console.log('[Murajah] Skipping auto-reload — app still initializing (first install)');
+              return;
+            }
+
+            // Debounce: small delay to prevent double-reload with refreshApp()
+            setTimeout(() => {
+              if (reloadingForSWUpdate) return;
+              reloadingForSWUpdate = true;
+              window.__murajahReloadTriggered = true;
+              console.log('[Murajah] Reloading for SW update');
+              window.location.reload();
+            }, 200);
           });
           
           // Listen for content update messages from SW (stale-while-revalidate)
