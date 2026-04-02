@@ -26,7 +26,6 @@
       "live": "بث مباشر",
       "analytics": "التحليلات",
       "timeline": "الخط الزمني",
-      "achievements": "الإنجازات",
       "notes": "ملاحظات",
       "community": "المجتمع والدعم"
     }
@@ -292,20 +291,6 @@
     "record": "تسجيل",
     "recording": "جارٍ التسجيل...",
     "note": "ملاحظة"
-  },
-  "achievements": {
-    "title": "الإنجازات",
-    "badgesUnlocked": "الشارات المميزة",
-    "completion": "الإنجاز",
-    "completionPercent": "{percent}% مكتمل",
-    "actions": {
-      "viewAll": "عرض كل الإنجازات",
-      "syncBadges": "مزامنة الشارات مع البيانات",
-      "syncing": "جاري المزامنة...",
-      "developerTools": "أدوات المطور",
-      "unlockAll": "فتح كل الشارات (تصحيح)",
-      "clearAll": "مسح كل الإنجازات"
-    }
   },
   "audio": {
     "fullSurah": "▶️ السورة كاملة",

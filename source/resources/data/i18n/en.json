@@ -26,7 +26,6 @@
       "live": "Live",
       "analytics": "Analytics",
       "timeline": "Timeline",
-      "achievements": "Achievements",
       "notes": "Journal",
       "community": "Community & Support"
     }
@@ -293,20 +292,6 @@
     "record": "Record",
     "recording": "Recording...",
     "note": "Note"
-  },
-  "achievements": {
-    "title": "Achievements",
-    "badgesUnlocked": "Badges Unlocked",
-    "completion": "Completion",
-    "completionPercent": "{percent}% Complete",
-    "actions": {
-      "viewAll": "View All Achievements",
-      "syncBadges": "Sync Badges with Data",
-      "syncing": "Syncing...",
-      "developerTools": "Developer Tools",
-      "unlockAll": "Unlock All Badges (Debug)",
-      "clearAll": "Clear All Achievements"
-    }
   },
   "audio": {
     "fullSurah": "▶️ Full Surah",

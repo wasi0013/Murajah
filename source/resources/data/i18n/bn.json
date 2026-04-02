@@ -26,7 +26,6 @@
       "live": "লাইভ",
       "analytics": "বিশ্লেষণ",
       "timeline": "টাইমলাইন",
-      "achievements": "অর্জনসমূহ",
       "notes": "নোটস",
       "community": "কমিউনিটি ও সাপোর্ট"
     }
@@ -293,20 +292,6 @@
     "record": "রেকর্ড",
     "recording": "রেকর্ড হচ্ছে...",
     "note": "নোট"
-  },
-  "achievements": {
-    "title": "অর্জনসমূহ",
-    "badgesUnlocked": "উন্মুক্ত ব্যাজ",
-    "completion": "সম্পন্ন",
-    "completionPercent": "{percent}% সম্পন্ন",
-    "actions": {
-      "viewAll": "সব অর্জন দেখুন",
-      "syncBadges": "ব্যাজগুলো ডেটার সাথে সিঙ্ক করুন",
-      "syncing": "সিঙ্ক হচ্ছে...",
-      "developerTools": "ডেভেলপার টুলস",
-      "unlockAll": "সব ব্যাজ আনলক করুন (ডিবাগ)",
-      "clearAll": "সব অর্জন মুছে ফেলুন"
-    }
   },
   "audio": {
     "fullSurah": "▶️ পূর্ণ সূরা",

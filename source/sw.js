@@ -25,7 +25,6 @@ const APP_SHELL = [
   // Vendor JS
   './resources/js/vendor/vue.global.js',
   './resources/js/vendor/tailwind.3.4.7.js',
-  './resources/js/vendor/confetti-js.0.0.18.min.js',
   './resources/js/vendor/marked.min.js',
   
   // Vendor CSS
@@ -60,13 +59,9 @@ const APP_SHELL = [
   './resources/js/utils/dailyGoalsManager.js',
   './resources/js/utils/morphologyLoader.js',
   './resources/js/utils/pageHasanah.js',
-  './resources/js/utils/achievementLogic.js',
-  './resources/js/utils/badgeShareUtil.js',
-  './resources/js/utils/badgeSVGGenerator.js',
   
   // App JS modules - Stores
   './resources/js/stores/i18nStore.js',
-  './resources/js/stores/achievementStore.js',
   './resources/js/stores/notesStore.js',
   
   // App JS modules - Components
@@ -75,11 +70,6 @@ const APP_SHELL = [
   './resources/js/components/LanguageSelectionModal.js',
   './resources/js/components/MorphologyPopupComponent.js',
   './resources/js/components/NotesComponent.js',
-  './resources/js/components/AchievementGridComponent.js',
-  './resources/js/components/AchievementDetailComponent.js',
-  './resources/js/components/AchievementNavbarComponent.js',
-  './resources/js/components/BadgeShareCardComponent.js',
-  './resources/js/components/ShareBadgeModal.js',
   
   // Critical JSON data
   './resources/data/quran/qpc-v2-15-lines.json',
@@ -98,8 +88,7 @@ const APP_SHELL = [
   './resources/data/tafsir/indopak-page-tafsir-mapping.json',
   './resources/data/tafsir/bn-tafsir.json',
   './resources/data/tafsir/en-tafsir.json',
-  './resources/data/tafsir/ar-tafsir.json',
-  './resources/data/badges.json'
+  './resources/data/tafsir/ar-tafsir.json'
 ];
 
 // Patterns to never cache (audio files, external resources)

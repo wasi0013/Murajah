@@ -39,6 +39,8 @@ export default {
       editNote: null,
       viewingNote: null,
       searchQuery: '',
+      debouncedSearchQuery: '',
+      _searchDebounceTimer: null,
       currentListPage: 1,
       pageSize: 10,
       showSurahDropdown: false,
@@ -49,13 +51,21 @@ export default {
       showExportMenu: null
     };
   },
+  watch: {
+    searchQuery(val) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = setTimeout(() => {
+        this.debouncedSearchQuery = val;
+      }, 200);
+    }
+  },
   computed: {
     filteredNotes() {
       const notes = this.notesStore.notes || [];
-      if (!this.searchQuery || this.searchQuery.trim() === '') {
+      if (!this.debouncedSearchQuery || this.debouncedSearchQuery.trim() === '') {
         return [...notes].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       }
-      const q = this.searchQuery.toLowerCase().trim();
+      const q = this.debouncedSearchQuery.toLowerCase().trim();
       return notes
         .filter(note => {
           return (
@@ -113,6 +123,9 @@ export default {
     searchQuery() {
       this.currentListPage = 1;
     }
+  },
+  beforeUnmount() {
+    clearTimeout(this._searchDebounceTimer);
   },
   methods: {
     // ── Navigation ──

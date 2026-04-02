@@ -31,15 +31,13 @@ export const RESOURCE_MANIFEST = {
     { id: 'quran-json', url: './resources/data/quran/quran.json', critical: true },
     { id: 'i18n-en', url: './resources/data/i18n/en.json', critical: true },
     { id: 'i18n-bn', url: './resources/data/i18n/bn.json', critical: false },
-    { id: 'i18n-ar', url: './resources/data/i18n/ar.json', critical: false },
-    { id: 'badges', url: './resources/data/badges.json', critical: false }
+    { id: 'i18n-ar', url: './resources/data/i18n/ar.json', critical: false }
   ],
   
   // JavaScript Files (vendor and app modules)
   js: [
     { id: 'tailwind', url: './resources/js/vendor/tailwind.3.4.7.js', critical: true },
-    { id: 'vue', url: './resources/js/vendor/vue.global.js', critical: true },
-    { id: 'confetti', url: './resources/js/vendor/confetti-js.0.0.18.min.js', critical: false }
+    { id: 'vue', url: './resources/js/vendor/vue.global.js', critical: true }
   ],
   
   // CSS Files
