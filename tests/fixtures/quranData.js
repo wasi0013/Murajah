@@ -228,7 +228,7 @@ export const sampleSettings = {
   tajweedEnabled: true,
   showTafsir: false,
   showWordByWord: false,
-  layout: 'indopak',
+  layout: 'qpc',
   adjustRevisionChunk: 0,
   quranBackgroundColor: '#f1ece7',
   selectedTasks: ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily']

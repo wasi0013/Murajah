@@ -71,7 +71,7 @@ export async function waitForAppLoad(page, options = {}) {
     if (!loader) return true;
     const style = window.getComputedStyle(loader);
     return style.display === 'none' || style.opacity === '0' || loader.classList.contains('hidden');
-  }, { timeout });
+  }, null, { timeout });
   
   // Wait for the Vue isInitializing overlay to disappear
   // This overlay shows "Loading Murajah..." with bg-black/50
@@ -89,7 +89,7 @@ export async function waitForAppLoad(page, options = {}) {
       }
     }
     return true;
-  }, { timeout: 30000 }).catch(() => {});
+  }, null, { timeout: 30000 }).catch(() => {});
   
   // Give Vue a moment to finish mounting
   await page.waitForTimeout(500);
@@ -127,9 +127,12 @@ export async function waitForQuranData(page, options = {}) {
     const section = document.getElementById('quran-text-section');
     if (!section) return false;
     const text = section.textContent || '';
-    // Check for Arabic Unicode characters (U+0600 to U+06FF)
-    return /[\u0600-\u06FF]/.test(text);
-  }, { timeout });
+    // Check for Arabic Unicode characters:
+    // U+0600-U+06FF (basic Arabic - used by Indopak layout)
+    // U+FB50-U+FDFF (Arabic Presentation Forms-A - used by QPC layout)
+    // U+FC00-U+FCFF (Arabic Presentation Forms-A subset)
+    return /[\u0600-\u06FF\uFB50-\uFDFF]/.test(text);
+  }, null, { timeout });
 }
 
 /**
@@ -221,7 +224,7 @@ export async function waitForQuizLoad(page, options = {}) {
   await page.waitForFunction(() => {
     const overlay = document.querySelector('.fixed.bg-gray-900.bg-opacity-50');
     return !overlay;
-  }, { timeout }).catch(() => {});
+  }, null, { timeout }).catch(() => {});
 
   // Give Vue one tick to finish rendering after the overlay is removed
   await page.waitForTimeout(400);

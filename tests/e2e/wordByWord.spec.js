@@ -54,7 +54,7 @@ test.describe('Word-by-Word Feature', () => {
     const textContent = await quranSection.textContent();
     
     // Check Arabic text is present
-    expect(textContent).toMatch(/[\u0600-\u06FF]/);
+    expect(textContent).toMatch(/[\u0600-\u06FF\uFB50-\uFDFF]/);
   });
 
   test('should work with different Quran layouts', async ({ page }) => {

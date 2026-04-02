@@ -120,7 +120,7 @@ test.describe('Surah View', () => {
       // Wait for page content to load (look for Bismillah or Arabic text)
       await page.waitForFunction(() => {
         const text = document.body.textContent;
-        return text && (text.includes('﷽') || /[\u0600-\u06FF]{5,}/.test(text));
+        return text && (text.includes('﷽') || /[\u0600-\u06FF\uFB50-\uFDFF]{5,}/.test(text));
       }, { timeout: 15000 });
     });
 
@@ -228,14 +228,13 @@ test.describe('Surah View', () => {
       // Wait for surah to load first
       await page.waitForFunction(() => {
         return document.body.textContent?.includes('الفاتحة');
-      }, { timeout: 15000 });
+      }, null, { timeout: 15000 });
       
-      // Wait for Arabic content to appear
+      // Wait for Arabic content to appear (basic Arabic U+0600-06FF or Presentation Forms U+FB50-FDFF)
       await page.waitForFunction(() => {
         const text = document.body.textContent;
-        // Check for Bismillah text
-        return text && (text.includes('بِسْمِ') || text.includes('الرَّحْمٰنِ'));
-      }, { timeout: 20000 });
+        return text && /[\u0600-\u06FF\uFB50-\uFDFF]{5,}/.test(text);
+      }, null, { timeout: 20000 });
       
       // Should have quran-word elements like the main view
       const quranWords = page.locator('.quran-word');
@@ -407,7 +406,7 @@ test.describe('Surah View', () => {
       // Wait for content
       await page.waitForFunction(() => {
         const text = document.body.textContent;
-        return text && /[\u0600-\u06FF]/.test(text);
+        return text && /[\u0600-\u06FF\uFB50-\uFDFF]/.test(text);
       }, { timeout: 15000 });
       
       // Should display properly without horizontal overflow
