@@ -1372,8 +1372,10 @@
       display: none;
     }
 
-    .mobile-nav {
-      display: none;
+    @media (max-width: 767px) {
+      header.bg-white {
+        display: none;
+      }
     }
 
     @media (min-width: 768px) {
@@ -3508,17 +3510,7 @@
                   
                 </nav>
 
-                <!-- Mobile Navigation -->
-                <div class="mobile-nav flex items-center gap-2">
-                  <!-- Reload Button (mobile only) -->
-                  <button @click="refreshApp" class="p-2 hover:bg-gray-300 bg-gray-200 rounded-lg transition-colors" :title="$t('header.reload')">
-                    <i class="fas fa-rotate-right text-gray-900 text-lg"></i>
-                  </button>
-                  <!-- Menu Button -->
-                  <button @click="showMobileMenu = true" class="p-2 hover:bg-gray-300 bg-gray-200 rounded-lg transition-colors" :title="$t('header.menu')">
-                    <i class="fas fa-ellipsis-vertical text-gray-900 text-xl"></i>
-                  </button>
-                </div>
+
               </div>
             </header>
 
