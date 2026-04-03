@@ -1372,12 +1372,13 @@
       display: none;
     }
 
+    .mobile-nav {
+      display: none;
+    }
+
     @media (min-width: 768px) {
       .desktop-nav {
         display: flex;
-      }
-      .mobile-nav {
-        display: none;
       }
     }
 
@@ -2103,8 +2104,8 @@
     }
 
     .dark-mode .bottom-nav {
-      background: #1f2937;
-      border-top-color: #374151;
+      background: white;
+      border-top-color: #e5e7eb;
     }
 
     .bottom-nav-inner {
@@ -2143,11 +2144,11 @@
     }
 
     .dark-mode .bottom-nav-item {
-      color: #9ca3af;
+      color: #6b7280;
     }
 
     .dark-mode .bottom-nav-item.active {
-      color: #60a5fa;
+      color: #2563eb;
     }
 
     @media (max-width: 767px) {
@@ -3605,6 +3606,10 @@
                   <i class="fas fa-info-circle"></i>
                   {{ $t('header.howItWorks') }}
                 </button>
+                <button class="mobile-menu-item w-full text-left" @click="refreshApp(); showMobileMenu = false">
+                  <i class="fas fa-rotate-right"></i>
+                  {{ $t('header.reload') }}
+                </button>
               </div>
 
               <!-- Settings Section -->
@@ -4049,67 +4054,6 @@
               
               <!-- Regular Page Navigation (hidden in Surah View mode) -->
               <template v-if="!settingsStore.showSurahView">
-              
-              <!-- Compact Quick Navigation Bar -->
-              <div class="flex items-center justify-between gap-2 mb-3 px-2 py-2 bg-white rounded-lg shadow-md border border-gray-200">
-                <!-- Previous Page Button -->
-                <button 
-                  @click="previousPage" 
-                  :disabled="appStore.currentPage === 1"
-                  class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm"
-                  :title="$t('navigation.previousPage')"
-                >
-                  <i class="fas fa-chevron-left text-blue-700"></i>
-                  <span class="text-blue-700 font-medium hidden sm:inline">{{ $t('navigation.prev') }}</span>
-                </button>
-
-                <!-- Center: Surah Dropdown + Jump to Page -->
-                <div class="flex items-center gap-2 flex-1 justify-center">
-                  <!-- Compact Surah Dropdown -->
-                  <select 
-                    id="quickSurahNav" 
-                    name="quickSurahNav" 
-                    @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" 
-                    class="px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 text-sm hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer max-w-[140px] sm:max-w-[180px] truncate"
-                    :title="$t('navigation.jumpSurah')"
-                  >
-                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + getSurahNameTranslated(currentSurahNumber)) : $t('dashboard.surahPlaceholder') }}</option>
-                    <option v-for="n in 114" :key="n" :value="n">{{ n }}. {{ getSurahNameTranslated(n) }}</option>
-                  </select>
-
-                  <!-- Jump to Page Input -->
-                  <div class="flex items-center gap-1">
-                    <input 
-                      id="quickGotoPageInput" 
-                      name="quickGotoPageInput" 
-                      v-model.number="gotoInput" 
-                      @keyup.enter="gotoPage" 
-                      type="number" 
-                      min="1" 
-                      :max="totalPages" 
-                      class="w-14 sm:w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                      :placeholder="$t('navigation.go')"
-                    >
-                    <button 
-                      @click="gotoPage" 
-                      class="px-2 py-1.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
-                    >
-                      {{ $t('navigation.go') }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Next Page Button -->
-                <button 
-                  @click="nextPage" 
-                  :disabled="appStore.currentPage === totalPages"
-                  class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm"
-                  :title="$t('navigation.nextPage')"
-                >
-                  <span class="text-blue-700 font-medium hidden sm:inline">{{ $t('navigation.next') }}</span>
-                  <i class="fas fa-chevron-right text-blue-700"></i>
-                </button>
-              </div>
 
               <div id="quran-text-section" 
                 class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 relative group"
@@ -4120,7 +4064,7 @@
                   <p class="text-xs sm:text-sm font-medium text-gray-600 ">
                     {{ $t('tafsir.page') }} {{ appStore.currentPage }} ({{ $t('dashboard.stats.ofPages', { total: totalPages }) }})
                   </p>
-                  <h2 class="text-black" style="font-family: 'SurahNames', 'Traditional Arabic', serif; font-size: 3.5em;">{{ currentSurahName }}</h2>
+                  <h2 class="text-black" style="font-family: 'SurahNames', 'Traditional Arabic', serif; font-size: 2em;">{{ currentSurahName }}</h2>
                   
                   <!-- Hifz Status Bookmark - Moved to header -->
                   <div v-if="currentPageHifzStatus" class="absolute -top-4 -right-4 sm:top-0 sm:right-2" style="width: 50px; height: 80px;">
@@ -4154,7 +4098,7 @@
                 </div>
 
                 <!-- Color Palette for Quran Background -->
-                <div class="absolute top-2 left-2 z-10">
+                <div class="absolute top-2 left-2 z-10 flex items-center gap-1">
                   <button 
                     @click="cycleQuranBackgroundColor"
                     class="w-10 h-10 sm:w-12 sm:h-12 bg-transparent  cursor-pointer transition-all duration-200 hover:scale-130 active:scale-95 shadow-md flex items-center justify-center"
@@ -4163,6 +4107,13 @@
                       class="w-6 h-6 sm:w-8 sm:h-8 rounded-full"
                       :style="{ backgroundColor: settingsStore.quranBackgroundColor }">
                     </div>
+                  </button>
+                  <button 
+                    @click="toggleInteractionMode"
+                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 shadow-md flex items-center justify-center"
+                    :class="interactionMode === 'review' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600'"
+                    :title="interactionMode === 'review' ? $t('interactionMode.reviewActive') : $t('interactionMode.swipeActive')">
+                    <i :class="interactionMode === 'review' ? 'fas fa-highlighter' : 'fas fa-hand-pointer'" class="text-sm sm:text-base"></i>
                   </button>
                 </div>
 
@@ -4838,13 +4789,19 @@
 
                       <!-- showTafsir setting removed: tafsir visibility controlled via URL and navbar -->
 
-                      <!-- Morphology Toggle -->
-                      <div class="flex items-center sm:col-span-2">
-                        <input v-model="settingsStore.showMorphology" @change="updateSettings" type="checkbox" id="morphology" class="rounded">
-                        <label for="morphology" class="ml-3 text-sm font-medium text-gray-700">
-                          {{ $t('morphology.title') }}
-                          <span class="text-xs text-gray-500 ml-1">({{ $t('morphology.clickToView') }})</span>
-                        </label>
+                      <!-- Word Tap Mode (Review mode behavior) -->
+                      <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">{{ $t('settings.wordTapMode') }}</label>
+                        <div class="flex flex-col gap-2">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="wordTapMode" value="morphology" :checked="settingsStore.showMorphology" @change="settingsStore.showMorphology = true; updateSettings()" class="text-blue-600">
+                            <span class="text-sm text-gray-700">{{ $t('settings.wordTapMorphology') }}</span>
+                          </label>
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="wordTapMode" value="mistake" :checked="!settingsStore.showMorphology" @change="settingsStore.showMorphology = false; updateSettings()" class="text-blue-600">
+                            <span class="text-sm text-gray-700">{{ $t('settings.wordTapMistake') }}</span>
+                          </label>
+                        </div>
                       </div>
 
                       <div class="sm:col-span-2">
@@ -5943,6 +5900,12 @@
           const isAppInitialized = ref(false); // Flag to prevent watch from firing during initialization
           const analyticsActiveTab = ref(1); // 1 = Juz Progress, 2 = Page-by-Page
           const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+          
+          // Interaction mode: 'swipe' (default) or 'review' (mistake/morphology)
+          const interactionMode = ref('swipe');
+          const toggleInteractionMode = () => {
+            interactionMode.value = interactionMode.value === 'swipe' ? 'review' : 'swipe';
+          };
           
           // Resource Cache state
           const cacheStats = reactive({
@@ -7184,7 +7147,7 @@
           const previousPage = async () => {
             // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
-            if (forceQuranMode && forceQuranMode.value) {
+            if (forceQuranMode && forceQuranMode.value && settingsStore.showTafsir) {
               try {
                 settingsStore.showTafsir = false;
                 await murajahDB.setSetting('showTafsir', false);
@@ -7195,17 +7158,16 @@
 
             if (appStore.currentPage > 1) {
               appStore.currentPage--;
-              updateURL();
               await nextTick();
               const quranSection = document.getElementById('quran-text-section');
-              if (quranSection) quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (quranSection) quranSection.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
           };
 
           const nextPage = async () => {
             // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
-            if (forceQuranMode && forceQuranMode.value) {
+            if (forceQuranMode && forceQuranMode.value && settingsStore.showTafsir) {
               try {
                 settingsStore.showTafsir = false;
                 await murajahDB.setSetting('showTafsir', false);
@@ -7216,10 +7178,9 @@
 
             if (appStore.currentPage < totalPages.value) {
               appStore.currentPage++;
-              updateURL();
               await nextTick();
               const quranSection = document.getElementById('quran-text-section');
-              if (quranSection) quranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (quranSection) quranSection.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
           };
           
@@ -7234,6 +7195,8 @@
               maxDuration: 500,
               ratioThreshold: 1.5,
               shouldIgnore: (event) => {
+                // Disable swipe in review mode
+                if (interactionMode.value === 'review') return true;
                 // Skip swipe on interactive elements (words, buttons, links)
                 const target = event.target;
                 if (!target) return false;
@@ -8184,6 +8147,8 @@
 
           // Combined word click handler - morphology OR mistake marking
           const handleWordClick = (word, event) => {
+            // Only handle word taps in review mode
+            if (interactionMode.value !== 'review') return;
             if (settingsStore.showMorphology) {
               showMorphologyPopup(word, event);
             } else {
@@ -10135,6 +10100,8 @@ Display:
             previousPage,
             nextPage,
             quranSwipeHandlers,
+            interactionMode,
+            toggleInteractionMode,
             gotoPage,
             goToPageNumber,
             selectRandomPage,
