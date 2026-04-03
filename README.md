@@ -3,7 +3,7 @@
 # Murajah - Quran Memorization & Revision Tool
 
 [![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
-[![version](https://img.shields.io/badge/V-26.03.11-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
+[![version](https://img.shields.io/badge/V-26.04.03-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
 
 [![Playstore Link](https://img.shields.io/badge/Download%20App-black?logo=Google%20Play&logoColor=white&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.murajah.webview)
 [![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
@@ -38,69 +38,64 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 
 ## ✨ Key Features
 
-### 📱 Dashboard
+### Quran Display
+- Full Quran text with Tajweed highlighting (Madinah Mushaf / QPC layout)
+- Indopak Nastaleeq layout option
+- Customizable text size
+- Surah view with chapter-level browsing
+- Page-by-page navigation with swipe gestures on mobile
 
-- Overview of your memorization progress
-- Daily statistics and achievements
-- Visual progress indicators
+### Word-Level Tools
+- **Word-by-word** translation and meanings
+- **Morphology** — tap any word to view Arabic grammar analysis
+- **Mistake highlighter** — tap words to mark recitation errors
+- Toggle between morphology and mistake modes via an interaction mode switch
 
-### 📖 Quran Page Viewer
+### Tafsir (Commentary)
+- Inline Arabic, English, and Bengali tafsir
+- Toggleable per-page alongside Quran text
 
-- Full Quran text with proper formatting and Tajweed rules highlighting
-- Page-by-page navigation matching the standard Quran (Madinah Mushaf)
-- Word-by-word translation and meanings
-- Customizable text size (Small, Medium, Large)
+### Memorization Tracking
+- Visual memorized page grid with color-coded status
+- Juz-level progress overview
+- Perfect revision counter per page
+- Bulk-mark pages as memorized
 
-### 🎙️ Audio Playlist
+### Daily Goals & Streaks
+- Configurable daily tasks (recite, record, review, memorize)
+- Streak tracking with automatic reset at midnight
+- Timeline view of historical daily activity
 
-- Record your recitations
-- Listen back to your recordings to identify mistakes
-- Manage multiple recordings
+### Quiz Mode
+- Surah-based interactive quizzes
+- Question types: word completion, verse continuation, verse translation
+- Lightning round mode
+- Real-time scoring
 
-### 🎓 Quiz Mode
+### Audio
+- Record your own recitations and play them back
+- Floating audio player for verse-by-verse Qari playback (Sheikh Shuraim, Sheikh Luhaidan)
+- Live Quran/Sunnah stream embed
 
-- Interactive quizzes based on selected surah
-- Multiple question types:
-  - Word completion
-  - Verse continuation
-  - Verse Translation
-  - Lightning modes
-- Real-time score
+### Notes & Journal
+- Markdown-based personal notes linked to your session
+- Persistent across sessions
 
-### 📝 Memorized Grid
+### Navigation
+- Bottom tab bar on mobile (Read, Surahs, Goals, Quiz, More)
+- Desktop header with full navigation menu and dropdowns
+- Keyboard shortcuts (press **H** for the full list)
+- URL-based state: page, tafsir, word-by-word settings preserved in URL
 
-- Visual grid display of memorized Juz
-- Color-coded memorization status
-- Quick access to any memorized content
-- Progress overview at a glance
+### Offline & PWA
+- Installable as a Progressive Web App (Android Play Store / browser install)
+- Full offline support — download all resources for offline use
+- Service worker with automatic update detection
 
-### ‼️ Mistake Tracker
-
-- Mark mistakes
-- Statistics on mistakes
-
-### ⚙️ Settings
-
-- Text size preferences
-- Tajweed rules display toggle
-- Data export and backup options
-
-### 📊 Status Indicators
-
-- Real-time progress metrics
-- Memorization completion percentage
-- Daily goal tracking
-- Streak counter
-- Achievement badges
-
-### 🧭 Navigation
-
-- Keyboard shortcuts (Press H for more information)
-- Intuitive menu system
-- Quick links to all features
-- Surah (chapter) selection
-- Jump to page functionality
-- Random memorized page
+### Data & Privacy
+- All data stored locally in IndexedDB — nothing leaves your device
+- Export/import progress as JSON
+- Multi-language UI: English, Arabic, Bengali
 
 ## 🚀 Getting Started
 
@@ -268,58 +263,50 @@ npx serve source -p 3000
 
 ## 💾 Data Management
 
-### Local Storage
-
-- All your data (memorization progress, mistakes, bookmarks, recordings) is stored locally in your browser
-- **Important**: Data is specific to each browser and device
-- Regular backups are recommended
-
-### Data Export
-
-- Use the Settings panel to export your progress as JSON
-- Keep backups on your computer or cloud storage
-
-### Data Privacy
-
-- ✅ No server-side storage
-- ✅ All data remains on your device
-- ✅ Completely private and secure
+- All data (memorization progress, mistakes, recordings, notes, goals) is stored in IndexedDB locally
+- Data is per-browser and per-device — use export/import to transfer
+- Export your progress as JSON from the Settings panel
+- No server-side storage — completely private
 
 ## 🏗️ Project Structure
 
 ```plaintext
 Murajah/
 ├── source/
-│   ├── index.html              # Main application
-│   ├── quiz.html               # Quiz mode interface
+│   ├── index.html              # Main SPA (Vue 3, single-file)
+│   ├── quiz.html               # Quiz mode
+│   ├── sw.js                   # Service worker
+│   ├── manifest.json           # PWA manifest
+│   └── resources/
+│       ├── data/               # Quran text, tafsir, i18n, morphology
+│       └── js/                 # Components, stores, utilities
+├── tests/
+│   ├── unit/                   # Vitest unit tests
+│   └── e2e/                    # Playwright E2E tests
+├── vitest.config.js
+└── playwright.config.js
 ```
 
 ## 🛠️ Technology Stack
 
-- **Frontend Framework**: Vue.js 3
-- **Styling**: Tailwind CSS
-- **Icons**: Line Awesome
-- **Data Format**: JSON
-- **Storage**: Browser LocalStorage (IndexedDB)
-- **Fonts**: Custom Quran fonts for proper Tajweed display
+- **Frontend**: Vue.js 3 (CDN, no build step)
+- **Styling**: Tailwind CSS 3.4
+- **Icons**: Font Awesome 6
+- **Storage**: IndexedDB (via custom wrapper)
+- **Fonts**: QPC v2, Indopak Nastaleeq, SurahNames
+- **Testing**: Vitest (unit), Playwright (E2E)
+- **Deployment**: Cloudflare Pages / GitHub Pages
 
-## 📚 Features Deep Dive
+## 📚 Keyboard Shortcuts
 
-### Tajweed Rules Highlighting
+Press **H** in the app to see the full list. Key shortcuts include:
 
-The app displays Quranic text with proper Tajweed (rules of recitation) highlighting, making it easier to learn correct pronunciation and recitation rules. (Press T to toggle)
-
-### Audio Recording
-
-Record your own recitations and compare them with standard recordings to improve your delivery. (Press R)
-
-### Progress Analytics
-
-Track your memorization journey with detailed statistics on:
-
-- Daily/weekly/monthly progress
-- Mistakes tracking per page
-- Statistics
+| Key | Action |
+|-----|--------|
+| `←` / `→` | Previous / next page |
+| `T` | Toggle Tajweed highlighting |
+| `R` | Start/stop recording |
+| `H` | Show help modal |
 
 ## 🤝 Contributing
 

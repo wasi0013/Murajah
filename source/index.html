@@ -4985,7 +4985,7 @@
                       <i class="fas fa-cloud-download-alt text-cyan-600"></i>
                       {{ $t('settings.cacheTitle') || 'Offline Mode' }}
                     </h3>
-                    <p class="text-sm text-gray-600">{{ $t('settings.cacheDescription') || 'Download all resources to use Murajah offline. This includes all 604 Quran page fonts (~50MB total).' }}</p>
+                    <p class="text-sm text-gray-600">{{ $t('settings.cacheDescription') || 'Download all resources to use Murajah offline. This includes all 604 Quran page fonts.' }}</p>
                     
                     <!-- Info Box -->
                     <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
@@ -5797,7 +5797,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '26.03.11',
+            appVersion: '26.04.03',
             errorMessage: '',
             successMessage: ''
           });
