@@ -26,7 +26,6 @@
       "live": "Live",
       "analytics": "Analytics",
       "timeline": "Timeline",
-      "achievements": "Achievements",
       "notes": "Journal",
       "community": "Community & Support"
     }
@@ -131,6 +130,9 @@
     "bulkEndPage": "End Page",
     "bulkMemorizeButton": "Memorize Range",
     "moreSettings": "More Settings",
+    "wordTapMode": "Word Tap Mode (Review Mode)",
+    "wordTapMorphology": "Morphology — tap any word to see its morphological analysis",
+    "wordTapMistake": "Mistake Highlighter — tap any word to mark it as a mistake",
     "cacheTitle": "Offline Mode",
     "cacheDescription": "Download all resources to use Murajah offline. This includes all 604 Quran page fonts (~50MB total).",
     "cacheInfo": "After downloading, the app will work completely offline (except audio recitations which require internet).",
@@ -293,20 +295,6 @@
     "record": "Record",
     "recording": "Recording...",
     "note": "Note"
-  },
-  "achievements": {
-    "title": "Achievements",
-    "badgesUnlocked": "Badges Unlocked",
-    "completion": "Completion",
-    "completionPercent": "{percent}% Complete",
-    "actions": {
-      "viewAll": "View All Achievements",
-      "syncBadges": "Sync Badges with Data",
-      "syncing": "Syncing...",
-      "developerTools": "Developer Tools",
-      "unlockAll": "Unlock All Badges (Debug)",
-      "clearAll": "Clear All Achievements"
-    }
   },
   "audio": {
     "fullSurah": "▶️ Full Surah",
@@ -592,6 +580,10 @@
     "close": "Close",
     "clickToView": "Click any word to see its morphological analysis",
     "wordPosition": "Word {word} of verse {surah}:{ayah}"
+  },
+  "interactionMode": {
+    "swipeActive": "Swipe mode — swipe left/right to change pages",
+    "reviewActive": "Review mode — tap words to mark mistakes or view morphology"
   },
   "pwa": {
     "offlineMode": "You're offline. Some features may be limited.",
@@ -886,6 +878,11 @@
     "footer": {
       "version": "Murajah Version 26.03.11",
       "github": "View Source on GitHub"
+    },
+    "bottomNav": {
+      "surahs": "Surahs",
+      "goals": "Goals",
+      "more": "More"
     }
   }
 }

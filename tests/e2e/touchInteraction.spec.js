@@ -23,10 +23,11 @@ test.describe('Touch Interaction - Main Page', () => {
         await dismissLanguageModal(page);
     });
 
-    test('viewport meta should disable user scaling', async ({ page }) => {
+    test('viewport meta should allow user scaling', async ({ page }) => {
         const viewportContent = await page.getAttribute('meta[name="viewport"]', 'content');
-        expect(viewportContent).toContain('maximum-scale=1.0');
-        expect(viewportContent).toContain('user-scalable=no');
+        expect(viewportContent).toContain('width=device-width');
+        expect(viewportContent).toContain('initial-scale=1.0');
+        expect(viewportContent).not.toContain('user-scalable=no');
     });
 
     test('quran-word elements should have user-select none', async ({ page }) => {
@@ -84,10 +85,11 @@ test.describe('Touch Interaction - Quiz Page', () => {
         await page.waitForTimeout(3000);
     });
 
-    test('viewport meta should disable user scaling', async ({ page }) => {
+    test('viewport meta should allow user scaling', async ({ page }) => {
         const viewportContent = await page.getAttribute('meta[name="viewport"]', 'content');
-        expect(viewportContent).toContain('maximum-scale=1.0');
-        expect(viewportContent).toContain('user-scalable=no');
+        expect(viewportContent).toContain('width=device-width');
+        expect(viewportContent).toContain('initial-scale=1.0');
+        expect(viewportContent).not.toContain('user-scalable=no');
     });
 
     test('surah grid items should have touch-action manipulation', async ({ page }) => {

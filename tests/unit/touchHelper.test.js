@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { isTouchDevice, createTouchHandler, debounceTouch } = await import(
+const { isTouchDevice, createTouchHandler, debounceTouch, createSwipeHandler } = await import(
     '../../source/resources/js/utils/touchHelper.js'
 );
 
@@ -243,5 +243,119 @@ describe('debounceTouch()', () => {
         expect(fn).toHaveBeenCalledTimes(2);
 
         vi.useRealTimers();
+    });
+});
+
+
+// ─── createSwipeHandler ──────────────────────────────────────────────────────
+
+describe('createSwipeHandler()', () => {
+    let onSwipeLeft;
+    let onSwipeRight;
+    let handlers;
+
+    beforeEach(() => {
+        onSwipeLeft = vi.fn();
+        onSwipeRight = vi.fn();
+        handlers = createSwipeHandler({ onSwipeLeft, onSwipeRight });
+    });
+
+    it('should return onTouchStart and onTouchEnd functions', () => {
+        expect(typeof handlers.onTouchStart).toBe('function');
+        expect(typeof handlers.onTouchEnd).toBe('function');
+    });
+
+    it('should detect left swipe (finger moves left)', () => {
+        handlers.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        handlers.onTouchEnd(makeTouchEvent('touchend', 100, 100)); // dx = -100
+        expect(onSwipeLeft).toHaveBeenCalledOnce();
+        expect(onSwipeRight).not.toHaveBeenCalled();
+    });
+
+    it('should detect right swipe (finger moves right)', () => {
+        handlers.onTouchStart(makeTouchEvent('touchstart', 100, 100));
+        handlers.onTouchEnd(makeTouchEvent('touchend', 200, 100)); // dx = +100
+        expect(onSwipeRight).toHaveBeenCalledOnce();
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+    });
+
+    it('should NOT fire on short horizontal movement below threshold', () => {
+        handlers.onTouchStart(makeTouchEvent('touchstart', 100, 100));
+        handlers.onTouchEnd(makeTouchEvent('touchend', 130, 100)); // dx = 30, below 50
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+        expect(onSwipeRight).not.toHaveBeenCalled();
+    });
+
+    it('should NOT fire on vertical scroll (dy > dx / ratio)', () => {
+        handlers.onTouchStart(makeTouchEvent('touchstart', 100, 100));
+        handlers.onTouchEnd(makeTouchEvent('touchend', 160, 200)); // dx=60, dy=100, ratio=0.6
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+        expect(onSwipeRight).not.toHaveBeenCalled();
+    });
+
+    it('should NOT fire on slow swipe (exceeds maxDuration)', () => {
+        vi.useFakeTimers();
+        const h = createSwipeHandler({ onSwipeLeft, onSwipeRight }, { maxDuration: 200 });
+        h.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        vi.advanceTimersByTime(300);
+        h.onTouchEnd(makeTouchEvent('touchend', 100, 100));
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+
+    it('should respect custom threshold', () => {
+        const h = createSwipeHandler({ onSwipeLeft, onSwipeRight }, { threshold: 100 });
+        h.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        h.onTouchEnd(makeTouchEvent('touchend', 120, 100)); // dx = -80, below 100
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+
+        h.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        h.onTouchEnd(makeTouchEvent('touchend', 50, 100)); // dx = -150, above 100
+        expect(onSwipeLeft).toHaveBeenCalledOnce();
+    });
+
+    it('should skip when shouldIgnore returns true', () => {
+        const h = createSwipeHandler(
+            { onSwipeLeft, onSwipeRight },
+            { shouldIgnore: () => true }
+        );
+        h.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        h.onTouchEnd(makeTouchEvent('touchend', 100, 100));
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+    });
+
+    it('should ignore multi-touch gestures', () => {
+        const multiTouchStart = {
+            type: 'touchstart',
+            touches: [
+                { clientX: 100, clientY: 100 },
+                { clientX: 200, clientY: 200 }
+            ],
+            changedTouches: [],
+            preventDefault: vi.fn()
+        };
+        handlers.onTouchStart(multiTouchStart);
+        handlers.onTouchEnd(makeTouchEvent('touchend', 50, 100));
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+    });
+
+    it('should handle touchEnd without prior touchStart gracefully', () => {
+        handlers.onTouchEnd(makeTouchEvent('touchend', 100, 100));
+        expect(onSwipeLeft).not.toHaveBeenCalled();
+        expect(onSwipeRight).not.toHaveBeenCalled();
+    });
+
+    it('should work with only onSwipeLeft callback', () => {
+        const h = createSwipeHandler({ onSwipeLeft });
+        h.onTouchStart(makeTouchEvent('touchstart', 200, 100));
+        h.onTouchEnd(makeTouchEvent('touchend', 100, 100));
+        expect(onSwipeLeft).toHaveBeenCalledOnce();
+    });
+
+    it('should work with only onSwipeRight callback', () => {
+        const h = createSwipeHandler({ onSwipeRight });
+        h.onTouchStart(makeTouchEvent('touchstart', 100, 100));
+        h.onTouchEnd(makeTouchEvent('touchend', 200, 100));
+        expect(onSwipeRight).toHaveBeenCalledOnce();
     });
 });

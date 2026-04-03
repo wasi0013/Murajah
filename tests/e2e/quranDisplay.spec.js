@@ -21,7 +21,7 @@ test.describe('Quran Display & Layout', () => {
     await expect(quranSection).toBeVisible();
     
     const textContent = await quranSection.textContent();
-    expect(textContent).toMatch(/[\u0600-\u06FF]/);
+    expect(textContent).toMatch(/[\u0600-\u06FF\uFB50-\uFDFF]/);
   });
 
   test('should display RTL text correctly', async ({ page }) => {
@@ -31,11 +31,11 @@ test.describe('Quran Display & Layout', () => {
     // Check that Arabic text is present
     const quranSection = page.locator('#quran-text-section');
     const textContent = await quranSection.textContent();
-    expect(textContent).toMatch(/[\u0600-\u06FF]/);
+    expect(textContent).toMatch(/[\u0600-\u06FF\uFB50-\uFDFF]/);
     
     // The actual text inside should have RTL or the page has dir=rtl
     const htmlDir = await page.locator('html').getAttribute('dir');
-    const hasRtl = htmlDir === 'rtl' || textContent.match(/[\u0600-\u06FF]/);
+    const hasRtl = htmlDir === 'rtl' || textContent.match(/[\u0600-\u06FF\uFB50-\uFDFF]/);
     expect(hasRtl).toBeTruthy();
   });
 
@@ -68,11 +68,11 @@ test.describe('Quran Display & Layout', () => {
     await page.waitForFunction(() => {
       const section = document.querySelector('#quran-text-section');
       const text = section ? section.textContent : '';
-      return /[\u0600-\u06FF]/.test(text);
-    }, { timeout: 10000 });
+      return /[\u0600-\u06FF\uFB50-\uFDFF]/.test(text);
+    }, null, { timeout: 30000 });
     
     const textContent = await quranSection.textContent();
-    expect(textContent).toMatch(/[\u0600-\u06FF]/);
+    expect(textContent).toMatch(/[\u0600-\u06FF\uFB50-\uFDFF]/);
   });
 
   test('should maintain layout on window resize', async ({ page }) => {

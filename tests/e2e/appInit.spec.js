@@ -53,8 +53,8 @@ test.describe('App Initialization', () => {
     await page.goto('/');
     await waitForAppLoad(page);
     
-    // Navigation should be visible
-    await expect(page.locator('nav')).toBeVisible({ timeout: 10000 });
+    // Desktop navigation should be visible
+    await expect(page.locator('nav.desktop-nav')).toBeVisible({ timeout: 10000 });
   });
 
   test('should initialize with page 1 by default', async ({ page }) => {

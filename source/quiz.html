@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="color-scheme" content="only light">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Murajah Quiz</title>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
@@ -633,13 +633,81 @@
           display: none;
         }
 
- 
+        .mobile-nav {
+          display: none;
+        }
+
         @media (min-width: 768px) {
           .desktop-nav {
             display: flex;
           }
-          .mobile-nav {
-            display: none;
+        }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 56px;
+          background: white;
+          border-top: 1px solid #e5e7eb;
+          display: none;
+          z-index: 999;
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .dark .bottom-nav {
+          background: white;
+          border-top-color: #e5e7eb;
+        }
+
+        .bottom-nav-inner {
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          height: 56px;
+          max-width: 500px;
+          margin: 0 auto;
+        }
+
+        .bottom-nav-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+          height: 100%;
+          color: #6b7280;
+          text-decoration: none;
+          font-size: 0.65rem;
+          gap: 2px;
+          transition: color 0.15s;
+          cursor: pointer;
+          border: none;
+          background: none;
+          padding: 0;
+        }
+
+        .bottom-nav-item i {
+          font-size: 1.15rem;
+        }
+
+        .bottom-nav-item.active {
+          color: #2563eb;
+        }
+
+        .dark .bottom-nav-item {
+          color: #6b7280;
+        }
+
+        .dark .bottom-nav-item.active {
+          color: #2563eb;
+        }
+
+        @media (max-width: 767px) {
+          .bottom-nav {
+            display: block;
           }
         }
 
@@ -1623,7 +1691,7 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white  border-t border-gray-200  mt-12">
+        <footer class="bg-white  border-t border-gray-200  mt-12 pb-20 md:pb-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex flex-col items-center justify-center gap-4">
                     <p class="text-center text-gray-600 text-sm font-medium">
@@ -1636,6 +1704,32 @@
                 </div>
             </div>
         </footer>
+
+        <!-- Bottom Navigation Bar (mobile only) -->
+        <nav class="bottom-nav" aria-label="Bottom navigation">
+          <div class="bottom-nav-inner">
+            <a class="bottom-nav-item" href="./index.html">
+              <i class="fas fa-book-quran"></i>
+              <span>{{ t('quiz.nav.home') }}</span>
+            </a>
+            <a class="bottom-nav-item" href="./index.html#surah-section">
+              <i class="fas fa-list"></i>
+              <span>{{ t('quiz.bottomNav.surahs') }}</span>
+            </a>
+            <a class="bottom-nav-item" href="./index.html#daily-goals-section">
+              <i class="fas fa-bullseye"></i>
+              <span>{{ t('quiz.bottomNav.goals') }}</span>
+            </a>
+            <button class="bottom-nav-item active">
+              <i class="fas fa-question-circle"></i>
+              <span>{{ t('quiz.nav.quiz') }}</span>
+            </button>
+            <button class="bottom-nav-item" @click="openMobileMenu">
+              <i class="fas fa-ellipsis-h"></i>
+              <span>{{ t('quiz.bottomNav.more') }}</span>
+            </button>
+          </div>
+        </nav>
     </div>
 
     <!-- Database Setup -->

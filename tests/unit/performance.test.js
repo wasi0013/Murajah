@@ -57,12 +57,6 @@ describe('index.html performance', () => {
       expect(markedTag[0]).toMatch(/\bdefer\b/);
     });
 
-    it('should load confetti.js with async or defer', () => {
-      const confettiTag = html.match(/<script[^>]*confetti[^>]*>/i);
-      expect(confettiTag).not.toBeNull();
-      expect(confettiTag[0]).toMatch(/\b(defer|async)\b/);
-    });
-
     it('should not have any synchronous script tags for vendor libraries', () => {
       // Match script tags with src that DON'T have defer or async
       const scriptTags = html.match(/<script\s+src="[^"]*vendor[^"]*"[^>]*>/gi) || [];

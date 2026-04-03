@@ -6,16 +6,7 @@ be addressed to further improve performance on low-end mobile devices.
 
 ---
 
-## 1. Achievement Grid — Unneeded Re-computation
-
-**File:** `components/AchievementGridComponent.js` (lines ~104–120)
-
-`filteredBadges` computed does `.map() + .filter() + .sort()` over 100 badges on every
-render cycle. Each `.sort()` strategy also calls `achievementStore.unlockedBadges.has()`
-200+ times.
-
-**Fix:** Split into a stable sorted list (memoized, only recomputed when badges or
-unlock set changes) and a lightweight reactive filter overlay.
+## 1. ~~Achievement Grid — Unneeded Re-computation~~ (RESOLVED — Achievement system removed)
 
 ---
 

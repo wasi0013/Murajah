@@ -30,11 +30,6 @@ export default defineConfig({
       ],
       exclude: [
         'source/resources/js/vendor/**',
-        'source/resources/js/components/Achievement*.js',
-        'source/resources/js/components/BadgeShareCardComponent.js',
-        'source/resources/js/components/ShareBadgeModal.js',
-        'source/resources/js/stores/achievementStore.js',
-        'source/resources/js/utils/achievementLogic.js',
         'source/resources/js/utils/badgeImageGenerator.js',
         'source/resources/js/utils/imageUtils.js'
       ],

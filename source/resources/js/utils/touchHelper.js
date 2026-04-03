@@ -117,3 +117,72 @@ export function debounceTouch(callback, delay = 300) {
         return callback.apply(this, args);
     };
 }
+
+/**
+ * Create swipe gesture handlers for horizontal navigation.
+ *
+ * Usage in Vue template:
+ *   @touchstart="swipeHandlers.onTouchStart"
+ *   @touchend="swipeHandlers.onTouchEnd"
+ *
+ * @param {Object} callbacks
+ * @param {Function} callbacks.onSwipeLeft — called when user swipes left
+ * @param {Function} callbacks.onSwipeRight — called when user swipes right
+ * @param {Object} [options]
+ * @param {number} [options.threshold=50] — minimum horizontal distance in px to count as swipe
+ * @param {number} [options.maxDuration=500] — max touch duration in ms
+ * @param {number} [options.ratioThreshold=1.5] — minimum horizontal:vertical ratio to distinguish from scroll
+ * @param {Function} [options.shouldIgnore] — return true to skip swipe detection (e.g. on interactive elements)
+ * @returns {{ onTouchStart: Function, onTouchEnd: Function }}
+ */
+export function createSwipeHandler(callbacks, options = {}) {
+    const threshold = options.threshold || 50;
+    const maxDuration = options.maxDuration || 500;
+    const ratioThreshold = options.ratioThreshold || 1.5;
+    const shouldIgnore = options.shouldIgnore || (() => false);
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    function onTouchStart(event) {
+        if (shouldIgnore(event)) return;
+        if (event.touches && event.touches.length === 1) {
+            const touch = event.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            startTime = Date.now();
+        }
+    }
+
+    function onTouchEnd(event) {
+        if (startTime === 0) return;
+
+        const duration = Date.now() - startTime;
+        startTime = 0;
+
+        if (duration > maxDuration) return;
+
+        if (!event.changedTouches || event.changedTouches.length === 0) return;
+
+        const touch = event.changedTouches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        // Must exceed minimum threshold
+        if (absDx < threshold) return;
+
+        // Must be primarily horizontal (not a vertical scroll)
+        if (absDy > 0 && absDx / absDy < ratioThreshold) return;
+
+        if (dx < 0 && callbacks.onSwipeLeft) {
+            callbacks.onSwipeLeft(event);
+        } else if (dx > 0 && callbacks.onSwipeRight) {
+            callbacks.onSwipeRight(event);
+        }
+    }
+
+    return { onTouchStart, onTouchEnd };
+}
