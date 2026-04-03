@@ -57,6 +57,7 @@ export default {
       this._searchDebounceTimer = setTimeout(() => {
         this.debouncedSearchQuery = val;
       }, 200);
+      this.currentListPage = 1;
     }
   },
   computed: {
@@ -117,11 +118,6 @@ export default {
     },
     isRtl() {
       return this.currentLocale === 'ar';
-    }
-  },
-  watch: {
-    searchQuery() {
-      this.currentListPage = 1;
     }
   },
   beforeUnmount() {
