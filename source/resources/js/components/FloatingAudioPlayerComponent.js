@@ -226,8 +226,8 @@ export const FloatingAudioPlayerComponent = {
       return null;
     },
     sortedRecordings() {
-      // Recordings are kept pre-sorted (newest first) on insert;
-      // only re-sort as a safety net when the prop changes
+      // Recordings are expected to be kept pre-sorted (newest first)
+      // before they are passed into this component.
       return this.recordings;
     },
     progressPercent() {
