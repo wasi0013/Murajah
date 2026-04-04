@@ -438,13 +438,16 @@ export class ResourceCache {
     if (!this.db?.db) return;
     
     try {
-      const tx = this.db.db.transaction(['resourceCache'], 'readwrite');
-      const store = tx.objectStore('resourceCache');
-      store.clear();
+      const tx = this.db.db.transaction(['resourceCache', 'appData'], 'readwrite');
+      const resourceStore = tx.objectStore('resourceCache');
+      const appDataStore = tx.objectStore('appData');
+      resourceStore.clear();
+      appDataStore.delete('cache-version');
+      appDataStore.delete('cache-stats');
       
       return new Promise((resolve, reject) => {
         tx.oncomplete = () => {
-          Logger.info(Logger.MODULES.CACHE, 'IndexedDB resource cache cleared');
+          Logger.info(Logger.MODULES.CACHE, 'IndexedDB resource cache and appData cleared');
           resolve();
         };
         tx.onerror = () => reject(tx.error);
@@ -605,6 +608,20 @@ export class ResourceCache {
           onProgress({ loaded, failed, total, current: resource.id || resource.url });
         }
       }));
+    }
+
+    // Also cache the app shell (HTML, JS, CSS) via SW for true offline support
+    try {
+      const reg = await navigator.serviceWorker?.ready;
+      if (reg?.active) {
+        await new Promise((resolve) => {
+          const mc = new MessageChannel();
+          mc.port1.onmessage = () => resolve();
+          reg.active.postMessage({ type: 'CACHE_APP_SHELL' }, [mc.port2]);
+        });
+      }
+    } catch (e) {
+      // Non-fatal — app shell may already be cached from SW install
     }
 
     // Update cache version after full refresh

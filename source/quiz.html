@@ -1296,6 +1296,9 @@
                             <div v-else class="bg-red-50  border border-red-500 rounded-lg p-4">
                                 <p class="text-red-700  font-semibold">{{ t('quiz.completion.feedbackIncorrect') }}</p>
                             </div>
+                            <button v-if="autoNextPending" @click="skipToNext" class="w-full p-3 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition-colors">
+                                {{ t('quiz.next') || 'Next →' }}
+                            </button>
                         </div>
                     </div>
 
@@ -1452,6 +1455,9 @@
                                         {{ t('quiz.continuation.feedbackCorrect', { verse: continuationOptions.find(opt => opt.isCorrect).verse }) }}
                                     </p>
                                 </div>
+                                <button v-if="autoNextPending" @click="skipToNext" class="w-full p-3 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition-colors">
+                                    {{ t('quiz.next') || 'Next →' }}
+                                </button>
                             </template>
                         </div>
                     </div>
@@ -1600,6 +1606,9 @@
                                         {{ t('quiz.translationMatch.feedbackCorrect') }}
                                     </p>
                                 </div>
+                                <button v-if="autoNextPending" @click="skipToNext" class="w-full p-3 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition-colors">
+                                    {{ t('quiz.next') || 'Next →' }}
+                                </button>
                             </template>
                         </div>
                     </div>
@@ -1664,14 +1673,14 @@
                                 @touchend.prevent="toggleSurah(number)"
                                 @click="toggleSurah(number)"
                                 class="p-3 rounded-lg cursor-pointer transition-all border-2 surah-grid-item relative"
-                                :class="selectedSurahs.includes(number) 
+                                :class="selectedSurahsSet.has(number) 
                                     ? 'surah-selected' 
                                     : 'bg-white text-gray-700 border-gray-300'">
                                 <div class="text-center">
                                     <p class="font-bold text-lg">{{ number }}</p>
                                     <p class="font-arabic text-sm leading-tight">{{ name }}</p>
                                 </div>
-                                <span v-if="selectedSurahs.includes(number)" class="absolute top-1 right-1.5 text-white text-xs font-bold leading-none">✓</span>
+                                <span v-if="selectedSurahsSet.has(number)" class="absolute top-1 right-1.5 text-white text-xs font-bold leading-none">✓</span>
                             </div>
                         </div>
                     </div>
@@ -1939,7 +1948,7 @@
 
     <!-- Vue App Script -->
     <script type="module">
-        const { createApp, ref, computed, watch, watchEffect } = Vue
+        const { createApp, ref, computed, watch, watchEffect, onBeforeUnmount } = Vue
 
         // Load i18n store for multi-language support
         const { i18nState, t, initLocaleFromStorage } = await import('./resources/js/stores/i18nStore.js');
@@ -2024,6 +2033,7 @@
                 const error = ref(null)
                 const surahs = ref({})
                 const selectedSurahs = ref([])
+                const selectedSurahsSet = computed(() => new Set(selectedSurahs.value))
                 const allSurahsSelected = ref(false)
                 const quranData = ref({})
                 const translationData = ref({})   // English (en.json) — always loaded
@@ -2035,6 +2045,40 @@
                 const sessionScore = ref(0)
                 const sessionAttempts = ref(0)
                 const streak = ref(0)
+                
+                // Auto-next timer (shared across quiz types, allows tap-to-skip)
+                let autoNextTimerId = null
+                let autoNextFn = null
+                const autoNextPending = ref(false)
+                const scheduleAutoNext = (nextFn) => {
+                    clearAutoNext()
+                    autoNextFn = nextFn
+                    autoNextPending.value = true
+                    autoNextTimerId = setTimeout(() => {
+                        autoNextPending.value = false
+                        autoNextTimerId = null
+                        autoNextFn = null
+                        nextFn()
+                    }, 3000)
+                }
+                const skipToNext = () => {
+                    if (autoNextTimerId && autoNextFn) {
+                        clearTimeout(autoNextTimerId)
+                        autoNextTimerId = null
+                        autoNextPending.value = false
+                        const fn = autoNextFn
+                        autoNextFn = null
+                        fn()
+                    }
+                }
+                const clearAutoNext = () => {
+                    if (autoNextTimerId) {
+                        clearTimeout(autoNextTimerId)
+                        autoNextTimerId = null
+                    }
+                    autoNextFn = null
+                    autoNextPending.value = false
+                }
 
                 // Test Continuation Quiz State
                 const continuationVerse = ref(null)
@@ -2244,10 +2288,8 @@
                         console.error('Error saving score:', err);
                     }
 
-                    // Auto-generate new question after delay
-                    setTimeout(() => {
-                        generateNewQuestion();
-                    }, 3000);
+                    // Auto-generate new question after delay (tap to skip)
+                    scheduleAutoNext(() => generateNewQuestion());
                 };
 
                 // Load surahs data
@@ -2613,10 +2655,8 @@
                         console.error('Error saving score:', err);
                     }
 
-                    // Auto-generate new question after delay
-                    setTimeout(() => {
-                        generateCompletionQuestion();
-                    }, 3000);
+                    // Auto-generate new question after delay (tap to skip)
+                    scheduleAutoNext(() => generateCompletionQuestion());
                 };
 
                 // Generate continuation question
@@ -2726,10 +2766,8 @@
                         console.error('Error saving score:', err);
                     }
 
-                    // Auto-generate new question after delay
-                    setTimeout(() => {
-                        generateContinuationQuestion();
-                    }, 3000);
+                    // Auto-generate new question after delay (tap to skip)
+                    scheduleAutoNext(() => generateContinuationQuestion());
                 };
 
                 // Lightning Round Functions
@@ -3045,6 +3083,10 @@
                     }
                 }
 
+                // Clean up timer on unmount or page navigation
+                onBeforeUnmount(cleanupLightningRound);
+                window.addEventListener('beforeunload', cleanupLightningRound);
+
                 // Load quiz data (old format for continuation, new for verse completion)
                 const loadQuizData = async () => {
                     try {
@@ -3158,6 +3200,7 @@
                     error,
                     surahs,
                     selectedSurahs,
+                    selectedSurahsSet,
                     allSurahsSelected,
                     quranData,
                     translationData,
@@ -3209,6 +3252,8 @@
                     checkCompletionAnswer,
                     getFilledWord,
                     getCorrectWordForBlank,
+                    autoNextPending,
+                    skipToNext,
                     lightningSelectedTime,
                     lightningSelectedDifficulty,
                     lightningTimeLeft,

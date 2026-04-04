@@ -3255,13 +3255,14 @@
       const resourceCache = initResourceCache(murajahDB);
       
       // Check if cache needs refresh due to version change (non-blocking)
-      resourceCache.needsVersionRefresh().then(needsCacheRefresh => {
+      resourceCache.needsVersionRefresh().then(async (needsCacheRefresh) => {
         if (needsCacheRefresh) {
           Logger.log('[Murajah] Cache version changed, showing update banner');
-          // Show update banner so user refreshes to get latest version
           if (window.showUpdateNotification) {
             window.showUpdateNotification();
           }
+          // Save version so banner doesn't re-appear after user refreshes
+          await resourceCache.setCacheVersion(CACHE_VERSION);
         }
       });
 
@@ -4993,26 +4994,6 @@
                       {{ $t('settings.cacheInfo') || 'After downloading, the app will work completely offline (except audio recitations which require internet).' }}
                     </div>
                     
-                    <!-- Cache Stats -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div class="p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-                        <p class="text-xs text-gray-600">{{ $t('settings.cacheCached') || 'Cached' }}</p>
-                        <p class="text-lg font-bold text-cyan-600">{{ cacheStats.totalCached }}/{{ cacheStats.totalResources }}</p>
-                      </div>
-                      <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                        <p class="text-xs text-gray-600">{{ $t('settings.cacheSize') || 'Cache Size' }}</p>
-                        <p class="text-lg font-bold text-purple-600">{{ cacheStats.formattedSize }}</p>
-                      </div>
-                      <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p class="text-xs text-gray-600">{{ $t('settings.cacheVersion') || 'Version' }}</p>
-                        <p class="text-lg font-bold text-blue-600">{{ cacheStats.version }}</p>
-                      </div>
-                      <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <p class="text-xs text-gray-600">{{ $t('settings.cacheHits') || 'Cache Hits' }}</p>
-                        <p class="text-lg font-bold text-green-600">{{ cacheStats.hits }}</p>
-                      </div>
-                    </div>
-
                     <!-- Cache Progress Bar (shown during refresh) -->
                     <div v-if="cacheRefreshInProgress" class="space-y-2">
                       <div class="flex items-center justify-between text-sm">
@@ -5925,6 +5906,12 @@
           };
           
           window.showUpdateNotification = () => {
+            // Don't show banner if user just refreshed (within 30 seconds)
+            const lastRefresh = sessionStorage.getItem('murajah-just-refreshed');
+            if (lastRefresh && (Date.now() - parseInt(lastRefresh)) < 30000) {
+              console.log('[Murajah] Suppressing update banner — user just refreshed');
+              return;
+            }
             showUpdateBanner.value = true;
           };
           
@@ -6618,6 +6605,8 @@
                       console.warn('[Murajah] Failed to load recording blob:', error);
                     }
                   }
+                  // Pre-sort descending by timestamp (newest first)
+                  audioStore.recordings.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 }
                 if (data.settings) {
                   Object.assign(settingsStore, data.settings);
@@ -7137,15 +7126,10 @@
 
           // Navigation functions
           const previousPage = async () => {
-            // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
             if (forceQuranMode && forceQuranMode.value && settingsStore.showTafsir) {
-              try {
-                settingsStore.showTafsir = false;
-                await murajahDB.setSetting('showTafsir', false);
-              } catch (e) {
-                settingsStore.showTafsir = false;
-              }
+              settingsStore.showTafsir = false;
+              murajahDB.setSetting('showTafsir', false).catch(() => {});
             }
 
             if (appStore.currentPage > 1) {
@@ -7157,15 +7141,10 @@
           };
 
           const nextPage = async () => {
-            // Ensure core view is active. Only hide Tafsir if user explicitly forced Quran mode.
             viewMode.value = 'core';
             if (forceQuranMode && forceQuranMode.value && settingsStore.showTafsir) {
-              try {
-                settingsStore.showTafsir = false;
-                await murajahDB.setSetting('showTafsir', false);
-              } catch (e) {
-                settingsStore.showTafsir = false;
-              }
+              settingsStore.showTafsir = false;
+              murajahDB.setSetting('showTafsir', false).catch(() => {});
             }
 
             if (appStore.currentPage < totalPages.value) {
@@ -7219,17 +7198,12 @@
             gotoInput.value = '';
 
             // Only hide Tafsir if the user explicitly forced Quran mode.
-            if (forceQuranMode && forceQuranMode.value) {
-              try {
-                settingsStore.showTafsir = false;
-                await murajahDB.setSetting('showTafsir', false);
-              } catch (e) {
-                settingsStore.showTafsir = false;
-              }
+            if (forceQuranMode && forceQuranMode.value && settingsStore.showTafsir) {
+              settingsStore.showTafsir = false;
+              murajahDB.setSetting('showTafsir', false).catch(() => {});
             }
 
-            // Update URL (this replaces search with ?page=...) which removes tafsir param
-            updateURL();
+            // URL is updated by the currentPage watcher
 
             // Wait for Vue to render the core view, then scroll Quran section into view
             await nextTick();
@@ -8591,7 +8565,7 @@
                   timestamp: Date.now()
                 };
 
-                audioStore.recordings.push(recording);
+                audioStore.recordings.unshift(recording);
                 audioStore.isRecording = false;
                 recordingStartTime.value = null;
                 recordingDuration.value = '0:00';
@@ -8958,16 +8932,20 @@
             }
 
             try {
+              // Clear IndexedDB resources + font caches
               await resourceCache.clearAll();
-              await updateCacheStats();
-              cacheStatusMessage.value = { 
-                type: 'success', 
-                text: t('settings.cacheClearedSuccess') || 'Cache cleared successfully'
-              };
-
-              setTimeout(() => {
-                cacheStatusMessage.value = null;
-              }, 5000);
+              
+              // Also clear SW main cache (app shell)
+              if (window.swClearCache) {
+                try {
+                  await window.swClearCache();
+                } catch (e) {
+                  console.warn('[Murajah] SW cache clear failed:', e);
+                }
+              }
+              
+              // Auto-reload to re-download essential resources
+              window.location.reload();
 
             } catch (error) {
               console.error('[Murajah] Failed to clear cache:', error);
@@ -8986,6 +8964,7 @@
            */
           const refreshApp = async () => {
             showUpdateBanner.value = false;
+            sessionStorage.setItem('murajah-just-refreshed', Date.now().toString());
             // Set flag so controllerchange handler knows a reload is already planned
             window.__murajahManualRefresh = true;
             try {
