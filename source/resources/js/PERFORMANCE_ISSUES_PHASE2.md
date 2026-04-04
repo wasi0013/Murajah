@@ -22,57 +22,36 @@ computed property.
 
 ---
 
-## 3. Quiz Lightning Round — Timer Memory Leak
+## 3. ~~Quiz Lightning Round — Timer Memory Leak~~ (RESOLVED)
 
-**File:** `../../quiz.html` (~line 2695)
-
-`setInterval` for the lightning timer is never cleaned up if the user navigates away
-mid-round. No `onBeforeUnmount` or `onUnmounted` hook clears the interval.
-
-**Fix:** Add `onUnmounted(() => clearInterval(lightningTimerId.value))`.
+Fixed: Added `onBeforeUnmount(cleanupLightningRound)` and `beforeunload` listener
+in quiz.html to clear interval on navigation.
 
 ---
 
-## 4. Quiz Auto-Navigation — Hardcoded 3s Delay
+## 4. ~~Quiz Auto-Navigation — Hardcoded 3s Delay~~ (RESOLVED)
 
-**File:** `../../quiz.html` (lines ~2113, 2526, 2588)
-
-After answering a question, a `setTimeout(() => generateNewQuestion(), 3000)` forces a
-3-second pause. Users on fast devices cannot skip ahead.
-
-**Fix:** Use animation-end detection or allow tap-to-skip.
+Fixed: Replaced raw `setTimeout` with `scheduleAutoNext`/`skipToNext` system.
+All three quiz modes now show a "Next →" skip button during the 3s wait.
 
 ---
 
-## 5. Morphology Preloader — O(n²) Word Scan (Dormant)
+## 5. ~~Morphology Preloader — O(n²) Word Scan~~ (RESOLVED)
 
-**File:** `utils/morphologyLoader.js` (~line 137)
-
-`preloadMorphologyForPage` uses `Object.values(wordsData).find(w => w.id === wid)` inside
-a loop over all words on a page — O(600 × 77,000) per call. Currently **not called** in
-production code, but if re-enabled it would freeze the UI for ~500ms per page navigation.
-
-**Fix:** Accept a `wordById` lookup map (from `getWordByIdLookup()` in unifiedDataLoader)
-instead of raw `wordsData`.
+Fixed: `preloadMorphologyForPage` now builds a `Map()` from `Object.values(wordsData)`
+for O(1) lookup instead of O(n) `.find()` in the inner loop.
 
 ---
 
-## 6. Quiz Surah Selection — O(n²) includes() Check
+## 6. ~~Quiz Surah Selection — O(n²) includes() Check~~ (RESOLVED)
 
-**File:** `../../quiz.html` (~line 1580)
-
-`selectedSurahs.includes(number)` inside a `v-for` over 114 surahs is O(n) per item =
-O(n²) on each toggle.
-
-**Fix:** Use a `Set` for `selectedSurahs` and check with `.has()`.
+Fixed: Added `selectedSurahsSet = computed(() => new Set(selectedSurahs.value))`
+and replaced template `.includes()` calls with `.has()` for O(1) lookups.
 
 ---
 
-## 7. Audio Player — Sorted Recordings Re-computed
+## 7. ~~Audio Player — Sorted Recordings Re-computed~~ (RESOLVED)
 
-**File:** `components/FloatingAudioPlayerComponent.js` (line ~193)
-
-`sortedRecordings` computed spreads and re-sorts the entire recordings array
-on every render.
-
-**Fix:** Keep recordings pre-sorted on insert; avoid re-sort in computed.
+Fixed: New recordings inserted via `unshift` (pre-sorted newest-first).
+DB-loaded recordings sorted once after load. `sortedRecordings` computed
+now returns `this.recordings` directly (no re-sort).

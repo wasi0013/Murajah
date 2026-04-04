@@ -226,8 +226,9 @@ export const FloatingAudioPlayerComponent = {
       return null;
     },
     sortedRecordings() {
-      // Sort by timestamp descending (most recent first)
-      return [...this.recordings].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      // Recordings are expected to be kept pre-sorted (newest first)
+      // before they are passed into this component.
+      return this.recordings;
     },
     progressPercent() {
       if (!this.duration || !isFinite(this.duration)) return 0;
@@ -413,15 +414,12 @@ export const FloatingAudioPlayerComponent = {
       const recording = this.sortedRecordings[index];
       if (!recording) return;
 
-      // Find the original index in the unsorted recordings array
-      const originalIndex = this.recordings.findIndex(r => r.timestamp === recording.timestamp);
-      
       if (this.currentIndex === index) {
         this.stopPlayback();
       }
 
-      if (this.onDelete && originalIndex !== -1) {
-        this.onDelete(originalIndex);
+      if (this.onDelete) {
+        this.onDelete(index);
       }
 
       // Adjust current index if needed

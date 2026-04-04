@@ -135,6 +135,14 @@ export const preloadMorphologyForPage = async (pageNum, layoutData, wordsData) =
     return new Set();
   }
 
+  // Build a word-by-id lookup map for O(1) access instead of O(n) find
+  const wordById = new Map();
+  for (const word of Object.values(wordsData)) {
+    if (word.id != null) {
+      wordById.set(word.id, word);
+    }
+  }
+
   // Find all surahs on this page
   const surahsOnPage = new Set();
   const lines = layoutData.pages.filter(line => line.page_number === pageNum);
@@ -142,7 +150,7 @@ export const preloadMorphologyForPage = async (pageNum, layoutData, wordsData) =
   for (const line of lines) {
     if (line.first_word_id && line.last_word_id) {
       for (let wid = parseInt(line.first_word_id); wid <= parseInt(line.last_word_id); wid++) {
-        const word = Object.values(wordsData).find(w => w.id === wid);
+        const word = wordById.get(wid);
         if (word?.surah) {
           surahsOnPage.add(word.surah);
         }

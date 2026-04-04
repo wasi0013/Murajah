@@ -171,10 +171,28 @@ async function findCachedFont(request) {
  */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
+  let cachedResponse = await cache.match(request);
   
   // For navigation requests (HTML pages), handle specially
   const isNavigation = request.mode === 'navigate';
+  
+  // Don't return redirected responses for navigation requests (Safari strict)
+  if (cachedResponse && isNavigation && cachedResponse.redirected) {
+    console.log('[SW] Skipping redirected cached response for navigation:', request.url);
+    cachedResponse = null;
+  }
+  
+  // For navigation to root/directory, also try index.html as fallback
+  if (!cachedResponse && isNavigation) {
+    const urlPath = new URL(request.url).pathname;
+    if (urlPath.endsWith('/')) {
+      const indexUrl = new URL('index.html', request.url).href;
+      const indexResponse = await cache.match(indexUrl);
+      if (indexResponse && !indexResponse.redirected) {
+        cachedResponse = indexResponse;
+      }
+    }
+  }
   
   // Start fetching fresh copy in background
   const fetchPromise = (async () => {
@@ -205,15 +223,27 @@ async function staleWhileRevalidate(request, cacheName) {
           
           await cache.put(request, responseToCache);
           
-          // For HTML files, notify clients about the update
+          // For HTML files, notify clients only if content actually changed
           if (request.destination === 'document' || request.url.endsWith('.html')) {
-            const clients = await self.clients.matchAll();
-            clients.forEach(client => {
-              client.postMessage({
-                type: 'CONTENT_UPDATED',
-                url: request.url
+            const newEtag = networkResponse.headers.get('etag');
+            const oldEtag = cachedResponse?.headers?.get('etag');
+            const newLength = networkResponse.headers.get('content-length');
+            const oldLength = cachedResponse?.headers?.get('content-length');
+            
+            const contentChanged = !cachedResponse 
+              || (newEtag && oldEtag && newEtag !== oldEtag)
+              || (newLength && oldLength && newLength !== oldLength)
+              || (!newEtag && !newLength); // Can't tell — notify to be safe
+            
+            if (contentChanged) {
+              const clients = await self.clients.matchAll();
+              clients.forEach(client => {
+                client.postMessage({
+                  type: 'CONTENT_UPDATED',
+                  url: request.url
+                });
               });
-            });
+            }
           }
         } catch (e) {
           console.warn('[SW] Failed to cache response:', e.message);
@@ -373,6 +403,13 @@ self.addEventListener('install', (event) => {
                   })
                 : response;
               await cache.put(url, responseToCache);
+              // For root URL, also cache under ./index.html for Safari compatibility
+              if (url === './' && response.redirected) {
+                const indexCached = await cache.match('./index.html');
+                if (!indexCached) {
+                  await cache.put('./index.html', responseToCache.clone());
+                }
+              }
             } else {
               console.warn(`[SW] Got status ${response.status} for: ${url}`);
               if (CRITICAL_RESOURCES.includes(url)) {
@@ -548,6 +585,36 @@ self.addEventListener('message', (event) => {
       ]).then(() => {
         event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
       });
+      break;
+
+    case 'CACHE_APP_SHELL':
+      (async () => {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          let cached = 0;
+          for (const url of APP_SHELL) {
+            try {
+              const response = await fetch(url);
+              if (response.ok) {
+                const toCache = response.redirected
+                  ? new Response(await response.blob(), {
+                      status: response.status,
+                      statusText: response.statusText,
+                      headers: response.headers
+                    })
+                  : response;
+                await cache.put(url, toCache);
+                cached++;
+              }
+            } catch (e) {
+              // Non-fatal — skip individual failures
+            }
+          }
+          event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { cached, total: APP_SHELL.length } });
+        } catch (e) {
+          event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { error: e.message } });
+        }
+      })();
       break;
       
     case 'DEBUG_FONT_CACHE':
