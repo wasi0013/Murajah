@@ -1,9 +1,11 @@
 /**
  * Quran Audio Player Component
  * Plays all verses of the current page sequentially
+ * Supports verse-by-verse and page-by-page audio modes
  */
 
 import Logger from '../utils/logger.js';
+import { getPageAudioUrls, PAGE_RECITERS } from '../utils/audioLoader.js';
 
 export const QuranAudioPlayerComponent = {
   template: `
@@ -13,7 +15,15 @@ export const QuranAudioPlayerComponent = {
         <div class="flex items-center gap-3">
           <i class="fas fa-music text-blue-600 text-xl"></i>
           <h3 class="text-lg font-semibold text-gray-900">
-            <span v-if="selectedSurahForAudio">{{ selectedSurahName }} ({{ selectedSurahVerses.length }} verses)</span>
+            <span v-if="isPageMode">
+              {{ $t('audio.pageAudio', { page: currentPage }) }}
+              <span v-if="pageAudioUrls.length > 1" class="text-sm font-normal text-gray-500">
+                ({{ $t('audio.partOf', { current: currentPageAudioIndex + 1, total: pageAudioUrls.length }) }})
+              </span>
+              <span v-else-if="pageAudioUrls.length === 0" class="text-sm font-normal text-gray-500">
+              </span>
+            </span>
+            <span v-else-if="selectedSurahForAudio">{{ selectedSurahName }} ({{ selectedSurahVerses.length }} verses)</span>
             <span v-else>
               {{ $t('audio.pageAudio', { page: currentPage }) }}
               <span v-if="pageVerses.length > 0" class="text-sm font-normal text-gray-500">
@@ -23,6 +33,7 @@ export const QuranAudioPlayerComponent = {
           </h3>
         </div>
         <button 
+          v-if="!isPageMode"
           @click="togglePlaylist" 
           class="text-gray-500 hover:text-gray-700 transition"
           :title="showPlaylist ? $t('audio.hidePlaylist') : $t('audio.showPlaylist')"
@@ -31,14 +42,130 @@ export const QuranAudioPlayerComponent = {
         </button>
       </div>
 
-      <!-- No verses message -->
-      <div v-if="versesToPlay.length === 0" class="text-center py-4 text-gray-500">
+      <!-- No audio message (page mode) -->
+      <div v-if="isPageMode && pageAudioUrls.length === 0" class="text-center py-4 text-gray-500">
+        <i class="fas fa-info-circle mr-2"></i>
+        {{ $t('audio.noPageAudio') }}
+      </div>
+
+      <!-- No verses message (verse mode) -->
+      <div v-if="!isPageMode && versesToPlay.length === 0" class="text-center py-4 text-gray-500">
         <i class="fas fa-info-circle mr-2"></i>
         {{ $t('audio.noVerses') }}
       </div>
 
-      <!-- Player Controls -->
-      <div v-else class="space-y-4">
+      <!-- Page-by-page Player Controls -->
+      <div v-if="isPageMode && pageAudioUrls.length > 0" class="space-y-4">
+        <!-- Progress bar -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-gray-600 w-10">{{ currentPageAudioIndex + 1 }}</span>
+          <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden cursor-pointer" @click="seekAudio">
+            <div 
+              class="bg-blue-600 h-full transition-all"
+              :style="{ width: progressPercentage + '%' }"
+            ></div>
+          </div>
+          <span class="text-xs font-medium text-gray-600 w-10 text-right">{{ pageAudioUrls.length }}</span>
+        </div>
+
+        <!-- Playback time -->
+        <div class="flex justify-between text-xs text-gray-500">
+          <span>{{ formatTime(currentTime) }}</span>
+          <span>{{ formatTime(duration) }}</span>
+        </div>
+
+        <!-- Control buttons -->
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+            <button 
+              @click="previousPageAudioPart" 
+              class="p-2 rounded-full hover:bg-gray-100 transition"
+              :disabled="currentPageAudioIndex === 0"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPageAudioIndex === 0 }"
+            >
+              <i class="fas fa-step-backward text-gray-600"></i>
+            </button>
+
+            <button 
+              @click="togglePagePlayPause" 
+              class="p-3 rounded-full bg-blue-600 hover:bg-blue-700 transition text-white"
+            >
+              <i :class="['fas', isPlaying ? 'fa-pause' : 'fa-play']"></i>
+            </button>
+
+            <button 
+              @click="nextPageAudioPart" 
+              class="p-2 rounded-full hover:bg-gray-100 transition"
+              :disabled="currentPageAudioIndex >= pageAudioUrls.length - 1"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPageAudioIndex >= pageAudioUrls.length - 1 }"
+            >
+              <i class="fas fa-step-forward text-gray-600"></i>
+            </button>
+
+            <button 
+              @click="toggleAutoPlay" 
+              class="p-2 rounded-full transition"
+              :class="[
+                autoPlayNext 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              ]"
+              :title="$t('audio.autoPlay')"
+            >
+              <i class="fas fa-long-arrow-alt-right"></i>
+            </button>
+
+            <button 
+              @click="toggleRepeatPlaylist" 
+              class="p-2 rounded-full transition"
+              :class="[
+                repeatPlaylist 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              ]"
+              :title="$t('audio.repeatPlaylist')"
+            >
+              <i class="fas fa-retweet"></i>
+            </button>
+
+            <button 
+              @click="stopAudio" 
+              class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600"
+            >
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
+
+          <!-- Speed + Reciter selector (page mode) -->
+          <div class="flex items-center gap-2 sm:gap-3 w-full lg:w-auto flex-wrap lg:flex-nowrap justify-between lg:justify-end">
+            <div class="flex items-center gap-1 min-w-0">
+              <label class="text-xs font-medium text-gray-700 whitespace-nowrap">{{ $t('audio.speed') }}</label>
+              <select 
+                v-model.number="playbackSpeed" 
+                @change="applyPlaybackSpeed"
+                class="px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option v-for="s in speedOptions" :key="s" :value="s">{{ s }}x</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1 min-w-0">
+              <label class="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">{{ $t('audio.reciterLabel') }}</label>
+              <select 
+                v-model="selectedPageReciter" 
+                @change="onPageReciterChange"
+                class="px-2 sm:px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option v-for="reciter in pageReciters" :key="reciter.id" :value="reciter.id">
+                  {{ $t('reciters.' + reciter.id) || reciter.id }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verse-by-verse Player Controls (original) -->
+      <div v-if="!isPageMode && versesToPlay.length > 0" class="space-y-4">
         <!-- Progress bar -->
         <div class="flex items-center gap-2">
           <span class="text-xs font-medium text-gray-600 w-10">{{ currentVerseName }}</span>
@@ -120,8 +247,20 @@ export const QuranAudioPlayerComponent = {
             </button>
           </div>
 
-          <!-- Right side: Reciter selector, Surah selector, and Spaced Repetition button -->
+          <!-- Right side: Speed, Reciter selector, Surah selector, and Spaced Repetition button -->
           <div class="flex items-center gap-2 sm:gap-3 w-full lg:w-auto flex-wrap lg:flex-nowrap justify-between lg:justify-end">
+            <!-- Speed control -->
+            <div class="flex items-center gap-1 min-w-0">
+              <label class="text-xs font-medium text-gray-700 whitespace-nowrap">{{ $t('audio.speed') }}</label>
+              <select 
+                v-model.number="playbackSpeed" 
+                @change="applyPlaybackSpeed"
+                class="px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option v-for="s in speedOptions" :key="s" :value="s">{{ s }}x</option>
+              </select>
+            </div>
+
             <!-- Surah selector -->
             <div class="flex items-center gap-2 min-w-0">
               <select 
@@ -250,6 +389,10 @@ export const QuranAudioPlayerComponent = {
     db: {
       type: Object,
       default: null
+    },
+    audioPlayMode: {
+      type: String,
+      default: 'verse' // 'verse' or 'page'
     }
   },
 
@@ -299,11 +442,23 @@ export const QuranAudioPlayerComponent = {
       currentSequenceIndices: [], // Verses in current sequence
       currentSequencePosition: 0, // Which verse in sequence
       currentSequenceRepeatCount: 1, // How many times to repeat the sequence
-      currentSequenceRepeatPosition: 0 // Which repeat we're on
+      currentSequenceRepeatPosition: 0, // Which repeat we're on
+      // Page-by-page audio mode
+      pageAudioUrls: [], // Array of audio URLs for the current page
+      currentPageAudioIndex: 0, // Current index in pageAudioUrls
+      selectedPageReciter: 'alafasy', // Default page-by-page reciter
+      pageReciters: PAGE_RECITERS,
+      // Playback speed
+      playbackSpeed: 1,
+      speedOptions: [0.25, 0.5, 0.75, 0.85, 1, 1.5, 1.75, 2]
     };
   },
 
   computed: {
+    isPageMode() {
+      return this.audioPlayMode === 'page';
+    },
+
     versesToPlay() {
       // Return surah verses if surah is selected, otherwise page verses
       return this.selectedSurahForAudio ? this.selectedSurahVerses : this.pageVerses;
@@ -415,6 +570,27 @@ export const QuranAudioPlayerComponent = {
           Logger.logWarn('[Murajah-Audio] Saved reciter not found in available list, using default');
         }
       }
+
+      // Load page reciter
+      try {
+        const savedPageReciter = localStorage.getItem('murajah-page-reciter');
+        if (savedPageReciter && PAGE_RECITERS.find(r => r.id === savedPageReciter)) {
+          this.selectedPageReciter = savedPageReciter;
+          Logger.log('[Murajah-Audio] Applied saved page reciter:', savedPageReciter);
+        }
+      } catch (e) { /* ignore */ }
+
+      // Load playback speed
+      try {
+        const savedSpeed = localStorage.getItem('murajah-playback-speed');
+        if (savedSpeed) {
+          const speed = parseFloat(savedSpeed);
+          if (this.speedOptions.includes(speed)) {
+            this.playbackSpeed = speed;
+            Logger.log('[Murajah-Audio] Applied saved playback speed:', speed);
+          }
+        }
+      } catch (e) { /* ignore */ }
     },
 
     /**
@@ -965,6 +1141,7 @@ export const QuranAudioPlayerComponent = {
      */
     onAudioEnded() {
       Logger.log('[Murajah-Audio] onAudioEnded called', {
+        isPageMode: this.isPageMode,
         autoPlayNext: this.autoPlayNext,
         useSpacedRepetition: this.useSpacedRepetition,
         spacedPlaylistLength: this.spacedPlaylist.length,
@@ -978,6 +1155,22 @@ export const QuranAudioPlayerComponent = {
       if (!this.autoPlayNext) {
         this.isPlaying = false;
         Logger.log('[Murajah-Audio] AutoPlay disabled, stopping');
+        return;
+      }
+
+      // Page-by-page mode
+      if (this.isPageMode) {
+        if (this.currentPageAudioIndex < this.pageAudioUrls.length - 1) {
+          // Play next part of the page
+          this.playPageAudioPart(this.currentPageAudioIndex + 1);
+        } else if (this.repeatPlaylist) {
+          // Restart from beginning
+          Logger.log('[Murajah-Audio] Restarting page audio from beginning');
+          this.playPageAudioPart(0);
+        } else {
+          this.isPlaying = false;
+          Logger.log('[Murajah-Audio] Page audio completed');
+        }
         return;
       }
 
@@ -1035,6 +1228,11 @@ export const QuranAudioPlayerComponent = {
      */
     onAudioError(error) {
       console.error('[Murajah] Audio loading error:', error);
+      // In page mode, there's no fallback source
+      if (this.isPageMode) {
+        this.isPlaying = false;
+        return;
+      }
       // Try fallback
       const verse = this.pageVerses[this.currentVerseIndex];
       if (verse) {
@@ -1061,6 +1259,111 @@ export const QuranAudioPlayerComponent = {
      */
     togglePlaylist() {
       this.showPlaylist = !this.showPlaylist;
+    },
+
+    applyPlaybackSpeed() {
+      if (this.audioElement) {
+        this.audioElement.playbackRate = this.playbackSpeed;
+      }
+      try {
+        localStorage.setItem('murajah-playback-speed', String(this.playbackSpeed));
+      } catch (e) { /* ignore */ }
+      Logger.log('[Murajah-Audio] Playback speed set to:', this.playbackSpeed);
+    },
+
+    // ===== Page-by-page audio methods =====
+
+    /**
+     * Load page audio URLs for the current page
+     */
+    loadPageAudioUrls() {
+      this.pageAudioUrls = getPageAudioUrls(this.currentPage, this.selectedPageReciter);
+      this.currentPageAudioIndex = 0;
+      this.currentTime = 0;
+      this.duration = 0;
+      this.isPlaying = false;
+      this.needsReload = true;
+      Logger.log('[Murajah-Audio] Loaded page audio URLs:', this.pageAudioUrls.length, 'parts for page', this.currentPage, 'reciter', this.selectedPageReciter);
+    },
+
+    /**
+     * Play a specific page audio part by index
+     */
+    playPageAudioPart(index) {
+      if (index < 0 || index >= this.pageAudioUrls.length) {
+        Logger.log('[Murajah-Audio] Invalid page audio index:', index);
+        return;
+      }
+
+      this.currentPageAudioIndex = index;
+      const url = this.pageAudioUrls[index];
+      Logger.log('[Murajah-Audio] Playing page audio part:', index, url);
+
+      this.audioElement.src = url;
+      this.audioElement.play().catch(error => {
+        console.error('[Murajah] Page audio playback error:', error);
+      });
+
+      this.isPlaying = true;
+      this.needsReload = false;
+    },
+
+    /**
+     * Toggle play/pause for page-by-page mode
+     */
+    togglePagePlayPause() {
+      if (this.pageAudioUrls.length === 0) {
+        Logger.log('[Murajah-Audio] No page audio to play');
+        return;
+      }
+
+      if (this.isPlaying) {
+        this.audioElement.pause();
+        this.isPlaying = false;
+      } else {
+        if (this.needsReload) {
+          this.playPageAudioPart(this.currentPageAudioIndex);
+        } else {
+          this.audioElement.play().catch(error => {
+            console.error('[Murajah] Page audio playback error:', error);
+          });
+          this.isPlaying = true;
+        }
+      }
+    },
+
+    /**
+     * Play next page audio part
+     */
+    nextPageAudioPart() {
+      if (this.currentPageAudioIndex < this.pageAudioUrls.length - 1) {
+        this.playPageAudioPart(this.currentPageAudioIndex + 1);
+      }
+    },
+
+    /**
+     * Play previous page audio part
+     */
+    previousPageAudioPart() {
+      if (this.currentPageAudioIndex > 0) {
+        this.playPageAudioPart(this.currentPageAudioIndex - 1);
+      }
+    },
+
+    async onPageReciterChange() {
+      Logger.log('[Murajah-Audio] Page reciter changed to:', this.selectedPageReciter);
+      try {
+        localStorage.setItem('murajah-page-reciter', this.selectedPageReciter);
+      } catch (e) {
+        Logger.logWarn('[Murajah-Audio] localStorage not available');
+      }
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+        this.audioElement.src = '';
+      }
+      this.isPlaying = false;
+      this.loadPageAudioUrls();
     },
 
     /**
@@ -1104,11 +1407,32 @@ export const QuranAudioPlayerComponent = {
   watch: {
     currentPage() {
       this.loadPageVerses();
+      if (this.isPageMode) {
+        this.loadPageAudioUrls();
+      }
     },
     quranData() {
       this.loadPageVerses();
       // Also populate available surahs when quran data changes
       this.populateAvailableSurahs();
+    },
+    audioPlayMode(newVal) {
+      // Stop any currently playing audio
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+        this.audioElement.src = '';
+      }
+      this.isPlaying = false;
+      this.currentTime = 0;
+      this.duration = 0;
+      this.needsReload = true;
+
+      if (newVal === 'page') {
+        this.loadPageAudioUrls();
+      }
+
+      Logger.log('[Murajah-Audio] Audio play mode changed to:', newVal);
     },
     useSpacedRepetition(newVal) {
       // Stop current playback
@@ -1165,12 +1489,21 @@ export const QuranAudioPlayerComponent = {
 
   mounted() {
     this.audioElement = this.$refs.audioElement;
+    // Apply playback speed whenever audio starts playing
+    this.audioElement.addEventListener('play', () => {
+      this.audioElement.playbackRate = this.playbackSpeed;
+    });
     this.loadPageVerses();
     this.populateAvailableSurahs();
     // Load saved reciter from IndexedDB
     this.loadSavedReciter();
+    // Load page audio URLs if in page mode
+    if (this.isPageMode) {
+      this.loadPageAudioUrls();
+    }
     Logger.log('[Murajah] Audio player component mounted', {
       currentPage: this.currentPage,
+      audioPlayMode: this.audioPlayMode,
       quranDataType: typeof this.quranData,
       quranDataIsArray: Array.isArray(this.quranData),
       quranDataKeys: this.quranData && typeof this.quranData === 'object' ? Object.keys(this.quranData).length : 'N/A',

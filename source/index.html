@@ -4358,6 +4358,57 @@
                   <i class="fas fa-chevron-right text-blue-700"></i>
                 </button>
               </div>
+              <!-- Desktop Bottom Navigation Bar -->
+              <div class="hidden sm:flex items-center justify-between gap-2 mb-3 px-3 py-2 bg-white rounded-lg shadow-md border border-gray-200">
+                <button 
+                  @click="previousPage" 
+                  :disabled="appStore.currentPage === 1"
+                  class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm"
+                  :title="$t('navigation.previousPage')"
+                >
+                  <i class="fas fa-chevron-left text-blue-700"></i>
+                  <span class="text-blue-700 font-medium">{{ $t('navigation.prev') }}</span>
+                </button>
+
+                <div class="flex items-center gap-3 flex-1 justify-center">
+                  <select 
+                    @change="(e) => { if (e.target.value) { goToPageNumber(getSurahStartPage(parseInt(e.target.value))); e.target.value = ''; } }" 
+                    class="px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 text-sm hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer max-w-[220px] truncate"
+                    :title="$t('navigation.jumpSurah')"
+                  >
+                    <option value="">{{ currentSurahNumber ? (currentSurahNumber + '. ' + getSurahNameTranslated(currentSurahNumber)) : $t('dashboard.surahPlaceholder') }}</option>
+                    <option v-for="n in 114" :key="n" :value="n">{{ n }}. {{ getSurahNameTranslated(n) }}</option>
+                  </select>
+
+                  <div class="flex items-center gap-1">
+                    <input 
+                      v-model.number="gotoInput" 
+                      @keyup.enter="gotoPage" 
+                      type="number" 
+                      min="1" 
+                      :max="totalPages" 
+                      class="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                      :placeholder="$t('navigation.go')"
+                    >
+                    <button 
+                      @click="gotoPage" 
+                      class="px-3 py-1.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                    >
+                      {{ $t('navigation.go') }}
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  @click="nextPage" 
+                  :disabled="appStore.currentPage === totalPages"
+                  class="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm"
+                  :title="$t('navigation.nextPage')"
+                >
+                  <span class="text-blue-700 font-medium">{{ $t('navigation.next') }}</span>
+                  <i class="fas fa-chevron-right text-blue-700"></i>
+                </button>
+              </div>
                 <!-- Action Buttons -->
               <div class="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4">
                 <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
@@ -4414,6 +4465,7 @@
                 :locale-surahs="currentLocaleSurahs"
                 :current-locale="currentLocale"
                 :db="murajahDB"
+                :audio-play-mode="settingsStore.audioPlayMode"
               ></quran-audio-player-component>
               </div>
 
@@ -4793,6 +4845,21 @@
                           <label class="flex items-center gap-2 cursor-pointer">
                             <input type="radio" name="wordTapMode" value="mistake" :checked="!settingsStore.showMorphology" @change="settingsStore.showMorphology = false; updateSettings()" class="text-blue-600">
                             <span class="text-sm text-gray-700">{{ $t('settings.wordTapMistake') }}</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Audio Play Mode -->
+                      <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">{{ $t('settings.audioPlayMode') }}</label>
+                        <div class="flex flex-col gap-2">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="audioPlayMode" value="verse" :checked="settingsStore.audioPlayMode === 'verse'" @change="settingsStore.audioPlayMode = 'verse'; updateSettings()" class="text-blue-600">
+                            <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModeVerse') }}</span>
+                          </label>
+                          <label class="flex items-center gap-2 cursor-pointer" :class="{ 'opacity-50': isIndopak }">
+                            <input type="radio" name="audioPlayMode" value="page" :checked="settingsStore.audioPlayMode === 'page'" @change="settingsStore.audioPlayMode = 'page'; updateSettings()" class="text-blue-600" :disabled="isIndopak">
+                            <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModePage') }}</span>
                           </label>
                         </div>
                       </div>
@@ -5794,7 +5861,8 @@
             showMorphology: false, // Enable morphology popup on word click
             layout: 'qpc', // 'qpc' (604 pages) or 'indopak' (610 pages) — default QPC with tajweed for new users
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
-            quranBackgroundColor: '#f1ece7'
+            quranBackgroundColor: '#f1ece7',
+            audioPlayMode: 'verse' // 'verse' (default) or 'page' (page-by-page audio)
           });
 
           const memorizedStore = reactive({
@@ -6660,6 +6728,14 @@
             if (!['qpc', 'indopak'].includes(settingsStore.layout)) {
               settingsStore.layout = 'qpc';
             }
+            // Ensure audioPlayMode is always a valid value
+            if (!['verse', 'page'].includes(settingsStore.audioPlayMode)) {
+              settingsStore.audioPlayMode = 'verse';
+            }
+            // Force verse mode if layout is indopak (page-by-page only works with QPC)
+            if (settingsStore.layout === 'indopak' && settingsStore.audioPlayMode === 'page') {
+              settingsStore.audioPlayMode = 'verse';
+            }
           };
 
           // Save data to IndexedDB
@@ -6684,7 +6760,8 @@
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
                 : [],
-              quranBackgroundColor: String(settingsStore.quranBackgroundColor)
+              quranBackgroundColor: String(settingsStore.quranBackgroundColor),
+              audioPlayMode: String(settingsStore.audioPlayMode)
             };
 
             const data = {
@@ -7315,6 +7392,7 @@
             if (nextMode === 'indopak') {
               settingsStore.layout = 'indopak';
               settingsStore.tajweedEnabled = false;
+              settingsStore.audioPlayMode = 'verse'; // Page-by-page only works with QPC
             } else if (nextMode === 'tajweed') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = true;

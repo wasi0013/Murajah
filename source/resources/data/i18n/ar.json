@@ -152,7 +152,10 @@
     "clearCacheConfirm": "هل أنت متأكد أنك تريد مسح كل الموارد المخزنة؟ سيتطلب التطبيق إعادة تنزيل الموارد.",
     "cacheClearedSuccess": "تم مسح التخزين المؤقت بنجاح",
     "cacheClearFailed": "فشل مسح التخزين: {error}",
-    "cachingInProgress": "يجري التنزيل..."
+    "cachingInProgress": "يجري التنزيل...",
+    "audioPlayMode": "تشغيل الصوت",
+    "audioPlayModeVerse": "آية بآية",
+    "audioPlayModePage": "صفحة بصفحة (يعمل فقط مع مصحف التجويد والعثماني)"
   },
   "language": {
     "label": "اللغة",
@@ -308,7 +311,11 @@
     "playsTotal": "{plays} تشغيلًا إجمالًا",
     "cumulativeLearning": "التعلم التراكمي: كل آية تبني على ما قبلها",
     "toggleSpacedRepetition": "تبديل التكرار المتباعد",
-    "pageAudio": "صوت الصفحة {page}"
+    "pageAudio": "صوت الصفحة {page}",
+    "partOf": "الجزء {current} من {total}",
+    "noPageAudio": "لا يتوفر صوت لهذه الصفحة",
+    "pageByPageReciter": "مشاري راشد العفاسي",
+    "speed": "السرعة:"
   },
   "reciters": {
     "shuraim": "الشيخ الشريم",
@@ -327,8 +334,10 @@
     "yasser": "ياسر الدوسري",
     "hani": "هاني الرفاعي",
     "ghamdi": "سعد الغامدي",
-    "hudhaify": "الضحائي",
-    "luhaidan": "محمد اللحيدان"
+    "hudhaify": "الحذيفي",
+    "luhaidan": "محمد اللحيدان",
+    "husary": "محمود خليل الحصري",
+    "juhaynee": "عبد الله عواد الجهني"
   },
   "notifications": {
     "pageMarkedPerfect": "تم وضع علامة على الصفحة {page} كمثالية! (+1)",

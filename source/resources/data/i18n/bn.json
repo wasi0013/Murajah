@@ -152,7 +152,10 @@
     "cachingInProgress": "ডাউনলোড হচ্ছে...",
     "wordTapMode": "শব্দ ট্যাপ মোড (রিভিউ মোড)",
     "wordTapMorphology": "ব্যাকরণ — যেকোনো শব্দে ট্যাপ করে ব্যাকরণ বিশ্লেষণ দেখুন",
-    "wordTapMistake": "ভুল চিহ্নিতকারী — যেকোনো শব্দে ট্যাপ করে ভুল চিহ্নিত করুন"
+    "wordTapMistake": "ভুল চিহ্নিতকারী — যেকোনো শব্দে ট্যাপ করে ভুল চিহ্নিত করুন",
+    "audioPlayMode": "অডিও প্লে",
+    "audioPlayModeVerse": "আয়াত অনুযায়ী",
+    "audioPlayModePage": "পৃষ্ঠা অনুযায়ী (শুধুমাত্র তাজবীদ ও উসমানী মুসহাফে কাজ করে)"
   },
   "language": {
     "label": "ভাষা",
@@ -309,7 +312,11 @@
     "playsTotal": "মোট {plays} প্লে",
     "cumulativeLearning": "ধাপে ধাপে শিক্ষা: প্রতিটি আয়াত পূর্বের আয়াত এর সাথে ধাপে ধাপে রিপিট হয়",
     "toggleSpacedRepetition": "স্পেসড রিপিটিশন চালু/বন্ধ",
-    "pageAudio": "পৃষ্ঠা {page} এর অডিও"
+    "pageAudio": "পৃষ্ঠা {page} এর অডিও",
+    "partOf": "পার্ট {current} / {total}",
+    "noPageAudio": "এই পৃষ্ঠার জন্য কোনো অডিও নেই",
+    "pageByPageReciter": "মিশারি রশিদ আল আফাসি",
+    "speed": "গতি:"
   },
   "reciters": {
     "shuraim": "শায়খ শুরাইম",
@@ -329,7 +336,9 @@
     "hani": "হানী আর রিফাঈ",
     "ghamdi": "সাদ আল গামদী",
     "hudhaify": "হুদাইফী",
-    "luhaidan": "মুহাম্মদ আল লুহাইদান"
+    "luhaidan": "মুহাম্মদ আল লুহাইদান",
+    "husary": "মাহমুদ খলিল আল হুসারী",
+    "juhaynee": "আব্দুল্লাহ আওয়াদ আল জুহানী"
   },
   "notifications": {
     "pageMarkedPerfect": "পৃষ্ঠা {page} পরিপূর্ণ ঘোষণা করা হলো! (+1)",

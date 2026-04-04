@@ -152,7 +152,10 @@
     "clearCacheConfirm": "Are you sure you want to clear all cached resources? The app will need to re-download resources.",
     "cacheClearedSuccess": "Cache cleared successfully",
     "cacheClearFailed": "Failed to clear cache: {error}",
-    "cachingInProgress": "Downloading..."
+    "cachingInProgress": "Downloading...",
+    "audioPlayMode": "Play Audio",
+    "audioPlayModeVerse": "Verse by verse",
+    "audioPlayModePage": "Page by page (only works with Tajweed and Uthmani mushaf)"
   },
   "language": {
     "label": "Language",
@@ -309,7 +312,11 @@
     "playsTotal": "{plays} plays total",
     "cumulativeLearning": "Cumulative learning: Each verse builds on previous ones",
     "toggleSpacedRepetition": "Toggle Spaced Repetition",
-    "pageAudio": "Audio of Page {page}"
+    "pageAudio": "Audio of Page {page}",
+    "partOf": "Part {current} of {total}",
+    "noPageAudio": "No audio available for this page",
+    "pageByPageReciter": "Mishary Rashid Al Afasy",
+    "speed": "Speed:"
   },
   "reciters": {
     "shuraim": "Sheikh Shuraim",
@@ -329,7 +336,9 @@
     "hani": "Hani Ar Rifai",
     "ghamdi": "Saad Al Ghamdi",
     "hudhaify": "Hudhaify",
-    "luhaidan": "Muhammad Al-Luhaidan"
+    "luhaidan": "Muhammad Al-Luhaidan",
+    "husary": "Mahmoud Khalil Al-Husary",
+    "juhaynee": "Abdullah Awad Al-Juhani"
   },
   "notifications": {
     "pageMarkedPerfect": "Page {page} marked perfect! (+1)",
