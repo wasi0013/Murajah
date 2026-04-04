@@ -6677,10 +6677,11 @@
                   audioStore.recordings.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 }
                 if (data.settings) {
-                  Object.assign(settingsStore, data.settings);
+                  const { selectedTasks, ...settingsOnly } = data.settings;
+                  Object.assign(settingsStore, settingsOnly);
                   // Load selectedTasks for daily goals
-                  if (data.settings.selectedTasks) {
-                    dailyGoalsStore.selectedTasks = data.settings.selectedTasks;
+                  if (selectedTasks) {
+                    dailyGoalsStore.selectedTasks = selectedTasks;
                   }
                 }
               } else {
@@ -6697,10 +6698,11 @@
                   }
                   if (data.recordings) audioStore.recordings = data.recordings;
                   if (data.settings) {
-                    Object.assign(settingsStore, data.settings);
+                    const { selectedTasks, ...settingsOnly } = data.settings;
+                    Object.assign(settingsStore, settingsOnly);
                     // Load selectedTasks for daily goals
-                    if (data.settings.selectedTasks) {
-                      dailyGoalsStore.selectedTasks = data.settings.selectedTasks;
+                    if (selectedTasks) {
+                      dailyGoalsStore.selectedTasks = selectedTasks;
                     }
                   }
                   
@@ -6728,6 +6730,16 @@
             if (!['qpc', 'indopak'].includes(settingsStore.layout)) {
               settingsStore.layout = 'qpc';
             }
+            // Load audioPlayMode from individual setting (more reliable than bulk)
+            try {
+              const savedAudioPlayMode = await murajahDB.getSetting('audioPlayMode');
+              if (savedAudioPlayMode && ['verse', 'page'].includes(savedAudioPlayMode)) {
+                settingsStore.audioPlayMode = savedAudioPlayMode;
+              }
+            } catch (e) {
+              console.warn('[Murajah] Failed to load audioPlayMode setting:', e);
+            }
+
             // Ensure audioPlayMode is always a valid value
             if (!['verse', 'page'].includes(settingsStore.audioPlayMode)) {
               settingsStore.audioPlayMode = 'verse';
@@ -8258,6 +8270,8 @@
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
+            // Also persist audioPlayMode individually for reliability
+            murajahDB.setSetting('audioPlayMode', settingsStore.audioPlayMode).catch(console.error);
             appStore.successMessage = t('notifications.settingsUpdated');
             setTimeout(() => appStore.successMessage = '', 2000);
           };
@@ -8825,7 +8839,8 @@
 
                 // Import settings
                 if (data.settings && typeof data.settings === 'object') {
-                  Object.assign(settingsStore, data.settings);
+                  const { selectedTasks: importedTasks, ...importedSettings } = data.settings;
+                  Object.assign(settingsStore, importedSettings);
                   // Validate critical settings
                   if (typeof settingsStore.finishRevisionDays !== 'number' || settingsStore.finishRevisionDays < 1) {
                     settingsStore.finishRevisionDays = 30;
@@ -9762,6 +9777,11 @@
             hoverTooltip.value.visible = false;
           };
 
+          // Flush pending data to IndexedDB on page hide/close
+          const flushDataOnExit = () => {
+            saveData().catch(console.error);
+          };
+
           // Lifecycle
           onMounted(async () => {
             await initializeApp();
@@ -9771,6 +9791,14 @@
             
             // Load font for initial page
             loadPageFont(appStore.currentPage);
+
+            // Save data when page is about to unload or goes hidden
+            window.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'hidden') {
+                flushDataOnExit();
+              }
+            });
+            window.addEventListener('pagehide', flushDataOnExit);
           });
 
           // Watch URL changes and load font when page changes

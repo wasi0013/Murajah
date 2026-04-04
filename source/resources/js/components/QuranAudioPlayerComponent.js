@@ -840,13 +840,16 @@ export const QuranAudioPlayerComponent = {
       
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
-      this.audioElement.src = primaryUrl;
-      this.audioElement.onloadstart = () => {
-        this.audioElement.addEventListener('error', () => {
-          Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
-          this.audioElement.src = fallbackUrl;
-        }, { once: true });
+      // Remove previous error handler to prevent listener accumulation
+      if (this._audioErrorHandler) {
+        this.audioElement.removeEventListener('error', this._audioErrorHandler);
+      }
+      this._audioErrorHandler = () => {
+        Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
+        this.audioElement.src = fallbackUrl;
       };
+      this.audioElement.addEventListener('error', this._audioErrorHandler, { once: true });
+      this.audioElement.src = primaryUrl;
 
       this.audioElement.play().catch(error => {
         console.error('[Murajah] Audio playback error:', error);
@@ -880,12 +883,15 @@ export const QuranAudioPlayerComponent = {
       const verse = this.pageVerses[firstVerseIndex];
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
-      this.audioElement.src = primaryUrl;
-      this.audioElement.onloadstart = () => {
-        this.audioElement.addEventListener('error', () => {
-          this.audioElement.src = fallbackUrl;
-        }, { once: true });
+      // Remove previous error handler to prevent listener accumulation
+      if (this._audioErrorHandler) {
+        this.audioElement.removeEventListener('error', this._audioErrorHandler);
+      }
+      this._audioErrorHandler = () => {
+        this.audioElement.src = fallbackUrl;
       };
+      this.audioElement.addEventListener('error', this._audioErrorHandler, { once: true });
+      this.audioElement.src = primaryUrl;
 
       this.audioElement.play().catch(error => {
         console.error('[Murajah] Audio playback error:', error);
@@ -1000,15 +1006,16 @@ export const QuranAudioPlayerComponent = {
       Logger.log('[Murajah-Audio] Playing verse:', verse.chapter + ':' + verse.verse);
       const { primaryUrl, fallbackUrl } = this.getAudioUrl(verse);
 
-      // Try primary URL first, fallback to fallback URL
-      this.audioElement.src = primaryUrl;
-      this.audioElement.onloadstart = () => {
-        // If primary fails, try fallback
-        this.audioElement.addEventListener('error', () => {
-          Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
-          this.audioElement.src = fallbackUrl;
-        }, { once: true });
+      // Remove previous error handler to prevent listener accumulation
+      if (this._audioErrorHandler) {
+        this.audioElement.removeEventListener('error', this._audioErrorHandler);
+      }
+      this._audioErrorHandler = () => {
+        Logger.log('[Murajah-Audio] Primary URL failed, trying fallback');
+        this.audioElement.src = fallbackUrl;
       };
+      this.audioElement.addEventListener('error', this._audioErrorHandler, { once: true });
+      this.audioElement.src = primaryUrl;
 
       this.audioElement.play().catch(error => {
         console.error('[Murajah] Audio playback error:', error);
