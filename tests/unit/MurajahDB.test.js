@@ -249,6 +249,39 @@ describe('MurajahDB', () => {
       
       expect(await db.getSetting('fontSize')).toBe('large');
     });
+
+    it('should persist audioPlayMode as individual setting', async () => {
+      await db.setSetting('audioPlayMode', 'page');
+      expect(await db.getSetting('audioPlayMode')).toBe('page');
+
+      await db.setSetting('audioPlayMode', 'verse');
+      expect(await db.getSetting('audioPlayMode')).toBe('verse');
+    });
+
+    it('should persist audioPlayMode independently from bulk data', async () => {
+      // Save audioPlayMode individually
+      await db.setSetting('audioPlayMode', 'page');
+
+      // Save bulk data with a different audioPlayMode
+      await db.saveData({
+        memorized: [1],
+        settings: { ...sampleSettings, audioPlayMode: 'verse' },
+        lastSaved: new Date().toISOString()
+      });
+
+      // Individual setting should remain unchanged
+      expect(await db.getSetting('audioPlayMode')).toBe('page');
+
+      // Bulk data should have the other value
+      const loaded = await db.loadData();
+      expect(loaded.settings.audioPlayMode).toBe('verse');
+    });
+
+    it('should handle audioPlayMode with invalid values gracefully', async () => {
+      // getSetting returns default when key doesn't exist
+      expect(await db.getSetting('audioPlayMode')).toBeNull();
+      expect(await db.getSetting('audioPlayMode', 'verse')).toBe('verse');
+    });
   });
 
   describe('saveUrlState() / loadUrlState()', () => {

@@ -231,6 +231,7 @@ export const sampleSettings = {
   layout: 'qpc',
   adjustRevisionChunk: 0,
   quranBackgroundColor: '#f1ece7',
+  audioPlayMode: 'verse',
   selectedTasks: ['reciteAyahs', 'recordRandomPage', 'reviewRange', 'memorizeDaily']
 };
 

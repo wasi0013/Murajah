@@ -4854,11 +4854,11 @@
                         <label class="block text-sm font-medium mb-2 text-gray-700">{{ $t('settings.audioPlayMode') }}</label>
                         <div class="flex flex-col gap-2">
                           <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="audioPlayMode" value="verse" :checked="settingsStore.audioPlayMode === 'verse'" @change="settingsStore.audioPlayMode = 'verse'; updateSettings()" class="text-blue-600">
+                            <input type="radio" name="audioPlayMode" value="verse" v-model="settingsStore.audioPlayMode" @change="updateSettings()" class="text-blue-600">
                             <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModeVerse') }}</span>
                           </label>
                           <label class="flex items-center gap-2 cursor-pointer" :class="{ 'opacity-50': isIndopak }">
-                            <input type="radio" name="audioPlayMode" value="page" :checked="settingsStore.audioPlayMode === 'page'" @change="settingsStore.audioPlayMode = 'page'; updateSettings()" class="text-blue-600" :disabled="isIndopak">
+                            <input type="radio" name="audioPlayMode" value="page" v-model="settingsStore.audioPlayMode" @change="updateSettings()" class="text-blue-600" :disabled="isIndopak">
                             <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModePage') }}</span>
                           </label>
                         </div>
@@ -5850,6 +5850,14 @@
             successMessage: ''
           });
 
+          // Eagerly load audioPlayMode from localStorage for instant restore before async IndexedDB
+          const _cachedAudioPlayMode = (() => {
+            try {
+              const v = localStorage.getItem('murajah-audioPlayMode');
+              return (v === 'verse' || v === 'page') ? v : 'verse';
+            } catch (_) { return 'verse'; }
+          })();
+
           const settingsStore = reactive({
             finishRevisionDays: 30,
             pagesPerDay: 1,
@@ -5862,7 +5870,7 @@
             layout: 'qpc', // 'qpc' (604 pages) or 'indopak' (610 pages) — default QPC with tajweed for new users
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
             quranBackgroundColor: '#f1ece7',
-            audioPlayMode: 'verse' // 'verse' (default) or 'page' (page-by-page audio)
+            audioPlayMode: _cachedAudioPlayMode // 'verse' (default) or 'page' — eagerly loaded from localStorage
           });
 
           const memorizedStore = reactive({
@@ -6730,7 +6738,8 @@
             if (!['qpc', 'indopak'].includes(settingsStore.layout)) {
               settingsStore.layout = 'qpc';
             }
-            // Load audioPlayMode from individual setting (more reliable than bulk)
+            // Load audioPlayMode from individual IndexedDB setting
+            // (localStorage was already loaded eagerly at store init time)
             try {
               const savedAudioPlayMode = await murajahDB.getSetting('audioPlayMode');
               if (savedAudioPlayMode && ['verse', 'page'].includes(savedAudioPlayMode)) {
@@ -6748,6 +6757,9 @@
             if (settingsStore.layout === 'indopak' && settingsStore.audioPlayMode === 'page') {
               settingsStore.audioPlayMode = 'verse';
             }
+
+            // Sync localStorage with the final resolved value
+            try { localStorage.setItem('murajah-audioPlayMode', settingsStore.audioPlayMode); } catch (_) {}
           };
 
           // Save data to IndexedDB
@@ -7405,6 +7417,7 @@
               settingsStore.layout = 'indopak';
               settingsStore.tajweedEnabled = false;
               settingsStore.audioPlayMode = 'verse'; // Page-by-page only works with QPC
+              persistAudioPlayMode('verse');
             } else if (nextMode === 'tajweed') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = true;
@@ -8270,10 +8283,18 @@
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
-            // Also persist audioPlayMode individually for reliability
-            murajahDB.setSetting('audioPlayMode', settingsStore.audioPlayMode).catch(console.error);
+            // Persist audioPlayMode via multiple channels for reliability
+            persistAudioPlayMode(settingsStore.audioPlayMode);
             appStore.successMessage = t('notifications.settingsUpdated');
             setTimeout(() => appStore.successMessage = '', 2000);
+          };
+
+          // Robust persistence for audioPlayMode across localStorage + IndexedDB
+          const persistAudioPlayMode = (mode) => {
+            // Synchronous localStorage write — survives even if IndexedDB fails
+            try { localStorage.setItem('murajah-audioPlayMode', mode); } catch (_) {}
+            // Async IndexedDB write
+            murajahDB.setSetting('audioPlayMode', mode).catch(console.error);
           };
 
           const cycleQuranBackgroundColor = () => {
@@ -9852,6 +9873,14 @@
           // Watch fontSize setting and save changes
           watch(() => settingsStore.fontSize, (newFontSize) => {
             saveDataBackground();
+          });
+
+          // Watch audioPlayMode and persist via multiple channels
+          watch(() => settingsStore.audioPlayMode, (newMode) => {
+            if (isAppInitialized.value) {
+              persistAudioPlayMode(newMode);
+              saveDataBackground();
+            }
           });
 
           // Keyboard shortcuts handler
