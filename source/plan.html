@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="color-scheme" content="only light">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murajah Plan</title>
+    <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
+
+    <!-- Vue 3 Production -->
+    <script src="resources/js/vendor/vue.global.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="resources/js/vendor/tailwind.3.4.7.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="resources/js/vendor/fontawesome/all.min.css">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JEMZ83QK37"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-JEMZ83QK37');
+    </script>
+
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        html { background-color: #ffffff; color: #111827; }
+        body { background-color: #ffffff; color: #111827; }
+
+        .tab-active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        /* Smooth transitions for view switching */
+        .view-enter-active { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+
+    <!-- Lightweight DB helper to access the shared murajah-db -->
+    <script>
+        const PlanDB = {
+            db: null,
+            DB_NAME: 'murajah-db',
+            VERSION: 6,
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.VERSION);
+
+                    request.onerror = () => {
+                        // If version mismatch, open without specifying version
+                        if (request.error?.name === 'VersionError') {
+                            const fallback = indexedDB.open(this.DB_NAME);
+                            fallback.onerror = () => reject(fallback.error);
+                            fallback.onsuccess = () => {
+                                this.db = fallback.result;
+                                resolve();
+                            };
+                        } else {
+                            reject(request.error);
+                        }
+                    };
+
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('appData')) {
+                            db.createObjectStore('appData', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('recordings')) {
+                            db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('dailyGoals')) {
+                            db.createObjectStore('dailyGoals', { keyPath: 'date' });
+                        }
+                        if (!db.objectStoreNames.contains('quranCache')) {
+                            db.createObjectStore('quranCache', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('resourceCache')) {
+                            db.createObjectStore('resourceCache', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('notes')) {
+                            db.createObjectStore('notes', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('plans')) {
+                            const planStore = db.createObjectStore('plans', { keyPath: 'id' });
+                            planStore.createIndex('status', 'status', { unique: false });
+                            planStore.createIndex('type', 'type', { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains('planHistory')) {
+                            const historyStore = db.createObjectStore('planHistory', { keyPath: 'id' });
+                            historyStore.createIndex('planId', 'planId', { unique: false });
+                            historyStore.createIndex('date', 'date', { unique: false });
+                            historyStore.createIndex('planId_date', ['planId', 'date'], { unique: true });
+                        }
+                    };
+                });
+            },
+
+            async getAppData(key) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction('appData', 'readonly');
+                    const store = tx.objectStore('appData');
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result?.value ?? null);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+        };
+
+        // Read quiz scores from MurajahQuizDB (cross-database bridge)
+        const QuizBridge = {
+            async getScores() {
+                try {
+                    const db = await new Promise((resolve, reject) => {
+                        const req = indexedDB.open('MurajahQuizDB');
+                        req.onerror = () => reject(req.error);
+                        req.onsuccess = () => resolve(req.result);
+                    });
+                    if (!db.objectStoreNames.contains('scores')) {
+                        db.close();
+                        return {};
+                    }
+                    const scores = await new Promise((resolve, reject) => {
+                        const tx = db.transaction('scores', 'readonly');
+                        const req = tx.objectStore('scores').getAll();
+                        req.onsuccess = () => resolve(req.result || []);
+                        req.onerror = () => reject(req.error);
+                    });
+                    db.close();
+                    // Group scores by surah/page for easy lookup
+                    const map = {};
+                    for (const s of scores) {
+                        if (s.details?.pages) {
+                            for (const p of s.details.pages) {
+                                if (!map[p]) map[p] = [];
+                                map[p].push({ score: s.score, timestamp: s.timestamp });
+                            }
+                        }
+                    }
+                    return map;
+                } catch {
+                    // Quiz DB may not exist yet — that's fine
+                    return {};
+                }
+            },
+        };
+    </script>
+
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p class="mt-4 text-gray-600">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="error" class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+            <p class="flex items-center">
+                <span class="mr-2">⚠️</span>
+                {{ error }}
+            </p>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white shadow sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <a href="./index.html">
+                        <img src="resources/assets/images/logo-bg.png" alt="Murajah"
+                            class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;">
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-1 md:gap-2 lg:gap-4">
+                    <a href="./index.html"
+                        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-home text-gray-500"></i>
+                        {{ t('header.home') }}
+                    </a>
+                    <a href="./quiz.html"
+                        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-question-circle text-gray-500"></i>
+                        {{ t('header.quiz') }}
+                    </a>
+                    <span class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">
+                        <i class="fas fa-calendar-alt text-blue-500"></i>
+                        {{ t('plan.nav') }}
+                    </span>
+                </nav>
+
+                <!-- Mobile Navigation -->
+                <div class="flex md:hidden items-center gap-1">
+                    <a href="./index.html"
+                        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-home text-gray-500"></i>
+                        {{ t('header.home') }}
+                    </a>
+                    <a href="./quiz.html"
+                        class="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-question-circle text-gray-500"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-2xl mx-auto px-3 sm:px-4 py-4 pb-24">
+            <!-- Page Title -->
+            <div class="mb-4">
+                <h1 class="text-lg font-bold text-gray-900">{{ t('plan.title') }}</h1>
+                <p class="text-xs text-gray-500 mt-0.5">{{ t('plan.subtitle') }}</p>
+            </div>
+
+            <!-- No Plan State -->
+            <div v-if="!activePlan && !showSetup">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+                    <i class="fas fa-calendar-plus text-4xl text-gray-300 mb-3"></i>
+                    <h2 class="text-base font-semibold text-gray-800 mb-1">{{ t('plan.empty.title') }}</h2>
+                    <p class="text-sm text-gray-500 mb-4">{{ t('plan.empty.description') }}</p>
+                    <button @click="showSetup = true"
+                        class="bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
+                        {{ t('plan.empty.cta') }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Setup Wizard -->
+            <plan-setup-wizard v-if="showSetup"
+                :memorized-pages="memorizedPages"
+                :t="t"
+                @plan-created="onPlanCreated"
+                @cancel="showSetup = false">
+            </plan-setup-wizard>
+
+            <!-- Active Plan Views -->
+            <template v-if="activePlan && !showSetup">
+                <!-- Tab Navigation -->
+                <div class="flex border-b border-gray-200 mb-4 -mx-3 px-3 overflow-x-auto">
+                    <button v-for="tab in tabs" :key="tab.id"
+                        @click="currentTab = tab.id"
+                        :class="['flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                            currentTab === tab.id
+                                ? 'text-blue-600 border-blue-500'
+                                : 'text-gray-500 border-transparent hover:text-gray-700']"
+                        :aria-selected="currentTab === tab.id"
+                        role="tab">
+                        <i :class="tab.icon"></i>
+                        {{ tab.label }}
+                    </button>
+                </div>
+
+                <!-- Today View -->
+                <div v-if="currentTab === 'today'" class="view-enter-active">
+                    <plan-today-card
+                        :plan="activePlan"
+                        :today-tasks="todayTasks"
+                        :day-number="dayNumber"
+                        :t="t"
+                        @complete-task="onCompleteTask"
+                        @rate-task="onRateTask"
+                        @open-page="openPage"
+                        @open-quiz="openQuiz">
+                    </plan-today-card>
+                </div>
+
+                <!-- Calendar View -->
+                <div v-if="currentTab === 'calendar'" class="view-enter-active">
+                    <plan-calendar-component
+                        :plan="activePlan"
+                        :history="planHistory"
+                        :today-tasks="todayTasks"
+                        :t="t"
+                        @select-day="onSelectDay"
+                        @open-page="openPage">
+                    </plan-calendar-component>
+                </div>
+
+                <!-- Progress View -->
+                <div v-if="currentTab === 'progress'" class="view-enter-active">
+                    <plan-progress-view
+                        :plan="activePlan"
+                        :t="t"
+                        @change-pace="onChangePace"
+                        @pause-plan="onPausePlan"
+                        @resume-plan="onResumePlan"
+                        @abandon-plan="onAbandonPlan">
+                    </plan-progress-view>
+                </div>
+            </template>
+
+            <!-- Missed Days Modal -->
+            <div v-if="missedDaysInfo" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-xl p-5 max-w-sm w-full shadow-xl">
+                    <h2 class="text-lg font-bold text-gray-900 mb-2">{{ t('plan.missed.welcomeBack') }}</h2>
+                    <p class="text-sm text-gray-600 mb-3">
+                        {{ t('plan.missed.missedDays').replace('{count}', missedDaysInfo.count) }}
+                    </p>
+                    <p class="text-sm text-gray-500 mb-4">{{ missedDaysInfo.message }}</p>
+
+                    <div v-if="missedDaysInfo.needsReset" class="flex flex-col gap-2">
+                        <button @click="resumeAfterMissed" class="w-full bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
+                            {{ t('plan.missed.resume') }}
+                        </button>
+                        <button @click="startNewPlan" class="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200">
+                            {{ t('plan.missed.newPlan') }}
+                        </button>
+                    </div>
+                    <div v-else>
+                        <button @click="dismissMissed" class="w-full bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
+                            {{ t('plan.missed.resume') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pace Change Modal -->
+            <div v-if="showPaceEditor" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-xl p-5 max-w-sm w-full shadow-xl">
+                    <h2 class="text-base font-bold text-gray-900 mb-3">{{ t('plan.actions.adjustPace') }}</h2>
+
+                    <div v-if="activePlan.type === 'beginner'" class="mb-3">
+                        <label class="text-xs text-gray-500 block mb-1">{{ t('plan.setup.newPagesPerDay') }}</label>
+                        <input type="number" v-model.number="paceForm.newPagesPerDay"
+                            min="0" max="5"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-xs text-gray-500 block mb-1">{{ t('plan.setup.revisionPagesPerDay') }}</label>
+                        <input type="number" v-model.number="paceForm.revisionPagesPerDay"
+                            min="1" max="200"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="showPaceEditor = false"
+                            class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200">
+                            {{ t('plan.setup.cancel') }}
+                        </button>
+                        <button @click="savePaceChange"
+                            class="flex-1 bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
+                            {{ t('plan.actions.adjustPace') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Vue App Script -->
+    <script type="module">
+        const { createApp, ref, computed, watch, onMounted } = Vue;
+
+        // i18n
+        const { i18nState, t, initLocaleFromStorage } = await import('./resources/js/stores/i18nStore.js');
+
+        // Plan utilities
+        const {
+            createPlan,
+            transitionPlanStatus,
+            updatePlanPace,
+            getTodayTasks,
+            recordTaskCompletion,
+            updateStreak,
+            syncExternalMemorization,
+            createDayRecord,
+            savePlan,
+            loadActivePlan,
+            loadPlan,
+            loadAllPlans,
+            saveDayRecord,
+            loadPlanHistory,
+            getPagesForJuz,
+            getJuzForPages,
+            estimateEndDate,
+            generateMilestones,
+        } = await import('./resources/js/utils/planManager.js');
+
+        const { handleMissedDays, formatDate } = await import('./resources/js/utils/planScheduler.js');
+
+        // Components
+        const PlanSetupWizard = (await import('./resources/js/components/PlanSetupWizard.js')).default;
+        const PlanTodayCard = (await import('./resources/js/components/PlanTodayCard.js')).default;
+        const PlanCalendarComponent = (await import('./resources/js/components/PlanCalendarComponent.js')).default;
+        const PlanProgressView = (await import('./resources/js/components/PlanProgressView.js')).default;
+
+        // Pre-load translations
+        await initLocaleFromStorage();
+
+        createApp({
+            components: {
+                'plan-setup-wizard': PlanSetupWizard,
+                'plan-today-card': PlanTodayCard,
+                'plan-calendar-component': PlanCalendarComponent,
+                'plan-progress-view': PlanProgressView,
+            },
+            setup() {
+                const isLoading = ref(true);
+                const error = ref(null);
+                const activePlan = ref(null);
+                const planHistory = ref([]);
+                const todayTasks = ref(null);
+                const showSetup = ref(false);
+                const currentTab = ref('today');
+                const missedDaysInfo = ref(null);
+                const showPaceEditor = ref(false);
+
+                // App data from main DB
+                const memorizedPages = ref(new Set());
+                const perfectRevisions = ref({});
+                const mistakesMap = ref({});
+                const quizScores = ref({});
+
+                // Pace editor form
+                const paceForm = ref({ newPagesPerDay: 1, revisionPagesPerDay: 5 });
+
+                const tabs = computed(() => [
+                    { id: 'today', label: t('plan.today.title'), icon: 'fas fa-sun' },
+                    { id: 'calendar', label: t('plan.calendar.title'), icon: 'fas fa-calendar' },
+                    { id: 'progress', label: t('plan.progress.title'), icon: 'fas fa-chart-line' },
+                ]);
+
+                const dayNumber = computed(() => {
+                    if (!activePlan.value) return 0;
+                    const start = new Date(activePlan.value.startDate + 'T00:00:00');
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    return Math.max(1, Math.floor((now - start) / 86400000) + 1);
+                });
+
+                // --- Initialization ---
+                async function initialize() {
+                    try {
+                        await PlanDB.init();
+
+                        // Load app data from shared DB
+                        const [memPages, perfRevs, mistakes] = await Promise.all([
+                            PlanDB.getAppData('memorizedPages'),
+                            PlanDB.getAppData('perfectRevisions'),
+                            PlanDB.getAppData('mistakesMap'),
+                        ]);
+
+                        if (memPages) {
+                            memorizedPages.value = new Set(Array.isArray(memPages) ? memPages : []);
+                        }
+                        if (perfRevs && typeof perfRevs === 'object') {
+                            perfectRevisions.value = perfRevs;
+                        }
+                        if (mistakes && typeof mistakes === 'object') {
+                            mistakesMap.value = mistakes;
+                        }
+
+                        // Load quiz scores from separate QuizDB
+                        quizScores.value = await QuizBridge.getScores();
+
+                        // Load active plan
+                        const plan = await loadActivePlan(PlanDB.db);
+                        if (plan) {
+                            activePlan.value = plan;
+
+                            // Sync external memorization changes
+                            const synced = syncExternalMemorization(plan, memorizedPages.value);
+                            if (synced.newPagesDetected > 0) {
+                                await savePlan(PlanDB.db, plan);
+                            }
+
+                            // Check for missed days
+                            await checkMissedDays(plan);
+
+                            // Generate today's tasks
+                            await refreshTodayTasks();
+
+                            // Load history
+                            const history = await loadPlanHistory(PlanDB.db, plan.id, 90);
+                            planHistory.value = history;
+                        }
+                    } catch (e) {
+                        console.error('[Plan] Initialization error:', e);
+                        error.value = 'Failed to load plan data. Please try refreshing.';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                async function checkMissedDays(plan) {
+                    if (plan.status !== 'active') return;
+
+                    const today = formatDate(new Date());
+                    const lastActive = plan.lastActiveDate || plan.startDate;
+                    if (!lastActive || lastActive >= today) return;
+
+                    const last = new Date(lastActive + 'T00:00:00');
+                    const now = new Date(today + 'T00:00:00');
+                    const daysMissed = Math.floor((now - last) / 86400000);
+
+                    if (daysMissed <= 0) return;
+
+                    const result = handleMissedDays(plan, daysMissed, new Date());
+                    await savePlan(PlanDB.db, plan);
+
+                    let message = '';
+                    if (daysMissed >= 14) {
+                        message = t('plan.missed.planResetNeeded');
+                        missedDaysInfo.value = { count: daysMissed, message, needsReset: true };
+                    } else if (daysMissed >= 5) {
+                        message = t('plan.missed.heavyReschedule');
+                        missedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+                    } else if (daysMissed >= 2) {
+                        message = t('plan.missed.mediumReschedule');
+                        missedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+                    } else {
+                        // 1 day missed — silent reschedule
+                        message = t('plan.missed.lightReschedule');
+                        missedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+                    }
+                }
+
+                async function refreshTodayTasks() {
+                    if (!activePlan.value || activePlan.value.status !== 'active') {
+                        todayTasks.value = null;
+                        return;
+                    }
+                    const appData = {
+                        memorizedPages: memorizedPages.value,
+                        perfectRevisions: perfectRevisions.value,
+                        mistakesMap: mistakesMap.value,
+                    };
+                    todayTasks.value = getTodayTasks(activePlan.value, appData, quizScores.value);
+                }
+
+                // --- Event Handlers ---
+                async function onPlanCreated(planConfig) {
+                    try {
+                        const plan = createPlan(planConfig);
+                        await savePlan(PlanDB.db, plan);
+                        activePlan.value = plan;
+                        showSetup.value = false;
+                        currentTab.value = 'today';
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Create error:', e);
+                        error.value = 'Failed to create plan.';
+                    }
+                }
+
+                async function onCompleteTask({ taskType, pages }) {
+                    if (!activePlan.value) return;
+                    try {
+                        const appData = {
+                            memorizedPages: memorizedPages.value,
+                            perfectRevisions: perfectRevisions.value,
+                            mistakesMap: mistakesMap.value,
+                        };
+                        // Default performance = 3 (recalled OK), user can rate afterwards
+                        recordTaskCompletion(activePlan.value, taskType, pages, 3, appData);
+                        await savePlan(PlanDB.db, activePlan.value);
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Complete task error:', e);
+                    }
+                }
+
+                async function onRateTask({ taskType, pages, performance }) {
+                    if (!activePlan.value) return;
+                    try {
+                        const appData = {
+                            memorizedPages: memorizedPages.value,
+                            perfectRevisions: perfectRevisions.value,
+                            mistakesMap: mistakesMap.value,
+                        };
+                        recordTaskCompletion(activePlan.value, taskType, pages, performance, appData);
+                        await savePlan(PlanDB.db, activePlan.value);
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Rate task error:', e);
+                    }
+                }
+
+                function openPage(pageNum) {
+                    window.location.href = `./index.html#page=${pageNum}`;
+                }
+
+                function openQuiz(pages) {
+                    window.location.href = `./quiz.html`;
+                }
+
+                function onSelectDay(dateStr) {
+                    // Could show detailed day view — for now just log
+                    console.log('[Plan] Selected day:', dateStr);
+                }
+
+                function onChangePace() {
+                    if (!activePlan.value) return;
+                    paceForm.value = {
+                        newPagesPerDay: activePlan.value.pace?.newPagesPerDay ?? 1,
+                        revisionPagesPerDay: activePlan.value.pace?.revisionPagesPerDay ?? 5,
+                    };
+                    showPaceEditor.value = true;
+                }
+
+                async function savePaceChange() {
+                    if (!activePlan.value) return;
+                    try {
+                        updatePlanPace(activePlan.value, paceForm.value);
+                        await savePlan(PlanDB.db, activePlan.value);
+                        showPaceEditor.value = false;
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Pace change error:', e);
+                    }
+                }
+
+                async function onPausePlan() {
+                    if (!activePlan.value) return;
+                    try {
+                        transitionPlanStatus(activePlan.value, 'paused');
+                        await savePlan(PlanDB.db, activePlan.value);
+                        todayTasks.value = null;
+                    } catch (e) {
+                        console.error('[Plan] Pause error:', e);
+                    }
+                }
+
+                async function onResumePlan() {
+                    if (!activePlan.value) return;
+                    try {
+                        transitionPlanStatus(activePlan.value, 'active');
+                        await savePlan(PlanDB.db, activePlan.value);
+                        await checkMissedDays(activePlan.value);
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Resume error:', e);
+                    }
+                }
+
+                async function onAbandonPlan() {
+                    if (!activePlan.value) return;
+                    try {
+                        // Save final day record before abandoning
+                        if (todayTasks.value) {
+                            const record = createDayRecord(activePlan.value.id, todayTasks.value);
+                            await saveDayRecord(PlanDB.db, record);
+                        }
+                        transitionPlanStatus(activePlan.value, 'abandoned');
+                        await savePlan(PlanDB.db, activePlan.value);
+                        activePlan.value = null;
+                        todayTasks.value = null;
+                        planHistory.value = [];
+                        currentTab.value = 'today';
+                    } catch (e) {
+                        console.error('[Plan] Abandon error:', e);
+                    }
+                }
+
+                async function resumeAfterMissed() {
+                    missedDaysInfo.value = null;
+                    await refreshTodayTasks();
+                }
+
+                async function startNewPlan() {
+                    if (activePlan.value) {
+                        transitionPlanStatus(activePlan.value, 'abandoned');
+                        await savePlan(PlanDB.db, activePlan.value);
+                    }
+                    activePlan.value = null;
+                    todayTasks.value = null;
+                    missedDaysInfo.value = null;
+                    showSetup.value = true;
+                }
+
+                function dismissMissed() {
+                    missedDaysInfo.value = null;
+                }
+
+                // Auto-save day record at end of day / when tasks change
+                async function autoSaveDayRecord() {
+                    if (!activePlan.value || !todayTasks.value) return;
+                    try {
+                        const record = createDayRecord(activePlan.value.id, todayTasks.value);
+                        await saveDayRecord(PlanDB.db, record);
+
+                        // Update streak
+                        const allDone = todayTasks.value.newMemorization?.completed
+                            && todayTasks.value.revision?.completed
+                            && (!todayTasks.value.weakReinforcement || todayTasks.value.weakReinforcement.completed);
+                        updateStreak(activePlan.value, allDone);
+                        await savePlan(PlanDB.db, activePlan.value);
+                    } catch (e) {
+                        console.error('[Plan] Auto-save day record error:', e);
+                    }
+                }
+
+                // Save on task completion
+                watch(todayTasks, async (newVal) => {
+                    if (newVal && activePlan.value) {
+                        await autoSaveDayRecord();
+                    }
+                }, { deep: true });
+
+                onMounted(initialize);
+
+                return {
+                    isLoading,
+                    error,
+                    activePlan,
+                    planHistory,
+                    todayTasks,
+                    showSetup,
+                    currentTab,
+                    missedDaysInfo,
+                    showPaceEditor,
+                    memorizedPages,
+                    paceForm,
+                    tabs,
+                    dayNumber,
+                    t,
+
+                    // Handlers
+                    onPlanCreated,
+                    onCompleteTask,
+                    onRateTask,
+                    openPage,
+                    openQuiz,
+                    onSelectDay,
+                    onChangePace,
+                    savePaceChange,
+                    onPausePlan,
+                    onResumePlan,
+                    onAbandonPlan,
+                    resumeAfterMissed,
+                    startNewPlan,
+                    dismissMissed,
+                };
+            },
+        }).mount('#app');
+    </script>
+</body>
+</html>

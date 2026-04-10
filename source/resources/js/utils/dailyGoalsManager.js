@@ -100,6 +100,25 @@ export function initializeTodayGoals(settings, memorizedPages, lastDailyGoal) {
 }
 
 /**
+ * Merge plan-generated tasks into existing daily goals.
+ * Call after initializeTodayGoals when an active plan exists.
+ * Plan tasks appear alongside standard tasks without replacing them.
+ * @param {Object} todayGoal - The daily goal object from initializeTodayGoals
+ * @param {Object|null} planGoals - Output of planTasksToDailyGoals (keyed task map), or null
+ * @returns {Object} The mutated todayGoal with plan tasks merged in
+ */
+export function mergePlanTasks(todayGoal, planGoals) {
+  if (!planGoals || !todayGoal) return todayGoal;
+
+  for (const [key, task] of Object.entries(planGoals)) {
+    if (!todayGoal.tasks[key]) {
+      todayGoal.tasks[key] = task;
+    }
+  }
+  return todayGoal;
+}
+
+/**
  * Calculate review range for today based on rotation
  * Divides memorized pages into chunks based on finishRevisionDays and rotates through them
  * Fair distribution: if remainder exists, first chunks get +1 page

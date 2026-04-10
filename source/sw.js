@@ -16,6 +16,7 @@ const APP_SHELL = [
   './',
   './index.html',
   './quiz.html',
+  './plan.html',
   './privacy.html',
   './manifest.json',
   './resources/favicon.ico',
@@ -59,6 +60,9 @@ const APP_SHELL = [
   './resources/js/utils/dailyGoalsManager.js',
   './resources/js/utils/morphologyLoader.js',
   './resources/js/utils/pageHasanah.js',
+  './resources/js/utils/weaknessScorer.js',
+  './resources/js/utils/planScheduler.js',
+  './resources/js/utils/planManager.js',
   
   // App JS modules - Stores
   './resources/js/stores/i18nStore.js',
@@ -70,6 +74,10 @@ const APP_SHELL = [
   './resources/js/components/LanguageSelectionModal.js',
   './resources/js/components/MorphologyPopupComponent.js',
   './resources/js/components/NotesComponent.js',
+  './resources/js/components/PlanSetupWizard.js',
+  './resources/js/components/PlanTodayCard.js',
+  './resources/js/components/PlanCalendarComponent.js',
+  './resources/js/components/PlanProgressView.js',
   
   // Critical JSON data
   './resources/data/quran/qpc-v2-15-lines.json',
@@ -346,6 +354,7 @@ const CRITICAL_RESOURCES = [
   './',
   './index.html',
   './quiz.html',
+  './plan.html',
   // Core vendor
   './resources/js/vendor/vue.global.js',
   // Core utils
