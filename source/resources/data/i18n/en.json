@@ -893,5 +893,106 @@
       "goals": "Goals",
       "more": "More"
     }
+  },
+  "plan": {
+    "title": "Guided Plan",
+    "subtitle": "Your personalized memorization & revision schedule",
+    "nav": "Plan",
+    "setup": {
+      "title": "Create Your Plan",
+      "step1Title": "I am a...",
+      "beginner": "Beginner",
+      "beginnerDesc": "I'm starting to memorize new pages",
+      "hafiz": "Hafiz",
+      "hafizDesc": "I've memorized and want to maintain my revision",
+      "step2Title": "What do you want to cover?",
+      "selectJuz": "Select Juz",
+      "selectPages": "Or choose specific pages",
+      "step3Title": "Set your pace",
+      "newPagesPerDay": "New pages per day",
+      "revisionPagesPerDay": "Revision pages per day",
+      "daysPerWeek": "Active days per week",
+      "offDays": "Days off",
+      "estimatedEnd": "Estimated completion",
+      "createPlan": "Start Plan",
+      "cancel": "Cancel"
+    },
+    "today": {
+      "title": "Today's Focus",
+      "offDay": "Today is your day off. Rest well!",
+      "allComplete": "All tasks complete! Great work!",
+      "newMemorization": "Memorize new page(s)",
+      "revision": "Review page(s)",
+      "weakReinforcement": "Reinforce weak pages",
+      "markComplete": "Mark Complete",
+      "perfect": "Perfect",
+      "good": "Good",
+      "needsWork": "Needs Work",
+      "openPage": "Open Page",
+      "backlogWarning": "You have {count} overdue pages — catching up!"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "weekView": "Week",
+      "monthView": "Month",
+      "complete": "Complete",
+      "partial": "Partial",
+      "missed": "Missed",
+      "pending": "Pending",
+      "today": "Today"
+    },
+    "progress": {
+      "title": "Progress",
+      "pagesMemorized": "Pages Memorized",
+      "pagesReviewed": "Pages Reviewed",
+      "currentStreak": "Current Streak",
+      "longestStreak": "Longest Streak",
+      "cyclesCompleted": "Cycles Completed",
+      "daysActive": "Days Active",
+      "daysMissed": "Days Missed",
+      "weakPages": "Weak Pages",
+      "milestones": "Milestones",
+      "juzComplete": "Juz {juz} Complete",
+      "cycleComplete": "Cycle {cycle} Complete",
+      "completedOn": "Completed on {date}",
+      "estimated": "Estimated: {date}"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "completed": "Completed",
+      "abandoned": "Abandoned"
+    },
+    "actions": {
+      "pause": "Pause Plan",
+      "resume": "Resume Plan",
+      "abandon": "Abandon Plan",
+      "adjustPace": "Adjust Pace",
+      "viewHistory": "View History"
+    },
+    "missed": {
+      "welcomeBack": "Welcome Back!",
+      "missedDays": "You missed {count} day(s)",
+      "lightReschedule": "We'll spread the overdue pages over the next couple of days.",
+      "mediumReschedule": "We've reduced your new memorization and spread reviews over 3 days.",
+      "heavyReschedule": "New memorization is paused while you catch up on reviews.",
+      "planResetNeeded": "It's been a while! Would you like to resume or start a new plan?",
+      "resume": "Resume Plan",
+      "newPlan": "Start New Plan"
+    },
+    "empty": {
+      "title": "No Active Plan",
+      "description": "Create a guided plan to organize your memorization and revision schedule.",
+      "cta": "Create Plan"
+    },
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    }
   }
 }

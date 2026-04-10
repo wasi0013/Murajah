@@ -18,7 +18,8 @@ const MODULES = {
   UI: 'UI',
   PERFORMANCE: 'PERF',
   DB: 'DB',
-  CACHE: 'CACHE'
+  CACHE: 'CACHE',
+  PLAN: 'PLAN'
 };
 
 let enabledLevels = new Set([LOG_LEVELS.INFO.name, LOG_LEVELS.WARN.name, LOG_LEVELS.ERROR.name]);

@@ -892,5 +892,106 @@
       "goals": "الأهداف",
       "more": "المزيد"
     }
+  },
+  "plan": {
+    "title": "خطة موجهة",
+    "subtitle": "جدول حفظك ومراجعتك الشخصي",
+    "nav": "الخطة",
+    "setup": {
+      "title": "أنشئ خطتك",
+      "step1Title": "أنا...",
+      "beginner": "مبتدئ",
+      "beginnerDesc": "أبدأ بحفظ صفحات جديدة",
+      "hafiz": "حافظ",
+      "hafizDesc": "حفظت القرآن وأريد المراجعة المنتظمة",
+      "step2Title": "ماذا تريد أن تغطي؟",
+      "selectJuz": "اختر الجزء",
+      "selectPages": "أو اختر صفحات محددة",
+      "step3Title": "حدد وتيرتك",
+      "newPagesPerDay": "صفحات جديدة يومياً",
+      "revisionPagesPerDay": "صفحات المراجعة يومياً",
+      "daysPerWeek": "أيام النشاط أسبوعياً",
+      "offDays": "أيام الراحة",
+      "estimatedEnd": "الانتهاء المتوقع",
+      "createPlan": "ابدأ الخطة",
+      "cancel": "إلغاء"
+    },
+    "today": {
+      "title": "تركيز اليوم",
+      "offDay": "اليوم يوم راحتك. استرح جيداً!",
+      "allComplete": "أكملت جميع المهام! عمل رائع!",
+      "newMemorization": "احفظ صفحة(صفحات) جديدة",
+      "revision": "راجع صفحة(صفحات)",
+      "weakReinforcement": "عزّز الصفحات الضعيفة",
+      "markComplete": "وضع علامة مكتمل",
+      "perfect": "ممتاز",
+      "good": "جيد",
+      "needsWork": "تحتاج عمل",
+      "openPage": "افتح الصفحة",
+      "backlogWarning": "لديك {count} صفحة(صفحات) متأخرة — جارٍ التعويض!"
+    },
+    "calendar": {
+      "title": "التقويم",
+      "weekView": "أسبوع",
+      "monthView": "شهر",
+      "complete": "مكتمل",
+      "partial": "جزئي",
+      "missed": "فائت",
+      "pending": "معلق",
+      "today": "اليوم"
+    },
+    "progress": {
+      "title": "التقدم",
+      "pagesMemorized": "الصفحات المحفوظة",
+      "pagesReviewed": "الصفحات المراجَعة",
+      "currentStreak": "السلسلة الحالية",
+      "longestStreak": "أطول سلسلة",
+      "cyclesCompleted": "الدورات المكتملة",
+      "daysActive": "الأيام النشطة",
+      "daysMissed": "الأيام الفائتة",
+      "weakPages": "الصفحات الضعيفة",
+      "milestones": "الإنجازات",
+      "juzComplete": "اكتمل الجزء {juz}",
+      "cycleComplete": "اكتملت الدورة {cycle}",
+      "completedOn": "أُكمل في {date}",
+      "estimated": "المتوقع: {date}"
+    },
+    "status": {
+      "active": "نشطة",
+      "paused": "متوقفة",
+      "completed": "مكتملة",
+      "abandoned": "ملغاة"
+    },
+    "actions": {
+      "pause": "أوقف الخطة",
+      "resume": "استأنف الخطة",
+      "abandon": "ألغِ الخطة",
+      "adjustPace": "عدّل الوتيرة",
+      "viewHistory": "عرض السجل"
+    },
+    "missed": {
+      "welcomeBack": "مرحباً بعودتك!",
+      "missedDays": "فاتك {count} يوم(أيام)",
+      "lightReschedule": "سنوزع الصفحات المتأخرة على اليومين القادمين.",
+      "mediumReschedule": "خفّضنا الحفظ الجديد ووزّعنا المراجعة على ٣ أيام.",
+      "heavyReschedule": "أُوقف الحفظ الجديد مؤقتاً حتى تلحق بالمراجعة.",
+      "planResetNeeded": "مرّ وقت طويل! هل تريد الاستئناف أم بدء خطة جديدة؟",
+      "resume": "استأنف الخطة",
+      "newPlan": "ابدأ خطة جديدة"
+    },
+    "empty": {
+      "title": "لا توجد خطة نشطة",
+      "description": "أنشئ خطة موجهة لتنظيم جدول حفظك ومراجعتك.",
+      "cta": "أنشئ خطة"
+    },
+    "days": {
+      "sun": "الأحد",
+      "mon": "الإثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت"
+    }
   }
 }
