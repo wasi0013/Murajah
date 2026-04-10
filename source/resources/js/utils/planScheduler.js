@@ -12,6 +12,7 @@
 
 import Logger from './logger.js';
 import { calculateAllWeaknesses, getWeakestPages } from './weaknessScorer.js';
+import { getPageMode } from './planManager.js';
 
 // --- SM-2 Constants ---
 const MIN_EASE_FACTOR = 1.3;
@@ -36,8 +37,9 @@ const PASSING_THRESHOLD = 3;
 const MAX_BACKLOG_BEFORE_PAUSE = 10;
 const MAX_WEAK_REINFORCEMENT_BEGINNER = 2;
 const MAX_WEAK_REINFORCEMENT_HAFIZ = 3;
-const WEAK_THRESHOLD_BEGINNER = 60;
-const WEAK_THRESHOLD_HAFIZ = 50;
+
+// Hifz strength threshold: pages with perfectRevisions count < this are weak
+const STRENGTH_THRESHOLD = 80;
 
 // Short-term revision window (days)
 const SHORT_TERM_WINDOW_DAYS = 7;
@@ -130,6 +132,7 @@ export function mapToPerformance({ perfectRevisionCount = 0, mistakeCount = 0, q
 
   // Override with user self-report if provided
   if (userRating === 'perfect') base = Math.max(base, 4);
+  else if (userRating === 'good') base = Math.max(base, 3);
   else if (userRating === 'needs_work') base = Math.min(base, 2);
 
   // Clamp to 0-5
@@ -179,16 +182,18 @@ export function generateDailyTasks({ plan, appData, quizScores = {}, today = new
   });
 
   if (userType === 'beginner') {
-    return generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, pace, targetPages, todayStr, today });
+    return generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
+  } else if (userType === 'mixed') {
+    return generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
   } else {
-    return generateHafizTasks({ plan, pageReviewData, weaknessMap, pace, targetPages, todayStr, today });
+    return generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
   }
 }
 
 /**
  * Generate daily tasks for beginner mode.
  */
-function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, pace, targetPages, todayStr, today }) {
+function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
   const newPagesPerDay = pace.newPagesPerDay || 1;
   const revisionPerDay = pace.revisionPagesPerDay || 5;
 
@@ -218,12 +223,12 @@ function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessM
   // Combine revision pages
   const allRevisionPages = [...new Set([...shortTermRevision, ...longTermPages])];
 
-  // 4. WEAK REINFORCEMENT — top weak pages not already scheduled
+  // 4. WEAK REINFORCEMENT — pages with hifz strength < 80, ranked by composite weakness
   const alreadyScheduled = new Set([...newMemorizationPages, ...allRevisionPages]);
   const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_BEGINNER, [...alreadyScheduled])
     .filter(p => {
-      const score = weaknessMap.get(p);
-      return score !== undefined && score > WEAK_THRESHOLD_BEGINNER;
+      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
+      return hifzScore < STRENGTH_THRESHOLD;
     });
 
   return {
@@ -234,7 +239,7 @@ function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessM
       ? { pages: allRevisionPages, source: 'scheduled', completed: false, completedAt: null, performance: null }
       : null,
     weakReinforcement: weakPages.length > 0
-      ? { pages: weakPages, reason: 'weakness_score_high', completed: false, completedAt: null, performance: null }
+      ? { pages: weakPages, reason: 'low_hifz_strength', completed: false, completedAt: null, performance: null }
       : null,
     metadata: {
       date: todayStr,
@@ -249,7 +254,7 @@ function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessM
 /**
  * Generate daily tasks for hafiz mode.
  */
-function generateHafizTasks({ plan, pageReviewData, weaknessMap, pace, targetPages, todayStr, today }) {
+function generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
   const revisionPerDay = pace.revisionPagesPerDay || 20;
 
   // 1. CYCLE REVISION — pages due today, sorted by overdue + sequential order
@@ -273,12 +278,12 @@ function generateHafizTasks({ plan, pageReviewData, weaknessMap, pace, targetPag
     cyclePages = [...cyclePages, ...unreviewedInPlan.slice(0, fillCount)];
   }
 
-  // 2. WEAK REINFORCEMENT
+  // 2. WEAK REINFORCEMENT — pages with hifz strength < 80, ranked by composite weakness
   const alreadyScheduled = new Set(cyclePages);
   const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_HAFIZ, [...alreadyScheduled])
     .filter(p => {
-      const score = weaknessMap.get(p);
-      return score !== undefined && score > WEAK_THRESHOLD_HAFIZ;
+      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
+      return hifzScore < STRENGTH_THRESHOLD;
     });
 
   return {
@@ -287,7 +292,7 @@ function generateHafizTasks({ plan, pageReviewData, weaknessMap, pace, targetPag
       ? { pages: cyclePages, source: 'scheduled', completed: false, completedAt: null, performance: null }
       : null,
     weakReinforcement: weakPages.length > 0
-      ? { pages: weakPages, reason: 'weakness_score_high', completed: false, completedAt: null, performance: null }
+      ? { pages: weakPages, reason: 'low_hifz_strength', completed: false, completedAt: null, performance: null }
       : null,
     metadata: {
       date: todayStr,
@@ -295,6 +300,97 @@ function generateHafizTasks({ plan, pageReviewData, weaknessMap, pace, targetPag
       backlogSize: overduePages.length,
       pausedNewMemorization: false,
       totalPages: cyclePages.length + weakPages.length,
+    },
+  };
+}
+
+/**
+ * Generate daily tasks for mixed mode.
+ * Pages in beginner-mode juz follow beginner logic; pages in hafiz-mode juz follow hafiz logic.
+ * Results are merged into a single task set.
+ */
+function generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
+  const juzModes = plan.juzModes || {};
+  const layout = plan.layout || 'qpc';
+
+  // Split pages by mode
+  const beginnerPages = targetPages.filter(p => getPageMode(p, juzModes, layout) === 'beginner');
+  const hafizPages = targetPages.filter(p => getPageMode(p, juzModes, layout) === 'hafiz');
+
+  // Budget allocation: proportional to page counts
+  const total = targetPages.length || 1;
+  const beginnerRatio = beginnerPages.length / total;
+  const hafizRatio = hafizPages.length / total;
+
+  const newPagesPerDay = pace.newPagesPerDay || 1;
+  const revisionPerDay = pace.revisionPagesPerDay || 10;
+  const beginnerRevBudget = Math.max(1, Math.round(revisionPerDay * beginnerRatio));
+  const hafizRevBudget = Math.max(1, revisionPerDay - beginnerRevBudget);
+
+  // --- Beginner portion ---
+  const unmemorizedBeginner = beginnerPages.filter(p => !memorizedPages.has(p));
+  const overdueBeginner = getOverduePages(pageReviewData, todayStr).filter(p => beginnerPages.includes(p));
+  const pauseNew = overdueBeginner.length > MAX_BACKLOG_BEFORE_PAUSE;
+
+  let newMemorizationPages = [];
+  if (!pauseNew && unmemorizedBeginner.length > 0) {
+    newMemorizationPages = unmemorizedBeginner.slice(0, newPagesPerDay);
+  }
+
+  const shortTermBeginner = getShortTermPages(pageReviewData, beginnerPages, todayStr, today);
+  const stBudget = Math.min(2, Math.ceil(beginnerRevBudget * 0.4));
+  const shortTermRev = shortTermBeginner.slice(0, stBudget);
+  const ltBudget = beginnerRevBudget - shortTermRev.length;
+  const longTermBeginner = overdueBeginner.filter(p => !shortTermRev.includes(p)).slice(0, Math.max(0, ltBudget));
+  const beginnerRevision = [...new Set([...shortTermRev, ...longTermBeginner])];
+
+  // --- Hafiz portion ---
+  const overdueHafiz = getOverduePages(pageReviewData, todayStr).filter(p => hafizPages.includes(p));
+  let hafizCyclePages = overdueHafiz.slice(0, hafizRevBudget);
+
+  if (hafizCyclePages.length < hafizRevBudget) {
+    const tomorrowStr = formatDate(addDays(today, 1));
+    const tomorrowDue = getDuePages(pageReviewData, tomorrowStr, hafizPages)
+      .filter(p => !hafizCyclePages.includes(p));
+    hafizCyclePages = [...hafizCyclePages, ...tomorrowDue.slice(0, hafizRevBudget - hafizCyclePages.length)];
+  }
+
+  if (hafizCyclePages.length < hafizRevBudget) {
+    const reviewed = new Set(hafizCyclePages);
+    const unreviewed = hafizPages.filter(p => !reviewed.has(p) && !pageReviewData[p]?.lastReviewDate);
+    hafizCyclePages = [...hafizCyclePages, ...unreviewed.slice(0, hafizRevBudget - hafizCyclePages.length)];
+  }
+
+  // --- Merge revision ---
+  const allRevisionPages = [...new Set([...beginnerRevision, ...hafizCyclePages])];
+
+  // --- Weak reinforcement — pages with hifz strength < 80, ranked by composite weakness ---
+  const alreadyScheduled = new Set([...newMemorizationPages, ...allRevisionPages]);
+  const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_BEGINNER + MAX_WEAK_REINFORCEMENT_HAFIZ, [...alreadyScheduled])
+    .filter(p => {
+      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
+      return hifzScore < STRENGTH_THRESHOLD;
+    });
+
+  return {
+    newMemorization: newMemorizationPages.length > 0
+      ? { pages: newMemorizationPages, completed: false, completedAt: null }
+      : null,
+    revision: allRevisionPages.length > 0
+      ? { pages: allRevisionPages, source: 'scheduled', completed: false, completedAt: null, performance: null }
+      : null,
+    weakReinforcement: weakPages.length > 0
+      ? { pages: weakPages, reason: 'low_hifz_strength', completed: false, completedAt: null, performance: null }
+      : null,
+    metadata: {
+      date: todayStr,
+      isOffDay: false,
+      backlogSize: overdueBeginner.length + overdueHafiz.length,
+      pausedNewMemorization: pauseNew,
+      totalPages: newMemorizationPages.length + allRevisionPages.length + weakPages.length,
+      mixedMode: true,
+      beginnerPageCount: beginnerPages.length,
+      hafizPageCount: hafizPages.length,
     },
   };
 }
@@ -525,8 +621,7 @@ export {
   MAX_INTERVAL_BEGINNER,
   MAX_INTERVAL_HAFIZ,
   MAX_BACKLOG_BEFORE_PAUSE,
-  WEAK_THRESHOLD_BEGINNER,
-  WEAK_THRESHOLD_HAFIZ,
+  STRENGTH_THRESHOLD,
   SHORT_TERM_WINDOW_DAYS,
 };
 

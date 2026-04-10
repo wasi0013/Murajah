@@ -40,8 +40,7 @@ const {
   MAX_INTERVAL_BEGINNER,
   MAX_INTERVAL_HAFIZ,
   MAX_BACKLOG_BEFORE_PAUSE,
-  WEAK_THRESHOLD_BEGINNER,
-  WEAK_THRESHOLD_HAFIZ,
+  STRENGTH_THRESHOLD,
   SHORT_TERM_WINDOW_DAYS,
 } = await import('../../source/resources/js/utils/planScheduler.js');
 
@@ -572,8 +571,7 @@ describe('planScheduler.js', () => {
       expect(MAX_INTERVAL_BEGINNER).toBe(14);
       expect(MAX_INTERVAL_HAFIZ).toBe(21);
       expect(MAX_BACKLOG_BEFORE_PAUSE).toBe(10);
-      expect(WEAK_THRESHOLD_BEGINNER).toBe(60);
-      expect(WEAK_THRESHOLD_HAFIZ).toBe(50);
+      expect(STRENGTH_THRESHOLD).toBe(80);
       expect(SHORT_TERM_WINDOW_DAYS).toBe(7);
     });
   });

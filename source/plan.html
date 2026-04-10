@@ -42,6 +42,10 @@
         /* Smooth transitions for view switching */
         .view-enter-active { animation: fadeIn 0.2s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Hide scrollbar but keep scroll functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 
@@ -230,7 +234,7 @@
             </div>
 
             <!-- No Plan State -->
-            <div v-if="!activePlan && !showSetup">
+            <div v-if="activePlans.length === 0 && !showSetup">
                 <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
                     <i class="fas fa-calendar-plus text-4xl text-gray-300 mb-3"></i>
                     <h2 class="text-base font-semibold text-gray-800 mb-1">{{ t('plan.empty.title') }}</h2>
@@ -245,6 +249,7 @@
             <!-- Setup Wizard -->
             <plan-setup-wizard v-if="showSetup"
                 :memorized-pages="memorizedPages"
+                :layout="currentLayout"
                 :t="t"
                 @plan-created="onPlanCreated"
                 @cancel="showSetup = false">
@@ -252,8 +257,27 @@
 
             <!-- Active Plan Views -->
             <template v-if="activePlan && !showSetup">
+                <!-- Plan Selector (multi-plan) -->
+                <div v-if="activePlans.length > 0" class="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                    <button v-for="(p, idx) in activePlans" :key="p.id"
+                        @click="selectPlan(idx)"
+                        :class="['flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+                            idx === selectedPlanIndex
+                                ? 'bg-blue-500 text-white border-blue-500'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300']"
+                    >
+                        <i :class="['mr-1', p.type === 'beginner' ? 'fas fa-seedling' : 'fas fa-book-open']"></i>
+                        {{ p.name }}
+                    </button>
+                    <button @click="showSetup = true"
+                        class="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors"
+                        :title="t('plan.empty.cta')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
                 <!-- Tab Navigation -->
-                <div class="flex border-b border-gray-200 mb-4 -mx-3 px-3 overflow-x-auto">
+                <div class="flex border-b border-gray-200 mb-4 -mx-3 px-3 overflow-x-auto no-scrollbar">
                     <button v-for="tab in tabs" :key="tab.id"
                         @click="currentTab = tab.id"
                         :class="['flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
@@ -279,6 +303,13 @@
                         @open-page="openPage"
                         @open-quiz="openQuiz">
                     </plan-today-card>
+
+                    <!-- Audio Player Card -->
+                    <plan-audio-card
+                        v-if="todayTasks && !todayTasks.metadata?.isOffDay"
+                        :today-tasks="todayTasks"
+                        :t="t">
+                    </plan-audio-card>
                 </div>
 
                 <!-- Calendar View -->
@@ -382,12 +413,15 @@
             createDayRecord,
             savePlan,
             loadActivePlan,
+            loadActivePlans,
             loadPlan,
             loadAllPlans,
             saveDayRecord,
             loadPlanHistory,
             getPagesForJuz,
             getJuzForPages,
+            getJuzPagesForLayout,
+            getTotalPagesForLayout,
             estimateEndDate,
             generateMilestones,
         } = await import('./resources/js/utils/planManager.js');
@@ -399,6 +433,7 @@
         const PlanTodayCard = (await import('./resources/js/components/PlanTodayCard.js')).default;
         const PlanCalendarComponent = (await import('./resources/js/components/PlanCalendarComponent.js')).default;
         const PlanProgressView = (await import('./resources/js/components/PlanProgressView.js')).default;
+        const PlanAudioCard = (await import('./resources/js/components/PlanAudioCard.js')).default;
 
         // Pre-load translations
         await initLocaleFromStorage();
@@ -409,11 +444,13 @@
                 'plan-today-card': PlanTodayCard,
                 'plan-calendar-component': PlanCalendarComponent,
                 'plan-progress-view': PlanProgressView,
+                'plan-audio-card': PlanAudioCard,
             },
             setup() {
                 const isLoading = ref(true);
                 const error = ref(null);
-                const activePlan = ref(null);
+                const activePlans = ref([]);
+                const selectedPlanIndex = ref(0);
                 const planHistory = ref([]);
                 const todayTasks = ref(null);
                 const showSetup = ref(false);
@@ -421,11 +458,15 @@
                 const missedDaysInfo = ref(null);
                 const showPaceEditor = ref(false);
 
+                // Computed: currently selected active plan
+                const activePlan = computed(() => activePlans.value[selectedPlanIndex.value] || null);
+
                 // App data from main DB
                 const memorizedPages = ref(new Set());
                 const perfectRevisions = ref({});
                 const mistakesMap = ref({});
                 const quizScores = ref({});
+                const currentLayout = ref('qpc');
 
                 // Pace editor form
                 const paceForm = ref({ newPagesPerDay: 1, revisionPagesPerDay: 5 });
@@ -456,6 +497,12 @@
                             PlanDB.getAppData('mistakesMap'),
                         ]);
 
+                        // Read current layout setting
+                        const savedLayout = await PlanDB.getAppData('selectedLayout');
+                        if (savedLayout === 'indopak' || savedLayout === 'qpc') {
+                            currentLayout.value = savedLayout;
+                        }
+
                         if (memPages) {
                             memorizedPages.value = new Set(Array.isArray(memPages) ? memPages : []);
                         }
@@ -469,25 +516,28 @@
                         // Load quiz scores from separate QuizDB
                         quizScores.value = await QuizBridge.getScores();
 
-                        // Load active plan
-                        const plan = await loadActivePlan(PlanDB.db);
-                        if (plan) {
-                            activePlan.value = plan;
+                        // Load all active plans
+                        const plans = await loadActivePlans(PlanDB.db);
+                        if (plans.length > 0) {
+                            activePlans.value = plans;
+                            selectedPlanIndex.value = 0;
 
-                            // Sync external memorization changes
-                            const synced = syncExternalMemorization(plan, memorizedPages.value);
-                            if (synced.newPagesDetected > 0) {
-                                await savePlan(PlanDB.db, plan);
+                            // Sync external memorization for all plans
+                            for (const plan of plans) {
+                                const synced = syncExternalMemorization(plan, memorizedPages.value);
+                                if (synced.newPagesDetected > 0) {
+                                    await savePlan(PlanDB.db, plan);
+                                }
                             }
 
-                            // Check for missed days
-                            await checkMissedDays(plan);
+                            // Check for missed days on selected plan
+                            await checkMissedDays(activePlan.value);
 
-                            // Generate today's tasks
+                            // Generate today's tasks for selected plan
                             await refreshTodayTasks();
 
-                            // Load history
-                            const history = await loadPlanHistory(PlanDB.db, plan.id, 90);
+                            // Load history for selected plan
+                            const history = await loadPlanHistory(PlanDB.db, activePlan.value.id, 90);
                             planHistory.value = history;
                         }
                     } catch (e) {
@@ -549,7 +599,8 @@
                     try {
                         const plan = createPlan(planConfig);
                         await savePlan(PlanDB.db, plan);
-                        activePlan.value = plan;
+                        activePlans.value.push(plan);
+                        selectedPlanIndex.value = activePlans.value.length - 1;
                         showSetup.value = false;
                         currentTab.value = 'today';
                         await refreshTodayTasks();
@@ -559,41 +610,54 @@
                     }
                 }
 
-                async function onCompleteTask({ taskType, pages }) {
-                    if (!activePlan.value) return;
+                async function onCompleteTask(taskType) {
+                    if (!activePlan.value || !todayTasks.value) return;
+                    const task = todayTasks.value[taskType];
+                    if (!task) return;
                     try {
-                        const appData = {
-                            memorizedPages: memorizedPages.value,
-                            perfectRevisions: perfectRevisions.value,
-                            mistakesMap: mistakesMap.value,
-                        };
-                        // Default performance = 3 (recalled OK), user can rate afterwards
-                        recordTaskCompletion(activePlan.value, taskType, pages, 3, appData);
+                        // Toggle completion
+                        task.completed = !task.completed;
+                        task.completedAt = task.completed ? new Date().toISOString() : null;
+                        const pages = task.pages || [];
+                        if (task.completed && pages.length > 0) {
+                            const appData = {
+                                memorizedPages: memorizedPages.value,
+                                perfectRevisions: perfectRevisions.value,
+                                mistakesMap: mistakesMap.value,
+                            };
+                            // Default performance = 3 (recalled OK), user can rate afterwards
+                            recordTaskCompletion(activePlan.value, taskType, pages, 3, appData);
+                        }
                         await savePlan(PlanDB.db, activePlan.value);
-                        await refreshTodayTasks();
                     } catch (e) {
                         console.error('[Plan] Complete task error:', e);
                     }
                 }
 
-                async function onRateTask({ taskType, pages, performance }) {
-                    if (!activePlan.value) return;
+                async function onRateTask(taskType, rating) {
+                    if (!activePlan.value || !todayTasks.value) return;
+                    const task = todayTasks.value[taskType];
+                    if (!task) return;
                     try {
+                        const pages = task.pages || [];
                         const appData = {
                             memorizedPages: memorizedPages.value,
                             perfectRevisions: perfectRevisions.value,
                             mistakesMap: mistakesMap.value,
                         };
-                        recordTaskCompletion(activePlan.value, taskType, pages, performance, appData);
+                        // Pass rating string directly — mapToPerformance handles it
+                        recordTaskCompletion(activePlan.value, taskType, pages, rating, appData);
+                        task.performance = rating;
                         await savePlan(PlanDB.db, activePlan.value);
-                        await refreshTodayTasks();
                     } catch (e) {
                         console.error('[Plan] Rate task error:', e);
                     }
                 }
 
                 function openPage(pageNum) {
-                    window.location.href = `./index.html#page=${pageNum}`;
+                    const page = parseInt(pageNum, 10);
+                    if (!Number.isInteger(page) || page < 1 || page > 700) return;
+                    window.location.href = `./index.html?page=${page}`;
                 }
 
                 function openQuiz(pages) {
@@ -659,10 +723,12 @@
                         }
                         transitionPlanStatus(activePlan.value, 'abandoned');
                         await savePlan(PlanDB.db, activePlan.value);
-                        activePlan.value = null;
+                        activePlans.value.splice(selectedPlanIndex.value, 1);
+                        selectedPlanIndex.value = Math.max(0, Math.min(selectedPlanIndex.value, activePlans.value.length - 1));
                         todayTasks.value = null;
                         planHistory.value = [];
                         currentTab.value = 'today';
+                        if (activePlan.value) await refreshTodayTasks();
                     } catch (e) {
                         console.error('[Plan] Abandon error:', e);
                     }
@@ -677,8 +743,9 @@
                     if (activePlan.value) {
                         transitionPlanStatus(activePlan.value, 'abandoned');
                         await savePlan(PlanDB.db, activePlan.value);
+                        activePlans.value.splice(selectedPlanIndex.value, 1);
+                        selectedPlanIndex.value = Math.max(0, Math.min(selectedPlanIndex.value, activePlans.value.length - 1));
                     }
-                    activePlan.value = null;
                     todayTasks.value = null;
                     missedDaysInfo.value = null;
                     showSetup.value = true;
@@ -686,6 +753,20 @@
 
                 function dismissMissed() {
                     missedDaysInfo.value = null;
+                }
+
+                async function selectPlan(index) {
+                    if (index === selectedPlanIndex.value) return;
+                    selectedPlanIndex.value = index;
+                    todayTasks.value = null;
+                    planHistory.value = [];
+                    currentTab.value = 'today';
+                    if (activePlan.value) {
+                        await checkMissedDays(activePlan.value);
+                        await refreshTodayTasks();
+                        const history = await loadPlanHistory(PlanDB.db, activePlan.value.id, 90);
+                        planHistory.value = history;
+                    }
                 }
 
                 // Auto-save day record at end of day / when tasks change
@@ -719,6 +800,8 @@
                     isLoading,
                     error,
                     activePlan,
+                    activePlans,
+                    selectedPlanIndex,
                     planHistory,
                     todayTasks,
                     showSetup,
@@ -729,6 +812,7 @@
                     paceForm,
                     tabs,
                     dayNumber,
+                    currentLayout,
                     t,
 
                     // Handlers
@@ -746,6 +830,7 @@
                     resumeAfterMissed,
                     startNewPlan,
                     dismissMissed,
+                    selectPlan,
                 };
             },
         }).mount('#app');

@@ -910,8 +910,17 @@
       "hafiz": "حافظ",
       "hafizLabel": "حافظ",
       "hafizDesc": "حفظت القرآن وأريد المراجعة المنتظمة",
+      "mixedLabel": "مختلط",
+      "mixedDesc": "بعض الأجزاء أحفظها وبعضها أراجعها",
       "scopeQuestionBeginner": "ماذا تريد أن تحفظ؟",
       "scopeQuestionHafiz": "ماذا تريد أن تراجع؟",
+      "scopeQuestionMixed": "اختر نطاق الخطة",
+      "juzModeTitle": "حدد وضع كل جزء",
+      "juzModeHint": "اختر مبتدئ (حفظ جديد) أو حافظ (مراجعة) لكل جزء",
+      "step3MixedTitle": "أوضاع الأجزاء",
+      "allBeginner": "الكل مبتدئ",
+      "allHafiz": "الكل حافظ",
+      "juzLabel": "الجزء {juz}",
       "fullQuran": "القرآن كاملاً",
       "specificJuz": "أجزاء محددة",
       "customPages": "صفحات مخصصة",
@@ -1042,6 +1051,14 @@
       "thu": "الخميس",
       "fri": "الجمعة",
       "sat": "السبت"
+    },
+    "audio": {
+      "title": "استمع",
+      "playing": "يعمل",
+      "noTasks": "لا توجد صفحات للاستماع اليوم",
+      "part": "جزء",
+      "showPages": "عرض الصفحات",
+      "hidePages": "إخفاء الصفحات"
     }
   }
 }

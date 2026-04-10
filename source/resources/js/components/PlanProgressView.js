@@ -2,6 +2,7 @@
  * PlanProgressView Component
  * Shows milestones, juz coverage, cycle count, and overall plan progress.
  */
+import { getJuzPagesForLayout } from '../utils/planManager.js';
 
 export default {
   name: 'PlanProgressView',
@@ -134,15 +135,8 @@ export default {
 
     const confirmAbandoning = ref(false);
 
-    // Juz → page mapping
-    const JUZ_PAGES = [
-      [1, 21], [22, 41], [42, 61], [62, 81], [82, 101],
-      [102, 121], [122, 141], [142, 161], [162, 181], [182, 201],
-      [202, 221], [222, 241], [242, 261], [262, 281], [282, 301],
-      [302, 321], [322, 341], [342, 361], [362, 381], [382, 401],
-      [402, 421], [422, 441], [442, 461], [462, 481], [482, 501],
-      [502, 521], [522, 541], [542, 561], [562, 581], [582, 604],
-    ];
+    // Juz → page mapping (layout-aware from plan)
+    const JUZ_PAGES = computed(() => getJuzPagesForLayout(props.plan.layout || 'qpc'));
 
     const progressPercent = computed(() => {
       const stats = props.plan.stats;
@@ -158,7 +152,7 @@ export default {
     });
 
     function juzReviewPercent(juzNum) {
-      const [start, end] = JUZ_PAGES[juzNum - 1] || [0, 0];
+      const [start, end] = JUZ_PAGES.value[juzNum - 1] || [0, 0];
       const pageReviewData = props.plan.schedulerState?.pageReviewData || {};
       let reviewed = 0;
       let total = 0;
@@ -184,6 +178,6 @@ export default {
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
-    return { confirmAbandoning, progressPercent, juzReviewPercent, milestoneLabel, formatDate };
+    return { confirmAbandoning, progressPercent, JUZ_PAGES, juzReviewPercent, milestoneLabel, formatDate };
   },
 };

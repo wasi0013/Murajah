@@ -7385,7 +7385,8 @@
           const toggleMemorized = () => {
             if (memorizedStore.memorizedPages.has(appStore.currentPage)) {
               memorizedStore.memorizedPages.delete(appStore.currentPage);
-              appStore.successMessage = 'Removed from memorized';
+              perfectRevisionsStore.perfectRevisions.set(appStore.currentPage, 0);
+              appStore.successMessage = 'Removed from memorized (score reset)';
             } else {
               memorizedStore.memorizedPages.add(appStore.currentPage);
               // Set score to 40 only if page is new (score = 0)

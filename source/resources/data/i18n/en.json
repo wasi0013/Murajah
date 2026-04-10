@@ -911,8 +911,17 @@
       "hafiz": "Hafiz",
       "hafizLabel": "Hafiz",
       "hafizDesc": "I've memorized and want to maintain my revision",
+      "mixedLabel": "Mixed",
+      "mixedDesc": "Some juz I'm memorizing, others I'm revising",
       "scopeQuestionBeginner": "What would you like to memorize?",
       "scopeQuestionHafiz": "What would you like to revise?",
+      "scopeQuestionMixed": "Select the scope for your plan",
+      "juzModeTitle": "Set mode per Juz",
+      "juzModeHint": "Choose beginner (new memorization) or hafiz (revision) for each Juz",
+      "step3MixedTitle": "Juz modes",
+      "allBeginner": "All Beginner",
+      "allHafiz": "All Hafiz",
+      "juzLabel": "Juz {juz}",
       "fullQuran": "Full Quran",
       "specificJuz": "Specific Juz",
       "customPages": "Custom Pages",
@@ -1043,6 +1052,14 @@
       "thu": "Thu",
       "fri": "Fri",
       "sat": "Sat"
+    },
+    "audio": {
+      "title": "Listen Along",
+      "playing": "Playing",
+      "noTasks": "No pages to play today",
+      "part": "Part",
+      "showPages": "Show pages",
+      "hidePages": "Hide pages"
     }
   }
 }

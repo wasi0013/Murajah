@@ -3,7 +3,7 @@
  * Handles Plan CRUD, lifecycle transitions, daily task generation,
  * and external data synchronization.
  *
- * Invariant: Only 1 plan can be ACTIVE at a time (v1).
+ * Multiple plans can be ACTIVE simultaneously (v2).
  *
  * The plan system READS from existing app data (memorizedPages, perfectRevisions,
  * mistakesMap, settingsStore). It WRITES only to `plans` and `planHistory` stores.
@@ -27,7 +27,7 @@ function generatePlanId() {
 }
 
 // --- Juz/Surah metadata helpers ---
-const PAGES_PER_JUZ = [
+const QPC_PAGES_PER_JUZ = [
   /* Juz 1 */ [1, 21], [22, 41], [42, 61], [62, 81], [82, 101],
   [102, 121], [122, 141], [142, 161], [162, 181], [182, 201],
   [202, 221], [222, 241], [242, 261], [262, 281], [282, 301],
@@ -36,16 +36,50 @@ const PAGES_PER_JUZ = [
   [502, 521], [522, 541], [542, 561], [562, 581], [582, 604],
 ];
 
+const INDOPAK_PAGES_PER_JUZ = [
+  [1, 21], [22, 41], [42, 62], [62, 81], [82, 101],
+  [102, 121], [122, 141], [142, 161], [162, 181], [182, 201],
+  [201, 221], [222, 241], [242, 261], [261, 281], [282, 301],
+  [302, 321], [322, 341], [342, 361], [362, 381], [381, 402],
+  [402, 421], [422, 442], [442, 461], [462, 481], [482, 501],
+  [502, 521], [522, 541], [542, 561], [562, 585], [586, 610],
+];
+
+const LAYOUT_TOTAL_PAGES = { qpc: 604, indopak: 610 };
+
+// Legacy alias for backward compatibility
+const PAGES_PER_JUZ = QPC_PAGES_PER_JUZ;
+
+/**
+ * Get the juz-page mapping for a given layout.
+ * @param {string} [layout='qpc'] - Layout identifier ('qpc' or 'indopak')
+ * @returns {number[][]} Array of [start, end] page ranges per juz
+ */
+export function getJuzPagesForLayout(layout = 'qpc') {
+  return layout === 'indopak' ? INDOPAK_PAGES_PER_JUZ : QPC_PAGES_PER_JUZ;
+}
+
+/**
+ * Get total page count for a layout.
+ * @param {string} [layout='qpc']
+ * @returns {number}
+ */
+export function getTotalPagesForLayout(layout = 'qpc') {
+  return LAYOUT_TOTAL_PAGES[layout] || 604;
+}
+
 /**
  * Get pages for a given set of Juz numbers.
  * @param {number[]} juzNumbers - Array of juz numbers (1-30)
+ * @param {string} [layout='qpc'] - Layout identifier
  * @returns {number[]} Sorted array of page numbers
  */
-export function getPagesForJuz(juzNumbers) {
+export function getPagesForJuz(juzNumbers, layout = 'qpc') {
+  const juzMap = getJuzPagesForLayout(layout);
   const pages = [];
   for (const juzNum of juzNumbers) {
     if (juzNum < 1 || juzNum > 30) continue;
-    const [start, end] = PAGES_PER_JUZ[juzNum - 1];
+    const [start, end] = juzMap[juzNum - 1];
     for (let p = start; p <= end; p++) {
       pages.push(p);
     }
@@ -56,13 +90,15 @@ export function getPagesForJuz(juzNumbers) {
 /**
  * Get Juz numbers that contain the given pages.
  * @param {number[]} pages - Array of page numbers
+ * @param {string} [layout='qpc'] - Layout identifier
  * @returns {number[]} Array of juz numbers
  */
-export function getJuzForPages(pages) {
+export function getJuzForPages(pages, layout = 'qpc') {
+  const juzMap = getJuzPagesForLayout(layout);
   const juzSet = new Set();
   for (const page of pages) {
-    for (let i = 0; i < PAGES_PER_JUZ.length; i++) {
-      const [start, end] = PAGES_PER_JUZ[i];
+    for (let i = 0; i < juzMap.length; i++) {
+      const [start, end] = juzMap[i];
       if (page >= start && page <= end) {
         juzSet.add(i + 1);
         break;
@@ -70,6 +106,27 @@ export function getJuzForPages(pages) {
     }
   }
   return [...juzSet].sort((a, b) => a - b);
+}
+
+/**
+ * Get the mode for a specific page in a mixed-mode plan.
+ * Returns 'beginner' or 'hafiz' based on the juz the page belongs to.
+ *
+ * @param {number} page - Page number
+ * @param {Object} juzModes - Map of juz number (string key) to mode ('beginner'|'hafiz')
+ * @param {string} [layout='qpc'] - Layout identifier
+ * @returns {string} 'beginner' or 'hafiz'
+ */
+export function getPageMode(page, juzModes, layout = 'qpc') {
+  if (!juzModes) return 'hafiz';
+  const juzMap = getJuzPagesForLayout(layout);
+  for (let i = 0; i < juzMap.length; i++) {
+    const [start, end] = juzMap[i];
+    if (page >= start && page <= end) {
+      return juzModes[i + 1] || juzModes[String(i + 1)] || 'hafiz';
+    }
+  }
+  return 'hafiz';
 }
 
 /**
@@ -112,15 +169,16 @@ export function estimateEndDate(startDate, totalPages, pace, userType) {
  * @param {string} userType - "beginner" or "hafiz"
  * @returns {Object[]} Array of milestone objects
  */
-export function generateMilestones(targetPages, startDate, pace, userType) {
+export function generateMilestones(targetPages, startDate, pace, userType, layout = 'qpc') {
   const milestones = [];
-  const juzNumbers = getJuzForPages(targetPages);
+  const juzPages = getJuzPagesForLayout(layout);
+  const juzNumbers = getJuzForPages(targetPages, layout);
 
   // Juz completion milestones
   for (const juz of juzNumbers) {
-    const [, juzEnd] = PAGES_PER_JUZ[juz - 1];
+    const [, juzEnd] = juzPages[juz - 1];
     const pagesInJuzInPlan = targetPages.filter(p => {
-      const [s, e] = PAGES_PER_JUZ[juz - 1];
+      const [s, e] = juzPages[juz - 1];
       return p >= s && p <= e;
     });
 
@@ -174,19 +232,22 @@ export function generateMilestones(targetPages, startDate, pace, userType) {
  * @param {string} [params.startDate] - YYYY-MM-DD (defaults to today)
  * @returns {Object} The created plan object (not yet saved to DB)
  */
-export function createPlan({ type, targetPages, pace, name = null, startDate = null }) {
+export function createPlan({ type, targetPages, pace, name = null, startDate = null, layout = 'qpc', juzModes = null }) {
   if (!targetPages || targetPages.length === 0) {
     throw new Error('Plan must have at least one target page');
   }
-  if (!['beginner', 'hafiz'].includes(type)) {
-    throw new Error('Plan type must be "beginner" or "hafiz"');
+  if (!['beginner', 'hafiz', 'mixed'].includes(type)) {
+    throw new Error('Plan type must be "beginner", "hafiz", or "mixed"');
   }
 
   const today = formatDate(new Date());
   const start = startDate || today;
   const sortedPages = [...targetPages].sort((a, b) => a - b);
-  const juzNumbers = getJuzForPages(sortedPages);
-  const revisionPagesPerDay = type === 'beginner'
+  const juzNumbers = getJuzForPages(sortedPages, layout);
+
+  // For mixed mode, determine pace from the dominant mode
+  const hasBeginner = type === 'beginner' || (type === 'mixed' && juzModes && Object.values(juzModes).includes('beginner'));
+  const revisionPagesPerDay = (type === 'beginner' || (type === 'mixed' && hasBeginner))
     ? (pace.revisionPagesPerDay || 5)
     : (pace.revisionPagesPerDay || 20);
 
@@ -196,20 +257,22 @@ export function createPlan({ type, targetPages, pace, name = null, startDate = n
     : `${sortedPages.length}-Page Plan`);
 
   const normalizedPace = {
-    newPagesPerDay: type === 'beginner' ? (pace.newPagesPerDay || 1) : 0,
+    newPagesPerDay: (type === 'beginner' || hasBeginner) ? (pace.newPagesPerDay || 1) : 0,
     revisionPagesPerDay: revisionPagesPerDay,
     daysPerWeek: pace.daysPerWeek || 6,
-    offDays: pace.offDays || [5], // Default: Friday off
+    offDays: Array.isArray(pace.offDays) ? pace.offDays : [5], // Default: Friday off
   };
 
   const endDate = estimateEndDate(start, sortedPages.length, normalizedPace, type);
-  const milestones = generateMilestones(sortedPages, start, normalizedPace, type);
+  const milestones = generateMilestones(sortedPages, start, normalizedPace, type, layout);
   const pageReviewData = initializePageReviewData(sortedPages, start, revisionPagesPerDay);
 
   const plan = {
     id: generatePlanId(),
     name: autoName,
     type,
+    layout,
+    juzModes: type === 'mixed' ? (juzModes || {}) : null,
 
     targetPages: sortedPages,
     targetJuz: juzNumbers,
@@ -424,8 +487,8 @@ export function recordTaskCompletion(plan, taskType, pages, performance, appData
     Logger.info(Logger.MODULES.PLAN, `Cycle ${plan.stats.revisionCyclesCompleted} complete!`, { planId: plan.id });
   }
 
-  // Check plan completion (beginner mode)
-  if (plan.type === 'beginner') {
+  // Check plan completion (beginner or mixed mode with beginner juz)
+  if (plan.type === 'beginner' || plan.type === 'mixed') {
     const allMemorized = plan.targetPages.every(p => {
       const data = plan.schedulerState.pageReviewData[p];
       return data && data.reviewCount > 0;
@@ -605,11 +668,13 @@ export async function savePlan(db, plan) {
     return;
   }
 
+  // Deep-clone to strip Vue reactive proxies before IDB structured clone
+  const plainPlan = JSON.parse(JSON.stringify(plan));
   const tx = db.transaction(['plans'], 'readwrite');
-  tx.objectStore('plans').put(plan);
+  tx.objectStore('plans').put(plainPlan);
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => {
-      Logger.debug(Logger.MODULES.PLAN, 'Plan saved', { planId: plan.id });
+      Logger.debug(Logger.MODULES.PLAN, 'Plan saved', { planId: plainPlan.id });
       resolve();
     };
     tx.onerror = () => reject(tx.error);
@@ -636,6 +701,27 @@ export async function loadActivePlan(db) {
       const results = request.result;
       resolve(results && results.length > 0 ? results[0] : null);
     };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/**
+ * Load ALL active plans from IndexedDB.
+ * @param {IDBDatabase} db - The database reference
+ * @returns {Object[]} Array of active plan objects
+ */
+export async function loadActivePlans(db) {
+  if (!db || !db.objectStoreNames.contains('plans')) {
+    return [];
+  }
+
+  const tx = db.transaction(['plans'], 'readonly');
+  const store = tx.objectStore('plans');
+  const index = store.index('status');
+
+  return new Promise((resolve, reject) => {
+    const request = index.getAll('active');
+    request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);
   });
 }
@@ -688,8 +774,10 @@ export async function saveDayRecord(db, record) {
     return;
   }
 
+  // Deep-clone to strip Vue reactive proxies before IDB structured clone
+  const plainRecord = JSON.parse(JSON.stringify(record));
   const tx = db.transaction(['planHistory'], 'readwrite');
-  tx.objectStore('planHistory').put(record);
+  tx.objectStore('planHistory').put(plainRecord);
   return new Promise((resolve, reject) => {
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);

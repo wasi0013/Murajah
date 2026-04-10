@@ -3,29 +3,31 @@
  * 3-step wizard: User Type → Scope → Pace
  * Creates a guided memorization/revision plan.
  */
+import { getJuzPagesForLayout, getTotalPagesForLayout } from '../utils/planManager.js';
 
 export default {
   name: 'PlanSetupWizard',
   props: {
     memorizedPages: { type: Set, default: () => new Set() },
     t: { type: Function, required: true },
+    layout: { type: String, default: 'qpc' },
   },
   emits: ['plan-created', 'cancel'],
   template: `
     <div class="max-w-lg mx-auto">
       <!-- Progress Steps -->
       <div class="flex items-center justify-center mb-8 gap-2">
-        <template v-for="s in 3" :key="s">
+        <template v-for="s in totalSteps" :key="s">
           <div class="flex items-center gap-2">
             <div :class="[
               'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors',
               step >= s ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
             ]">{{ s }}</div>
             <span :class="['text-sm font-medium hidden sm:inline', step >= s ? 'text-gray-900' : 'text-gray-400']">
-              {{ s === 1 ? t('plan.setup.step1Title') : s === 2 ? t('plan.setup.step2Title') : t('plan.setup.step3Title') }}
+              {{ stepLabel(s) }}
             </span>
           </div>
-          <div v-if="s < 3" :class="['w-8 h-0.5', step > s ? 'bg-blue-500' : 'bg-gray-200']"></div>
+          <div v-if="s < totalSteps" :class="['w-8 h-0.5', step > s ? 'bg-blue-500' : 'bg-gray-200']"></div>
         </template>
       </div>
 
@@ -33,7 +35,7 @@ export default {
       <div v-if="step === 1" class="space-y-4">
         <h2 class="text-xl font-bold text-gray-900 text-center">{{ t('plan.setup.userTypeQuestion') }}</h2>
         <p class="text-sm text-gray-500 text-center">{{ t('plan.setup.userTypeHint') }}</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
           <button
             @click="form.type = 'beginner'; nextStep()"
             :class="['p-6 rounded-xl border-2 text-left transition-all hover:shadow-md',
@@ -52,18 +54,27 @@ export default {
             <div class="font-semibold text-gray-900">{{ t('plan.setup.hafizLabel') }}</div>
             <div class="text-sm text-gray-500 mt-1">{{ t('plan.setup.hafizDesc') }}</div>
           </button>
+          <button
+            @click="form.type = 'mixed'; nextStep()"
+            :class="['p-6 rounded-xl border-2 text-left transition-all hover:shadow-md',
+              form.type === 'mixed' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300']"
+          >
+            <div class="text-2xl mb-2">🔀</div>
+            <div class="font-semibold text-gray-900">{{ t('plan.setup.mixedLabel') }}</div>
+            <div class="text-sm text-gray-500 mt-1">{{ t('plan.setup.mixedDesc') }}</div>
+          </button>
         </div>
       </div>
 
       <!-- Step 2: Scope -->
       <div v-if="step === 2" class="space-y-4">
         <h2 class="text-xl font-bold text-gray-900 text-center">
-          {{ form.type === 'beginner' ? t('plan.setup.scopeQuestionBeginner') : t('plan.setup.scopeQuestionHafiz') }}
+          {{ form.type === 'mixed' ? t('plan.setup.scopeQuestionMixed') : form.type === 'beginner' ? t('plan.setup.scopeQuestionBeginner') : t('plan.setup.scopeQuestionHafiz') }}
         </h2>
 
         <!-- Scope type selection -->
         <div class="flex gap-2 justify-center mt-4">
-          <button v-if="form.type === 'hafiz'"
+          <button v-if="form.type === 'hafiz' || form.type === 'mixed'"
             @click="form.scopeType = 'full'"
             :class="['px-4 py-2 rounded-lg text-sm font-medium transition-colors',
               form.scopeType === 'full' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']"
@@ -80,7 +91,7 @@ export default {
           >{{ t('plan.setup.customPages') }}</button>
         </div>
 
-        <!-- Full Quran (auto-selects all 604 pages) -->
+        <!-- Full Quran (auto-selects all pages) -->
         <div v-if="form.scopeType === 'full'" class="bg-green-50 border border-green-200 rounded-lg p-4 text-center mt-4">
           <i class="fas fa-check-circle text-green-500 text-xl mb-2"></i>
           <p class="text-sm text-green-800">{{ t('plan.setup.fullQuranSelected') }}</p>
@@ -102,12 +113,12 @@ export default {
         <div v-if="form.scopeType === 'pages'" class="mt-4 space-y-3">
           <div class="flex items-center gap-3">
             <label class="text-sm text-gray-600 w-16">{{ t('plan.setup.fromPage') }}</label>
-            <input v-model.number="form.startPage" type="number" min="1" max="604"
+            <input v-model.number="form.startPage" type="number" min="1" :max="totalPages"
               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
           <div class="flex items-center gap-3">
             <label class="text-sm text-gray-600 w-16">{{ t('plan.setup.toPage') }}</label>
-            <input v-model.number="form.endPage" type="number" min="1" max="604"
+            <input v-model.number="form.endPage" type="number" min="1" :max="totalPages"
               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
         </div>
@@ -135,12 +146,65 @@ export default {
         </div>
       </div>
 
-      <!-- Step 3: Pace -->
-      <div v-if="step === 3" class="space-y-5">
+      <!-- Step 3 (mixed only): Per-Juz Mode Assignment -->
+      <div v-if="step === 3 && form.type === 'mixed'" class="space-y-4">
+        <h2 class="text-xl font-bold text-gray-900 text-center">{{ t('plan.setup.juzModeTitle') }}</h2>
+        <p class="text-sm text-gray-500 text-center">{{ t('plan.setup.juzModeHint') }}</p>
+
+        <!-- Quick actions -->
+        <div class="flex gap-2 justify-center mt-2">
+          <button @click="setAllJuzModes('beginner')"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors">
+            {{ t('plan.setup.allBeginner') }}
+          </button>
+          <button @click="setAllJuzModes('hafiz')"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors">
+            {{ t('plan.setup.allHafiz') }}
+          </button>
+        </div>
+
+        <!-- Juz mode grid -->
+        <div class="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto p-1 mt-3">
+          <div v-for="j in scopeJuzNumbers" :key="j"
+            class="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-3 py-2">
+            <span class="text-sm font-medium text-gray-800">{{ t('plan.setup.juzLabel').replace('{juz}', j) }}</span>
+            <div class="flex gap-1">
+              <button @click="form.juzModes[j] = 'beginner'"
+                :class="['px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                  form.juzModes[j] === 'beginner' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']"
+              >🌱 {{ t('plan.setup.beginnerLabel') }}</button>
+              <button @click="form.juzModes[j] = 'hafiz'"
+                :class="['px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                  form.juzModes[j] === 'hafiz' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']"
+              >📖 {{ t('plan.setup.hafizLabel') }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+          <p class="text-xs text-blue-800">
+            🌱 {{ beginnerJuzCount }} {{ t('plan.setup.beginnerLabel') }} · 📖 {{ hafizJuzCount }} {{ t('plan.setup.hafizLabel') }}
+          </p>
+        </div>
+
+        <!-- Nav buttons -->
+        <div class="flex justify-between mt-6">
+          <button @click="prevStep" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
+            <i class="fas fa-arrow-left mr-1"></i> {{ t('plan.setup.back') }}
+          </button>
+          <button @click="nextStep"
+            class="px-6 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+          >{{ t('plan.setup.next') }} <i class="fas fa-arrow-right ml-1"></i></button>
+        </div>
+      </div>
+
+      <!-- Pace Step (step 3 for non-mixed, step 4 for mixed) -->
+      <div v-if="step === paceStep" class="space-y-5">
         <h2 class="text-xl font-bold text-gray-900 text-center">{{ t('plan.setup.paceTitle') }}</h2>
 
-        <!-- New pages/day (beginner only) -->
-        <div v-if="form.type === 'beginner'" class="flex items-center justify-between">
+        <!-- New pages/day (beginner or mixed with beginner juz) -->
+        <div v-if="form.type === 'beginner' || (form.type === 'mixed' && beginnerJuzCount > 0)" class="flex items-center justify-between">
           <label class="text-sm text-gray-700">{{ t('plan.setup.newPagesPerDay') }}</label>
           <div class="flex items-center gap-2">
             <button @click="form.newPagesPerDay = Math.max(1, form.newPagesPerDay - 1)"
@@ -218,7 +282,22 @@ export default {
       newPagesPerDay: 1,
       revisionPagesPerDay: 5,
       offDays: [5], // Friday
+      juzModes: {}, // For mixed mode: { juzNum: 'beginner'|'hafiz' }
     });
+
+    // Mixed mode: total steps = 4, otherwise 3
+    const totalSteps = computed(() => form.type === 'mixed' ? 4 : 3);
+    const paceStep = computed(() => form.type === 'mixed' ? 4 : 3);
+
+    function stepLabel(s) {
+      if (s === 1) return props.t('plan.setup.step1Title');
+      if (s === 2) return props.t('plan.setup.step2Title');
+      if (form.type === 'mixed') {
+        if (s === 3) return props.t('plan.setup.step3MixedTitle');
+        if (s === 4) return props.t('plan.setup.step3Title');
+      }
+      return props.t('plan.setup.step3Title');
+    }
 
     const dayNames = computed(() => [
       props.t('plan.days.sun'),
@@ -230,31 +309,26 @@ export default {
       props.t('plan.days.sat'),
     ]);
 
-    // Juz → page mapping (same as planManager.js)
-    const JUZ_PAGES = [
-      [1, 21], [22, 41], [42, 61], [62, 81], [82, 101],
-      [102, 121], [122, 141], [142, 161], [162, 181], [182, 201],
-      [202, 221], [222, 241], [242, 261], [262, 281], [282, 301],
-      [302, 321], [322, 341], [342, 361], [362, 381], [382, 401],
-      [402, 421], [422, 441], [442, 461], [462, 481], [482, 501],
-      [502, 521], [522, 541], [542, 561], [562, 581], [582, 604],
-    ];
+    // Juz → page mapping (layout-aware)
+    const JUZ_PAGES = computed(() => getJuzPagesForLayout(props.layout));
+    const totalPages = computed(() => getTotalPagesForLayout(props.layout));
 
     const scopePages = computed(() => {
+      const tp = totalPages.value;
       if (form.scopeType === 'full') {
-        return Array.from({ length: 604 }, (_, i) => i + 1);
+        return Array.from({ length: tp }, (_, i) => i + 1);
       }
       if (form.scopeType === 'juz') {
         const pages = [];
         for (const j of form.selectedJuz) {
-          const [start, end] = JUZ_PAGES[j - 1];
+          const [start, end] = JUZ_PAGES.value[j - 1];
           for (let p = start; p <= end; p++) pages.push(p);
         }
         return [...new Set(pages)].sort((a, b) => a - b);
       }
       if (form.scopeType === 'pages') {
-        const s = Math.max(1, Math.min(604, form.startPage || 1));
-        const e = Math.max(s, Math.min(604, form.endPage || s));
+        const s = Math.max(1, Math.min(tp, form.startPage || 1));
+        const e = Math.max(s, Math.min(tp, form.endPage || s));
         return Array.from({ length: e - s + 1 }, (_, i) => s + i);
       }
       return [];
@@ -273,26 +347,59 @@ export default {
     const scopeError = computed(() => {
       if (form.scopeType === 'juz' && form.selectedJuz.length === 0) return props.t('plan.setup.selectAtLeastOne');
       if (form.scopeType === 'pages' && scopePageCount.value === 0) return props.t('plan.setup.invalidRange');
-      if (form.scopeType === 'pages' && (form.startPage < 1 || form.endPage > 604 || form.startPage > form.endPage)) return props.t('plan.setup.invalidRange');
+      if (form.scopeType === 'pages' && (form.startPage < 1 || form.endPage > totalPages.value || form.startPage > form.endPage)) return props.t('plan.setup.invalidRange');
       return null;
     });
 
     const isScopeValid = computed(() => scopePageCount.value > 0 && !scopeError.value);
 
+    // Mixed mode: juz numbers in scope
+    const scopeJuzNumbers = computed(() => {
+      const juzSet = new Set();
+      const juzMap = JUZ_PAGES.value;
+      for (const page of scopePages.value) {
+        for (let i = 0; i < juzMap.length; i++) {
+          const [start, end] = juzMap[i];
+          if (page >= start && page <= end) { juzSet.add(i + 1); break; }
+        }
+      }
+      return [...juzSet].sort((a, b) => a - b);
+    });
+
+    const beginnerJuzCount = computed(() =>
+      scopeJuzNumbers.value.filter(j => form.juzModes[j] === 'beginner').length
+    );
+    const hafizJuzCount = computed(() =>
+      scopeJuzNumbers.value.filter(j => (form.juzModes[j] || 'hafiz') === 'hafiz').length
+    );
+
+    function setAllJuzModes(mode) {
+      for (const j of scopeJuzNumbers.value) {
+        form.juzModes[j] = mode;
+      }
+    }
+
+    // Initialize juz modes when entering step 3 for mixed mode
+    function initJuzModes() {
+      for (const j of scopeJuzNumbers.value) {
+        if (!form.juzModes[j]) form.juzModes[j] = 'hafiz';
+      }
+    }
+
     const estimatedDays = computed(() => {
-      const totalPages = scopePageCount.value;
+      const tp = scopePageCount.value;
       const activeDaysPerWeek = 7 - form.offDays.length;
       if (activeDaysPerWeek <= 0) return Infinity;
 
-      if (form.type === 'beginner') {
+      if (form.type === 'beginner' || (form.type === 'mixed' && beginnerJuzCount.value > 0)) {
         const newPerDay = form.newPagesPerDay || 1;
-        const unmemorized = totalPages - memorizedInScope.value;
+        const unmemorized = tp - memorizedInScope.value;
         const memorizationDays = Math.ceil(Math.max(0, unmemorized) / newPerDay);
-        const totalActiveDays = memorizationDays + 7; // +7 for final revision cycle
+        const totalActiveDays = memorizationDays + 7;
         return Math.ceil(totalActiveDays * (7 / activeDaysPerWeek));
       } else {
         const revPerDay = form.revisionPagesPerDay || 20;
-        const cycleDays = Math.ceil(totalPages / revPerDay);
+        const cycleDays = Math.ceil(tp / revPerDay);
         return Math.ceil(cycleDays * (7 / activeDaysPerWeek));
       }
     });
@@ -318,7 +425,10 @@ export default {
 
     function nextStep() {
       if (step.value === 2 && !isScopeValid.value) return;
-      if (step.value < 3) step.value++;
+      if (step.value === 2 && form.type === 'mixed') {
+        initJuzModes();
+      }
+      if (step.value < totalSteps.value) step.value++;
     }
 
     function prevStep() {
@@ -329,23 +439,32 @@ export default {
       if (creating.value) return;
       creating.value = true;
 
+      const hasBeginner = form.type === 'beginner' || (form.type === 'mixed' && beginnerJuzCount.value > 0);
       const pace = {
-        newPagesPerDay: form.type === 'beginner' ? form.newPagesPerDay : 0,
+        newPagesPerDay: hasBeginner ? form.newPagesPerDay : 0,
         revisionPagesPerDay: form.revisionPagesPerDay,
         daysPerWeek: 7 - form.offDays.length,
         offDays: [...form.offDays],
       };
 
-      emit('plan-created', {
+      const planConfig = {
         type: form.type,
         targetPages: scopePages.value,
         pace,
-      });
+        layout: props.layout,
+      };
+
+      if (form.type === 'mixed') {
+        planConfig.juzModes = { ...form.juzModes };
+      }
+
+      emit('plan-created', planConfig);
     }
 
     return {
-      step, form, creating, dayNames,
-      scopePages, scopePageCount, memorizedInScope,
+      step, form, creating, dayNames, totalSteps, paceStep, stepLabel,
+      scopePages, scopePageCount, memorizedInScope, totalPages,
+      scopeJuzNumbers, beginnerJuzCount, hafizJuzCount, setAllJuzModes,
       scopeError, isScopeValid, estimatedDays, estimatedEndStr,
       toggleJuz, toggleOffDay, nextStep, prevStep, createPlanHandler,
     };
