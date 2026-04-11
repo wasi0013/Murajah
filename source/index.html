@@ -5867,7 +5867,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '26.04.03',
+            appVersion: '26.04.11',
             errorMessage: '',
             successMessage: ''
           });
@@ -10431,14 +10431,29 @@ Display:
             }, 200);
           });
           
-          // Listen for content update messages from SW (stale-while-revalidate)
+          // Listen for messages from SW
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'CONTENT_UPDATED') {
               console.log('[Murajah] Content updated in background:', event.data.url);
-              // For HTML updates, show update banner so user gets latest version
               if (event.data.url?.endsWith('.html') && window.showUpdateNotification) {
                 window.showUpdateNotification();
               }
+            }
+            // SW_UPDATED: new version activated — reload to get fresh HTML + matched JS
+            if (event.data?.type === 'SW_UPDATED') {
+              console.log('[Murajah] SW updated to v' + event.data.payload?.version);
+              if (reloadingForSWUpdate) return;
+
+              // Skip reload during first-ever install (loader still visible)
+              const initialLoader = document.getElementById('initial-loader');
+              if (initialLoader && initialLoader.parentNode && !window.__murajahManualRefresh) {
+                console.log('[Murajah] Skipping SW_UPDATED reload — first install');
+                return;
+              }
+
+              reloadingForSWUpdate = true;
+              window.__murajahReloadTriggered = true;
+              window.location.reload();
             }
           });
           
@@ -10447,20 +10462,11 @@ Display:
         }
       });
       
-      // Expose functions for communicating with Service Worker
       window.swCacheFonts = (pages) => {
         if (navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({
             type: 'CACHE_FONTS',
             payload: { pages }
-          });
-        }
-      };
-      
-      window.swCacheSecondary = () => {
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'CACHE_SECONDARY'
           });
         }
       };

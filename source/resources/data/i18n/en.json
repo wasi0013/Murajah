@@ -886,7 +886,7 @@
       "activeRoundWarning": "⚠️ Cannot switch tabs during an active Lightning Round. Finish or reset the round first."
     },
     "footer": {
-      "version": "Murajah Version 26.04.03",
+      "version": "Murajah Version 26.04.11",
       "github": "View Source on GitHub"
     },
     "bottomNav": {

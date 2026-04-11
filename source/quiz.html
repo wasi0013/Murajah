@@ -1948,6 +1948,7 @@
 
     <!-- Vue App Script -->
     <script type="module">
+      try {
         const { createApp, ref, computed, watch, watchEffect, onBeforeUnmount } = Vue
 
         // Load i18n store for multi-language support
@@ -3279,6 +3280,54 @@
                 }
             }
         }).mount('#app')
+
+      } catch (err) {
+        console.error('[Quiz] Failed to load:', err);
+        document.getElementById('app').innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;font-family:system-ui,sans-serif">' +
+          '<div style="text-align:center;max-width:400px">' +
+          '<h2 style="margin-bottom:0.5rem">Failed to load Quiz</h2>' +
+          '<p style="color:#64748b;margin-bottom:1rem">This can happen after an app update. Please try reloading.</p>' +
+          '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer;margin-right:0.5rem">Reload</button>' +
+          '<a href="./hotfix.html" style="display:inline-block;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
+          '</div></div>';
+      }
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloading) return;
+            reloading = true;
+            window.location.reload();
+          });
+
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'SW_UPDATED' && !reloading) {
+              reloading = true;
+              window.location.reload();
+            }
+          });
+        } catch (e) {
+          console.warn('[Quiz] SW registration failed:', e);
+        }
+      });
+    }
     </script>
 </body>
 </html>
