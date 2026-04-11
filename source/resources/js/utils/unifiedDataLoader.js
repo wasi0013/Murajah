@@ -274,14 +274,13 @@ const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, 
   if (!resourceConfig) return;
 
   const refreshKey = `${resourceConfig.key}-${resourceConfig.cacheId}`;
+
+  if (resourceRefreshState[refreshKey]) return;
   
   // Clear any existing timer for this key to prevent accumulation
   if (resourceRefreshTimers[refreshKey]) {
     clearTimeout(resourceRefreshTimers[refreshKey]);
   }
-
-  if (resourceRefreshState[refreshKey]) return;
-
   resourceRefreshState[refreshKey] = true;
   // Delay background refresh significantly to avoid competing with initial load (30s instead of 100ms)
   resourceRefreshTimers[refreshKey] = setTimeout(async () => {

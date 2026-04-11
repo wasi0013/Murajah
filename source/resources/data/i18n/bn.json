@@ -1030,7 +1030,21 @@
       "abandon": "প্ল্যান বাতিল",
       "confirmAbandon": "বাতিল নিশ্চিত করুন",
       "adjustPace": "গতি পরিবর্তন",
-      "viewHistory": "ইতিহাস দেখুন"
+      "viewHistory": "ইতিহাস দেখুন",
+      "planSettings": "Plan Settings"
+    },
+    "settings": {
+      "title": "Plan Settings",
+      "description": "Adjust your plan preferences.",
+      "pace": "Pace",
+      "startDate": "Start Date",
+      "dailyTarget": "Daily Target",
+      "reviewMode": "Review Mode",
+      "save": "Save Settings",
+      "cancel": "Cancel"
+    },
+    "calendar": {
+      "preview": "Preview"
     },
     "missed": {
       "welcomeBack": "স্বাগতম!",

@@ -92,12 +92,18 @@ export const getWorkingAudioUrl = async (primaryUrl, fallbackUrl) => {
       await new Promise((resolve, reject) => {
         const audio = new Audio();
         audio.preload = 'metadata';
-        const cleanup = () => { audio.src = ''; audio.load(); };
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Audio load timeout'));
+        }, 5000);
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          audio.src = '';
+          audio.load();
+        };
         audio.addEventListener('loadedmetadata', () => { cleanup(); resolve(); }, { once: true });
         audio.addEventListener('error', () => { cleanup(); reject(new Error('Audio load failed')); }, { once: true });
         audio.src = primaryUrl;
-        // Timeout after 5s
-        setTimeout(() => { cleanup(); reject(new Error('Audio load timeout')); }, 5000);
       });
       return primaryUrl;
     } catch {
