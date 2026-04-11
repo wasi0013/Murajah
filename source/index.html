@@ -2518,7 +2518,7 @@
       class MurajahDB {
         constructor() {
           this.dbName = 'murajah-db';
-          this.version = 5; // Bumped version for notes store
+          this.version = 6; // Bumped version for plans feature
           this.db = null;
         }
 
@@ -2728,7 +2728,7 @@
 
         /** All object stores required by the app */
         _getRequiredStoreNames() {
-          return ['appData', 'recordings', 'dailyGoals', 'quranCache', 'resourceCache', 'notes'];
+          return ['appData', 'recordings', 'dailyGoals', 'quranCache', 'resourceCache', 'notes', 'plans', 'planHistory'];
         }
 
         _createSchema(event) {
@@ -2754,6 +2754,19 @@
           // Notes store for user reflections and annotations
           if (!db.objectStoreNames.contains('notes')) {
             db.createObjectStore('notes', { keyPath: 'id' });
+          }
+          // Plan store — guided memorization/revision plans
+          if (!db.objectStoreNames.contains('plans')) {
+            const planStore = db.createObjectStore('plans', { keyPath: 'id' });
+            planStore.createIndex('status', 'status', { unique: false });
+            planStore.createIndex('type', 'type', { unique: false });
+          }
+          // Plan history — daily task records
+          if (!db.objectStoreNames.contains('planHistory')) {
+            const historyStore = db.createObjectStore('planHistory', { keyPath: 'id' });
+            historyStore.createIndex('planId', 'planId', { unique: false });
+            historyStore.createIndex('date', 'date', { unique: false });
+            historyStore.createIndex('planId_date', ['planId', 'date'], { unique: true });
           }
           Logger.log('[Murajah] IndexedDB schema created/upgraded');
         }
@@ -3465,6 +3478,10 @@
                   <a href="./quiz.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-question-circle text-gray-500"></i>
                     {{ $t('header.quiz') }}
+                  </a>
+                  <a href="./plan.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-calendar-alt text-gray-500"></i>
+                    {{ $t('plan.nav') }}
                   </a>
 
                   <a href="https://discord.gg/Vycfm28anP" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item">
@@ -4466,6 +4483,7 @@
                 :current-locale="currentLocale"
                 :db="murajahDB"
                 :audio-play-mode="settingsStore.audioPlayMode"
+                @reciter-fallback="(reciterId) => { const message = $t('audio.reciterFallback', { reciter: reciterId }); appStore.errorMessage = !message || message === 'audio.reciterFallback' ? `Reciter ${reciterId} is unavailable; using fallback audio.` : message; setTimeout(() => appStore.errorMessage = '', 4000); }"
               ></quran-audio-player-component>
               </div>
 
@@ -5829,6 +5847,10 @@
                 <a class="bottom-nav-item" href="./quiz.html">
                   <i class="fas fa-question-circle"></i>
                   <span>{{ $t('header.quiz') }}</span>
+                </a>
+                <a class="bottom-nav-item" href="./plan.html">
+                  <i class="fas fa-calendar-alt"></i>
+                  <span>{{ $t('plan.nav') }}</span>
                 </a>
                 <button class="bottom-nav-item" @click="showMobileMenu = true">
                   <i class="fas fa-ellipsis-h"></i>
@@ -7364,7 +7386,8 @@
           const toggleMemorized = () => {
             if (memorizedStore.memorizedPages.has(appStore.currentPage)) {
               memorizedStore.memorizedPages.delete(appStore.currentPage);
-              appStore.successMessage = 'Removed from memorized';
+              perfectRevisionsStore.perfectRevisions.set(appStore.currentPage, 0);
+              appStore.successMessage = 'Removed from memorized (score reset)';
             } else {
               memorizedStore.memorizedPages.add(appStore.currentPage);
               // Set score to 40 only if page is new (score = 0)

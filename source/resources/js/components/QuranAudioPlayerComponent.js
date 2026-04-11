@@ -396,6 +396,8 @@ export const QuranAudioPlayerComponent = {
     }
   },
 
+  emits: ['reciter-fallback'],
+
   data() {
     return {
       pageVerses: [],
@@ -1130,10 +1132,14 @@ export const QuranAudioPlayerComponent = {
      * Seek to position in audio
      */
     seekAudio(event) {
+      if (!isFinite(this.duration) || this.duration <= 0) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
-      const percentage = clickX / rect.width;
-      this.audioElement.currentTime = percentage * this.duration;
+      const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+      const seekTime = percentage * this.duration;
+      if (isFinite(seekTime)) {
+        this.audioElement.currentTime = seekTime;
+      }
     },
 
     /**
@@ -1241,13 +1247,15 @@ export const QuranAudioPlayerComponent = {
         return;
       }
       // Try fallback
-      const verse = this.pageVerses[this.currentVerseIndex];
+      const verse = this.versesToPlay[this.currentVerseIndex];
       if (verse) {
         const { fallbackUrl } = this.getAudioUrl(verse);
         this.audioElement.src = fallbackUrl;
         this.audioElement.play().catch(err => {
           console.error('[Murajah] Fallback audio also failed:', err);
         });
+        // Notify user about fallback
+        this.$emit('reciter-fallback', this.selectedReciter);
       }
     },
 
@@ -1497,9 +1505,10 @@ export const QuranAudioPlayerComponent = {
   mounted() {
     this.audioElement = this.$refs.audioElement;
     // Apply playback speed whenever audio starts playing
-    this.audioElement.addEventListener('play', () => {
+    this._playHandler = () => {
       this.audioElement.playbackRate = this.playbackSpeed;
-    });
+    };
+    this.audioElement.addEventListener('play', this._playHandler);
     this.loadPageVerses();
     this.populateAvailableSurahs();
     // Load saved reciter from IndexedDB
@@ -1517,5 +1526,19 @@ export const QuranAudioPlayerComponent = {
       pageVerses: this.pageVerses.length,
       availableSurahs: Object.keys(this.availableSurahs).length
     });
+  },
+
+  beforeUnmount() {
+    // Clean up all event listeners to prevent memory leaks
+    if (this.audioElement) {
+      if (this._playHandler) {
+        this.audioElement.removeEventListener('play', this._playHandler);
+      }
+      if (this._audioErrorHandler) {
+        this.audioElement.removeEventListener('error', this._audioErrorHandler);
+      }
+      this.audioElement.pause();
+      this.audioElement.src = '';
+    }
   }
 };
