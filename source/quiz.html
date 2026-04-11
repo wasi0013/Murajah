@@ -401,24 +401,9 @@
         body:not(.dark) a { color: #2563eb !important; }
         body:not(.dark) a:hover { color: #1d4ed8 !important; }
 
-        /* ===== TABS: desktop only ===== */
+        /* ===== TABS: always use drawer, hide desktop tab bar ===== */
         nav[aria-label="Quiz Types"] {
             display: none;
-        }
-        @media (min-width: 768px) {
-            nav[aria-label="Quiz Types"] {
-                display: flex;
-                gap: 2rem;
-            }
-            nav[aria-label="Quiz Types"] button {
-                padding: 1rem 0.25rem;
-                font-size: 0.875rem;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            .mobile-tab-bar {
-                display: none;
-            }
         }
 
         /* ===== MOBILE TAB BAR ===== */
