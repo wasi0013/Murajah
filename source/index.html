@@ -4483,7 +4483,7 @@
                 :current-locale="currentLocale"
                 :db="murajahDB"
                 :audio-play-mode="settingsStore.audioPlayMode"
-                @reciter-fallback="(reciterId) => { const message = $t('audio.reciterFallback', { reciter: reciterId }); appStore.errorMessage = !message || message === 'audio.reciterFallback' ? `Reciter ${reciterId} is unavailable; using fallback audio.` : message; setTimeout(() => appStore.errorMessage = '', 4000); }"
+                @reciter-fallback="(reciterId) => { const message = $t('audio.reciterFallback', { reciter: reciterId }); appStore.errorMessage = (message &amp;&amp; message !== 'audio.reciterFallback') ? message : ('Reciter ' + reciterId + ' is unavailable; using fallback audio.'); setTimeout(() => appStore.errorMessage = '', 4000); }"
               ></quran-audio-player-component>
               </div>
 

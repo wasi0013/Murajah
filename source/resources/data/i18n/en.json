@@ -1016,6 +1016,8 @@
       "estimated": "Estimated: {date}",
       "targetDate": "Target: {date}",
       "noMilestones": "Milestones will appear as you progress",
+      "milestonesRemaining": "more to go",
+      "milestoneComplete": "complete!",
       "surahComplete": "Surah {surah} Complete",
       "juzCoverage": "Juz Coverage"
     },

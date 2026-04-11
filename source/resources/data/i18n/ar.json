@@ -994,7 +994,8 @@
       "partial": "جزئي",
       "missed": "فائت",
       "pending": "معلق",
-      "today": "اليوم"
+      "today": "اليوم",
+      "preview": "معاينة"
     },
     "progress": {
       "title": "التقدم",
@@ -1014,7 +1015,9 @@
       "targetDate": "الهدف: {date}",
       "noMilestones": "ستظهر الإنجازات مع تقدمك",
       "surahComplete": "اكتملت سورة {surah}",
-      "juzCoverage": "تغطية الأجزاء"
+      "juzCoverage": "تغطية الأجزاء",
+      "milestonesRemaining": "إنجاز(ات) متبقية",
+      "milestoneComplete": "مكتمل!"
     },
     "status": {
       "active": "نشطة",
@@ -1029,6 +1032,7 @@
       "abandon": "ألغِ الخطة",
       "confirmAbandon": "تأكيد الإلغاء",
       "adjustPace": "عدّل الوتيرة",
+      "planSettings": "إعدادات الخطة",
       "viewHistory": "عرض السجل"
     },
     "missed": {
@@ -1045,6 +1049,17 @@
       "title": "لا توجد خطة نشطة",
       "description": "أنشئ خطة موجهة لتنظيم جدول حفظك ومراجعتك.",
       "cta": "أنشئ خطة"
+    },
+    "settings": {
+      "title": "إعدادات الخطة",
+      "newPagesPerDay": "صفحات جديدة يومياً",
+      "revisionPagesPerDay": "صفحات المراجعة يومياً",
+      "weakPagesPerDay": "صفحات الضعيفة يومياً",
+      "offDays": "أيام الراحة",
+      "offDaysHint": "يتوقف الحفظ الجديد في أيام الراحة. تستمر المراجعة وتقوية الضعيف.",
+      "pagesUnit": "صفحة/يوم",
+      "cancel": "إلغاء",
+      "save": "حفظ التغييرات"
     },
     "days": {
       "sun": "الأحد",

@@ -132,7 +132,7 @@ export function calculateAllWeaknesses({
 
     let daysSinceLastReview = RECENCY_CAP_DAYS; // Default: cap (never reviewed)
     if (lastReviewStr) {
-      const lastReviewTime = new Date(lastReviewStr).getTime();
+      const lastReviewTime = new Date(lastReviewStr + 'T00:00:00').getTime();
       if (!isNaN(lastReviewTime)) {
         daysSinceLastReview = Math.floor((todayTime - lastReviewTime) / MS_PER_DAY);
       }

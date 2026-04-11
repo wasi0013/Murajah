@@ -995,7 +995,8 @@
       "partial": "আংশিক",
       "missed": "মিস",
       "pending": "বাকি",
-      "today": "আজ"
+      "today": "আজ",
+      "preview": "প্রিভিউ"
     },
     "progress": {
       "title": "অগ্রগতি",
@@ -1014,6 +1015,8 @@
       "estimated": "আনুমানিক: {date}",
       "targetDate": "লক্ষ্য: {date}",
       "noMilestones": "অগ্রগতির সাথে মাইলফলক দেখা যাবে",
+      "milestonesRemaining": "আরো বাকি",
+      "milestoneComplete": "সম্পন্ন!",
       "surahComplete": "সূরা {surah} সম্পন্ন",
       "juzCoverage": "পারা কভারেজ"
     },
@@ -1034,17 +1037,15 @@
       "planSettings": "Plan Settings"
     },
     "settings": {
-      "title": "Plan Settings",
-      "description": "Adjust your plan preferences.",
-      "pace": "Pace",
-      "startDate": "Start Date",
-      "dailyTarget": "Daily Target",
-      "reviewMode": "Review Mode",
-      "save": "Save Settings",
-      "cancel": "Cancel"
-    },
-    "calendar": {
-      "preview": "Preview"
+      "title": "প্ল্যান সেটিংস",
+      "newPagesPerDay": "প্রতিদিন নতুন পৃষ্ঠা",
+      "revisionPagesPerDay": "প্রতিদিন মুরাজাআ পৃষ্ঠা",
+      "weakPagesPerDay": "প্রতিদিন দুর্বল পৃষ্ঠা",
+      "offDays": "ছুটির দিন",
+      "offDaysHint": "ছুটির দিনে নতুন হিফয বন্ধ। মুরাজাআ ও দুর্বল চলতে থাকে।",
+      "pagesUnit": "পৃষ্ঠা/দিন",
+      "cancel": "বাতিল",
+      "save": "পরিবর্তন সংরক্ষণ"
     },
     "missed": {
       "welcomeBack": "স্বাগতম!",

@@ -73,14 +73,14 @@ export default {
       <!-- Milestones -->
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ t('plan.progress.milestones') }}</h3>
-        <div v-if="plan.milestones && plan.milestones.length > 0" class="space-y-3">
-          <div v-for="m in plan.milestones" :key="m.id" class="flex items-center gap-3">
+        <div v-if="visibleMilestones.length > 0" class="space-y-3">
+          <div v-for="m in visibleMilestones" :key="m.id" class="flex items-center gap-3">
             <div :class="['w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
-              m.completedDate ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400']">
-              <i :class="['text-xs', m.completedDate ? 'fas fa-check' : 'fas fa-clock']"></i>
+              m.completedDate ? 'bg-green-500 text-white' : 'bg-blue-100 text-blue-500']">
+              <i :class="['text-xs', m.completedDate ? 'fas fa-check' : 'fas fa-flag']"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <p :class="['text-sm', m.completedDate ? 'text-gray-400 line-through' : 'text-gray-800']">
+              <p :class="['text-sm', m.completedDate ? 'text-green-700' : 'text-gray-800']">
                 {{ milestoneLabel(m) }}
               </p>
               <p class="text-xs text-gray-400">
@@ -88,6 +88,9 @@ export default {
               </p>
             </div>
           </div>
+          <p v-if="remainingMilestoneCount > 0" class="text-xs text-gray-400 text-center pt-1">
+            {{ remainingMilestoneCount }} {{ t('plan.progress.milestonesRemaining') || 'more to go' }}
+          </p>
         </div>
         <p v-else class="text-xs text-gray-400">{{ t('plan.progress.noMilestones') }}</p>
       </div>
@@ -138,6 +141,26 @@ export default {
     // Juz → page mapping (layout-aware from plan)
     const JUZ_PAGES = computed(() => getJuzPagesForLayout(props.plan.layout || 'qpc'));
 
+    // Show completed milestones + the next upcoming one only
+    const visibleMilestones = computed(() => {
+      const all = props.plan.milestones || [];
+      const completed = all.filter(m => m.completedDate);
+      const upcoming = all.filter(m => !m.completedDate);
+      // Sort completed by date descending (most recent first)
+      completed.sort((a, b) => (b.completedDate || '').localeCompare(a.completedDate || ''));
+      // Sort upcoming by target date ascending (nearest first), take only the next one
+      upcoming.sort((a, b) => (a.targetDate || '').localeCompare(b.targetDate || ''));
+      const next = upcoming.length > 0 ? [upcoming[0]] : [];
+      return [...completed, ...next];
+    });
+
+    const remainingMilestoneCount = computed(() => {
+      const all = props.plan.milestones || [];
+      const uncompleted = all.filter(m => !m.completedDate).length;
+      // Subtract the 1 "next" we already show
+      return Math.max(0, uncompleted - 1);
+    });
+
     const progressPercent = computed(() => {
       const stats = props.plan.stats;
       if (props.plan.type === 'beginner') {
@@ -178,6 +201,6 @@ export default {
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
-    return { confirmAbandoning, progressPercent, JUZ_PAGES, juzReviewPercent, milestoneLabel, formatDate };
+    return { confirmAbandoning, progressPercent, visibleMilestones, remainingMilestoneCount, JUZ_PAGES, juzReviewPercent, milestoneLabel, formatDate };
   },
 };

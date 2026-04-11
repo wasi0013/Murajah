@@ -158,12 +158,12 @@ describe('weaknessScorer.js', () => {
 
       const tenReviews = calculatePageWeakness({
         daysSinceLastReview: 5,
-        perfectRevisionCount: 3,
-        totalReviewCount: 3,
+        perfectRevisionCount: 10,
+        totalReviewCount: 10,
         mistakeCount: 0,
       });
 
-      // Same — no low review penalty for either
+      // Both are >= 3 reviews, so no low-review penalty for either
       expect(threeReviews).toBe(tenReviews);
     });
 
