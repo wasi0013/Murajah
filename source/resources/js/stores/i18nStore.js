@@ -69,7 +69,12 @@ const setLocale = async (locale, murajahDB) => {
     console.warn(`[Murajah][i18n] Unsupported locale ${locale}`);
     return;
   }
-  await fetchLocale(locale);
+  try {
+    await fetchLocale(locale);
+  } catch (error) {
+    console.error(`[Murajah][i18n] Failed to fetch locale ${locale}, keeping current locale:`, error);
+    return;
+  }
   i18nState.currentLocale = locale;
   // Sync to localStorage so quiz.html (separate page) can read the preference
   try { localStorage.setItem('murajah-language', locale); } catch(e) { /* private mode */ }

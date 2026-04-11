@@ -41,8 +41,58 @@ const MAX_WEAK_REINFORCEMENT_HAFIZ = 3;
 // Hifz strength threshold: pages with perfectRevisions count < this are weak
 const STRENGTH_THRESHOLD = 80;
 
+// Memorized threshold: pages with perfectRevisions count >= this are considered memorized
+export const MEMORIZED_THRESHOLD = 40;
+
 // Short-term revision window (days)
 const SHORT_TERM_WINDOW_DAYS = 7;
+
+/**
+ * Check if a page is considered memorized.
+ * A page is memorized if it's in the memorizedPages set OR has perfectRevisions >= MEMORIZED_THRESHOLD.
+ *
+ * @param {number} page - Page number
+ * @param {Set} memorizedPages - Set of manually-marked memorized pages
+ * @param {Object|Map} perfectRevisions - Map/object of page → perfect revision count
+ * @returns {boolean}
+ */
+export function isPageMemorized(page, memorizedPages, perfectRevisions) {
+  if (memorizedPages && memorizedPages.has(page)) return true;
+  const count = perfectRevisions?.get?.(page) ?? perfectRevisions?.[page] ?? 0;
+  return count >= MEMORIZED_THRESHOLD;
+}
+
+/**
+ * Get the hifz score for a page (capped at 100).
+ * @param {number} page
+ * @param {Object|Map} perfectRevisions
+ * @returns {number}
+ */
+function getPageHifzScore(page, perfectRevisions) {
+  return Math.min(perfectRevisions?.get?.(page) ?? perfectRevisions?.[page] ?? 0, 100);
+}
+
+/**
+ * Build a sorted array of ALL memorized pages regardless of plan scope.
+ * Includes pages from the memorizedPages set and pages with perfectRevisions >= MEMORIZED_THRESHOLD.
+ *
+ * @param {Set} memorizedPages
+ * @param {Map|Object} perfectRevisions
+ * @returns {number[]} Sorted array of all memorized page numbers
+ */
+function getAllMemorizedPagesList(memorizedPages, perfectRevisions) {
+  const pages = new Set();
+  if (memorizedPages) {
+    for (const p of memorizedPages) pages.add(Number(p));
+  }
+  if (perfectRevisions) {
+    const entries = perfectRevisions.entries ? [...perfectRevisions.entries()] : Object.entries(perfectRevisions);
+    for (const [p, count] of entries) {
+      if (count >= MEMORIZED_THRESHOLD) pages.add(Number(p));
+    }
+  }
+  return [...pages].sort((a, b) => a - b);
+}
 
 /**
  * Calculate the next review date and updated SM-2 parameters for a page.
@@ -158,22 +208,18 @@ export function generateDailyTasks({ plan, appData, quizScores = {}, today = new
   const { pace, type: userType, targetPages, schedulerState } = plan;
   const { memorizedPages = new Set(), perfectRevisions = new Map(), mistakesMap = new Map() } = appData || {};
 
-  // Check if today is an off day
+  // Check if today is an off day — only skip new memorization, still do revision/weak
   const dayOfWeek = today.getDay(); // 0=Sunday
-  if (pace.offDays && pace.offDays.includes(dayOfWeek)) {
-    return {
-      newMemorization: null,
-      revision: null,
-      weakReinforcement: null,
-      metadata: { isOffDay: true, date: todayStr },
-    };
-  }
+  const isOffDay = pace.offDays && pace.offDays.includes(dayOfWeek);
 
   const pageReviewData = schedulerState?.pageReviewData || {};
 
-  // Calculate weakness scores for all plan pages
+  // Build list of ALL memorized pages (regardless of plan scope) for revision/weak reinforcement
+  const allMemorizedPages = getAllMemorizedPagesList(memorizedPages, perfectRevisions);
+
+  // Calculate weakness scores for ALL memorized pages (not just plan pages)
   const weaknessMap = calculateAllWeaknesses({
-    pages: targetPages,
+    pages: allMemorizedPages,
     perfectRevisions,
     mistakesMap,
     pageReviewData,
@@ -182,53 +228,74 @@ export function generateDailyTasks({ plan, appData, quizScores = {}, today = new
   });
 
   if (userType === 'beginner') {
-    return generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
+    return generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay });
   } else if (userType === 'mixed') {
-    return generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
+    return generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay });
   } else {
-    return generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today });
+    return generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay });
   }
 }
 
 /**
  * Generate daily tasks for beginner mode.
  */
-function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
+function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay }) {
   const newPagesPerDay = pace.newPagesPerDay || 1;
   const revisionPerDay = pace.revisionPagesPerDay || 5;
+  const weakBudget = pace.weakPagesPerDay ?? MAX_WEAK_REINFORCEMENT_BEGINNER;
 
-  // 1. NEW MEMORIZATION — next N unmemorized pages in sequence
-  const unmemorizedInPlan = targetPages.filter(p => !memorizedPages.has(p));
+  // 1. NEW MEMORIZATION — next N unmemorized pages in sequence (skip on off days)
+  const unmemorizedInPlan = targetPages.filter(p => !isPageMemorized(p, memorizedPages, perfectRevisions));
 
   // Check if backlog is too large — pause new memorization
   const overdue = getOverduePages(pageReviewData, todayStr);
-  const pauseNew = overdue.length > MAX_BACKLOG_BEFORE_PAUSE;
+  const pauseNew = isOffDay || overdue.length > MAX_BACKLOG_BEFORE_PAUSE;
 
   let newMemorizationPages = [];
   if (!pauseNew && unmemorizedInPlan.length > 0) {
-    newMemorizationPages = unmemorizedInPlan.slice(0, newPagesPerDay);
+    // If user has set a currentMemorizationPage, start from there
+    const userStartPage = plan.currentMemorizationPage;
+    if (userStartPage && unmemorizedInPlan.includes(userStartPage)) {
+      const startIdx = unmemorizedInPlan.indexOf(userStartPage);
+      newMemorizationPages = unmemorizedInPlan.slice(startIdx, startIdx + newPagesPerDay);
+    } else {
+      newMemorizationPages = unmemorizedInPlan.slice(0, newPagesPerDay);
+    }
   }
 
-  // 2. SHORT-TERM REVISION — recently memorized pages (last 7 days)
-  const shortTermPages = getShortTermPages(pageReviewData, targetPages, todayStr, today);
+  // 2. SHORT-TERM REVISION — recently memorized pages (last 7 days) with score > 0 (all memorized pages)
+  const shortTermPages = getShortTermPages(pageReviewData, allMemorizedPages, todayStr, today)
+    .filter(p => getPageHifzScore(p, perfectRevisions) > 0);
   const shortTermBudget = Math.min(3, Math.ceil(revisionPerDay * 0.4));
   const shortTermRevision = shortTermPages.slice(0, shortTermBudget);
 
-  // 3. LONG-TERM REVISION — SM-2 scheduled pages
+  // 3. LONG-TERM REVISION — SM-2 scheduled pages with score > 0
   const longTermBudget = revisionPerDay - shortTermRevision.length;
   const longTermPages = overdue
-    .filter(p => !shortTermRevision.includes(p))
+    .filter(p => !shortTermRevision.includes(p) && getPageHifzScore(p, perfectRevisions) > 0)
     .slice(0, Math.max(0, longTermBudget));
 
   // Combine revision pages
   const allRevisionPages = [...new Set([...shortTermRevision, ...longTermPages])];
 
-  // 4. WEAK REINFORCEMENT — pages with hifz strength < 80, ranked by composite weakness
+  // 3b. FILL — if budget remains, add memorized pages outside plan that aren't already scheduled
+  if (allRevisionPages.length < revisionPerDay) {
+    const scheduled = new Set(allRevisionPages);
+    const fillCandidates = allMemorizedPages.filter(p =>
+      !scheduled.has(p) && !newMemorizationPages.includes(p) && getPageHifzScore(p, perfectRevisions) > 0 && !pageReviewData[p]?.lastReviewDate
+    );
+    const fillCount = revisionPerDay - allRevisionPages.length;
+    for (const p of fillCandidates.slice(0, fillCount)) {
+      allRevisionPages.push(p);
+    }
+  }
+
+  // 4. WEAK REINFORCEMENT — memorized pages (score >= 40) with hifz strength < 80
   const alreadyScheduled = new Set([...newMemorizationPages, ...allRevisionPages]);
-  const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_BEGINNER, [...alreadyScheduled])
+  const weakPages = getWeakestPages(weaknessMap, weakBudget, [...alreadyScheduled])
     .filter(p => {
-      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
-      return hifzScore < STRENGTH_THRESHOLD;
+      const hifzScore = getPageHifzScore(p, perfectRevisions);
+      return hifzScore >= MEMORIZED_THRESHOLD && hifzScore < STRENGTH_THRESHOLD;
     });
 
   return {
@@ -243,7 +310,7 @@ function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessM
       : null,
     metadata: {
       date: todayStr,
-      isOffDay: false,
+      isOffDay: isOffDay,
       backlogSize: overdue.length,
       pausedNewMemorization: pauseNew,
       totalPages: newMemorizationPages.length + allRevisionPages.length + weakPages.length,
@@ -254,36 +321,38 @@ function generateBeginnerTasks({ plan, memorizedPages, pageReviewData, weaknessM
 /**
  * Generate daily tasks for hafiz mode.
  */
-function generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
+function generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay }) {
   const revisionPerDay = pace.revisionPagesPerDay || 20;
+  const weakBudget = pace.weakPagesPerDay ?? MAX_WEAK_REINFORCEMENT_HAFIZ;
 
-  // 1. CYCLE REVISION — pages due today, sorted by overdue + sequential order
-  const overduePages = getOverduePages(pageReviewData, todayStr);
+  // 1. CYCLE REVISION — pages due today with score > 0, sorted by overdue + sequential order
+  const overduePages = getOverduePages(pageReviewData, todayStr)
+    .filter(p => getPageHifzScore(p, perfectRevisions) > 0);
   let cyclePages = overduePages.slice(0, revisionPerDay);
 
-  // If fewer due than budget, pull forward pages due tomorrow
+  // If fewer due than budget, pull forward pages due tomorrow (with score > 0) from all memorized pages
   if (cyclePages.length < revisionPerDay) {
     const tomorrowStr = formatDate(addDays(today, 1));
-    const tomorrowDue = getDuePages(pageReviewData, tomorrowStr, targetPages)
-      .filter(p => !cyclePages.includes(p));
+    const tomorrowDue = getDuePages(pageReviewData, tomorrowStr, allMemorizedPages)
+      .filter(p => !cyclePages.includes(p) && getPageHifzScore(p, perfectRevisions) > 0);
     const pullForwardCount = revisionPerDay - cyclePages.length;
     cyclePages = [...cyclePages, ...tomorrowDue.slice(0, pullForwardCount)];
   }
 
-  // If still fewer than budget, pick unreviewed pages in sequential order
+  // If still fewer than budget, pick unreviewed memorized pages with score > 0 in sequential order
   if (cyclePages.length < revisionPerDay) {
     const reviewed = new Set(cyclePages);
-    const unreviewedInPlan = targetPages.filter(p => !reviewed.has(p) && !pageReviewData[p]?.lastReviewDate);
+    const unreviewedMemorized = allMemorizedPages.filter(p => !reviewed.has(p) && !pageReviewData[p]?.lastReviewDate && getPageHifzScore(p, perfectRevisions) > 0);
     const fillCount = revisionPerDay - cyclePages.length;
-    cyclePages = [...cyclePages, ...unreviewedInPlan.slice(0, fillCount)];
+    cyclePages = [...cyclePages, ...unreviewedMemorized.slice(0, fillCount)];
   }
 
-  // 2. WEAK REINFORCEMENT — pages with hifz strength < 80, ranked by composite weakness
+  // 2. WEAK REINFORCEMENT — memorized pages (score >= 40) with hifz strength < 80
   const alreadyScheduled = new Set(cyclePages);
-  const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_HAFIZ, [...alreadyScheduled])
+  const weakPages = getWeakestPages(weaknessMap, weakBudget, [...alreadyScheduled])
     .filter(p => {
-      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
-      return hifzScore < STRENGTH_THRESHOLD;
+      const hifzScore = getPageHifzScore(p, perfectRevisions);
+      return hifzScore >= MEMORIZED_THRESHOLD && hifzScore < STRENGTH_THRESHOLD;
     });
 
   return {
@@ -296,7 +365,7 @@ function generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevision
       : null,
     metadata: {
       date: todayStr,
-      isOffDay: false,
+      isOffDay: isOffDay,
       backlogSize: overduePages.length,
       pausedNewMemorization: false,
       totalPages: cyclePages.length + weakPages.length,
@@ -309,7 +378,7 @@ function generateHafizTasks({ plan, pageReviewData, weaknessMap, perfectRevision
  * Pages in beginner-mode juz follow beginner logic; pages in hafiz-mode juz follow hafiz logic.
  * Results are merged into a single task set.
  */
-function generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, todayStr, today }) {
+function generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap, perfectRevisions, pace, targetPages, allMemorizedPages, todayStr, today, isOffDay }) {
   const juzModes = plan.juzModes || {};
   const layout = plan.layout || 'qpc';
 
@@ -328,48 +397,72 @@ function generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap,
   const hafizRevBudget = Math.max(1, revisionPerDay - beginnerRevBudget);
 
   // --- Beginner portion ---
-  const unmemorizedBeginner = beginnerPages.filter(p => !memorizedPages.has(p));
+  const unmemorizedBeginner = beginnerPages.filter(p => !isPageMemorized(p, memorizedPages, perfectRevisions));
   const overdueBeginner = getOverduePages(pageReviewData, todayStr).filter(p => beginnerPages.includes(p));
-  const pauseNew = overdueBeginner.length > MAX_BACKLOG_BEFORE_PAUSE;
+  const pauseNew = isOffDay || overdueBeginner.length > MAX_BACKLOG_BEFORE_PAUSE;
 
   let newMemorizationPages = [];
   if (!pauseNew && unmemorizedBeginner.length > 0) {
-    newMemorizationPages = unmemorizedBeginner.slice(0, newPagesPerDay);
+    // If user has set a currentMemorizationPage, start from there
+    const userStartPage = plan.currentMemorizationPage;
+    if (userStartPage && unmemorizedBeginner.includes(userStartPage)) {
+      const startIdx = unmemorizedBeginner.indexOf(userStartPage);
+      newMemorizationPages = unmemorizedBeginner.slice(startIdx, startIdx + newPagesPerDay);
+    } else {
+      newMemorizationPages = unmemorizedBeginner.slice(0, newPagesPerDay);
+    }
   }
 
-  const shortTermBeginner = getShortTermPages(pageReviewData, beginnerPages, todayStr, today);
+  const shortTermBeginner = getShortTermPages(pageReviewData, allMemorizedPages, todayStr, today)
+    .filter(p => getPageHifzScore(p, perfectRevisions) > 0);
   const stBudget = Math.min(2, Math.ceil(beginnerRevBudget * 0.4));
   const shortTermRev = shortTermBeginner.slice(0, stBudget);
   const ltBudget = beginnerRevBudget - shortTermRev.length;
-  const longTermBeginner = overdueBeginner.filter(p => !shortTermRev.includes(p)).slice(0, Math.max(0, ltBudget));
+  const longTermBeginner = overdueBeginner
+    .filter(p => !shortTermRev.includes(p) && getPageHifzScore(p, perfectRevisions) > 0)
+    .slice(0, Math.max(0, ltBudget));
   const beginnerRevision = [...new Set([...shortTermRev, ...longTermBeginner])];
 
-  // --- Hafiz portion ---
-  const overdueHafiz = getOverduePages(pageReviewData, todayStr).filter(p => hafizPages.includes(p));
+  // --- Hafiz portion --- (only pages with score > 0)
+  const overdueHafiz = getOverduePages(pageReviewData, todayStr)
+    .filter(p => hafizPages.includes(p) && getPageHifzScore(p, perfectRevisions) > 0);
   let hafizCyclePages = overdueHafiz.slice(0, hafizRevBudget);
 
   if (hafizCyclePages.length < hafizRevBudget) {
     const tomorrowStr = formatDate(addDays(today, 1));
-    const tomorrowDue = getDuePages(pageReviewData, tomorrowStr, hafizPages)
-      .filter(p => !hafizCyclePages.includes(p));
+    const tomorrowDue = getDuePages(pageReviewData, tomorrowStr, allMemorizedPages)
+      .filter(p => !hafizCyclePages.includes(p) && getPageHifzScore(p, perfectRevisions) > 0);
     hafizCyclePages = [...hafizCyclePages, ...tomorrowDue.slice(0, hafizRevBudget - hafizCyclePages.length)];
   }
 
   if (hafizCyclePages.length < hafizRevBudget) {
     const reviewed = new Set(hafizCyclePages);
-    const unreviewed = hafizPages.filter(p => !reviewed.has(p) && !pageReviewData[p]?.lastReviewDate);
-    hafizCyclePages = [...hafizCyclePages, ...unreviewed.slice(0, hafizRevBudget - hafizCyclePages.length)];
+    const unreviewedMemorized = allMemorizedPages.filter(p => !reviewed.has(p) && !pageReviewData[p]?.lastReviewDate && getPageHifzScore(p, perfectRevisions) > 0);
+    hafizCyclePages = [...hafizCyclePages, ...unreviewedMemorized.slice(0, hafizRevBudget - hafizCyclePages.length)];
   }
 
   // --- Merge revision ---
   const allRevisionPages = [...new Set([...beginnerRevision, ...hafizCyclePages])];
 
-  // --- Weak reinforcement — pages with hifz strength < 80, ranked by composite weakness ---
+  // --- Fill remaining revision budget from all memorized pages ---
+  if (allRevisionPages.length < revisionPerDay) {
+    const scheduled = new Set([...newMemorizationPages, ...allRevisionPages]);
+    const fillCandidates = allMemorizedPages.filter(p =>
+      !scheduled.has(p) && getPageHifzScore(p, perfectRevisions) > 0 && !pageReviewData[p]?.lastReviewDate
+    );
+    const fillCount = revisionPerDay - allRevisionPages.length;
+    for (const p of fillCandidates.slice(0, fillCount)) {
+      allRevisionPages.push(p);
+    }
+  }
+
+  // --- Weak reinforcement — memorized pages (score >= 40) with hifz strength < 80 ---
+  const weakBudget = pace.weakPagesPerDay ?? (MAX_WEAK_REINFORCEMENT_BEGINNER + MAX_WEAK_REINFORCEMENT_HAFIZ);
   const alreadyScheduled = new Set([...newMemorizationPages, ...allRevisionPages]);
-  const weakPages = getWeakestPages(weaknessMap, MAX_WEAK_REINFORCEMENT_BEGINNER + MAX_WEAK_REINFORCEMENT_HAFIZ, [...alreadyScheduled])
+  const weakPages = getWeakestPages(weaknessMap, weakBudget, [...alreadyScheduled])
     .filter(p => {
-      const hifzScore = Math.min(perfectRevisions.get?.(p) ?? perfectRevisions[p] ?? 0, 100);
-      return hifzScore < STRENGTH_THRESHOLD;
+      const hifzScore = getPageHifzScore(p, perfectRevisions);
+      return hifzScore >= MEMORIZED_THRESHOLD && hifzScore < STRENGTH_THRESHOLD;
     });
 
   return {
@@ -384,7 +477,7 @@ function generateMixedTasks({ plan, memorizedPages, pageReviewData, weaknessMap,
       : null,
     metadata: {
       date: todayStr,
-      isOffDay: false,
+      isOffDay: isOffDay,
       backlogSize: overdueBeginner.length + overdueHafiz.length,
       pausedNewMemorization: pauseNew,
       totalPages: newMemorizationPages.length + allRevisionPages.length + weakPages.length,

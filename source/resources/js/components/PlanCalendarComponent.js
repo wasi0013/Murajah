@@ -10,6 +10,7 @@ export default {
     plan: { type: Object, required: true },
     history: { type: Array, default: () => [] },
     todayTasks: { type: Object, default: null },
+    generatePreview: { type: Function, default: null },
     t: { type: Function, required: true },
   },
   emits: ['select-day', 'open-page'],
@@ -70,7 +71,10 @@ export default {
 
       <!-- Selected day detail -->
       <div v-if="selectedDayData" class="px-4 py-3 border-t border-gray-200 bg-gray-50">
-        <h4 class="text-sm font-semibold text-gray-800 mb-2">{{ selectedDateLabel }}</h4>
+        <h4 class="text-sm font-semibold text-gray-800 mb-2">
+          {{ selectedDateLabel }}
+          <span v-if="selectedDayData.isPreview" class="text-xs font-normal text-gray-400 ml-1">({{ t('plan.calendar.preview') }})</span>
+        </h4>
         <div v-if="selectedDayData.isOffDay" class="text-xs text-gray-500">
           <i class="fas fa-moon mr-1"></i>{{ t('plan.today.offDay') }}
         </div>
@@ -170,6 +174,22 @@ export default {
           isOffDay: false,
           tasks: record.tasks,
         };
+      }
+      // Future/unknown date — generate preview if function provided
+      if (props.generatePreview) {
+        const d = new Date(selectedDate.value + 'T00:00:00');
+        const preview = props.generatePreview(d);
+        if (preview) {
+          return {
+            isOffDay: preview.metadata?.isOffDay || false,
+            tasks: {
+              newMemorization: preview.newMemorization,
+              revision: preview.revision,
+              weakReinforcement: preview.weakReinforcement,
+            },
+            isPreview: true,
+          };
+        }
       }
       // Check if it's an off day
       const d = new Date(selectedDate.value + 'T00:00:00');

@@ -4,13 +4,15 @@ Confirmed issues found during deep analysis. These are secondary to the critical
 shipped in Phase 1 (touch scroll freeze, page line index, verse text index) but should
 be addressed to further improve performance on low-end mobile devices.
 
+**STATUS: 6 of 7 items RESOLVED. Remaining item #2 carried to NEXT_MILESTONE_PLAN.md.**
+
 ---
 
 ## 1. ~~Achievement Grid — Unneeded Re-computation~~ (RESOLVED — Achievement system removed)
 
 ---
 
-## 2. Notes Search — No Debounce on Keystroke
+## 2. ~~Notes Search — No Debounce on Keystroke~~ (CARRIED → NEXT_MILESTONE_PLAN.md S6)
 
 **File:** `components/NotesComponent.js` (lines ~148–167)
 

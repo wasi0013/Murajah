@@ -74,11 +74,18 @@ export default {
 
           <!-- Controls row -->
           <div class="flex items-center justify-between">
-            <!-- Left: speed -->
-            <button @click="cycleSpeed"
-              class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition min-w-[40px]">
-              {{ playbackSpeed }}x
-            </button>
+            <!-- Left: speed + loop -->
+            <div class="flex items-center gap-1">
+              <button @click="cycleSpeed"
+                class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition min-w-[40px]">
+                {{ playbackSpeed }}x
+              </button>
+              <button @click="loopEnabled = !loopEnabled"
+                :class="['p-1 rounded transition text-sm', loopEnabled ? 'text-purple-600 bg-purple-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100']"
+                :title="loopEnabled ? t('plan.audio.loopOn') : t('plan.audio.loopOff')">
+                <i class="fas fa-redo-alt"></i>
+              </button>
+            </div>
 
             <!-- Center: controls -->
             <div class="flex items-center gap-1">
@@ -142,6 +149,7 @@ export default {
     const duration = ref(0);
     const showPageList = ref(false);
     const audioPartsTotal = ref(1);
+    const loopEnabled = ref(false);
 
     let audio = null;
     let currentPageUrls = [];
@@ -254,7 +262,13 @@ export default {
         playCurrentPart();
         return;
       }
-      // End of playlist
+      // End of playlist — loop back if enabled
+      if (loopEnabled.value) {
+        currentPageIndex.value = 0;
+        loadPageAudio(0);
+        playCurrentPart();
+        return;
+      }
       isPlaying.value = false;
       currentTime.value = 0;
       duration.value = 0;
@@ -399,6 +413,7 @@ export default {
       progressPercent,
       audioPartsTotal,
       showPageList,
+      loopEnabled,
       pageReciters,
       selectPlaylist,
       togglePlayPause,

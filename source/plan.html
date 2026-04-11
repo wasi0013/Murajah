@@ -123,6 +123,28 @@
                     request.onerror = () => reject(request.error);
                 });
             },
+
+            /**
+             * Load main app data from the shared 'murajah-data' record.
+             * The main app stores all data as a single record: { id: 'murajah-data', memorized, perfectRevisions, mistakes, settings, ... }
+             */
+            async loadMainAppData() {
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction('appData', 'readonly');
+                    const store = tx.objectStore('appData');
+                    const request = store.get('murajah-data');
+                    request.onsuccess = () => {
+                        const result = request.result;
+                        if (result) {
+                            const { id, ...data } = result;
+                            resolve(data);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            },
         };
 
         // Read quiz scores from MurajahQuizDB (cross-database bridge)
@@ -182,6 +204,12 @@
             </p>
         </div>
 
+        <!-- Milestone Celebration Toast -->
+        <div v-if="celebrationMessage" class="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-bounce">
+            <span class="text-xl">🎉</span>
+            <span class="font-medium">{{ celebrationMessage }}</span>
+        </div>
+
         <!-- Header -->
         <header class="bg-white shadow sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
@@ -235,7 +263,81 @@
 
             <!-- No Plan State -->
             <div v-if="activePlans.length === 0 && !showSetup">
-                <div class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+                <!-- Smart Plan Suggestion -->
+                <div v-if="smartPlan" class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
+                    <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-magic text-lg"></i>
+                            <div>
+                                <h2 class="text-sm font-semibold">{{ t('plan.smart.title') }}</h2>
+                                <p class="text-xs text-blue-100 mt-0.5">{{ t('plan.smart.subtitle') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <!-- Analysis summary -->
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-blue-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-blue-700">{{ smartPlan.analysis.totalMemorized }}</div>
+                                <div class="text-[10px] text-blue-500">{{ t('plan.smart.memorized') }}</div>
+                            </div>
+                            <div class="bg-orange-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-orange-700">{{ smartPlan.analysis.weakPageCount }}</div>
+                                <div class="text-[10px] text-orange-500">{{ t('plan.smart.weakPages') }}</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-2">
+                                <div class="text-lg font-bold text-green-700">{{ smartPlan.analysis.pagesInPlan }}</div>
+                                <div class="text-[10px] text-green-500">{{ t('plan.smart.inPlan') }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Detected plan info -->
+                        <div class="bg-gray-50 rounded-lg p-3 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-500">{{ t('plan.smart.detectedLevel') }}</span>
+                                <span class="font-medium text-gray-800">
+                                    <i :class="['mr-1', smartPlan.analysis.detectedType === 'beginner' ? 'fas fa-seedling text-green-500' : smartPlan.analysis.detectedType === 'hafiz' ? 'fas fa-star text-yellow-500' : 'fas fa-layer-group text-purple-500']"></i>
+                                    {{ t('plan.setup.' + smartPlan.analysis.detectedType + 'Label') }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-500">{{ t('plan.smart.coverage') }}</span>
+                                <span class="font-medium text-gray-800">{{ smartPlan.analysis.juzInPlan.length }} {{ t('plan.smart.juz') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-500">{{ t('plan.smart.pace') }}</span>
+                                <span class="font-medium text-gray-800">
+                                    <template v-if="smartPlan.planConfig.pace.newPagesPerDay > 0">
+                                        {{ smartPlan.planConfig.pace.newPagesPerDay }} {{ t('plan.smart.newDay') }} + 
+                                    </template>
+                                    {{ smartPlan.planConfig.pace.revisionPagesPerDay }} {{ t('plan.smart.revDay') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Top weak pages hint -->
+                        <div v-if="smartPlan.analysis.topWeakPages.length > 0" class="text-xs text-orange-600 flex items-start gap-1.5">
+                            <i class="fas fa-exclamation-circle mt-0.5"></i>
+                            <span>{{ t('plan.smart.weakHint') }}: {{ smartPlan.analysis.topWeakPages.map(w => t('plan.today.openPage') + ' ' + w.page).join(', ') }}</span>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="flex gap-2 pt-1">
+                            <button @click="acceptSmartPlan"
+                                class="flex-1 bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5">
+                                <i class="fas fa-check"></i>
+                                {{ t('plan.smart.start') }}
+                            </button>
+                            <button @click="showSetup = true"
+                                class="flex-none bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                {{ t('plan.smart.customize') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fallback: no data at all -->
+                <div v-else class="bg-white rounded-xl border border-gray-200 p-6 text-center">
                     <i class="fas fa-calendar-plus text-4xl text-gray-300 mb-3"></i>
                     <h2 class="text-base font-semibold text-gray-800 mb-1">{{ t('plan.empty.title') }}</h2>
                     <p class="text-sm text-gray-500 mb-4">{{ t('plan.empty.description') }}</p>
@@ -270,9 +372,10 @@
                         {{ p.name }}
                     </button>
                     <button @click="showSetup = true"
-                        class="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors"
-                        :title="t('plan.empty.cta')">
-                        <i class="fas fa-plus"></i>
+                        class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors border border-gray-200"
+                        :title="t('plan.smart.customPlan')">
+                        <i class="fas fa-plus text-[10px]"></i>
+                        <span class="hidden sm:inline">{{ t('plan.smart.customPlan') }}</span>
                     </button>
                 </div>
 
@@ -298,10 +401,12 @@
                         :today-tasks="todayTasks"
                         :day-number="dayNumber"
                         :t="t"
+                        :unmemorized-pages="unmemorizedPages"
                         @complete-task="onCompleteTask"
                         @rate-task="onRateTask"
                         @open-page="openPage"
-                        @open-quiz="openQuiz">
+                        @open-quiz="openQuiz"
+                        @set-memorization-page="onSetMemorizationPage">
                     </plan-today-card>
 
                     <!-- Audio Player Card -->
@@ -318,6 +423,7 @@
                         :plan="activePlan"
                         :history="planHistory"
                         :today-tasks="todayTasks"
+                        :generate-preview="generatePreview"
                         :t="t"
                         @select-day="onSelectDay"
                         @open-page="openPage">
@@ -329,7 +435,7 @@
                     <plan-progress-view
                         :plan="activePlan"
                         :t="t"
-                        @change-pace="onChangePace"
+                        @open-settings="onOpenSettings"
                         @pause-plan="onPausePlan"
                         @resume-plan="onResumePlan"
                         @abandon-plan="onAbandonPlan">
@@ -362,35 +468,14 @@
                 </div>
             </div>
 
-            <!-- Pace Change Modal -->
-            <div v-if="showPaceEditor" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div class="bg-white rounded-xl p-5 max-w-sm w-full shadow-xl">
-                    <h2 class="text-base font-bold text-gray-900 mb-3">{{ t('plan.actions.adjustPace') }}</h2>
-
-                    <div v-if="activePlan.type === 'beginner'" class="mb-3">
-                        <label class="text-xs text-gray-500 block mb-1">{{ t('plan.setup.newPagesPerDay') }}</label>
-                        <input type="number" v-model.number="paceForm.newPagesPerDay"
-                            min="0" max="5"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                    </div>
-                    <div class="mb-3">
-                        <label class="text-xs text-gray-500 block mb-1">{{ t('plan.setup.revisionPagesPerDay') }}</label>
-                        <input type="number" v-model.number="paceForm.revisionPagesPerDay"
-                            min="1" max="200"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                    </div>
-                    <div class="flex gap-2">
-                        <button @click="showPaceEditor = false"
-                            class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200">
-                            {{ t('plan.setup.cancel') }}
-                        </button>
-                        <button @click="savePaceChange"
-                            class="flex-1 bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
-                            {{ t('plan.actions.adjustPace') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Plan Settings Modal -->
+            <plan-settings-modal
+                v-if="showSettings && activePlan"
+                :plan="activePlan"
+                :t="t"
+                @save="onSaveSettings"
+                @close="showSettings = false">
+            </plan-settings-modal>
         </main>
     </div>
 
@@ -424,9 +509,11 @@
             getTotalPagesForLayout,
             estimateEndDate,
             generateMilestones,
+            generateSmartPlan,
+            advanceMemorizationPage,
         } = await import('./resources/js/utils/planManager.js');
 
-        const { handleMissedDays, formatDate } = await import('./resources/js/utils/planScheduler.js');
+        const { handleMissedDays, formatDate, isPageMemorized, generateDailyTasks } = await import('./resources/js/utils/planScheduler.js');
 
         // Components
         const PlanSetupWizard = (await import('./resources/js/components/PlanSetupWizard.js')).default;
@@ -434,6 +521,7 @@
         const PlanCalendarComponent = (await import('./resources/js/components/PlanCalendarComponent.js')).default;
         const PlanProgressView = (await import('./resources/js/components/PlanProgressView.js')).default;
         const PlanAudioCard = (await import('./resources/js/components/PlanAudioCard.js')).default;
+        const PlanSettingsModal = (await import('./resources/js/components/PlanSettingsModal.js')).default;
 
         // Pre-load translations
         await initLocaleFromStorage();
@@ -445,6 +533,7 @@
                 'plan-calendar-component': PlanCalendarComponent,
                 'plan-progress-view': PlanProgressView,
                 'plan-audio-card': PlanAudioCard,
+                'plan-settings-modal': PlanSettingsModal,
             },
             setup() {
                 const isLoading = ref(true);
@@ -456,7 +545,9 @@
                 const showSetup = ref(false);
                 const currentTab = ref('today');
                 const missedDaysInfo = ref(null);
-                const showPaceEditor = ref(false);
+                const showSettings = ref(false);
+                const smartPlan = ref(null);
+                const celebrationMessage = ref('');
 
                 // Computed: currently selected active plan
                 const activePlan = computed(() => activePlans.value[selectedPlanIndex.value] || null);
@@ -467,9 +558,6 @@
                 const mistakesMap = ref({});
                 const quizScores = ref({});
                 const currentLayout = ref('qpc');
-
-                // Pace editor form
-                const paceForm = ref({ newPagesPerDay: 1, revisionPagesPerDay: 5 });
 
                 const tabs = computed(() => [
                     { id: 'today', label: t('plan.today.title'), icon: 'fas fa-sun' },
@@ -485,32 +573,42 @@
                     return Math.max(1, Math.floor((now - start) / 86400000) + 1);
                 });
 
+                const unmemorizedPages = computed(() => {
+                    if (!activePlan.value) return [];
+                    const total = getTotalPagesForLayout(currentLayout.value);
+                    const pages = [];
+                    for (let p = 1; p <= total; p++) {
+                        if (!isPageMemorized(p, memorizedPages.value, perfectRevisions.value)) {
+                            pages.push(p);
+                        }
+                    }
+                    return pages;
+                });
+
                 // --- Initialization ---
                 async function initialize() {
                     try {
                         await PlanDB.init();
 
-                        // Load app data from shared DB
-                        const [memPages, perfRevs, mistakes] = await Promise.all([
-                            PlanDB.getAppData('memorizedPages'),
-                            PlanDB.getAppData('perfectRevisions'),
-                            PlanDB.getAppData('mistakesMap'),
-                        ]);
+                        // Load app data from the shared 'murajah-data' record
+                        const mainData = await PlanDB.loadMainAppData();
 
-                        // Read current layout setting
-                        const savedLayout = await PlanDB.getAppData('selectedLayout');
-                        if (savedLayout === 'indopak' || savedLayout === 'qpc') {
-                            currentLayout.value = savedLayout;
-                        }
-
-                        if (memPages) {
-                            memorizedPages.value = new Set(Array.isArray(memPages) ? memPages : []);
-                        }
-                        if (perfRevs && typeof perfRevs === 'object') {
-                            perfectRevisions.value = perfRevs;
-                        }
-                        if (mistakes && typeof mistakes === 'object') {
-                            mistakesMap.value = mistakes;
+                        if (mainData) {
+                            // Main app stores: memorized (array), perfectRevisions (object), mistakes (object), settings.layout
+                            if (Array.isArray(mainData.memorized)) {
+                                memorizedPages.value = new Set(mainData.memorized);
+                            }
+                            if (mainData.perfectRevisions && typeof mainData.perfectRevisions === 'object') {
+                                perfectRevisions.value = mainData.perfectRevisions;
+                            }
+                            if (mainData.mistakes && typeof mainData.mistakes === 'object') {
+                                mistakesMap.value = mainData.mistakes;
+                            }
+                            // Read layout from settings
+                            const savedLayout = mainData.settings?.layout;
+                            if (savedLayout === 'indopak' || savedLayout === 'qpc') {
+                                currentLayout.value = savedLayout;
+                            }
                         }
 
                         // Load quiz scores from separate QuizDB
@@ -524,8 +622,8 @@
 
                             // Sync external memorization for all plans
                             for (const plan of plans) {
-                                const synced = syncExternalMemorization(plan, memorizedPages.value);
-                                if (synced.newPagesDetected > 0) {
+                                const synced = syncExternalMemorization(plan, memorizedPages.value, perfectRevisions.value);
+                                if (synced.newlyMemorizedInPlan.length > 0) {
                                     await savePlan(PlanDB.db, plan);
                                 }
                             }
@@ -539,6 +637,22 @@
                             // Load history for selected plan
                             const history = await loadPlanHistory(PlanDB.db, activePlan.value.id, 90);
                             planHistory.value = history;
+                        } else {
+                            // No active plans — generate a smart plan suggestion
+                            try {
+                                const result = generateSmartPlan({
+                                    memorizedPages: memorizedPages.value,
+                                    perfectRevisions: perfectRevisions.value,
+                                    mistakesMap: mistakesMap.value,
+                                    quizScores: quizScores.value,
+                                    layout: currentLayout.value,
+                                });
+                                if (result.planConfig.targetPages.length > 0) {
+                                    smartPlan.value = result;
+                                }
+                            } catch (e) {
+                                console.warn('[Plan] Smart plan generation failed:', e);
+                            }
                         }
                     } catch (e) {
                         console.error('[Plan] Initialization error:', e);
@@ -546,6 +660,15 @@
                     } finally {
                         isLoading.value = false;
                     }
+                }
+
+                function showMilestoneCelebration(plan) {
+                    const milestones = plan._newlyCompletedMilestones;
+                    if (!milestones || milestones.length === 0) return;
+                    const names = milestones.map(m => m.name || m.type).join(', ');
+                    celebrationMessage.value = `🎉 ${names} ${t('plan.progress.milestoneComplete') || 'complete!'}`;
+                    setTimeout(() => { celebrationMessage.value = ''; }, 4000);
+                    delete plan._newlyCompletedMilestones;
                 }
 
                 async function checkMissedDays(plan) {
@@ -561,7 +684,11 @@
 
                     if (daysMissed <= 0) return;
 
-                    const result = handleMissedDays(plan, daysMissed, new Date());
+                    const result = handleMissedDays(plan, lastActive, new Date());
+                    if (result.updatedPageReviewData) {
+                        if (!plan.schedulerState) plan.schedulerState = {};
+                        plan.schedulerState.pageReviewData = result.updatedPageReviewData;
+                    }
                     await savePlan(PlanDB.db, plan);
 
                     let message = '';
@@ -595,6 +722,22 @@
                 }
 
                 // --- Event Handlers ---
+                async function acceptSmartPlan() {
+                    if (!smartPlan.value) return;
+                    try {
+                        const plan = createPlan(smartPlan.value.planConfig);
+                        await savePlan(PlanDB.db, plan);
+                        activePlans.value.push(plan);
+                        selectedPlanIndex.value = activePlans.value.length - 1;
+                        smartPlan.value = null;
+                        currentTab.value = 'today';
+                        await refreshTodayTasks();
+                    } catch (e) {
+                        console.error('[Plan] Smart plan create error:', e);
+                        error.value = 'Failed to create plan.';
+                    }
+                }
+
                 async function onPlanCreated(planConfig) {
                     try {
                         const plan = createPlan(planConfig);
@@ -627,11 +770,28 @@
                             };
                             // Default performance = 3 (recalled OK), user can rate afterwards
                             recordTaskCompletion(activePlan.value, taskType, pages, 3, appData);
+
+                            // Show celebration toast for newly completed milestones
+                            showMilestoneCelebration(activePlan.value);
+
+                            // Auto-advance memorization page when new memorization is completed
+                            if (taskType === 'newMemorization' && activePlan.value.currentMemorizationPage) {
+                                advanceMemorizationPage(activePlan.value, memorizedPages.value, perfectRevisions.value);
+                            }
                         }
+                        activePlan.value.lastActiveDate = formatDate(new Date());
                         await savePlan(PlanDB.db, activePlan.value);
                     } catch (e) {
                         console.error('[Plan] Complete task error:', e);
                     }
+                }
+
+                async function onSetMemorizationPage(pageNum) {
+                    if (!activePlan.value) return;
+                    activePlan.value.currentMemorizationPage = pageNum;
+                    await savePlan(PlanDB.db, activePlan.value);
+                    // Regenerate today's tasks to use the new starting page
+                    await refreshTodayTasks();
                 }
 
                 async function onRateTask(taskType, rating) {
@@ -647,7 +807,12 @@
                         };
                         // Pass rating string directly — mapToPerformance handles it
                         recordTaskCompletion(activePlan.value, taskType, pages, rating, appData);
+
+                        // Show celebration toast for newly completed milestones
+                        showMilestoneCelebration(activePlan.value);
+
                         task.performance = rating;
+                        activePlan.value.lastActiveDate = formatDate(new Date());
                         await savePlan(PlanDB.db, activePlan.value);
                     } catch (e) {
                         console.error('[Plan] Rate task error:', e);
@@ -669,24 +834,29 @@
                     console.log('[Plan] Selected day:', dateStr);
                 }
 
-                function onChangePace() {
-                    if (!activePlan.value) return;
-                    paceForm.value = {
-                        newPagesPerDay: activePlan.value.pace?.newPagesPerDay ?? 1,
-                        revisionPagesPerDay: activePlan.value.pace?.revisionPagesPerDay ?? 5,
-                    };
-                    showPaceEditor.value = true;
+                function onOpenSettings() {
+                    showSettings.value = true;
                 }
 
-                async function savePaceChange() {
+                function generatePreview(date) {
+                    if (!activePlan.value) return null;
+                    const appData = {
+                        memorizedPages: memorizedPages.value,
+                        perfectRevisions: perfectRevisions.value,
+                        mistakesMap: mistakesMap.value,
+                    };
+                    return generateDailyTasks({ plan: activePlan.value, appData, quizScores: quizScores.value, today: date });
+                }
+
+                async function onSaveSettings(settings) {
                     if (!activePlan.value) return;
                     try {
-                        updatePlanPace(activePlan.value, paceForm.value);
+                        updatePlanPace(activePlan.value, settings);
                         await savePlan(PlanDB.db, activePlan.value);
-                        showPaceEditor.value = false;
+                        showSettings.value = false;
                         await refreshTodayTasks();
                     } catch (e) {
-                        console.error('[Plan] Pace change error:', e);
+                        console.error('[Plan] Settings save error:', e);
                     }
                 }
 
@@ -807,23 +977,28 @@
                     showSetup,
                     currentTab,
                     missedDaysInfo,
-                    showPaceEditor,
+                    showSettings,
                     memorizedPages,
-                    paceForm,
                     tabs,
                     dayNumber,
+                    unmemorizedPages,
                     currentLayout,
+                    smartPlan,
+                    celebrationMessage,
                     t,
 
                     // Handlers
+                    acceptSmartPlan,
                     onPlanCreated,
                     onCompleteTask,
                     onRateTask,
+                    onSetMemorizationPage,
                     openPage,
                     openQuiz,
                     onSelectDay,
-                    onChangePace,
-                    savePaceChange,
+                    onOpenSettings,
+                    onSaveSettings,
+                    generatePreview,
                     onPausePlan,
                     onResumePlan,
                     onAbandonPlan,

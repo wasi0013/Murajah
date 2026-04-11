@@ -10,7 +10,7 @@ export default {
     plan: { type: Object, required: true },
     t: { type: Function, required: true },
   },
-  emits: ['change-pace', 'pause-plan', 'resume-plan', 'abandon-plan'],
+  emits: ['open-settings', 'pause-plan', 'resume-plan', 'abandon-plan'],
   template: `
     <div class="space-y-4">
       <!-- Overall Progress Card -->
@@ -117,9 +117,9 @@ export default {
           class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-blue-600 flex items-center gap-2">
           <i class="fas fa-play text-blue-400 w-5"></i> {{ t('plan.actions.resume') }}
         </button>
-        <button @click="$emit('change-pace')"
+        <button @click="$emit('open-settings')"
           class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-          <i class="fas fa-sliders-h text-gray-400 w-5"></i> {{ t('plan.actions.adjustPace') }}
+          <i class="fas fa-sliders-h text-gray-400 w-5"></i> {{ t('plan.actions.planSettings') }}
         </button>
         <button @click="confirmAbandoning ? $emit('abandon-plan') : confirmAbandoning = true"
           class="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-sm text-red-500 flex items-center gap-2">

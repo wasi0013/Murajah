@@ -976,7 +976,10 @@
       "healthOnTrack": "على المسار",
       "healthSlipping": "تتأخر قليلاً",
       "healthBehind": "متأخر عن الجدول",
-      "backlogWarning": "لديك {count} صفحة(صفحات) متأخرة — جارٍ التعويض!"
+      "backlogWarning": "لديك {count} صفحة(صفحات) متأخرة — جارٍ التعويض!",
+      "nextPageLabel": "الصفحة التالية للحفظ:",
+      "nextPageAuto": "تلقائي (تسلسلي)",
+      "changePage": "تغيير الصفحة"
     },
     "calendar": {
       "title": "التقويم",
@@ -1058,7 +1061,26 @@
       "noTasks": "لا توجد صفحات للاستماع اليوم",
       "part": "جزء",
       "showPages": "عرض الصفحات",
-      "hidePages": "إخفاء الصفحات"
+      "hidePages": "إخفاء الصفحات",
+      "loopOn": "التكرار مفعّل – ستُعاد القائمة",
+      "loopOff": "التكرار معطّل"
+    },
+    "smart": {
+      "title": "خطتك جاهزة",
+      "subtitle": "بناءً على بيانات حفظك",
+      "memorized": "محفوظ",
+      "weakPages": "صفحات ضعيفة",
+      "inPlan": "في الخطة",
+      "detectedLevel": "المستوى",
+      "coverage": "التغطية",
+      "juz": "جزء",
+      "pace": "الوتيرة اليومية",
+      "newDay": "جديد/يوم",
+      "revDay": "مراجعة/يوم",
+      "weakHint": "أضعف الصفحات",
+      "start": "ابدأ الخطة",
+      "customize": "تخصيص",
+      "customPlan": "خطة مخصصة"
     }
   }
 }

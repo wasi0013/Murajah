@@ -189,11 +189,12 @@ export async function saveNote(note, murajahDB, notesStore) {
  * @param {Object} notesStore - reactive notes store
  */
 export async function deleteNote(noteId, murajahDB, notesStore) {
+  // Persist to DB first, then update in-memory store
+  await murajahDB.deleteNote(noteId);
+
   notesStore.notes = notesStore.notes.filter(n => n.id !== noteId);
   notesStore.allTags = extractAllTags(notesStore.notes);
   notesStore.lastUpdated = new Date().toISOString();
-
-  await murajahDB.deleteNote(noteId);
 }
 
 /**

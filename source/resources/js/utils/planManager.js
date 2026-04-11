@@ -19,7 +19,10 @@ import {
   calculateNextReview,
   mapToPerformance,
   formatDate,
+  isPageMemorized,
+  MEMORIZED_THRESHOLD,
 } from './planScheduler.js';
+import { calculateAllWeaknesses } from './weaknessScorer.js';
 
 // --- Plan ID generation ---
 function generatePlanId() {
@@ -305,6 +308,9 @@ export function createPlan({ type, targetPages, pace, name = null, startDate = n
     },
 
     milestones,
+
+    // User-chosen next memorization page (auto-advances to page+1 daily)
+    currentMemorizationPage: null,
   };
 
   Logger.info(Logger.MODULES.PLAN, 'Plan created', {
@@ -315,6 +321,194 @@ export function createPlan({ type, targetPages, pace, name = null, startDate = n
   });
 
   return plan;
+}
+
+/**
+ * Generate a smart plan automatically from existing user data.
+ * Analyzes memorized pages, weakness scores, and quiz data to build an optimal plan.
+ *
+ * @param {Object} params
+ * @param {Set<number>} params.memorizedPages - Set of memorized page numbers
+ * @param {Object} params.perfectRevisions - Map of page → perfect revision count
+ * @param {Object} params.mistakesMap - Map of page → mistake set/array
+ * @param {Object} [params.quizScores={}] - Map of page → quiz score array
+ * @param {string} [params.layout='qpc'] - 'qpc' or 'indopak'
+ * @returns {Object} { planConfig, analysis } where planConfig can be passed to createPlan()
+ */
+export function generateSmartPlan({ memorizedPages, perfectRevisions = {}, mistakesMap = {}, quizScores = {}, layout = 'qpc' } = {}) {
+  const totalPages = getTotalPagesForLayout(layout);
+  const memSet = memorizedPages instanceof Set ? new Set(memorizedPages) : new Set(memorizedPages || []);
+
+  // Also include pages that meet the perfectRevisions threshold as memorized
+  const prvEntries = perfectRevisions instanceof Map ? perfectRevisions : new Map(Object.entries(perfectRevisions || {}).map(([k, v]) => [Number(k), v]));
+  for (const [page, count] of prvEntries) {
+    if (count >= MEMORIZED_THRESHOLD) memSet.add(page);
+  }
+
+  const memCount = memSet.size;
+
+  // Classify user level
+  const memorizedRatio = memCount / totalPages;
+  let detectedType;
+  if (memCount === 0) {
+    detectedType = 'beginner';
+  } else if (memorizedRatio >= 0.85) {
+    detectedType = 'hafiz';
+  } else if (memCount >= 20) {
+    detectedType = 'mixed';
+  } else {
+    detectedType = 'beginner';
+  }
+
+  // Determine which juz are memorized and which are not
+  const juzMap = getJuzPagesForLayout(layout);
+  const juzAnalysis = [];
+
+  for (let j = 0; j < 30; j++) {
+    const [start, end] = juzMap[j];
+    let memorized = 0;
+    let total = 0;
+    for (let p = start; p <= end; p++) {
+      total++;
+      if (memSet.has(p)) memorized++;
+    }
+    juzAnalysis.push({
+      juz: j + 1,
+      start,
+      end,
+      total,
+      memorized,
+      ratio: total > 0 ? memorized / total : 0,
+    });
+  }
+
+  // Find juz the user is actively working on (partially memorized)
+  const activeJuz = juzAnalysis.filter(j => j.ratio > 0 && j.ratio < 1);
+  const completedJuz = juzAnalysis.filter(j => j.ratio >= 1);
+  const untouchedJuz = juzAnalysis.filter(j => j.ratio === 0);
+
+  // Build target pages: all memorized pages + pages in partially-memorized juz
+  const targetPageSet = new Set();
+
+  // Always include all memorized pages for revision
+  for (const p of memSet) targetPageSet.add(p);
+
+  // Include remaining pages in actively-worked juz (so user can continue them)
+  for (const j of activeJuz) {
+    for (let p = j.start; p <= j.end; p++) targetPageSet.add(p);
+  }
+
+  // If beginner with no memorized pages, pick Juz 30 as a starting scope
+  if (memCount === 0) {
+    const lastJuz = juzAnalysis[29];
+    for (let p = lastJuz.start; p <= lastJuz.end; p++) targetPageSet.add(p);
+  }
+
+  const targetPages = [...targetPageSet].sort((a, b) => a - b);
+
+  // Calculate weakness scores for memorized pages
+  const weaknessMap = calculateAllWeaknesses({
+    pages: [...memSet],
+    perfectRevisions,
+    mistakesMap,
+    pageReviewData: {},
+    quizScores,
+  });
+
+  // Count weak pages (score >= 50)
+  const WEAK_THRESHOLD = 50;
+  const weakPages = [...weaknessMap.entries()]
+    .filter(([, score]) => score >= WEAK_THRESHOLD)
+    .sort((a, b) => b[1] - a[1]);
+  const weakCount = weakPages.length;
+
+  // Determine pace based on existing volume
+  let revisionPagesPerDay;
+  let newPagesPerDay;
+  if (detectedType === 'hafiz') {
+    // Hafiz: scale revision with memorized count, no new pages
+    revisionPagesPerDay = Math.max(5, Math.min(30, Math.ceil(memCount / 30)));
+    newPagesPerDay = 0;
+  } else if (detectedType === 'mixed') {
+    // Mixed: moderate revision + slow new memorization
+    revisionPagesPerDay = Math.max(5, Math.min(20, Math.ceil(memCount / 30)));
+    newPagesPerDay = 1;
+  } else {
+    // Beginner: light revision, 1 new page
+    revisionPagesPerDay = Math.max(3, Math.min(5, memCount));
+    newPagesPerDay = 1;
+  }
+
+  // If many weak pages, boost revision and pause new memorization
+  if (weakCount > 10 && detectedType !== 'hafiz') {
+    revisionPagesPerDay = Math.max(revisionPagesPerDay, Math.min(15, weakCount));
+    newPagesPerDay = 0;
+  }
+
+  // Determine juzModes for mixed type
+  let juzModes = null;
+  if (detectedType === 'mixed') {
+    juzModes = {};
+    for (const j of juzAnalysis) {
+      if (j.memorized === 0) continue;
+      // Juz with all pages memorized → hafiz mode
+      // Juz partially memorized → beginner mode (still learning)
+      if (j.ratio >= 1) {
+        juzModes[j.juz] = 'hafiz';
+      } else if (j.ratio > 0) {
+        juzModes[j.juz] = 'beginner';
+      }
+    }
+    // Include untouched juz that are in target pages (none for auto - but just in case)
+  }
+
+  const juzNumbers = getJuzForPages(targetPages, layout);
+
+  // Auto name
+  let name;
+  if (detectedType === 'hafiz') {
+    name = juzNumbers.length === 30 ? 'Full Quran Review' : `${juzNumbers.length}-Juz Review`;
+  } else if (detectedType === 'mixed') {
+    name = `Smart ${juzNumbers.length}-Juz Plan`;
+  } else {
+    name = memCount === 0 ? 'Start with Juz 30' : `Continue Memorization`;
+  }
+
+  const planConfig = {
+    type: detectedType,
+    targetPages,
+    pace: {
+      newPagesPerDay,
+      revisionPagesPerDay,
+      daysPerWeek: 6,
+      offDays: [5], // Friday off
+    },
+    name,
+    layout,
+    juzModes,
+  };
+
+  const analysis = {
+    totalMemorized: memCount,
+    totalPages,
+    memorizedRatio,
+    detectedType,
+    activeJuz: activeJuz.map(j => j.juz),
+    completedJuz: completedJuz.map(j => j.juz),
+    weakPageCount: weakCount,
+    topWeakPages: weakPages.slice(0, 5).map(([page, score]) => ({ page, score })),
+    pagesInPlan: targetPages.length,
+    juzInPlan: juzNumbers,
+  };
+
+  Logger.info(Logger.MODULES.PLAN, 'Smart plan generated', {
+    type: detectedType,
+    memorized: memCount,
+    weak: weakCount,
+    targetPages: targetPages.length,
+  });
+
+  return { planConfig, analysis };
 }
 
 /**
@@ -471,6 +665,27 @@ export function recordTaskCompletion(plan, taskType, pages, performance, appData
     plan.stats.pagesMemorized = (plan.stats.pagesMemorized || 0) + pages.length;
   }
 
+  // Track newly completed milestones for toast notifications
+  const newlyCompletedMilestones = [];
+
+  // Check juz milestone completion
+  const juzPages = getJuzPagesForLayout(plan.layout || 'qpc');
+  for (const milestone of (plan.milestones || [])) {
+    if (milestone.completedDate) continue; // Already completed
+    if (milestone.type === 'juz_complete') {
+      const [start, end] = juzPages[milestone.juz - 1] || [0, 0];
+      const juzTargetPages = plan.targetPages.filter(p => p >= start && p <= end);
+      const allReviewed = juzTargetPages.length > 0 && juzTargetPages.every(p => {
+        const data = plan.schedulerState.pageReviewData[p];
+        return data && data.reviewCount > 0;
+      });
+      if (allReviewed) {
+        milestone.completedDate = formatDate(today);
+        newlyCompletedMilestones.push(milestone);
+      }
+    }
+  }
+
   // Check cycle completion (hafiz mode)
   if (plan.type === 'hafiz' && isCycleComplete(plan)) {
     plan.stats.revisionCyclesCompleted += 1;
@@ -482,6 +697,7 @@ export function recordTaskCompletion(plan, taskType, pages, performance, appData
     );
     if (cycleMilestone) {
       cycleMilestone.completedDate = formatDate(today);
+      newlyCompletedMilestones.push(cycleMilestone);
     }
 
     Logger.info(Logger.MODULES.PLAN, `Cycle ${plan.stats.revisionCyclesCompleted} complete!`, { planId: plan.id });
@@ -499,6 +715,9 @@ export function recordTaskCompletion(plan, taskType, pages, performance, appData
   }
 
   plan.stats.totalDaysActive = (plan.stats.totalDaysActive || 0) + 1;
+
+  // Attach newly completed milestones to plan for caller to show toasts
+  plan._newlyCompletedMilestones = newlyCompletedMilestones;
 
   return plan;
 }
@@ -523,6 +742,40 @@ export function updateStreak(plan, completedToday) {
 }
 
 /**
+ * Advance the user's chosen memorization page to the next unmemorized page.
+ * Called after new memorization task is completed for the day.
+ *
+ * @param {Object} plan - The active plan (will be mutated)
+ * @param {Set} memorizedPages - Current memorized pages set
+ * @param {Object|Map} perfectRevisions - Map of page → perfect revision count
+ * @returns {number|null} The new currentMemorizationPage, or null if none left
+ */
+export function advanceMemorizationPage(plan, memorizedPages, perfectRevisions = {}) {
+  if (!plan.currentMemorizationPage) return null;
+
+  const currentPage = plan.currentMemorizationPage;
+  const targetPages = plan.targetPages || [];
+
+  // Find the next unmemorized page after the current one
+  const currentIdx = targetPages.indexOf(currentPage);
+  if (currentIdx === -1) {
+    plan.currentMemorizationPage = null;
+    return null;
+  }
+
+  for (let i = currentIdx + 1; i < targetPages.length; i++) {
+    if (!isPageMemorized(targetPages[i], memorizedPages, perfectRevisions)) {
+      plan.currentMemorizationPage = targetPages[i];
+      return targetPages[i];
+    }
+  }
+
+  // No more unmemorized pages after the current one
+  plan.currentMemorizationPage = null;
+  return null;
+}
+
+/**
  * Sync external memorization — when user marks pages as memorized outside the plan,
  * update the plan's tracking.
  *
@@ -530,11 +783,11 @@ export function updateStreak(plan, completedToday) {
  * @param {Set} currentMemorizedPages - The full current set of memorized pages
  * @returns {Object} { newlyMemorizedInPlan: number[], plan }
  */
-export function syncExternalMemorization(plan, currentMemorizedPages) {
+export function syncExternalMemorization(plan, currentMemorizedPages, perfectRevisions = {}) {
   const newlyMemorized = [];
 
   for (const page of plan.targetPages) {
-    if (currentMemorizedPages.has(page)) {
+    if (isPageMemorized(page, currentMemorizedPages, perfectRevisions)) {
       const data = plan.schedulerState.pageReviewData[page];
       if (data && data.reviewCount === 0) {
         // Page was memorized outside the plan — initialize review data
@@ -552,7 +805,7 @@ export function syncExternalMemorization(plan, currentMemorizedPages) {
   }
 
   // Update memorized count
-  const memorizedInPlan = plan.targetPages.filter(p => currentMemorizedPages.has(p));
+  const memorizedInPlan = plan.targetPages.filter(p => isPageMemorized(p, currentMemorizedPages, perfectRevisions));
   plan.stats.pagesMemorized = memorizedInPlan.length;
 
   if (newlyMemorized.length > 0) {
@@ -829,6 +1082,7 @@ export default {
 
   // Data sync
   syncExternalMemorization,
+  advanceMemorizationPage,
 
   // Day records
   createDayRecord,

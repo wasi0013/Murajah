@@ -316,7 +316,8 @@
     "partOf": "Part {current} of {total}",
     "noPageAudio": "No audio available for this page",
     "pageByPageReciter": "Mishary Rashid Al Afasy",
-    "speed": "Speed:"
+    "speed": "Speed:",
+    "reciterFallback": "Selected reciter ({reciter}) unavailable — using fallback"
   },
   "reciters": {
     "shuraim": "Sheikh Shuraim",
@@ -970,14 +971,17 @@
       "perfect": "Perfect",
       "good": "Good",
       "needsWork": "Needs Work",
-      "openPage": "Open Page",
+      "openPage": "Page",
       "quiz": "Quiz",
       "progress": "Progress",
       "streak": "day streak",
       "healthOnTrack": "On Track",
       "healthSlipping": "Slipping Behind",
       "healthBehind": "Behind Schedule",
-      "backlogWarning": "You have {count} overdue pages — catching up!"
+      "backlogWarning": "You have {count} overdue pages — catching up!",
+      "nextPageLabel": "Next page to memorize:",
+      "nextPageAuto": "Auto (sequential)",
+      "changePage": "Change page"
     },
     "calendar": {
       "title": "Calendar",
@@ -992,7 +996,8 @@
       "partial": "Partial",
       "missed": "Missed",
       "pending": "Pending",
-      "today": "Today"
+      "today": "Today",
+      "preview": "Preview"
     },
     "progress": {
       "title": "Progress",
@@ -1027,6 +1032,7 @@
       "abandon": "Abandon Plan",
       "confirmAbandon": "Confirm Abandon",
       "adjustPace": "Adjust Pace",
+      "planSettings": "Plan Settings",
       "viewHistory": "View History"
     },
     "missed": {
@@ -1044,6 +1050,17 @@
       "description": "Create a guided plan to organize your memorization and revision schedule.",
       "cta": "Create Plan"
     },
+    "settings": {
+      "title": "Plan Settings",
+      "newPagesPerDay": "New pages per day",
+      "revisionPagesPerDay": "Revision pages per day",
+      "weakPagesPerDay": "Weak pages per day",
+      "offDays": "Days off",
+      "offDaysHint": "New memorization paused on off days. Revision & weak review continue.",
+      "pagesUnit": "pages/day",
+      "cancel": "Cancel",
+      "save": "Save Changes"
+    },
     "days": {
       "sun": "Sun",
       "mon": "Mon",
@@ -1059,7 +1076,26 @@
       "noTasks": "No pages to play today",
       "part": "Part",
       "showPages": "Show pages",
-      "hidePages": "Hide pages"
+      "hidePages": "Hide pages",
+      "loopOn": "Loop enabled – playlist will repeat",
+      "loopOff": "Loop disabled"
+    },
+    "smart": {
+      "title": "Your Plan is Ready",
+      "subtitle": "Based on your memorization data",
+      "memorized": "Memorized",
+      "weakPages": "Weak Pages",
+      "inPlan": "In Plan",
+      "detectedLevel": "Level",
+      "coverage": "Coverage",
+      "juz": "juz",
+      "pace": "Daily Pace",
+      "newDay": "new/day",
+      "revDay": "review/day",
+      "weakHint": "Weakest pages",
+      "start": "Start Plan",
+      "customize": "Customize",
+      "customPlan": "Custom Plan"
     }
   }
 }

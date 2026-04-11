@@ -10,8 +10,9 @@ export default {
     todayTasks: { type: Object, default: null },
     dayNumber: { type: Number, default: 1 },
     t: { type: Function, required: true },
+    unmemorizedPages: { type: Array, default: () => [] },
   },
-  emits: ['complete-task', 'rate-task', 'open-page', 'open-quiz'],
+  emits: ['complete-task', 'rate-task', 'open-page', 'open-quiz', 'set-memorization-page'],
   template: `
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <!-- Header -->
@@ -31,37 +32,46 @@ export default {
         </div>
       </div>
 
-      <!-- Off day / no tasks -->
-      <div v-if="!todayTasks || todayTasks.metadata?.isOffDay" class="p-6 text-center">
+      <!-- No tasks at all -->
+      <div v-if="!todayTasks" class="p-6 text-center">
         <div class="text-3xl mb-2">🌙</div>
         <p class="text-sm text-gray-600">{{ t('plan.today.offDay') }}</p>
       </div>
 
-      <!-- Task list -->
+      <!-- Task list (off day shows revision/weak but not new) -->
       <div v-else class="divide-y divide-gray-100">
-        <!-- New Memorization -->
-        <div v-if="todayTasks.newMemorization" class="p-4">
+        <!-- Off-day banner -->
+        <div v-if="todayTasks.metadata?.isOffDay" class="px-4 py-2 bg-gray-50 text-center">
+          <span class="text-sm text-gray-500">🌙 {{ t('plan.today.offDay') }}</span>
+        </div>
+
+        <!-- Weak Reinforcement -->
+        <div v-if="todayTasks.weakReinforcement" class="p-4">
           <div class="flex items-start gap-3">
-            <button @click="toggleTask('newMemorization')"
+            <button @click="toggleTask('weakReinforcement')"
               :class="['mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
-                todayTasks.newMemorization.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400']">
-              <i v-if="todayTasks.newMemorization.completed" class="fas fa-check text-xs"></i>
+                todayTasks.weakReinforcement.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400']">
+              <i v-if="todayTasks.weakReinforcement.completed" class="fas fa-check text-xs"></i>
             </button>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">{{ t('plan.today.newLabel') }}</span>
-                <span :class="['text-sm font-medium', todayTasks.newMemorization.completed ? 'line-through text-gray-400' : 'text-gray-900']">
-                  {{ t('plan.today.memorize') }}
+                <span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{{ t('plan.today.weakLabel') }}</span>
+                <span :class="['text-sm font-medium', todayTasks.weakReinforcement.completed ? 'line-through text-gray-400' : 'text-gray-900']">
+                  {{ t('plan.today.reinforce') }}
                 </span>
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                {{ t('plan.today.pages') }}: {{ todayTasks.newMemorization.pages.join(', ') }}
+                {{ todayTasks.weakReinforcement.pages.length }} {{ t('plan.today.pagesUnit') }}
               </p>
-              <div class="flex gap-2 mt-2">
-                <button v-for="page in todayTasks.newMemorization.pages" :key="page"
+              <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 mt-2">
+                <button v-for="page in todayTasks.weakReinforcement.pages" :key="page"
                   @click="$emit('open-page', page)"
-                  class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
-                  {{ t('plan.today.openPage') }} {{ page }}
+                  class="px-2 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 active:bg-orange-200 transition text-center">
+                  {{ page }}
+                </button>
+                <button @click="$emit('open-quiz', todayTasks.weakReinforcement.pages[0])"
+                  class="px-2 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 active:bg-purple-200 transition text-center">
+                  <i class="fas fa-question-circle"></i>
                 </button>
               </div>
             </div>
@@ -84,17 +94,14 @@ export default {
                 </span>
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                {{ t('plan.today.pages') }}: {{ todayTasks.revision.pages.join(', ') }}
+                {{ todayTasks.revision.pages.length }} {{ t('plan.today.pagesUnit') }}
               </p>
-              <div class="flex gap-2 mt-2 flex-wrap">
-                <button v-for="page in todayTasks.revision.pages.slice(0, 5)" :key="page"
+              <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 mt-2 flex-wrap">
+                <button v-for="page in todayTasks.revision.pages" :key="page"
                   @click="$emit('open-page', page)"
-                  class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
-                  {{ t('plan.today.openPage') }} {{ page }}
+                  class="px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 active:bg-blue-200 transition text-center">
+                  {{ page }}
                 </button>
-                <span v-if="todayTasks.revision.pages.length > 5" class="text-xs text-gray-400">
-                  +{{ todayTasks.revision.pages.length - 5 }} {{ t('plan.today.more') }}
-                </span>
               </div>
               <!-- Performance rating (shown after completion) -->
               <div v-if="todayTasks.revision.completed && !todayTasks.revision.performance" class="flex gap-2 mt-2">
@@ -109,34 +116,46 @@ export default {
           </div>
         </div>
 
-        <!-- Weak Reinforcement -->
-        <div v-if="todayTasks.weakReinforcement" class="p-4">
+        <!-- New Memorization -->
+        <div v-if="todayTasks.newMemorization" class="p-4">
           <div class="flex items-start gap-3">
-            <button @click="toggleTask('weakReinforcement')"
+            <button @click="toggleTask('newMemorization')"
               :class="['mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
-                todayTasks.weakReinforcement.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400']">
-              <i v-if="todayTasks.weakReinforcement.completed" class="fas fa-check text-xs"></i>
+                todayTasks.newMemorization.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400']">
+              <i v-if="todayTasks.newMemorization.completed" class="fas fa-check text-xs"></i>
             </button>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{{ t('plan.today.weakLabel') }}</span>
-                <span :class="['text-sm font-medium', todayTasks.weakReinforcement.completed ? 'line-through text-gray-400' : 'text-gray-900']">
-                  {{ t('plan.today.reinforce') }}
+                <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">{{ t('plan.today.newLabel') }}</span>
+                <span :class="['text-sm font-medium', todayTasks.newMemorization.completed ? 'line-through text-gray-400' : 'text-gray-900']">
+                  {{ t('plan.today.memorize') }}
                 </span>
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                {{ t('plan.today.pages') }}: {{ todayTasks.weakReinforcement.pages.join(', ') }}
+                {{ todayTasks.newMemorization.pages.length }} {{ t('plan.today.pagesUnit') }}
               </p>
-              <div class="flex gap-2 mt-2">
-                <button v-for="page in todayTasks.weakReinforcement.pages" :key="page"
+              <div class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 mt-2 flex-wrap">
+                <button v-for="page in todayTasks.newMemorization.pages" :key="page"
                   @click="$emit('open-page', page)"
-                  class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
-                  {{ t('plan.today.openPage') }} {{ page }}
+                  class="px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 active:bg-green-200 transition text-center">
+                  {{ page }}
                 </button>
-                <button @click="$emit('open-quiz', todayTasks.weakReinforcement.pages[0])"
-                  class="text-xs text-purple-600 hover:text-purple-800 hover:underline">
-                  <i class="fas fa-question-circle mr-0.5"></i>{{ t('plan.today.quiz') }}
+                <button v-if="unmemorizedPages.length > 1"
+                  @click="showPagePicker = !showPagePicker"
+                  class="px-2 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-lg border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 transition text-center">
+                  <i class="fas fa-exchange-alt"></i>
                 </button>
+              </div>
+              <div v-if="showPagePicker" class="mt-2">
+                <select
+                  :value="plan.currentMemorizationPage || ''"
+                  @change="onPagePickerChange($event.target.value)"
+                  class="text-xs border border-indigo-200 rounded px-2 py-1 bg-white text-gray-700 focus:border-indigo-400 outline-none w-full">
+                  <option value="">{{ t('plan.today.nextPageAuto') }}</option>
+                  <option v-for="page in unmemorizedPages" :key="page" :value="page">
+                    {{ t('plan.today.openPage') }} {{ page }}
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -144,7 +163,7 @@ export default {
       </div>
 
       <!-- Progress Footer -->
-      <div v-if="todayTasks && !todayTasks.metadata?.isOffDay" class="px-4 py-3 bg-gray-50 border-t border-gray-100">
+      <div v-if="todayTasks && totalCount > 0" class="px-4 py-3 bg-gray-50 border-t border-gray-100">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-gray-500">{{ t('plan.today.progress') }}: {{ completedCount }}/{{ totalCount }}</span>
           <span v-if="plan.stats.currentStreak > 0" class="text-xs text-orange-500 font-medium">
@@ -160,7 +179,9 @@ export default {
   `,
 
   setup(props, { emit }) {
-    const { computed } = Vue;
+    const { computed, ref } = Vue;
+
+    const showPagePicker = ref(false);
 
     const totalCount = computed(() => {
       if (!props.todayTasks) return 0;
@@ -202,6 +223,11 @@ export default {
       emit('complete-task', taskType);
     }
 
-    return { totalCount, completedCount, progressPercent, healthColor, healthLabel, toggleTask };
+    function onPagePickerChange(value) {
+      emit('set-memorization-page', value ? Number(value) : null);
+      showPagePicker.value = false;
+    }
+
+    return { totalCount, completedCount, progressPercent, healthColor, healthLabel, toggleTask, showPagePicker, onPagePickerChange };
   },
 };

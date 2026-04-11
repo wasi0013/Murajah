@@ -110,6 +110,7 @@ const dataCaches = {
 };
 
 const resourceRefreshState = {};
+const resourceRefreshTimers = {};
 
 // Cached wordById lookup maps to avoid O(n) rebuilds per page render
 const wordByIdCache = {
@@ -273,11 +274,17 @@ const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, 
   if (!resourceConfig) return;
 
   const refreshKey = `${resourceConfig.key}-${resourceConfig.cacheId}`;
+  
+  // Clear any existing timer for this key to prevent accumulation
+  if (resourceRefreshTimers[refreshKey]) {
+    clearTimeout(resourceRefreshTimers[refreshKey]);
+  }
+
   if (resourceRefreshState[refreshKey]) return;
 
   resourceRefreshState[refreshKey] = true;
   // Delay background refresh significantly to avoid competing with initial load (30s instead of 100ms)
-  setTimeout(async () => {
+  resourceRefreshTimers[refreshKey] = setTimeout(async () => {
     try {
       const freshData = await fetchAndCacheResource(resourceConfig, murajahDB);
       if (cacheTarget && cacheKey) {
@@ -291,6 +298,7 @@ const scheduleResourceRefresh = (resourceConfig, murajahDB, onBackgroundUpdate, 
       Logger.warn(Logger.MODULES.DATA, `Background refresh failed for ${resourceConfig.key}`, error);
     } finally {
       resourceRefreshState[refreshKey] = false;
+      delete resourceRefreshTimers[refreshKey];
     }
   }, 30000);
 };

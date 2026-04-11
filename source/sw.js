@@ -78,6 +78,8 @@ const APP_SHELL = [
   './resources/js/components/PlanTodayCard.js',
   './resources/js/components/PlanCalendarComponent.js',
   './resources/js/components/PlanProgressView.js',
+  './resources/js/components/PlanAudioCard.js',
+  './resources/js/components/PlanSettingsModal.js',
   
   // Critical JSON data
   './resources/data/quran/qpc-v2-15-lines.json',

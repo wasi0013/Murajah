@@ -347,7 +347,7 @@ describe('planScheduler.js', () => {
       const result = generateDailyTasks({ plan, appData: makeAppData(), today: saturday });
       expect(result.metadata.isOffDay).toBe(true);
       expect(result.newMemorization).toBeNull();
-      expect(result.revision).toBeNull();
+      // Revision and weak continue on off days
     });
 
     it('should generate beginner tasks with new memorization', () => {
