@@ -3295,15 +3295,18 @@
             });
           });
 
+          // Guard: don't reload on first-ever install (no previous controller)
+          const hadController = !!navigator.serviceWorker.controller;
           let reloading = false;
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (reloading) return;
+            if (reloading || !hadController) return;
             reloading = true;
             window.location.reload();
           });
 
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'SW_UPDATED' && !reloading) {
+              if (!hadController) return; // first install — page is already fresh
               reloading = true;
               window.location.reload();
             }

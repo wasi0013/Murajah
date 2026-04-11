@@ -53,11 +53,12 @@ const PILL = '.mobile-tab-bar';          // tappable pill showing current tab
 const DRAWER = '.mobile-menu';            // slide-out drawer
 const DRAWER_TAB = `${DRAWER} button.mobile-menu-item`; // quiz mode buttons
 
-// Switch tab via dispatchEvent on the hidden desktop nav buttons (avoids flaky drawer animation)
+// Switch tab via the drawer (pill click → drawer open → click tab)
 async function selectTabByClick(page, tabText) {
-  // The hidden nav[aria-label="Quiz Types"] buttons are still in the DOM (display:none)
-  // dispatchEvent bypasses visibility checks and fires the @click handler
-  await page.locator('nav[aria-label="Quiz Types"] button').filter({ hasText: tabText }).dispatchEvent('click');
+  const pill = page.locator(PILL);
+  await pill.click();
+  await page.locator(`${DRAWER}.active`).waitFor({ state: 'visible' });
+  await page.locator(DRAWER_TAB).filter({ hasText: tabText }).first().click();
   await page.waitForTimeout(300);
 }
 
