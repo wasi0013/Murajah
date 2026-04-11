@@ -382,7 +382,7 @@ async function staleWhileRevalidateFont(request) {
           // Also cache by pathname
           try {
             const urlObj = new URL(absoluteUrl);
-            await fontsCache.put(urlObj.pathname, responseToCache);
+            await fontsCache.put(urlObj.pathname, responseToCache.clone());
           } catch (e) {}
         } catch (e) {
           console.warn('[SW] Failed to cache font:', e.message);
@@ -476,13 +476,15 @@ self.addEventListener('install', (event) => {
             const response = await fetchWithTimeout(new Request(url), INSTALL_FETCH_TIMEOUT_MS);
             if (response.ok) {
               const responseToCache = await makeCacheSafe(response);
-              await cache.put(url, responseToCache);
               // For root URL, also cache under ./index.html for Safari compatibility
               if (url === './') {
+                await cache.put(url, responseToCache.clone());
                 const indexCached = await cache.match('./index.html');
                 if (!indexCached) {
                   await cache.put('./index.html', responseToCache.clone());
                 }
+              } else {
+                await cache.put(url, responseToCache);
               }
             } else {
               console.warn(`[SW] Got status ${response.status} for: ${url}`);
