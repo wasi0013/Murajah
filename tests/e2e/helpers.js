@@ -164,11 +164,23 @@ export async function openSettings(page) {
   await waitForAppLoad(page);
   
   const settingsButton = page.locator('button:has(.fa-cog), button:has(.fa-gear), [title*="Settings"]').first();
+  // Settings modal contains an h2 with fa-cog icon - unique to settings
+  const settingsModal = page.locator('.fixed.inset-0 h2:has(.fa-cog)');
   
-  if (await settingsButton.isVisible()) {
-    await settingsButton.click();
-    await page.waitForTimeout(500);
-    return true;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await settingsButton.waitFor({ state: 'visible', timeout: 5000 });
+      await settingsButton.click();
+      await settingsModal.waitFor({ state: 'visible', timeout: 5000 });
+      await page.waitForTimeout(300);
+      return true;
+    } catch {
+      if (attempt === 0) {
+        // Retry after dismissing any blocking modal
+        await dismissLanguageModal(page, { retries: 2 });
+        await page.waitForTimeout(500);
+      }
+    }
   }
   return false;
 }

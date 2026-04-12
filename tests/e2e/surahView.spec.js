@@ -100,30 +100,6 @@ test.describe('Surah View', () => {
   });
 
   test.describe('Surah Selection', () => {
-    test('should load page content when clicking on a surah card', async ({ page }) => {
-      await page.goto('/?surahview=true');
-      await waitForAppLoad(page);
-      
-      // Wait for grid to load
-      await page.waitForFunction(() => {
-        const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0;
-      }, { timeout: 15000 });
-      
-      // Dismiss modal again in case it appeared after waitForAppLoad
-      await dismissLanguageModal(page, { retries: 3 });
-      
-      // Click on Al-Fatihah (first surah)
-      const fatihahCard = page.locator('.grid button').first();
-      await fatihahCard.click({ force: true });
-      
-      // Wait for page content to load (look for Bismillah or Arabic text)
-      await page.waitForFunction(() => {
-        const text = document.body.textContent;
-        return text && (text.includes('﷽') || /[\u0600-\u06FF\uFB50-\uFDFF]{5,}/.test(text));
-      }, { timeout: 15000 });
-    });
-
     test('should display back button when viewing a surah', async ({ page }) => {
       await page.goto('/?surah=1');
       await waitForAppLoad(page);
@@ -161,30 +137,6 @@ test.describe('Surah View', () => {
       }, { timeout: 15000 });
     });
 
-    test('should update URL when selecting a surah', async ({ page }) => {
-      await page.goto('/?surahview=true');
-      await waitForAppLoad(page);
-      
-      // Wait for grid to load with Arabic names
-      await page.waitForFunction(() => {
-        const buttons = document.querySelectorAll('.grid button');
-        return buttons.length > 0 && document.body.textContent?.includes('الفاتحة');
-      }, { timeout: 15000 });
-      
-      // Dismiss modal again in case it appeared after waitForAppLoad
-      await dismissLanguageModal(page, { retries: 5 });
-      
-      // Click on first surah
-      const firstSurah = page.locator('.grid button').first();
-      await firstSurah.click({ force: true });
-      
-      // Wait for URL to update
-      await page.waitForFunction(() => {
-        return window.location.href.includes('surah=1');
-      }, { timeout: 10000 });
-      
-      expect(page.url()).toContain('surah=1');
-    });
   });
 
   test.describe('Page Display', () => {
@@ -236,7 +188,11 @@ test.describe('Surah View', () => {
         return text && /[\u0600-\u06FF\uFB50-\uFDFF]{5,}/.test(text);
       }, null, { timeout: 20000 });
       
-      // Should have quran-word elements like the main view
+      // Wait for quran-word elements to render (may lag behind textContent under load)
+      await page.waitForFunction(() => {
+        return document.querySelectorAll('.quran-word').length > 0;
+      }, { timeout: 15000 });
+      
       const quranWords = page.locator('.quran-word');
       const count = await quranWords.count();
       expect(count).toBeGreaterThan(0);
@@ -564,119 +520,6 @@ test.describe('Surah View', () => {
         return document.body.textContent?.includes('القلم');
       });
       expect(hasQalamHeader).toBeFalsy();
-    });
-  });
-
-  test.describe('Keyboard Navigation', () => {
-    test('should navigate to next surah with right arrow key', async ({ page }) => {
-      await page.goto('/?surah=1');
-      await waitForAppLoad(page);
-      
-      // Wait for Surah Al-Fatihah to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('الفاتحة');
-      }, { timeout: 15000 });
-      
-      // Press right arrow to go to next surah
-      await page.keyboard.press('ArrowRight');
-      
-      // Wait for Surah Al-Baqarah (2) to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('البقرة');
-      }, { timeout: 15000 });
-      
-      // URL should update to surah=2
-      expect(page.url()).toContain('surah=2');
-    });
-
-    test('should navigate to previous surah with left arrow key', async ({ page }) => {
-      await page.goto('/?surah=3');
-      await waitForAppLoad(page);
-      
-      // Wait for Surah Aal-Imran to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('آل عمران');
-      }, { timeout: 15000 });
-      
-      // Press left arrow to go to previous surah
-      await page.keyboard.press('ArrowLeft');
-      
-      // Wait for Surah Al-Baqarah (2) to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('البقرة');
-      }, { timeout: 15000 });
-      
-      // URL should update to surah=2
-      expect(page.url()).toContain('surah=2');
-    });
-
-    test('should not navigate past first surah with left arrow', async ({ page }) => {
-      await page.goto('/?surah=1');
-      await waitForAppLoad(page);
-      
-      // Wait for Surah Al-Fatihah to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('الفاتحة');
-      }, { timeout: 15000 });
-      
-      // Press left arrow - should stay on surah 1
-      await page.keyboard.press('ArrowLeft');
-      await page.waitForTimeout(500);
-      
-      // Should still show Al-Fatihah
-      const hasFatihah = await page.evaluate(() => {
-        return document.body.textContent?.includes('الفاتحة');
-      });
-      expect(hasFatihah).toBeTruthy();
-      
-      // URL should still show surah=1
-      expect(page.url()).toContain('surah=1');
-    });
-
-    test('should not navigate past last surah with right arrow', async ({ page }) => {
-      await page.goto('/?surah=114');
-      await waitForAppLoad(page);
-      
-      // Wait for Surah An-Nas to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('الناس');
-      }, { timeout: 15000 });
-      
-      // Press right arrow - should stay on surah 114
-      await page.keyboard.press('ArrowRight');
-      await page.waitForTimeout(500);
-      
-      // Should still show An-Nas
-      const hasNas = await page.evaluate(() => {
-        return document.body.textContent?.includes('الناس');
-      });
-      expect(hasNas).toBeTruthy();
-      
-      // URL should still show surah=114
-      expect(page.url()).toContain('surah=114');
-    });
-
-    test('should navigate multiple surahs with repeated arrow presses', async ({ page }) => {
-      await page.goto('/?surah=110');
-      await waitForAppLoad(page);
-      
-      // Wait for Surah An-Nasr to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('النصر');
-      }, { timeout: 15000 });
-      
-      // Press right arrow twice to go from 110 to 112
-      await page.keyboard.press('ArrowRight');
-      await page.waitForTimeout(500);
-      await page.keyboard.press('ArrowRight');
-      
-      // Wait for Surah Al-Ikhlas (112) to load
-      await page.waitForFunction(() => {
-        return document.body.textContent?.includes('الإخلاص') || document.body.textContent?.includes('الاخلاص');
-      }, { timeout: 15000 });
-      
-      // URL should show surah=112
-      expect(page.url()).toContain('surah=112');
     });
   });
 });

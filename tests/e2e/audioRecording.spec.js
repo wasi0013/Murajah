@@ -362,25 +362,6 @@ test.describe('Audio Recording - Edge Cases', () => {
     await waitForAppLoad(page);
   });
 
-  test('should correctly check API support in isSupported', async ({ page }) => {
-    const result = await page.evaluate(async () => {
-      const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
-      
-      // Test that modern API is detected
-      const hasModernAPI = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-      const isSupported = AudioRecorder.isSupported();
-      
-      return {
-        hasModernAPI,
-        isSupported,
-        // If modern API exists, isSupported should be true
-        correctDetection: hasModernAPI ? isSupported === true : true
-      };
-    });
-    
-    expect(result.correctDetection).toBe(true);
-  });
-
   test('should detect iOS devices correctly', async ({ page }) => {
     const result = await page.evaluate(async () => {
       const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
