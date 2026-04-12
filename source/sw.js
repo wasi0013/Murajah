@@ -40,7 +40,6 @@ const APP_SHELL = [
   './',
   './index.html',
   './quiz.html',
-  './plan.html',
   './privacy.html',
   './manifest.json',
   './resources/favicon.ico',
@@ -431,7 +430,6 @@ const CRITICAL_RESOURCES = [
   './',
   './index.html',
   './quiz.html',
-  './plan.html',
   // Core vendor
   './resources/js/vendor/vue.global.js',
   // Core utils
@@ -544,7 +542,6 @@ self.addEventListener('install', (event) => {
 // Covers all entry points and critical runtime files needed to boot any page.
 const MINIMUM_CACHE_RESOURCES = [
   './index.html',
-  './plan.html',
   './quiz.html',
   './resources/js/vendor/vue.global.js',
   './resources/js/stores/i18nStore.js',
@@ -609,7 +606,11 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
   
-  // Always serve hotfix.html from network (never cached) to ensure latest recovery logic
+  // plan.html and hotfix.html bypass SW entirely — always go to network.
+  // plan.html is excluded because iOS Safari SW caching causes persistent boot failures
+  // for new users (stale cache + slow import() = infinite spinner).
+  if (url.pathname.endsWith('/plan.html')) return;
+
   if (url.pathname.endsWith('/hotfix.html')) {
     event.respondWith(
       fetch(request).catch(() => {

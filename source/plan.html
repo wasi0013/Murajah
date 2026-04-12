@@ -1089,51 +1089,8 @@
       }
     </script>
 
-    <!-- Service Worker Registration (same pattern as index.html) -->
-    <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New SW waiting — activate it immediately for plan page
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
-              }
-            });
-          });
-
-          // Reload when a new SW takes control (version update)
-          // Guard: don't reload on first-ever install (no previous controller)
-          const hadController = !!navigator.serviceWorker.controller;
-          let reloading = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (reloading || !hadController) return;
-            reloading = true;
-            window.location.reload();
-          });
-
-          // Listen for SW_UPDATED message (sent on activate)
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'SW_UPDATED' && !reloading) {
-              if (!hadController) return; // first install — page is already fresh
-              // Deduplicate reload per SW version to prevent reload loops
-              const newVersion = event.data.payload?.version;
-              const reloadedKey = 'plan-sw-reloaded-v' + newVersion;
-              if (newVersion && sessionStorage.getItem(reloadedKey)) return;
-              if (newVersion) sessionStorage.setItem(reloadedKey, '1');
-              reloading = true;
-              window.location.reload();
-            }
-          });
-        } catch (e) {
-          console.warn('[Plan] SW registration failed:', e);
-        }
-      });
-    }
-    </script>
+    <!-- plan.html deliberately does NOT register or interact with the Service Worker.
+         iOS Safari SW caching causes persistent boot failures for new users.
+         The SW fetch handler also returns early for plan.html requests. -->
 </body>
 </html>
