@@ -606,10 +606,14 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
   
-  // plan.html and hotfix.html bypass SW entirely — always go to network.
-  // plan.html is excluded because iOS Safari SW caching causes persistent boot failures
-  // for new users (stale cache + slow import() = infinite spinner).
+  // plan.html and ALL its subresources bypass SW entirely — always go to network.
+  // iOS Safari SW caching causes persistent boot failures for new users
+  // (stale cache + slow import() = infinite spinner).
   if (url.pathname.endsWith('/plan.html')) return;
+  
+  // Check Referer: if a resource is requested by plan.html, let the browser fetch it directly.
+  const referer = request.headers.get('Referer') || '';
+  if (referer.includes('/plan.html')) return;
 
   if (url.pathname.endsWith('/hotfix.html')) {
     event.respondWith(
