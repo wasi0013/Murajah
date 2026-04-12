@@ -91,7 +91,8 @@ async function seedPlan(page, overrides = {}) {
       };
       request.onsuccess = () => {
         const db = request.result;
-        const today = new Date().toISOString().slice(0, 10);
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const plan = {
           id: opts.id || 'test-plan-1',
           name: opts.name || 'Test Plan',

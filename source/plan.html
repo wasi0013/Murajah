@@ -58,25 +58,47 @@
 
             async init() {
                 return new Promise((resolve, reject) => {
+                    // iOS WebKit can silently hang IDB opens — reject after 8 s so
+                    // the finally block in initialize() always flips isLoading to false.
+                    let settled = false;
+                    const timer = setTimeout(() => {
+                        if (!settled) {
+                            settled = true;
+                            reject(new Error('IndexedDB open timed out (iOS)'));
+                        }
+                    }, 8000);
+                    const _resolve = () => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        resolve();
+                    };
+                    const _reject = (e) => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        reject(e);
+                    };
+
                     const request = indexedDB.open(this.DB_NAME, this.VERSION);
 
                     request.onerror = () => {
                         // If version mismatch, open without specifying version
                         if (request.error?.name === 'VersionError') {
                             const fallback = indexedDB.open(this.DB_NAME);
-                            fallback.onerror = () => reject(fallback.error);
+                            fallback.onerror = () => _reject(fallback.error);
                             fallback.onsuccess = () => {
                                 this.db = fallback.result;
-                                resolve();
+                                _resolve();
                             };
                         } else {
-                            reject(request.error);
+                            _reject(request.error);
                         }
                     };
 
                     request.onsuccess = () => {
                         this.db = request.result;
-                        resolve();
+                        _resolve();
                     };
 
                     request.onupgradeneeded = (event) => {
@@ -481,14 +503,32 @@
 
     <!-- Vue App Script -->
     <script type="module">
+      // Boot watchdog — if any module import hangs (common on iOS first visit with no
+      // service-worker cache), Vue never mounts and the raw HTML spinner stays forever.
+      // After 20 s we surface a recoverable error instead of an infinite white spinner.
+      const _bootWatchdog = setTimeout(() => {
+        const app = document.getElementById('app');
+        if (app) {
+          app.innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;font-family:system-ui,sans-serif">' +
+            '<div style="text-align:center;max-width:400px">' +
+            '<h2 style="margin-bottom:0.5rem">Taking too long to load</h2>' +
+            '<p style="color:#64748b;margin-bottom:1rem">This can happen on a slow connection or first install. Please try reloading.</p>' +
+            '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer;margin-right:0.5rem">Reload</button>' +
+            '<a href="./hotfix.html" style="display:inline-block;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
+            '</div></div>';
+        }
+      }, 20000);
+
       try {
         const { createApp, ref, computed, watch, onMounted } = Vue;
 
-        // i18n
-        const { i18nState, t, initLocaleFromStorage } = await import('./resources/js/stores/i18nStore.js');
-
-        // Plan utilities
-        const {
+        // Load all independent modules in parallel to avoid sequential stall risk on iOS.
+        // planManager.js is listed first and already transitively imports planScheduler.js;
+        // listing planScheduler.js here too is safe — the module registry deduplicates it.
+        const [
+          { i18nState, t, initLocaleFromStorage },
+          {
             createPlan,
             transitionPlanStatus,
             updatePlanPace,
@@ -512,19 +552,27 @@
             generateMilestones,
             generateSmartPlan,
             advanceMemorizationPage,
-        } = await import('./resources/js/utils/planManager.js');
+          },
+          { handleMissedDays, formatDate, isPageMemorized, generateDailyTasks },
+          { default: PlanSetupWizard },
+          { default: PlanTodayCard },
+          { default: PlanCalendarComponent },
+          { default: PlanProgressView },
+          { default: PlanAudioCard },
+          { default: PlanSettingsModal },
+        ] = await Promise.all([
+          import('./resources/js/stores/i18nStore.js'),
+          import('./resources/js/utils/planManager.js'),
+          import('./resources/js/utils/planScheduler.js'),
+          import('./resources/js/components/PlanSetupWizard.js'),
+          import('./resources/js/components/PlanTodayCard.js'),
+          import('./resources/js/components/PlanCalendarComponent.js'),
+          import('./resources/js/components/PlanProgressView.js'),
+          import('./resources/js/components/PlanAudioCard.js'),
+          import('./resources/js/components/PlanSettingsModal.js'),
+        ]);
 
-        const { handleMissedDays, formatDate, isPageMemorized, generateDailyTasks } = await import('./resources/js/utils/planScheduler.js');
-
-        // Components
-        const PlanSetupWizard = (await import('./resources/js/components/PlanSetupWizard.js')).default;
-        const PlanTodayCard = (await import('./resources/js/components/PlanTodayCard.js')).default;
-        const PlanCalendarComponent = (await import('./resources/js/components/PlanCalendarComponent.js')).default;
-        const PlanProgressView = (await import('./resources/js/components/PlanProgressView.js')).default;
-        const PlanAudioCard = (await import('./resources/js/components/PlanAudioCard.js')).default;
-        const PlanSettingsModal = (await import('./resources/js/components/PlanSettingsModal.js')).default;
-
-        // Pre-load translations
+        // Pre-load translations (parallel inside — see i18nStore.js)
         await initLocaleFromStorage();
 
         createApp({
@@ -965,7 +1013,19 @@
                     }
                 }, { deep: true });
 
-                onMounted(initialize);
+                onMounted(async () => {
+                    await initialize();
+                    // iOS BFCache: when user navigates away and back, the page is
+                    // restored with isLoading still true but all Promises are dead.
+                    // Re-run initialize() so the spinner is dismissed.
+                    window.addEventListener('pageshow', (event) => {
+                        if (event.persisted && isLoading.value) {
+                            console.log('[Plan] BFCache restore — re-initializing');
+                            isLoading.value = false;
+                            initialize();
+                        }
+                    });
+                });
 
                 return {
                     isLoading,
@@ -1011,7 +1071,11 @@
             },
         }).mount('#app');
 
+        // Vue mounted successfully — disarm the boot watchdog.
+        clearTimeout(_bootWatchdog);
+
       } catch (err) {
+        clearTimeout(_bootWatchdog);
         console.error('[Plan] Failed to load:', err);
         // Show a user-visible error instead of infinite loading spinner
         document.getElementById('app').innerHTML =
@@ -1056,6 +1120,11 @@
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'SW_UPDATED' && !reloading) {
               if (!hadController) return; // first install — page is already fresh
+              // Deduplicate reload per SW version to prevent reload loops
+              const newVersion = event.data.payload?.version;
+              const reloadedKey = 'plan-sw-reloaded-v' + newVersion;
+              if (newVersion && sessionStorage.getItem(reloadedKey)) return;
+              if (newVersion) sessionStorage.setItem(reloadedKey, '1');
               reloading = true;
               window.location.reload();
             }

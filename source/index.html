@@ -5867,7 +5867,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '26.04.11',
+            appVersion: '26.04.12',
             errorMessage: '',
             successMessage: ''
           });
@@ -9843,6 +9843,16 @@
               }
             });
             window.addEventListener('pagehide', flushDataOnExit);
+
+            // iOS BFCache: when user navigates back, the page is restored from
+            // cache with isInitializing still true but all Promises are dead.
+            // Re-run initializeApp() so the loading overlay is cleared.
+            window.addEventListener('pageshow', (event) => {
+              if (event.persisted && isInitializing.value) {
+                console.log('[Murajah] BFCache restore — re-running initializeApp()');
+                initializeApp();
+              }
+            });
           });
 
           // Watch URL changes and load font when page changes

@@ -7,10 +7,10 @@
 import Logger from './logger.js';
 
 // Current cache version - increment this to force cache refresh on update
-export const CACHE_VERSION = '26.04.11';
+export const CACHE_VERSION = '26.04.12';
 
-// Cache names - must match service worker
-const FONTS_CACHE_NAME = 'murajah-fonts-v2';
+// Cache names - must match service worker (versioned with app)
+const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`;
 
 // Resource manifest - all cacheable resources with their types
 export const RESOURCE_MANIFEST = {
@@ -342,6 +342,8 @@ export class ResourceCache {
 
   /**
    * Load resource from cache
+   * Includes a 6-second timeout guard for iOS WebKit where IDB transactions
+   * can hang indefinitely when the page was backgrounded mid-operation.
    */
   async loadResource(id) {
     // Check memory cache first
@@ -357,9 +359,20 @@ export class ResourceCache {
       const tx = this.db.db.transaction(['resourceCache'], 'readonly');
       const store = tx.objectStore('resourceCache');
       
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
+        // iOS Safari: IDB transactions can silently hang when the page was
+        // backgrounded. Resolve with null after timeout so caller falls back
+        // to a network fetch rather than blocking forever.
+        const timeoutId = setTimeout(() => {
+          Logger.warn(Logger.MODULES.CACHE, `IDB read timed out for "${id}" — falling back to network`);
+          this.cacheStats.misses++;
+          this.debouncedSaveCacheStats();
+          resolve(null);
+        }, 6000);
+
         const request = store.get(id);
         request.onsuccess = () => {
+          clearTimeout(timeoutId);
           const record = request.result;
           if (record?.data) {
             this.cacheStats.hits++;
@@ -373,7 +386,13 @@ export class ResourceCache {
             resolve(null);
           }
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+          clearTimeout(timeoutId);
+          Logger.warn(Logger.MODULES.CACHE, `IDB request error for "${id}":`, request.error);
+          this.cacheStats.misses++;
+          this.debouncedSaveCacheStats();
+          resolve(null); // Resolve rather than reject so caller can fall back
+        };
       });
     } catch (error) {
       Logger.warn(Logger.MODULES.CACHE, `Failed to load cached ${id}`, error);
@@ -643,17 +662,17 @@ export class ResourceCache {
       const absoluteUrl = new URL(url, window.location.href).href;
       const response = await fetch(absoluteUrl);
       if (response.ok) {
-        // Cache with multiple URL formats for flexible matching
-        // 1. Absolute URL
-        await cache.put(absoluteUrl, response.clone());
+        // Read body once as Blob — avoids Response.clone() tee issues on iOS WebKit
+        const body = await response.blob();
+        const init = {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        };
         
-        // 2. URL without query string
-        const urlWithoutQuery = absoluteUrl.split('?')[0];
-        await cache.put(urlWithoutQuery, response.clone());
-        
-        // 3. Pathname only
-        const urlObj = new URL(absoluteUrl);
-        await cache.put(urlObj.pathname, response.clone());
+        // Cache under single canonical key (absolute URL without query string)
+        const canonicalKey = absoluteUrl.split('?')[0];
+        await cache.put(canonicalKey, new Response(body, init));
         
         return true;
       }

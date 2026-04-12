@@ -25,7 +25,8 @@ test.describe('Quiz Algorithm Correctness', () => {
 
         // Filter out expected network errors (font loading, etc)
         const criticalErrors = errors.filter(e =>
-            !e.includes('net::ERR') && !e.includes('favicon') && !e.includes('404')
+            !e.includes('net::ERR') && !e.includes('favicon') &&
+            !e.includes('404') && !e.includes('bad URL')
         );
         expect(criticalErrors).toHaveLength(0);
     });

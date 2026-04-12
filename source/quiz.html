@@ -3307,6 +3307,11 @@
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'SW_UPDATED' && !reloading) {
               if (!hadController) return; // first install — page is already fresh
+              // Deduplicate reload per SW version to prevent reload loops
+              const newVersion = event.data.payload?.version;
+              const reloadedKey = 'quiz-sw-reloaded-v' + newVersion;
+              if (newVersion && sessionStorage.getItem(reloadedKey)) return;
+              if (newVersion) sessionStorage.setItem(reloadedKey, '1');
               reloading = true;
               window.location.reload();
             }

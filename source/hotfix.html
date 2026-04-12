@@ -146,17 +146,29 @@
     <div id="errorActions" style="display:none; margin-top:1rem;">
       <button class="btn btn-primary" onclick="runRecovery()">Retry Recovery</button>
     </div>
+
+    <div id="nuclearActions" style="display:none; margin-top:0.5rem;">
+      <button class="btn" onclick="nuclearReset()" style="color:#dc2626; border-color:#dc2626;">Full Reset (deletes all data)</button>
+      <p style="font-size:0.75rem; color:#94a3b8; margin-top:0.35rem;">
+        Use only if standard recovery doesn't fix the issue.<br>
+        <span class="ar">استخدم فقط إذا لم يعمل الإصلاح العادي.</span>
+      </p>
+    </div>
   </div>
 
   <script>
     // ============================================================
     // Murajah Recovery Script — Zero dependencies, inline only
     // Clears SW + caches + resourceCache/quranCache IndexedDB stores
-    // Preserves: appData, recordings, dailyGoals, notes
+    // + sessionStorage + verified cache deletion
+    // Preserves: appData, recordings, dailyGoals, notes, plans
     // ============================================================
 
     const DB_NAME = 'murajah-db';
     const STORES_TO_CLEAR = ['resourceCache', 'quranCache'];
+    const IDB_OPEN_TIMEOUT_MS = 5000;
+
+    let failedSteps = [];
 
     function $(id) { return document.getElementById(id); }
 
@@ -179,6 +191,20 @@
       if (icon) icon.textContent = iconMap[state] || '⏳';
     }
 
+    // Helper: open IDB with timeout (iOS can block if another tab holds a connection)
+    function openIDB(name, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error('IndexedDB open timed out for ' + name));
+        }, timeoutMs);
+
+        const request = indexedDB.open(name);
+        request.onerror = () => { clearTimeout(timer); reject(request.error); };
+        request.onsuccess = () => { clearTimeout(timer); resolve(request.result); };
+        request.onupgradeneeded = () => {};
+      });
+    }
+
     // Step 1: Unregister all service workers
     async function unregisterServiceWorkers() {
       markStep('step-sw', 'active');
@@ -191,18 +217,23 @@
 
       try {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          await reg.unregister();
+        const results = await Promise.allSettled(
+          registrations.map(reg => reg.unregister())
+        );
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          console.warn('[Recovery] Some SW unregistrations failed:', failed);
+          failedSteps.push('sw-partial');
         }
         markStep('step-sw', 'done');
       } catch (e) {
         console.warn('[Recovery] SW unregister error:', e);
-        // Non-fatal — continue with recovery
+        failedSteps.push('sw');
         markStep('step-sw', 'done');
       }
     }
 
-    // Step 2: Delete all browser caches
+    // Step 2: Delete all browser caches (with verification)
     async function clearBrowserCaches() {
       markStep('step-cache', 'active');
       setStatus('Clearing browser caches...');
@@ -214,62 +245,82 @@
 
       try {
         const keys = await caches.keys();
-        for (const key of keys) {
-          await caches.delete(key);
+        await Promise.allSettled(keys.map(key => caches.delete(key)));
+
+        // Verify deletion — iOS Safari can silently fail
+        const remaining = await caches.keys();
+        if (remaining.length > 0) {
+          console.warn('[Recovery] Caches still present after deletion, retrying:', remaining);
+          for (const key of remaining) {
+            try { await caches.delete(key); } catch (_) {}
+          }
+          const stillRemaining = await caches.keys();
+          if (stillRemaining.length > 0) {
+            console.warn('[Recovery] Caches could not be fully deleted:', stillRemaining);
+            failedSteps.push('cache');
+          }
         }
         markStep('step-cache', 'done');
       } catch (e) {
         console.warn('[Recovery] Cache clear error:', e);
+        failedSteps.push('cache');
         markStep('step-cache', 'done');
       }
     }
 
-    // Step 3: Clear only cached resource stores in IndexedDB (preserve user data)
+    // Step 3: Clear cached resource stores in IndexedDB + session/localStorage
     async function clearCachedResourceStores() {
       markStep('step-db', 'active');
       setStatus('Clearing cached resources...');
 
+      // 3a: Clear IDB resource stores (preserve user data)
       try {
-        // Open the database without specifying a version (accept whatever exists)
-        const db = await new Promise((resolve, reject) => {
-          const request = indexedDB.open(DB_NAME);
-          request.onerror = () => reject(request.error);
-          request.onsuccess = () => resolve(request.result);
-          // If upgrade is triggered (shouldn't happen), just create schema
-          request.onupgradeneeded = () => {};
-        });
+        const db = await openIDB(DB_NAME, IDB_OPEN_TIMEOUT_MS);
 
         for (const storeName of STORES_TO_CLEAR) {
           if (db.objectStoreNames.contains(storeName)) {
             try {
               const tx = db.transaction([storeName], 'readwrite');
-              const store = tx.objectStore(storeName);
-              store.clear();
+              tx.objectStore(storeName).clear();
               await new Promise((resolve, reject) => {
                 tx.oncomplete = resolve;
                 tx.onerror = () => reject(tx.error);
               });
             } catch (e) {
               console.warn('[Recovery] Failed to clear store ' + storeName + ':', e);
+              failedSteps.push('idb-' + storeName);
             }
           }
         }
 
         db.close();
-        markStep('step-db', 'done');
       } catch (e) {
         console.warn('[Recovery] IndexedDB error:', e);
-        // If the DB can't be opened at all, that's fine — it means there's no cached data to clear
-        markStep('step-db', 'done');
+        // If blocked/timed out, the DB might be held by another tab
+        failedSteps.push('idb');
       }
+
+      // 3b: Clear sessionStorage (removes SW reload dedup keys + stale load-attempt markers)
+      try {
+        sessionStorage.clear();
+      } catch (_) {}
+
+      // 3c: Remove stale localStorage cache entries (preserve user preferences)
+      try {
+        localStorage.removeItem('murajah-data');
+      } catch (_) {}
+
+      markStep('step-db', 'done');
     }
 
     // Main recovery flow
     async function runRecovery() {
       $('errorActions').style.display = 'none';
+      $('nuclearActions').style.display = 'none';
       $('spinner').style.display = '';
       setStatus('Starting recovery...');
       setProgress(0);
+      failedSteps = [];
 
       // Reset all steps
       ['step-sw', 'step-cache', 'step-db', 'step-done'].forEach(id => {
@@ -284,26 +335,32 @@
       try {
         // Step 1
         await unregisterServiceWorkers();
-        setProgress(30);
+        setProgress(25);
 
         // Step 2
         await clearBrowserCaches();
-        setProgress(60);
+        setProgress(55);
 
         // Step 3
         await clearCachedResourceStores();
-        setProgress(90);
+        setProgress(85);
 
         // Step 4: Redirect
         markStep('step-done', 'active');
-        setStatus('Recovery complete! Redirecting...', 'success');
-        $('spinner').style.display = 'none';
         setProgress(100);
+        $('spinner').style.display = 'none';
 
-        // Brief delay so user sees success, then redirect
+        if (failedSteps.length > 0) {
+          setStatus('Recovery completed with warnings. Redirecting...', 'success');
+          console.warn('[Recovery] Steps with issues:', failedSteps);
+        } else {
+          setStatus('Recovery complete! Redirecting...', 'success');
+        }
+
+        // Use location.replace to prevent back-button returning to recovery page
         setTimeout(() => {
           markStep('step-done', 'done');
-          window.location.href = './index.html?freshstart=true';
+          window.location.replace('./index.html?freshstart=true');
         }, 1500);
 
       } catch (error) {
@@ -311,6 +368,73 @@
         setStatus('Recovery encountered an issue. Please try again.', 'error');
         $('spinner').style.display = 'none';
         $('errorActions').style.display = '';
+        $('nuclearActions').style.display = '';
+      }
+    }
+
+    // Nuclear option: delete entire IDB databases + all storage
+    async function nuclearReset() {
+      if (!confirm('This will delete ALL app data including your memorization progress, recordings, and notes. Continue?')) {
+        return;
+      }
+
+      $('errorActions').style.display = 'none';
+      $('nuclearActions').style.display = 'none';
+      $('spinner').style.display = '';
+      setStatus('Performing full reset...');
+      setProgress(0);
+
+      try {
+        // Unregister all SWs
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.allSettled(regs.map(r => r.unregister()));
+        }
+        setProgress(15);
+
+        // Delete all caches
+        if ('caches' in self) {
+          const keys = await caches.keys();
+          await Promise.allSettled(keys.map(k => caches.delete(k)));
+        }
+        setProgress(35);
+
+        // Delete entire databases
+        const dbNames = ['murajah-db', 'MurajahQuizDB'];
+        for (const name of dbNames) {
+          try {
+            await new Promise((resolve, reject) => {
+              const req = indexedDB.deleteDatabase(name);
+              req.onsuccess = resolve;
+              req.onerror = () => reject(req.error);
+              req.onblocked = () => {
+                console.warn('[Recovery] deleteDatabase blocked for ' + name + ' — another tab may have it open');
+                resolve(); // continue anyway
+              };
+              setTimeout(resolve, 5000); // timeout fallback
+            });
+          } catch (e) {
+            console.warn('[Recovery] Failed to delete DB ' + name + ':', e);
+          }
+        }
+        setProgress(65);
+
+        // Clear all web storage
+        try { sessionStorage.clear(); } catch (_) {}
+        try { localStorage.clear(); } catch (_) {}
+        setProgress(85);
+
+        setStatus('Full reset complete! Redirecting...', 'success');
+        $('spinner').style.display = 'none';
+        setProgress(100);
+
+        setTimeout(() => {
+          window.location.replace('./index.html?freshstart=true');
+        }, 1500);
+      } catch (error) {
+        console.error('[Recovery] Nuclear reset failed:', error);
+        setStatus('Full reset failed. Try clearing site data in browser settings.', 'error');
+        $('spinner').style.display = 'none';
       }
     }
 

@@ -319,14 +319,22 @@ const loadResourceWithCache = async ({ resourceConfig, murajahDB, onBackgroundUp
       return data;
     } catch (error) {
       Logger.warn(Logger.MODULES.DATA, `Failed to load ${resourceConfig.key}`, error);
-      // Fallback to direct fetch
-      const response = await fetch(resourceConfig.url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${resourceConfig.url}`);
+      // Fallback to direct fetch with timeout (iOS: unfettered fetch can hang indefinitely)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(resourceConfig.url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${resourceConfig.url} (${response.status})`);
+        }
+        const data = await response.json();
+        scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
+        return data;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-      const data = await response.json();
-      scheduleResourceRefresh(resourceConfig, murajahDB, onBackgroundUpdate, cacheTarget, cacheKey);
-      return data;
     }
   }
 
@@ -426,6 +434,10 @@ const loadSharedResources = async ({ murajahDB, onBackgroundUpdate, onTafsirUpda
   };
 };
 
+// In-progress loading deduplication: prevents concurrent loaders from all
+// fetching the same resources when the user switches menus rapidly on iOS.
+const _loadingPromises = { qpc: null, indopak: null };
+
 /**
  * Load all Quran data for a specific layout
  * @param {string} layout - 'qpc' or 'indopak'
@@ -466,6 +478,15 @@ export const loadAllQuranData = async (layout = 'qpc', { murajahDB, onTranslatio
     };
   }
 
+  // Deduplicate concurrent callers: if a load is already in-progress for this
+  // layout (e.g. user switches menus rapidly on iOS), return the same promise
+  // rather than launching duplicate fetches that can corrupt cache state.
+  if (_loadingPromises[layout]) {
+    Logger.debug(Logger.MODULES.DATA, `Reusing in-progress load for ${layout}`);
+    return _loadingPromises[layout];
+  }
+
+  const _doLoad = async () => {
   try {
     Logger.info(Logger.MODULES.DATA, `Loading ${layout} Quran data files...`);
     const startTime = performance.now();
@@ -527,7 +548,14 @@ export const loadAllQuranData = async (layout = 'qpc', { murajahDB, onTranslatio
   } catch (error) {
     Logger.error(Logger.MODULES.DATA, `Failed to load ${layout} Quran data`, error);
     throw error;
+  } finally {
+    // Always clear the in-progress promise so future calls start fresh
+    _loadingPromises[layout] = null;
   }
+  };
+
+  _loadingPromises[layout] = _doLoad();
+  return _loadingPromises[layout];
 };
 
 /**
