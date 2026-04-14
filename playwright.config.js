@@ -48,7 +48,7 @@ export default defineConfig({
     navigationTimeout: 30000
   },
 
-  // Configure projects for Chrome only
+  // Configure projects for Chrome and WebKit (Safari)
   projects: [
     {
       name: 'chromium',
@@ -57,6 +57,13 @@ export default defineConfig({
         // Grant permissions for audio recording tests
         permissions: ['microphone']
       }
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari']
+      },
+      retries: 1
     }
   ],
 

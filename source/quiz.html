@@ -401,24 +401,9 @@
         body:not(.dark) a { color: #2563eb !important; }
         body:not(.dark) a:hover { color: #1d4ed8 !important; }
 
-        /* ===== TABS: desktop only ===== */
+        /* ===== TABS: always use drawer, hide desktop tab bar ===== */
         nav[aria-label="Quiz Types"] {
             display: none;
-        }
-        @media (min-width: 768px) {
-            nav[aria-label="Quiz Types"] {
-                display: flex;
-                gap: 2rem;
-            }
-            nav[aria-label="Quiz Types"] button {
-                padding: 1rem 0.25rem;
-                font-size: 0.875rem;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            .mobile-tab-bar {
-                display: none;
-            }
         }
 
         /* ===== MOBILE TAB BAR ===== */
@@ -774,13 +759,13 @@
             <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <a href="./index.html"><img src="resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
+                    <a href="./"><img src="resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
                 </div>
 
                 <!-- Desktop Navigation -->
                 <nav class="desktop-nav items-center gap-1 md:gap-2 lg:gap-4">
                     <!-- Home Link -->
-                    <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="./" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
                     </a>
@@ -795,7 +780,7 @@
 
                 <!-- Mobile Navigation -->
                 <div class="mobile-nav flex items-center gap-1">
-                    <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="./" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
                     </a>
@@ -824,7 +809,7 @@
             <!-- Navigation Links -->
             <div class="mobile-menu-section">
                 <div class="mobile-menu-section-title">{{ t('quiz.nav.quiz') }}</div>
-                <a href="./index.html" class="mobile-menu-item" @click="closeMobileMenu">
+                <a href="./" class="mobile-menu-item" @click="closeMobileMenu">
                     <i class="fas fa-home"></i>
                     {{ t('quiz.nav.home') }}
                 </a>
@@ -1717,17 +1702,21 @@
         <!-- Bottom Navigation Bar (mobile only) -->
         <nav class="bottom-nav" aria-label="Bottom navigation">
           <div class="bottom-nav-inner">
-            <a class="bottom-nav-item" href="./index.html">
+            <a class="bottom-nav-item" href="./">
               <i class="fas fa-book-quran"></i>
               <span>{{ t('quiz.nav.home') }}</span>
             </a>
-            <a class="bottom-nav-item" href="./index.html#surah-section">
+            <a class="bottom-nav-item" href="./#surah-section">
               <i class="fas fa-list"></i>
               <span>{{ t('quiz.bottomNav.surahs') }}</span>
             </a>
-            <a class="bottom-nav-item" href="./index.html#daily-goals-section">
+            <a class="bottom-nav-item" href="./#daily-goals-section">
               <i class="fas fa-bullseye"></i>
               <span>{{ t('quiz.bottomNav.goals') }}</span>
+            </a>
+            <a class="bottom-nav-item" href="./#plan">
+              <i class="fas fa-calendar-alt"></i>
+              <span>{{ t('quiz.bottomNav.plan') }}</span>
             </a>
             <button class="bottom-nav-item active">
               <i class="fas fa-question-circle"></i>
@@ -1948,6 +1937,7 @@
 
     <!-- Vue App Script -->
     <script type="module">
+      try {
         const { createApp, ref, computed, watch, watchEffect, onBeforeUnmount } = Vue
 
         // Load i18n store for multi-language support
@@ -3087,6 +3077,15 @@
                 onBeforeUnmount(cleanupLightningRound);
                 window.addEventListener('beforeunload', cleanupLightningRound);
 
+                // Close IDB on page hide to prevent iOS WebKit IDB contention
+                // when navigating to index.html (different DB but iOS serializes IDB ops)
+                window.addEventListener('pagehide', () => {
+                    if (QuizDB.db) {
+                        QuizDB.db.close();
+                        QuizDB.db = null;
+                    }
+                });
+
                 // Load quiz data (old format for continuation, new for verse completion)
                 const loadQuizData = async () => {
                     try {
@@ -3279,6 +3278,62 @@
                 }
             }
         }).mount('#app')
+
+      } catch (err) {
+        console.error('[Quiz] Failed to load:', err);
+        document.getElementById('app').innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;font-family:system-ui,sans-serif">' +
+          '<div style="text-align:center;max-width:400px">' +
+          '<h2 style="margin-bottom:0.5rem">Failed to load Quiz</h2>' +
+          '<p style="color:#64748b;margin-bottom:1rem">This can happen after an app update. Please try reloading.</p>' +
+          '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer;margin-right:0.5rem">Reload</button>' +
+          '<a href="./hotfix.html" style="display:inline-block;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
+          '</div></div>';
+      }
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+
+          // Guard: don't reload on first-ever install (no previous controller)
+          const hadController = !!navigator.serviceWorker.controller;
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloading || !hadController) return;
+            reloading = true;
+            window.location.reload();
+          });
+
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'SW_UPDATED' && !reloading) {
+              if (!hadController) return; // first install — page is already fresh
+              // Deduplicate reload per SW version to prevent reload loops
+              const newVersion = event.data.payload?.version;
+              const reloadedKey = 'quiz-sw-reloaded-v' + newVersion;
+              if (newVersion && sessionStorage.getItem(reloadedKey)) return;
+              if (newVersion) sessionStorage.setItem(reloadedKey, '1');
+              reloading = true;
+              window.location.reload();
+            }
+          });
+        } catch (e) {
+          console.warn('[Quiz] SW registration failed:', e);
+        }
+      });
+    }
     </script>
 </body>
 </html>

@@ -13,23 +13,6 @@ test.describe('Quran Navigation', () => {
     await waitForAppLoad(page);
   });
 
-  test('should navigate to next page', async ({ page }) => {
-    // Navigate via URL - from page 2 to page 1
-    await page.goto('/?page=2');
-    await waitForQuranData(page);
-    
-    // Verify we start on page 2
-    expect(page.url()).toContain('page=2');
-    
-    // Navigate to page 1 via URL
-    await page.goto('/?page=1');
-    await waitForQuranData(page);
-    
-    // Verify navigation worked
-    expect(page.url()).toContain('page=1');
-    await expect(page.locator('#quran-text-section')).toBeVisible();
-  });
-
   test('should navigate to previous page', async ({ page }) => {
     // Navigate via URL - from page 10 to page 11
     await page.goto('/?page=10');

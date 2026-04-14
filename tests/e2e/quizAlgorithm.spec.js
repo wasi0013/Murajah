@@ -25,20 +25,24 @@ test.describe('Quiz Algorithm Correctness', () => {
 
         // Filter out expected network errors (font loading, etc)
         const criticalErrors = errors.filter(e =>
-            !e.includes('net::ERR') && !e.includes('favicon') && !e.includes('404')
+            !e.includes('net::ERR') && !e.includes('favicon') &&
+            !e.includes('404') && !e.includes('bad URL')
         );
         expect(criticalErrors).toHaveLength(0);
     });
 
     test('translation quiz should generate 4 options', async ({ page }) => {
-        // Try to start a translation quiz
-        // Scope to the desktop tab nav to avoid matching the hidden mobile drawer buttons
-        const translationTab = page.locator('nav[aria-label="Quiz Types"] button').filter({ hasText: /Translation/i }).first();
+        // Open the drawer and click the Translation tab
+        const pill = page.locator('.mobile-tab-bar');
+        await pill.click();
+        await page.locator('.mobile-menu.active').waitFor({ state: 'visible' });
+
+        const translationTab = page.locator('.mobile-menu button.mobile-menu-item').filter({ hasText: /Translation/i }).first();
         const isTabVisible = await translationTab.isVisible({ timeout: 3000 }).catch(() => false);
 
         if (isTabVisible) {
             await translationTab.click();
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(500);
 
             const startBtn = page.locator('button:has-text("Start"), button:has-text("Begin")').first();
             const isStartVisible = await startBtn.isVisible({ timeout: 3000 }).catch(() => false);

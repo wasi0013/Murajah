@@ -351,9 +351,15 @@ export const FloatingAudioPlayerComponent = {
       if (audio) {
         audio.pause();
         audio.currentTime = 0;
+        audio.src = '';
       }
       this.isPlaying = false;
       this.currentTime = 0;
+      // Revoke blob URL to prevent memory leak
+      if (this.currentBlobUrl) {
+        URL.revokeObjectURL(this.currentBlobUrl);
+        this.currentBlobUrl = null;
+      }
     },
 
     previousTrack() {

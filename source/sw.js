@@ -1,15 +1,39 @@
 /**
- * Murajah Service Worker v26.04.03
- * Implements Stale-While-Revalidate pattern with proper font handling
- * - Serves cached resources immediately for instant loading
- * - Fetches fresh copies in background and updates cache
- * - Properly handles QPC vs Tajweed fonts (same filename, different folders)
- * - Handles redirected responses properly
+ * Murajah Service Worker v26.04.14
+ * 
+ * Strategies:
+ * - Navigation (HTML):  Network-First with timeout → cache fallback
+ *   Ensures users always get the latest HTML when online.
+ *   Falls back to cache only when offline or network is slow.
+ * - Static assets (JS/CSS/JSON): Stale-While-Revalidate
+ *   Serves cached resources immediately, updates in background.
+ * - Fonts: Stale-While-Revalidate with folder-aware matching
+ *   Properly differentiates qpc-v2 vs tajweed fonts.
+ * - Audio/analytics: Never cached.
+ *
+ * Safari guarantees:
+ * - Response bodies read as Blob before caching (no clone/tee — iOS WebKit safe)
+ * - clients.claim() on activate ensures immediate control
+ * - Forced reload message on version change ensures no stale HTML + new JS mismatch
+ * - Install has per-resource timeouts to prevent hanging
+ * - Critical resource failures prevent activation (skipWaiting gated)
  */
 
-const CACHE_VERSION = '26.04.03';
+const CACHE_VERSION = '26.04.13';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
-const FONTS_CACHE_NAME = 'murajah-fonts-v2'; // Separate cache for fonts
+const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`; // Versioned with app — old font caches cleaned on activate
+
+// Timeout (ms) for network-first navigation fetches
+const NAVIGATION_TIMEOUT_MS = 3000;
+
+// Timeout (ms) for individual resource fetches during install
+const INSTALL_FETCH_TIMEOUT_MS = 15000;
+
+// Timeout (ms) for stale-while-revalidate background fetches (static assets)
+const SWR_FETCH_TIMEOUT_MS = 10000;
+
+// Timeout (ms) for font fetches (larger files, more lenient)
+const FONT_FETCH_TIMEOUT_MS = 15000;
 
 // Static assets to cache on install (app shell)
 const APP_SHELL = [
@@ -59,6 +83,9 @@ const APP_SHELL = [
   './resources/js/utils/dailyGoalsManager.js',
   './resources/js/utils/morphologyLoader.js',
   './resources/js/utils/pageHasanah.js',
+  './resources/js/utils/weaknessScorer.js',
+  './resources/js/utils/planScheduler.js',
+  './resources/js/utils/planManager.js',
   
   // App JS modules - Stores
   './resources/js/stores/i18nStore.js',
@@ -70,6 +97,12 @@ const APP_SHELL = [
   './resources/js/components/LanguageSelectionModal.js',
   './resources/js/components/MorphologyPopupComponent.js',
   './resources/js/components/NotesComponent.js',
+  './resources/js/components/PlanSetupWizard.js',
+  './resources/js/components/PlanTodayCard.js',
+  './resources/js/components/PlanCalendarComponent.js',
+  './resources/js/components/PlanProgressView.js',
+  './resources/js/components/PlanAudioCard.js',
+  './resources/js/components/PlanSettingsModal.js',
   
   // Critical JSON data
   './resources/data/quran/qpc-v2-15-lines.json',
@@ -108,6 +141,29 @@ function shouldNeverCache(url) {
 }
 
 /**
+ * Fetch with a timeout. Returns the fetch Response or rejects on timeout.
+ */
+function fetchWithTimeout(request, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('Fetch timeout'));
+    }, timeoutMs);
+    
+    fetch(request, { signal: controller.signal })
+      .then(response => {
+        clearTimeout(timer);
+        resolve(response);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+/**
  * Check if a URL is a page font (qpc-v2 or tajweed)
  */
 function isPageFont(url) {
@@ -129,34 +185,39 @@ function getFontIdentifier(url) {
 }
 
 /**
- * Find cached font by its identifier (folder + page number)
+ * Canonical cache key for fonts: absolute URL with query string stripped.
+ * All font cache.put() and cache.match() calls must use this.
+ */
+function canonicalFontKey(url) {
+  try {
+    const u = new URL(url, self.location.href);
+    // Strip query string — same font can be requested with varying cache-busters
+    return u.origin + u.pathname;
+  } catch (e) {
+    return url.split('?')[0];
+  }
+}
+
+/**
+ * Find cached font by canonical key, falling back to identifier matching
  */
 async function findCachedFont(request) {
   const fontsCache = await caches.open(FONTS_CACHE_NAME);
+  
+  // Direct lookup by canonical key (fast path)
+  const key = canonicalFontKey(request.url);
+  let cached = await fontsCache.match(key);
+  if (cached) return cached;
+  
+  // Also try exact request URL for backward compat with old cache entries
+  cached = await fontsCache.match(request);
+  if (cached) return cached;
+  
+  // Fallback: identifier-based scan for legacy cache entries
   const requestedFontId = getFontIdentifier(request.url);
-  
-  // Try exact URL match first
-  let cached = await fontsCache.match(request);
-  if (cached) return cached;
-  
-  // Try URL without query string
-  const urlWithoutQuery = request.url.split('?')[0];
-  cached = await fontsCache.match(urlWithoutQuery);
-  if (cached) return cached;
-  
-  // Try pathname
-  try {
-    const urlObj = new URL(request.url);
-    cached = await fontsCache.match(urlObj.pathname);
-    if (cached) return cached;
-  } catch (e) {}
-  
-  // Search through cached fonts for matching identifier
   const keys = await fontsCache.keys();
   for (const cachedRequest of keys) {
     const cachedFontId = getFontIdentifier(cachedRequest.url);
-    // IMPORTANT: Only match if the font identifier matches exactly
-    // This prevents qpc-v2/p1 from matching tajweed/p1
     if (cachedFontId === requestedFontId) {
       return await fontsCache.match(cachedRequest);
     }
@@ -166,109 +227,149 @@ async function findCachedFont(request) {
 }
 
 /**
- * Stale-While-Revalidate: Return cached response immediately,
- * then fetch fresh copy and update cache in background
+ * Network-First with timeout for navigation (HTML) requests.
+ * 
+ * 1. Try network with a timeout
+ * 2. If network succeeds, cache the response and return it
+ * 3. If network fails/times out, fall back to cache
+ * 4. If both fail, return offline fallback
+ */
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  
+  try {
+    const fetchRequest = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      redirect: 'follow',
+      credentials: request.credentials,
+    });
+    
+    const networkResponse = await fetchWithTimeout(fetchRequest, NAVIGATION_TIMEOUT_MS);
+    
+    if (networkResponse.ok) {
+      // Read body once as Blob — avoids Response.clone() tee issues on iOS WebKit
+      // that cause "body is locked" errors when cache.put consumes one tee branch
+      const body = await networkResponse.blob();
+      const init = {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: networkResponse.headers
+      };
+      try {
+        await cache.put(request, new Response(body, init));
+        // Cross-cache between ./ and ./index.html so both URLs always resolve (iOS PWA compat)
+        const urlPath = new URL(request.url).pathname;
+        if (urlPath.endsWith('/')) {
+          const indexUrl = new URL('index.html', request.url).href;
+          await cache.put(indexUrl, new Response(body, init));
+        } else if (urlPath.endsWith('/index.html')) {
+          const rootUrl = new URL('./', request.url).href;
+          await cache.put(rootUrl, new Response(body, init));
+        }
+      } catch (e) {
+        console.warn('[SW] Failed to update navigation cache:', e.message);
+      }
+      return new Response(body, init);
+    }
+    
+    throw new Error(`HTTP ${networkResponse.status}`);
+    
+  } catch (networkErr) {
+    console.log('[SW] Network-first fallback to cache for:', request.url, networkErr.message);
+    
+    let cachedResponse = await cache.match(request);
+    
+    // Skip redirected cached responses for navigation (Safari strict)
+    if (cachedResponse && cachedResponse.redirected) {
+      cachedResponse = null;
+    }
+    
+    // Try cross-URL fallback: ./ ↔ ./index.html (iOS PWA navigates to explicit filename)
+    if (!cachedResponse) {
+      const urlPath = new URL(request.url).pathname;
+      if (urlPath.endsWith('/')) {
+        const indexUrl = new URL('index.html', request.url).href;
+        const indexResponse = await cache.match(indexUrl);
+        if (indexResponse && !indexResponse.redirected) {
+          cachedResponse = indexResponse;
+        }
+      } else if (urlPath.endsWith('/index.html')) {
+        const rootUrl = new URL('./', request.url).href;
+        const rootResponse = await cache.match(rootUrl);
+        if (rootResponse && !rootResponse.redirected) {
+          cachedResponse = rootResponse;
+        }
+      }
+    }
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Both network and cache failed
+    return new Response(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+      '<body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:#f8fafc">' +
+      '<div style="text-align:center;max-width:400px">' +
+      '<h2 style="margin-bottom:0.5rem">📖 Murajah</h2>' +
+      '<p style="color:#64748b;margin-bottom:1rem">Unable to load. Please check your internet connection and try again.</p>' +
+      '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer">Retry</button>' +
+      ' <a href="./hotfix.html" style="display:inline-block;margin-top:0.5rem;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
+      '</div></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html' } }
+    );
+  }
+}
+
+/**
+ * Stale-While-Revalidate for static assets (JS, CSS, JSON, images).
+ * Returns cached response immediately, fetches fresh copy in background.
  */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
-  let cachedResponse = await cache.match(request);
+  const cachedResponse = await cache.match(request);
   
-  // For navigation requests (HTML pages), handle specially
-  const isNavigation = request.mode === 'navigate';
-  
-  // Don't return redirected responses for navigation requests (Safari strict)
-  if (cachedResponse && isNavigation && cachedResponse.redirected) {
-    console.log('[SW] Skipping redirected cached response for navigation:', request.url);
-    cachedResponse = null;
-  }
-  
-  // For navigation to root/directory, also try index.html as fallback
-  if (!cachedResponse && isNavigation) {
-    const urlPath = new URL(request.url).pathname;
-    if (urlPath.endsWith('/')) {
-      const indexUrl = new URL('index.html', request.url).href;
-      const indexResponse = await cache.match(indexUrl);
-      if (indexResponse && !indexResponse.redirected) {
-        cachedResponse = indexResponse;
-      }
-    }
-  }
-  
-  // Start fetching fresh copy in background
+  // Start fetching fresh copy in background (with timeout to avoid hanging on slow networks)
   const fetchPromise = (async () => {
     try {
-      // For navigation, create a new request with redirect: 'follow'
-      const fetchRequest = isNavigation 
-        ? new Request(request.url, {
-            method: request.method,
-            headers: request.headers,
-            redirect: 'follow',
-            credentials: request.credentials,
-          })
-        : request;
+      const networkResponse = await fetchWithTimeout(request, SWR_FETCH_TIMEOUT_MS);
       
-      const networkResponse = await fetch(fetchRequest);
-      
-      // Only cache successful, non-opaque responses
-      if (networkResponse.ok && networkResponse.type !== 'opaqueredirect') {
+      // Cache successful same-origin responses. Also cache opaque responses
+      // (cross-origin no-cors) only for font destinations to avoid caching bad data.
+      const cacheable = (networkResponse.ok && networkResponse.type !== 'opaqueredirect') ||
+        (networkResponse.type === 'opaque' && request.destination === 'font');
+      if (cacheable) {
         try {
-          // For redirected responses, we need to create a new response to cache
-          const responseToCache = networkResponse.redirected 
-            ? new Response(await networkResponse.clone().blob(), {
-                status: networkResponse.status,
-                statusText: networkResponse.statusText,
-                headers: networkResponse.headers
-              })
-            : networkResponse.clone();
-          
-          await cache.put(request, responseToCache);
-          
-          // For HTML files, notify clients only if content actually changed
-          if (request.destination === 'document' || request.url.endsWith('.html')) {
-            const newEtag = networkResponse.headers.get('etag');
-            const oldEtag = cachedResponse?.headers?.get('etag');
-            const newLength = networkResponse.headers.get('content-length');
-            const oldLength = cachedResponse?.headers?.get('content-length');
-            
-            const contentChanged = !cachedResponse 
-              || (newEtag && oldEtag && newEtag !== oldEtag)
-              || (newLength && oldLength && newLength !== oldLength)
-              || (!newEtag && !newLength); // Can't tell — notify to be safe
-            
-            if (contentChanged) {
-              const clients = await self.clients.matchAll();
-              clients.forEach(client => {
-                client.postMessage({
-                  type: 'CONTENT_UPDATED',
-                  url: request.url
-                });
-              });
-            }
-          }
+          // Read body once as Blob — avoids Response.clone() tee issues on iOS WebKit
+          const body = await networkResponse.blob();
+          const init = {
+            status: networkResponse.status,
+            statusText: networkResponse.statusText,
+            headers: networkResponse.headers
+          };
+          await cache.put(request, new Response(body, init));
+          return new Response(body, init);
         } catch (e) {
           console.warn('[SW] Failed to cache response:', e.message);
         }
       }
       return networkResponse;
     } catch (e) {
-      return null; // Fail silently if offline
+      return null;
     }
   })();
   
-  // Return cached response immediately if available
   if (cachedResponse) {
-    // Still fetch in background to update cache
     fetchPromise.catch(() => {});
     return cachedResponse;
   }
   
-  // No cache, wait for network
   const networkResponse = await fetchPromise;
   if (networkResponse) {
     return networkResponse;
   }
   
-  // Both cache and network failed
   return new Response('Offline - Resource not cached', { 
     status: 503,
     statusText: 'Service Unavailable'
@@ -284,35 +385,27 @@ async function staleWhileRevalidateFont(request) {
   // Try to find cached font with proper identifier matching
   const cachedResponse = await findCachedFont(request);
   
-  // Start fetching fresh copy in background
+  // Start fetching fresh copy in background (with timeout to avoid hanging on slow networks)
   const fetchPromise = (async () => {
     try {
-      const networkResponse = await fetch(request);
+      const networkResponse = await fetchWithTimeout(request, FONT_FETCH_TIMEOUT_MS);
       
       // Only cache if response is OK
       if (networkResponse.ok) {
         try {
-          // For redirected responses, create a new response
-          const responseToCache = networkResponse.redirected
-            ? new Response(await networkResponse.clone().blob(), {
-                status: networkResponse.status,
-                statusText: networkResponse.statusText,
-                headers: networkResponse.headers
-              })
-            : networkResponse.clone();
+          // Read body once as Blob — avoids Response.clone() tee issues on iOS WebKit
+          const body = await networkResponse.blob();
+          const init = {
+            status: networkResponse.status,
+            statusText: networkResponse.statusText,
+            headers: networkResponse.headers
+          };
           
-          // Cache with multiple keys for flexible matching
-          const absoluteUrl = request.url;
-          const urlWithoutQuery = absoluteUrl.split('?')[0];
+          // Cache under single canonical key (absolute URL without query string)
+          const key = canonicalFontKey(request.url);
+          await fontsCache.put(key, new Response(body, init));
           
-          await fontsCache.put(absoluteUrl, responseToCache.clone());
-          await fontsCache.put(urlWithoutQuery, responseToCache.clone());
-          
-          // Also cache by pathname
-          try {
-            const urlObj = new URL(absoluteUrl);
-            await fontsCache.put(urlObj.pathname, responseToCache);
-          } catch (e) {}
+          return new Response(body, init);
         } catch (e) {
           console.warn('[SW] Failed to cache font:', e.message);
         }
@@ -357,6 +450,8 @@ const CRITICAL_RESOURCES = [
   './resources/js/utils/audioRecorder.js',
   './resources/js/utils/dailyGoalsManager.js',
   './resources/js/utils/morphologyLoader.js',
+  './resources/js/utils/planScheduler.js',
+  './resources/js/utils/planManager.js',
   // Core stores
   './resources/js/stores/i18nStore.js',
   './resources/js/stores/notesStore.js',
@@ -366,6 +461,13 @@ const CRITICAL_RESOURCES = [
   './resources/js/components/LanguageSelectionModal.js',
   './resources/js/components/MorphologyPopupComponent.js',
   './resources/js/components/NotesComponent.js',
+  // Plan components (lazy-loaded by index.html plan view)
+  './resources/js/components/PlanSetupWizard.js',
+  './resources/js/components/PlanTodayCard.js',
+  './resources/js/components/PlanCalendarComponent.js',
+  './resources/js/components/PlanProgressView.js',
+  './resources/js/components/PlanAudioCard.js',
+  './resources/js/components/PlanSettingsModal.js',
   // Critical JSON data
   './resources/data/quran/qpc-v2-15-lines.json',
   './resources/data/quran/qpc-v2-word-by-word.json',
@@ -385,29 +487,24 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(async (cache) => {
-        console.log('[SW] Caching app shell');
+        console.log('[SW] Caching app shell (' + APP_SHELL.length + ' resources)');
         
         const failedCritical = [];
         const failedNonCritical = [];
 
         for (const url of APP_SHELL) {
           try {
-            const response = await fetch(url);
+            const response = await fetchWithTimeout(new Request(url), INSTALL_FETCH_TIMEOUT_MS);
             if (response.ok) {
-              // For redirected responses, create a new response to avoid redirect issues
-              const responseToCache = response.redirected
-                ? new Response(await response.blob(), {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: response.headers
-                  })
-                : response;
-              await cache.put(url, responseToCache);
+              // Read body as Blob to avoid clone/tee issues (consistent with fetch strategies)
+              const body = await response.blob();
+              const init = { status: response.status, statusText: response.statusText, headers: response.headers };
+              await cache.put(url, new Response(body, init));
               // For root URL, also cache under ./index.html for Safari compatibility
-              if (url === './' && response.redirected) {
+              if (url === './') {
                 const indexCached = await cache.match('./index.html');
                 if (!indexCached) {
-                  await cache.put('./index.html', responseToCache.clone());
+                  await cache.put('./index.html', new Response(body, init));
                 }
               }
             } else {
@@ -450,8 +547,16 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Minimum resources that must exist in the new cache before old caches are deleted
-const MINIMUM_CACHE_RESOURCES = ['./index.html', './resources/js/vendor/vue.global.js'];
+// Minimum resources that must exist in the new cache before old caches are deleted.
+// Covers all entry points and critical runtime files needed to boot any page.
+const MINIMUM_CACHE_RESOURCES = [
+  './index.html',
+  './quiz.html',
+  './resources/js/vendor/vue.global.js',
+  './resources/js/stores/i18nStore.js',
+  './resources/js/utils/resourceCache.js',
+  './resources/styles/style.css'
+];
 
 // Activate event - clean up old caches (with safety check)
 self.addEventListener('activate', (event) => {
@@ -488,12 +593,21 @@ self.addEventListener('activate', (event) => {
       );
 
       console.log('[SW] Claiming clients');
-      return self.clients.claim();
+      await self.clients.claim();
+
+      // Notify ALL clients to reload so they get fresh HTML + matched JS.
+      // This prevents stale HTML running with mismatched new JS modules.
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SW_UPDATED',
+          payload: { version: CACHE_VERSION }
+        });
+      });
+      console.log('[SW] Notified ' + clients.length + ' client(s) of v' + CACHE_VERSION);
     })()
   );
 });
-
-// Fetch event - Stale-While-Revalidate strategy
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
@@ -501,7 +615,10 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
   
-  // Always serve hotfix.html from network (never cached) to ensure latest recovery logic
+  // plan.html is now a redirect stub — let it pass through to network
+  // (Plan feature has been merged into index.html to fix iOS IndexedDB issues)
+  if (url.pathname.endsWith('/plan.html')) return;
+
   if (url.pathname.endsWith('/hotfix.html')) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -512,7 +629,7 @@ self.addEventListener('fetch', (event) => {
           '<p style="color:#64748b;margin:1rem 0">Please connect to the internet and try again.</p>' +
           '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer">Retry</button>' +
           '</div></body></html>',
-          { status: 200, headers: { 'Content-Type': 'text/html' } }
+          { status: 503, headers: { 'Content-Type': 'text/html' } }
         );
       })
     );
@@ -523,9 +640,15 @@ self.addEventListener('fetch', (event) => {
   if (shouldNeverCache(request.url)) return;
   
   // Skip cross-origin requests (except fonts)
-  if (url.origin !== location.origin && !request.url.includes('.woff')) return;
+  if (url.origin !== location.origin && request.destination !== 'font') return;
   
-  // Handle page fonts (qpc-v2 and tajweed) with special matching
+  // Navigation requests (HTML pages): Network-First with timeout
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+  
+  // Page fonts (qpc-v2 and tajweed) with special matching
   if (isPageFont(request.url)) {
     event.respondWith(staleWhileRevalidateFont(request));
     return;
@@ -545,6 +668,9 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   const { type, payload } = event.data || {};
   
+  // Collect the async work from each handler so we can waitUntil() on it
+  let work = null;
+  
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
@@ -553,106 +679,134 @@ self.addEventListener('message', (event) => {
     case 'CACHE_FONTS':
       // Cache specific font pages
       if (payload?.pages) {
-        const fontsCache = caches.open(FONTS_CACHE_NAME);
-        payload.pages.forEach((page) => {
-          const qpcUrl = `./resources/styles/fonts/qpc-v2/p${page}.woff2`;
-          const tajweedUrl = `./resources/styles/fonts/tajweed/p${page}.woff2`;
-          fetch(qpcUrl).then(r => r.ok && fontsCache.then(c => c.put(qpcUrl, r)));
-          fetch(tajweedUrl).then(r => r.ok && fontsCache.then(c => c.put(tajweedUrl, r)));
-        });
+        work = (async () => {
+          const fontsCache = await caches.open(FONTS_CACHE_NAME);
+          for (const page of payload.pages) {
+            const urls = [
+              `./resources/styles/fonts/qpc-v2/p${page}.woff2`,
+              `./resources/styles/fonts/tajweed/p${page}.woff2`
+            ];
+            for (const fontUrl of urls) {
+              try {
+                const r = await fetchWithTimeout(new Request(fontUrl), INSTALL_FETCH_TIMEOUT_MS);
+                if (r.ok) {
+                  const body = await r.blob();
+                  const key = canonicalFontKey(fontUrl);
+                  await fontsCache.put(key, new Response(body, {
+                    status: r.status,
+                    statusText: r.statusText,
+                    headers: r.headers
+                  }));
+                }
+              } catch (e) {
+                // Non-fatal — skip individual font failures
+              }
+            }
+          }
+        })();
       }
       break;
       
     case 'GET_CACHE_STATUS':
-      (async () => {
-        const cache = await caches.open(CACHE_NAME);
-        const keys = await cache.keys();
-        event.ports[0].postMessage({
-          type: 'CACHE_STATUS',
-          payload: {
-            version: CACHE_VERSION,
-            cachedCount: keys.length,
-            cacheName: CACHE_NAME
+      work = (async () => {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          const keys = await cache.keys();
+          if (event.ports[0]) {
+            event.ports[0].postMessage({
+              type: 'CACHE_STATUS',
+              payload: {
+                version: CACHE_VERSION,
+                cachedCount: keys.length,
+                cacheName: CACHE_NAME
+              }
+            });
           }
-        });
+        } catch (e) {
+          if (event.ports[0]) {
+            event.ports[0].postMessage({
+              type: 'CACHE_STATUS',
+              payload: { version: CACHE_VERSION, cachedCount: 0, cacheName: CACHE_NAME, error: e.message }
+            });
+          }
+        }
       })();
       break;
       
     case 'CLEAR_CACHE':
-      Promise.all([
+      work = Promise.all([
         caches.delete(CACHE_NAME),
         caches.delete(FONTS_CACHE_NAME)
       ]).then(() => {
-        event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
+        if (event.ports[0]) event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
       });
       break;
 
     case 'CACHE_APP_SHELL':
-      (async () => {
+      work = (async () => {
         try {
           const cache = await caches.open(CACHE_NAME);
           let cached = 0;
           for (const url of APP_SHELL) {
             try {
-              const response = await fetch(url);
+              const response = await fetchWithTimeout(new Request(url), INSTALL_FETCH_TIMEOUT_MS);
               if (response.ok) {
-                const toCache = response.redirected
-                  ? new Response(await response.blob(), {
-                      status: response.status,
-                      statusText: response.statusText,
-                      headers: response.headers
-                    })
-                  : response;
-                await cache.put(url, toCache);
+                const body = await response.blob();
+                await cache.put(url, new Response(body, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
                 cached++;
               }
             } catch (e) {
               // Non-fatal — skip individual failures
             }
           }
-          event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { cached, total: APP_SHELL.length } });
+          if (event.ports[0]) event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { cached, total: APP_SHELL.length } });
         } catch (e) {
-          event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { error: e.message } });
+          if (event.ports[0]) event.ports[0].postMessage({ type: 'APP_SHELL_CACHED', payload: { error: e.message } });
         }
       })();
       break;
       
     case 'DEBUG_FONT_CACHE':
-      (async () => {
+      work = (async () => {
         const fontsCache = await caches.open(FONTS_CACHE_NAME);
         const keys = await fontsCache.keys();
         const fontUrls = keys.map(r => ({
           url: r.url,
           id: getFontIdentifier(r.url)
         })).slice(0, 50);
-        event.ports[0].postMessage({
-          type: 'FONT_CACHE_DEBUG',
-          payload: {
-            totalFonts: keys.length,
-            sampleUrls: fontUrls
-          }
-        });
+        if (event.ports[0]) {
+          event.ports[0].postMessage({
+            type: 'FONT_CACHE_DEBUG',
+            payload: { totalFonts: keys.length, sampleUrls: fontUrls }
+          });
+        }
       })();
       break;
       
     case 'TEST_FONT_MATCH':
-      (async () => {
+      work = (async () => {
         const testUrl = event.data.url;
         const mockRequest = new Request(testUrl);
         const matched = await findCachedFont(mockRequest);
-        event.ports[0].postMessage({
-          type: 'FONT_MATCH_RESULT',
-          payload: {
-            testUrl,
-            requestedId: getFontIdentifier(testUrl),
-            matched: !!matched
-          }
-        });
+        if (event.ports[0]) {
+          event.ports[0].postMessage({
+            type: 'FONT_MATCH_RESULT',
+            payload: {
+              testUrl,
+              requestedId: getFontIdentifier(testUrl),
+              matched: !!matched
+            }
+          });
+        }
       })();
       break;
 
     case 'EMERGENCY_RESET':
-      (async () => {
+      work = (async () => {
         try {
           // Clear all caches
           const cacheNames = await caches.keys();
@@ -670,6 +824,11 @@ self.addEventListener('message', (event) => {
         }
       })();
       break;
+  }
+  
+  // Keep SW alive until async work completes
+  if (work) {
+    event.waitUntil(work);
   }
 });
 

@@ -98,8 +98,8 @@ describe('index.html performance', () => {
     });
 
     it('should delay alternate layout preload by at least 5 seconds', () => {
-      // Match: setTimeout(() => { ... preloadLayout ... }, 10000)
-      const preloadMatch = html.match(/setTimeout\s*\([\s\S]*?preloadLayout[\s\S]*?\}\s*,\s*(\d+)\s*\)/);
+      // Match the specific preloadLayout setTimeout block
+      const preloadMatch = html.match(/setTimeout\s*\(\s*\(\)\s*=>\s*\{[^}]*preloadLayout[^}]*\}\s*,\s*(\d+)\s*\)/);
       expect(preloadMatch).not.toBeNull();
       const delay = parseInt(preloadMatch[1], 10);
       expect(delay).toBeGreaterThanOrEqual(5000);

@@ -43,6 +43,8 @@ const t = (key, params = {}) => {
   return interpolate(template, params);
 };
 
+const I18N_FETCH_TIMEOUT_MS = 5000;
+
 const fetchLocale = async (locale) => {
   if (!LOCALE_FILES[locale]) {
     throw new Error(`Unsupported locale: ${locale}`);
@@ -52,7 +54,11 @@ const fetchLocale = async (locale) => {
   }
   i18nState.loading = true;
   try {
-    const response = await fetch(LOCALE_FILES[locale], { cache: 'reload' });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), I18N_FETCH_TIMEOUT_MS);
+    
+    const response = await fetch(LOCALE_FILES[locale], { signal: controller.signal });
+    clearTimeout(timer);
     if (!response.ok) {
       throw new Error(`Failed to load locale ${locale}: ${response.status}`);
     }
@@ -69,7 +75,12 @@ const setLocale = async (locale, murajahDB) => {
     console.warn(`[Murajah][i18n] Unsupported locale ${locale}`);
     return;
   }
-  await fetchLocale(locale);
+  try {
+    await fetchLocale(locale);
+  } catch (error) {
+    console.error(`[Murajah][i18n] Failed to fetch locale ${locale}, keeping current locale:`, error);
+    return;
+  }
   i18nState.currentLocale = locale;
   // Sync to localStorage so quiz.html (separate page) can read the preference
   try { localStorage.setItem('murajah-language', locale); } catch(e) { /* private mode */ }
@@ -94,13 +105,16 @@ const initLocale = async (murajahDB) => {
       console.warn('[Murajah][i18n] Failed to load stored locale:', error);
     }
   }
-  await fetchLocale(FALLBACK_LOCALE);
-  if (FALLBACK_LOCALE !== DEFAULT_LOCALE) {
-    await fetchLocale(DEFAULT_LOCALE);
-  }
-  if (locale !== DEFAULT_LOCALE && locale !== FALLBACK_LOCALE) {
-    await fetchLocale(locale);
-  }
+  // Fetch with graceful fallback — never block app boot
+  try {
+    await fetchLocale(FALLBACK_LOCALE);
+  } catch(e) { console.warn('[i18n] Failed to load fallback locale:', e.message); }
+  try {
+    if (FALLBACK_LOCALE !== DEFAULT_LOCALE) await fetchLocale(DEFAULT_LOCALE);
+  } catch(e) { console.warn('[i18n] Failed to load default locale:', e.message); }
+  try {
+    if (locale !== DEFAULT_LOCALE && locale !== FALLBACK_LOCALE) await fetchLocale(locale);
+  } catch(e) { console.warn('[i18n] Failed to load user locale:', e.message); }
   i18nState.currentLocale = locale;
 };
 
@@ -115,12 +129,12 @@ const initLocaleFromStorage = async () => {
     const stored = localStorage.getItem('murajah-language');
     if (stored && SUPPORTED_LOCALES.includes(stored)) locale = stored;
   } catch(e) { /* localStorage blocked */ }
-  // Always pre-fetch the fallback locale
-  await fetchLocale(FALLBACK_LOCALE);
-  // Pre-fetch English if it differs from the fallback
-  if (DEFAULT_LOCALE !== FALLBACK_LOCALE) await fetchLocale(DEFAULT_LOCALE);
-  // Fetch the target locale if it differs from those already loaded
-  if (locale !== DEFAULT_LOCALE && locale !== FALLBACK_LOCALE) await fetchLocale(locale);
+  // Fetch all required locale files in parallel — never block app boot.
+  // Previously these were sequential (up to 10 s total on slow iOS networks).
+  const needed = [...new Set([FALLBACK_LOCALE, DEFAULT_LOCALE, locale])];
+  await Promise.all(
+    needed.map(l => fetchLocale(l).catch(e => console.warn(`[i18n] Failed to load locale ${l}:`, e.message)))
+  );
   i18nState.currentLocale = locale;
 };
 

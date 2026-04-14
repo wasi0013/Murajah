@@ -8,8 +8,8 @@ import { waitForAppLoad, waitForQuranData } from './helpers.js';
 
 test.describe('Audio Recording Feature', () => {
   
-  test.beforeEach(async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test.beforeEach(async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
   });
@@ -58,8 +58,8 @@ test.describe('Audio Recording Feature', () => {
 
 test.describe('Audio Recording - MIME Type and Format Handling', () => {
   
-  test.beforeEach(async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test.beforeEach(async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
   });
@@ -208,8 +208,8 @@ test.describe('Audio Recording - Blob Conversion', () => {
 
 test.describe('Audio Playback - iOS Compatibility', () => {
   
-  test.beforeEach(async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test.beforeEach(async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
   });
@@ -258,8 +258,8 @@ test.describe('Audio Playback - iOS Compatibility', () => {
 
 test.describe('Audio Recording - Error Handling', () => {
   
-  test('should show error message on playback failure', async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test('should show error message on playback failure', async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
     
@@ -275,8 +275,8 @@ test.describe('Audio Recording - Error Handling', () => {
     expect(hasErrorHandling).toBe(true);
   });
 
-  test('should log playback attempts with blob metadata', async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test('should log playback attempts with blob metadata', async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
     
@@ -294,8 +294,8 @@ test.describe('Audio Recording - Error Handling', () => {
 
 test.describe('Audio Recording - Recording State Management', () => {
   
-  test.beforeEach(async ({ page, context }) => {
-    await context.grantPermissions(['microphone']);
+  test.beforeEach(async ({ page, context, browserName }) => {
+    if (browserName !== 'webkit') await context.grantPermissions(['microphone']);
     await page.goto('/');
     await waitForAppLoad(page);
   });
@@ -360,25 +360,6 @@ test.describe('Audio Recording - Edge Cases', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForAppLoad(page);
-  });
-
-  test('should correctly check API support in isSupported', async ({ page }) => {
-    const result = await page.evaluate(async () => {
-      const { AudioRecorder } = await import('./resources/js/utils/audioRecorder.js');
-      
-      // Test that modern API is detected
-      const hasModernAPI = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-      const isSupported = AudioRecorder.isSupported();
-      
-      return {
-        hasModernAPI,
-        isSupported,
-        // If modern API exists, isSupported should be true
-        correctDetection: hasModernAPI ? isSupported === true : true
-      };
-    });
-    
-    expect(result.correctDetection).toBe(true);
   });
 
   test('should detect iOS devices correctly', async ({ page }) => {

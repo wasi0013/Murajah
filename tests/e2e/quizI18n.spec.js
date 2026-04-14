@@ -47,9 +47,20 @@ async function gotoQuizWithLocale(page, locale) {
   await waitForQuizLoad(page);
 }
 
-// ─── Tab selector ──────────────────────────────────────────────────────────
+// ─── Selectors (drawer-based navigation on all viewports) ──────────────────
 
-const TAB_NAV = 'nav[aria-label="Quiz Types"]';
+const PILL = '.mobile-tab-bar';          // tappable pill showing current tab
+const DRAWER = '.mobile-menu';            // slide-out drawer
+const DRAWER_TAB = `${DRAWER} button.mobile-menu-item`; // quiz mode buttons
+
+// Switch tab via the drawer (pill click → drawer open → click tab)
+async function selectTabByClick(page, tabText) {
+  const pill = page.locator(PILL);
+  await pill.click();
+  await page.locator(`${DRAWER}.active`).waitFor({ state: 'visible' });
+  await page.locator(DRAWER_TAB).filter({ hasText: tabText }).first().click();
+  await page.waitForTimeout(300);
+}
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
@@ -60,26 +71,22 @@ test.describe('Quiz i18n – default English', () => {
   });
 
   test('shows Lightning Round tab in English', async ({ page }) => {
-    const tabNav = page.locator(TAB_NAV);
-    await expect(tabNav).toBeVisible();
-    await expect(tabNav.locator(`button:has-text("${LOCALES.en.lightningTab}")`)).toBeVisible();
+    // The pill displays the current tab label — verify it
+    await expect(page.locator(PILL)).toContainText(LOCALES.en.lightningTab);
   });
 
   test('shows Settings tab in English', async ({ page }) => {
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.en.settingsTab}")`)
-    ).toBeVisible();
+    // Verify Settings tab text exists in the drawer buttons (DOM always present)
+    const tabTexts = await page.locator(DRAWER_TAB).allTextContents();
+    expect(tabTexts.some(t => t.includes('Settings'))).toBe(true);
   });
 
   test('has 5 tab buttons', async ({ page }) => {
-    const buttons = page.locator(`${TAB_NAV} button`);
-    await expect(buttons).toHaveCount(5);
+    await expect(page.locator(DRAWER_TAB)).toHaveCount(5);
   });
 
   test('config tab shows English title', async ({ page }) => {
-    // Navigate to the settings/config tab
-    await page.locator(`${TAB_NAV} button:has-text("${LOCALES.en.settingsTab}")`).click();
-    await page.waitForTimeout(300);
+    await selectTabByClick(page, LOCALES.en.settingsTab);
     await expect(page.locator(`text=${LOCALES.en.configTitle}`).first()).toBeVisible();
   });
 });
@@ -90,28 +97,22 @@ test.describe('Quiz i18n – Bangla (bn) locale', () => {
   });
 
   test('shows Lightning Round tab in Bangla', async ({ page }) => {
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.bn.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.bn.lightningTab);
   });
 
   test('shows Settings tab in Bangla', async ({ page }) => {
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.bn.settingsTab}")`)
-    ).toBeVisible();
+    const tabTexts = await page.locator(DRAWER_TAB).allTextContents();
+    expect(tabTexts.some(t => t.includes('সেটিংস'))).toBe(true);
   });
 
   test('config tab shows Bangla title', async ({ page }) => {
-    await page.locator(`${TAB_NAV} button:has-text("${LOCALES.bn.settingsTab}")`).click();
-    await page.waitForTimeout(300);
+    await selectTabByClick(page, LOCALES.bn.settingsTab);
     await expect(page.locator(`text=${LOCALES.bn.configTitle}`).first()).toBeVisible();
   });
 
   test('does NOT show English tab labels', async ({ page }) => {
-    const englishTab = page.locator(
-      `${TAB_NAV} button:has-text("${LOCALES.en.lightningTab}")`
-    );
-    await expect(englishTab).not.toBeVisible();
+    const tabTexts = await page.locator(DRAWER_TAB).allTextContents();
+    expect(tabTexts.some(t => t.includes('Lightning Round'))).toBe(false);
   });
 });
 
@@ -121,77 +122,58 @@ test.describe('Quiz i18n – Arabic (ar) locale', () => {
   });
 
   test('shows Lightning Round tab in Arabic', async ({ page }) => {
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.ar.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.ar.lightningTab);
   });
 
   test('shows Settings tab in Arabic', async ({ page }) => {
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.ar.settingsTab}")`)
-    ).toBeVisible();
+    const tabTexts = await page.locator(DRAWER_TAB).allTextContents();
+    expect(tabTexts.some(t => t.includes('الإعدادات'))).toBe(true);
   });
 
   test('config tab shows Arabic title', async ({ page }) => {
-    await page.locator(`${TAB_NAV} button:has-text("${LOCALES.ar.settingsTab}")`).click();
-    await page.waitForTimeout(300);
+    await selectTabByClick(page, LOCALES.ar.settingsTab);
     await expect(page.locator(`text=${LOCALES.ar.configTitle}`).first()).toBeVisible();
   });
 
   test('does NOT show English tab labels', async ({ page }) => {
-    const englishTab = page.locator(
-      `${TAB_NAV} button:has-text("${LOCALES.en.lightningTab}")`
-    );
-    await expect(englishTab).not.toBeVisible();
+    const tabTexts = await page.locator(DRAWER_TAB).allTextContents();
+    expect(tabTexts.some(t => t.includes('Lightning Round'))).toBe(false);
   });
 });
 
 test.describe('Quiz i18n – locale fallback', () => {
   test('unsupported locale falls back to English tab labels', async ({ page }) => {
     await gotoQuizWithLocale(page, 'fr'); // French is not supported
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.en.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.en.lightningTab);
   });
 
   test('missing localStorage key defaults to English', async ({ page }) => {
-    // Navigate without setting any locale
     await page.goto('/quiz.html');
     await waitForQuizLoad(page);
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.en.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.en.lightningTab);
   });
 });
 
 test.describe('Quiz i18n – locale sync round-trip', () => {
   test('locale set in localStorage is honoured on fresh page load', async ({ page }) => {
-    // Simulate the locale being set by index.html's setLocale()
     await page.addInitScript(() => {
       localStorage.setItem('murajah-language', 'ar');
     });
     await page.goto('/quiz.html');
     await waitForQuizLoad(page);
-
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.ar.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.ar.lightningTab);
   });
 
   test('changing locale in localStorage and reloading updates the UI', async ({ page }) => {
     // First load with English
     await page.goto('/quiz.html');
     await waitForQuizLoad(page);
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.en.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.en.lightningTab);
 
     // Set locale to Bangla and reload
     await page.evaluate(() => localStorage.setItem('murajah-language', 'bn'));
     await page.reload();
     await waitForQuizLoad(page);
-    await expect(
-      page.locator(`${TAB_NAV} button:has-text("${LOCALES.bn.lightningTab}")`)
-    ).toBeVisible();
+    await expect(page.locator(PILL)).toContainText(LOCALES.bn.lightningTab);
   });
 });

@@ -82,13 +82,33 @@ export const preloadAudio = (urls) => {
  */
 export const getWorkingAudioUrl = async (primaryUrl, fallbackUrl) => {
   try {
-    const response = await fetch(primaryUrl, { method: 'HEAD', mode: 'no-cors' });
-    // For no-cors requests, we check status (0 is ok for no-cors)
-    if (response.ok || response.status === 0) {
+    const response = await fetch(primaryUrl, { method: 'HEAD' });
+    if (response.ok) {
       return primaryUrl;
     }
   } catch (error) {
-    console.debug('[Murajah] Primary audio URL failed, trying fallback:', error);
+    // CORS blocked or network error — try direct Audio element load
+    try {
+      await new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.preload = 'metadata';
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Audio load timeout'));
+        }, 5000);
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          audio.src = '';
+          audio.load();
+        };
+        audio.addEventListener('loadedmetadata', () => { cleanup(); resolve(); }, { once: true });
+        audio.addEventListener('error', () => { cleanup(); reject(new Error('Audio load failed')); }, { once: true });
+        audio.src = primaryUrl;
+      });
+      return primaryUrl;
+    } catch {
+      console.debug('[Murajah] Primary audio URL failed, trying fallback:', error);
+    }
   }
 
   return fallbackUrl;
