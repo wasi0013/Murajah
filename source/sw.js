@@ -258,11 +258,14 @@ async function networkFirst(request) {
       };
       try {
         await cache.put(request, new Response(body, init));
-        // Also cache ./index.html when root is requested (Safari compat)
+        // Cross-cache between ./ and ./index.html so both URLs always resolve (iOS PWA compat)
         const urlPath = new URL(request.url).pathname;
         if (urlPath.endsWith('/')) {
           const indexUrl = new URL('index.html', request.url).href;
           await cache.put(indexUrl, new Response(body, init));
+        } else if (urlPath.endsWith('/index.html')) {
+          const rootUrl = new URL('./', request.url).href;
+          await cache.put(rootUrl, new Response(body, init));
         }
       } catch (e) {
         console.warn('[SW] Failed to update navigation cache:', e.message);
@@ -282,7 +285,7 @@ async function networkFirst(request) {
       cachedResponse = null;
     }
     
-    // Try index.html fallback for root/directory navigations
+    // Try cross-URL fallback: ./ ↔ ./index.html (iOS PWA navigates to explicit filename)
     if (!cachedResponse) {
       const urlPath = new URL(request.url).pathname;
       if (urlPath.endsWith('/')) {
@@ -290,6 +293,12 @@ async function networkFirst(request) {
         const indexResponse = await cache.match(indexUrl);
         if (indexResponse && !indexResponse.redirected) {
           cachedResponse = indexResponse;
+        }
+      } else if (urlPath.endsWith('/index.html')) {
+        const rootUrl = new URL('./', request.url).href;
+        const rootResponse = await cache.match(rootUrl);
+        if (rootResponse && !rootResponse.redirected) {
+          cachedResponse = rootResponse;
         }
       }
     }

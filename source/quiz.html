@@ -759,13 +759,13 @@
             <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
                 <!-- Logo -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <a href="./index.html"><img src="resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
+                    <a href="./"><img src="resources/assets/images/logo-bg.png" alt="Murajah" class="h-10 sm:h-12 md:h-14 w-auto" style="border-radius: 15%;"></a>
                 </div>
 
                 <!-- Desktop Navigation -->
                 <nav class="desktop-nav items-center gap-1 md:gap-2 lg:gap-4">
                     <!-- Home Link -->
-                    <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="./" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
                     </a>
@@ -780,7 +780,7 @@
 
                 <!-- Mobile Navigation -->
                 <div class="mobile-nav flex items-center gap-1">
-                    <a href="./index.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <a href="./" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-home text-gray-500"></i>
                         {{ t('quiz.nav.home') }}
                     </a>
@@ -809,7 +809,7 @@
             <!-- Navigation Links -->
             <div class="mobile-menu-section">
                 <div class="mobile-menu-section-title">{{ t('quiz.nav.quiz') }}</div>
-                <a href="./index.html" class="mobile-menu-item" @click="closeMobileMenu">
+                <a href="./" class="mobile-menu-item" @click="closeMobileMenu">
                     <i class="fas fa-home"></i>
                     {{ t('quiz.nav.home') }}
                 </a>
@@ -1702,19 +1702,19 @@
         <!-- Bottom Navigation Bar (mobile only) -->
         <nav class="bottom-nav" aria-label="Bottom navigation">
           <div class="bottom-nav-inner">
-            <a class="bottom-nav-item" href="./index.html">
+            <a class="bottom-nav-item" href="./">
               <i class="fas fa-book-quran"></i>
               <span>{{ t('quiz.nav.home') }}</span>
             </a>
-            <a class="bottom-nav-item" href="./index.html#surah-section">
+            <a class="bottom-nav-item" href="./#surah-section">
               <i class="fas fa-list"></i>
               <span>{{ t('quiz.bottomNav.surahs') }}</span>
             </a>
-            <a class="bottom-nav-item" href="./index.html#daily-goals-section">
+            <a class="bottom-nav-item" href="./#daily-goals-section">
               <i class="fas fa-bullseye"></i>
               <span>{{ t('quiz.bottomNav.goals') }}</span>
             </a>
-            <a class="bottom-nav-item" href="./index.html#plan">
+            <a class="bottom-nav-item" href="./#plan">
               <i class="fas fa-calendar-alt"></i>
               <span>{{ t('quiz.bottomNav.plan') }}</span>
             </a>
@@ -3076,6 +3076,15 @@
                 // Clean up timer on unmount or page navigation
                 onBeforeUnmount(cleanupLightningRound);
                 window.addEventListener('beforeunload', cleanupLightningRound);
+
+                // Close IDB on page hide to prevent iOS WebKit IDB contention
+                // when navigating to index.html (different DB but iOS serializes IDB ops)
+                window.addEventListener('pagehide', () => {
+                    if (QuizDB.db) {
+                        QuizDB.db.close();
+                        QuizDB.db = null;
+                    }
+                });
 
                 // Load quiz data (old format for continuation, new for verse completion)
                 const loadQuizData = async () => {
