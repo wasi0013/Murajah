@@ -39,6 +39,7 @@ const {
   loadPlan,
   loadAllPlans,
   saveDayRecord,
+  loadTodayDayRecord,
   loadPlanHistory,
   getPagesForJuz,
   getJuzForPages,
@@ -250,6 +251,27 @@ describe('planManager.js', () => {
       const plan = { stats: { currentStreak: 3, longestStreak: 10 } };
       updateStreak(plan, true);
       expect(plan.stats.longestStreak).toBe(10);
+    });
+
+    it('should only update streak once per day (date-idempotent)', () => {
+      const plan = { stats: { currentStreak: 5, longestStreak: 10 } };
+      const today = new Date('2026-04-14');
+      updateStreak(plan, true, today);
+      expect(plan.stats.currentStreak).toBe(6);
+      // Second call same day should be no-op
+      updateStreak(plan, true, today);
+      expect(plan.stats.currentStreak).toBe(6);
+      // Even a false call same day should be no-op
+      updateStreak(plan, false, today);
+      expect(plan.stats.currentStreak).toBe(6);
+    });
+
+    it('should allow streak update on a new day', () => {
+      const plan = { stats: { currentStreak: 5, longestStreak: 10 } };
+      updateStreak(plan, true, new Date('2026-04-14'));
+      expect(plan.stats.currentStreak).toBe(6);
+      updateStreak(plan, true, new Date('2026-04-15'));
+      expect(plan.stats.currentStreak).toBe(7);
     });
   });
 
@@ -497,6 +519,39 @@ describe('planManager.js', () => {
 
       expect(history.length).toBe(1);
       expect(history[0].date).toBe('2026-04-10');
+    });
+
+    it('should load today day record by composite key', async () => {
+      const tasks = {
+        newMemorization: { pages: [5], completed: true, completedAt: '2026-04-14T10:00:00Z' },
+        revision: { pages: [1, 2], completed: true, completedAt: '2026-04-14T10:05:00Z' },
+        weakReinforcement: null,
+        metadata: { date: '2026-04-14', isOffDay: false },
+      };
+      const record = createDayRecord('plan_abc', tasks, new Date('2026-04-14'));
+      await saveDayRecord(db, record);
+
+      const loaded = await loadTodayDayRecord(db, 'plan_abc', new Date('2026-04-14'));
+      expect(loaded).not.toBeNull();
+      expect(loaded.tasks.newMemorization.completed).toBe(true);
+      expect(loaded.tasks.revision.completed).toBe(true);
+      expect(loaded.tasks.metadata.isOffDay).toBe(false);
+    });
+
+    it('should return null when no day record exists for today', async () => {
+      const loaded = await loadTodayDayRecord(db, 'plan_abc', new Date('2026-04-14'));
+      expect(loaded).toBeNull();
+    });
+
+    it('should include metadata in createDayRecord', () => {
+      const tasks = {
+        newMemorization: { pages: [1], completed: false },
+        revision: null,
+        weakReinforcement: null,
+        metadata: { date: '2026-04-14', isOffDay: false, backlogSize: 3 },
+      };
+      const record = createDayRecord('plan_xyz', tasks, new Date('2026-04-14'));
+      expect(record.tasks.metadata).toEqual({ date: '2026-04-14', isOffDay: false, backlogSize: 3 });
     });
 
     it('should handle missing plans store gracefully', async () => {

@@ -7,7 +7,7 @@
 import Logger from './logger.js';
 
 // Current cache version - increment this to force cache refresh on update
-export const CACHE_VERSION = '26.04.12';
+export const CACHE_VERSION = '26.04.14';
 
 // Cache names - must match service worker (versioned with app)
 const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`;

@@ -1,5 +1,5 @@
 /**
- * Murajah Service Worker v26.04.12
+ * Murajah Service Worker v26.04.14
  * 
  * Strategies:
  * - Navigation (HTML):  Network-First with timeout → cache fallback
@@ -19,7 +19,7 @@
  * - Critical resource failures prevent activation (skipWaiting gated)
  */
 
-const CACHE_VERSION = '26.04.12';
+const CACHE_VERSION = '26.04.13';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`; // Versioned with app — old font caches cleaned on activate
 
@@ -452,7 +452,7 @@ const CRITICAL_RESOURCES = [
   './resources/js/components/LanguageSelectionModal.js',
   './resources/js/components/MorphologyPopupComponent.js',
   './resources/js/components/NotesComponent.js',
-  // Plan components (needed for plan.html to load)
+  // Plan components (lazy-loaded by index.html plan view)
   './resources/js/components/PlanSetupWizard.js',
   './resources/js/components/PlanTodayCard.js',
   './resources/js/components/PlanCalendarComponent.js',
@@ -606,14 +606,9 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
   
-  // plan.html and ALL its subresources bypass SW entirely — always go to network.
-  // iOS Safari SW caching causes persistent boot failures for new users
-  // (stale cache + slow import() = infinite spinner).
+  // plan.html is now a redirect stub — let it pass through to network
+  // (Plan feature has been merged into index.html to fix iOS IndexedDB issues)
   if (url.pathname.endsWith('/plan.html')) return;
-  
-  // Check Referer: if a resource is requested by plan.html, let the browser fetch it directly.
-  const referer = request.headers.get('Referer') || '';
-  if (referer.includes('/plan.html')) return;
 
   if (url.pathname.endsWith('/hotfix.html')) {
     event.respondWith(

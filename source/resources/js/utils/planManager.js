@@ -729,7 +729,11 @@ export function recordTaskCompletion(plan, taskType, pages, performance, appData
  * @param {boolean} completedToday - Whether all tasks were completed today
  * @returns {Object} Updated plan
  */
-export function updateStreak(plan, completedToday) {
+export function updateStreak(plan, completedToday, today = new Date()) {
+  const todayStr = formatDate(today);
+  // Only update streak once per day to prevent repeated increments on reload
+  if (plan.stats._lastStreakDate === todayStr) return plan;
+
   if (completedToday) {
     plan.stats.currentStreak = (plan.stats.currentStreak || 0) + 1;
     if (plan.stats.currentStreak > (plan.stats.longestStreak || 0)) {
@@ -738,6 +742,7 @@ export function updateStreak(plan, completedToday) {
   } else {
     plan.stats.currentStreak = 0;
   }
+  plan.stats._lastStreakDate = todayStr;
   return plan;
 }
 
@@ -842,6 +847,7 @@ export function createDayRecord(planId, tasks, today = new Date()) {
       newMemorization: tasks?.newMemorization || null,
       revision: tasks?.revision || null,
       weakReinforcement: tasks?.weakReinforcement || null,
+      metadata: tasks?.metadata || null,
     },
     summary: {
       totalTasks,
@@ -1038,6 +1044,27 @@ export async function saveDayRecord(db, record) {
 }
 
 /**
+ * Load today's day record from IndexedDB (if it exists).
+ * Used to restore completed task states on page reload.
+ * @param {IDBDatabase} db - The database reference
+ * @param {string} planId - Plan ID
+ * @param {Date} [today] - Override today's date (for testing)
+ * @returns {Object|null} The day record for today, or null
+ */
+export async function loadTodayDayRecord(db, planId, today = new Date()) {
+  if (!db || !db.objectStoreNames.contains('planHistory')) return null;
+  const todayStr = formatDate(today);
+  const recordId = `${planId}_${todayStr}`;
+  const tx = db.transaction(['planHistory'], 'readonly');
+  const store = tx.objectStore('planHistory');
+  return new Promise((resolve, reject) => {
+    const request = store.get(recordId);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/**
  * Load plan history for a date range.
  * @param {IDBDatabase} db - The database reference
  * @param {string} planId - Plan ID
@@ -1094,6 +1121,7 @@ export default {
   loadPlan,
   loadAllPlans,
   saveDayRecord,
+  loadTodayDayRecord,
   loadPlanHistory,
 
   // Helpers

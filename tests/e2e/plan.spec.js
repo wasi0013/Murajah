@@ -5,15 +5,23 @@
 
 import { test, expect } from '@playwright/test';
 
-const PLAN_URL = '/plan.html';
+const INDEX_URL = '/index.html';
 
-/** Wait for the plan page to finish loading */
+/** Navigate to the plan view inside index.html */
+async function gotoPlan(page) {
+  await page.goto(`${INDEX_URL}#plan`);
+  await waitForPlanLoad(page);
+}
+
+/** Wait for the plan section to finish loading inside index.html */
 async function waitForPlanLoad(page, timeout = 30000) {
-  // Wait for Vue to mount and loading overlay to disappear
+  // Wait for the plan section to appear and loading overlay to disappear
   await page.waitForFunction(() => {
-    const loader = document.querySelector('.fixed.inset-0 .animate-spin');
+    const planSection = document.getElementById('plan-section');
+    if (!planSection) return false;
+    const loader = planSection.querySelector('.animate-spin');
     if (loader) {
-      const parent = loader.closest('.fixed.inset-0');
+      const parent = loader.closest('.fixed, [class*="absolute"]');
       if (parent) {
         const style = window.getComputedStyle(parent);
         if (style.display !== 'none' && style.opacity !== '0') return false;
@@ -146,9 +154,9 @@ async function seedPlan(page, overrides = {}) {
 test.describe('Plan Feature', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Navigate to plan page and clear plans store from within the open DB
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    // Navigate to index and clear plans store from within the open DB
+    await page.goto(INDEX_URL);
+    await page.waitForTimeout(1000);
     await page.evaluate(() => {
       return new Promise((resolve) => {
         const request = indexedDB.open('murajah-db');
@@ -173,8 +181,7 @@ test.describe('Plan Feature', () => {
   // ── Plan Creation ──
 
   test('shows empty state when no plans exist', async ({ page }) => {
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     // Should show the empty state or smart plan suggestion
     const emptyState = page.locator('text=/Create|Start|plan/i').first();
@@ -183,8 +190,7 @@ test.describe('Plan Feature', () => {
 
   test('setup wizard renders three user types', async ({ page }) => {
     // Reload after beforeEach cleared plans
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     // Open setup wizard — button might say "Customize", "Custom Plan", or "Create"
     const customizeBtn = page.locator('button:has-text("Customize")').first();
@@ -208,8 +214,7 @@ test.describe('Plan Feature', () => {
   });
 
   test('beginner plan can be created via wizard', async ({ page }) => {
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
     await createPlanViaWizard(page, 'beginner');
 
     // After creation, should see Today tab content or plan view
@@ -221,8 +226,7 @@ test.describe('Plan Feature', () => {
 
   test('today view shows tasks for active plan', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     // Today tab should be visible and active by default
     const todayTab = page.locator('button[role="tab"]:has-text("Today")').first();
@@ -240,8 +244,7 @@ test.describe('Plan Feature', () => {
 
   test('today task can be marked complete', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     // Look for a completion button on today's task card
     const completeBtn = page.locator('button:has-text("Complete"), button:has-text("Done"), button:has-text("✓"), button[aria-label*="complete" i]').first();
@@ -261,8 +264,7 @@ test.describe('Plan Feature', () => {
 
   test('calendar view renders when tab is clicked', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const calendarTab = page.locator('button[role="tab"]:has-text("Calendar")').first();
     if (await calendarTab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -277,8 +279,7 @@ test.describe('Plan Feature', () => {
 
   test('calendar shows today highlighted', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const calendarTab = page.locator('button[role="tab"]:has-text("Calendar")').first();
     if (await calendarTab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -296,8 +297,7 @@ test.describe('Plan Feature', () => {
 
   test('progress view shows plan statistics', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const progressTab = page.locator('button[role="tab"]:has-text("Progress")').first();
     if (await progressTab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -314,8 +314,7 @@ test.describe('Plan Feature', () => {
 
   test('plan can be paused from progress view', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const progressTab = page.locator('button[role="tab"]:has-text("Progress")').first();
     if (await progressTab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -343,8 +342,7 @@ test.describe('Plan Feature', () => {
 
   test('paused plan can be resumed', async ({ page }) => {
     await seedPlan(page, { status: 'paused' });
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const progressTab = page.locator('button[role="tab"]:has-text("Progress")').first();
     if (await progressTab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -365,21 +363,19 @@ test.describe('Plan Feature', () => {
 
   // ── Navigation ──
 
-  test('header links to home and quiz pages', async ({ page }) => {
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+  test('plan is accessible from bottom navigation', async ({ page }) => {
+    await page.goto(INDEX_URL);
+    await page.waitForTimeout(1000);
 
-    const homeLink = page.locator('a[href*="index.html"]').first();
-    await expect(homeLink).toBeVisible({ timeout: 5000 });
-
-    const quizLink = page.locator('a[href*="quiz.html"]').first();
-    await expect(quizLink).toBeVisible({ timeout: 5000 });
+    // Bottom nav should have a plan button
+    const planNav = page.locator('button.bottom-nav-item:has-text("Plan"), button.bottom-nav-item >> svg').first();
+    const hasPlanNav = await planNav.isVisible({ timeout: 5000 }).catch(() => false);
+    expect(hasPlanNav).toBeTruthy();
   });
 
   test('tab navigation switches between views', async ({ page }) => {
     await seedPlan(page);
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     const tabs = page.locator('button[role="tab"]');
     const tabCount = await tabs.count();
@@ -402,8 +398,7 @@ test.describe('Plan Feature', () => {
 
   test('plan persists across page reload', async ({ page }) => {
     await seedPlan(page, { name: 'Persistent Plan' });
-    await page.goto(PLAN_URL);
-    await waitForPlanLoad(page);
+    await gotoPlan(page);
 
     // Verify plan loaded
     const planName = page.locator('text=/Persistent Plan|Test Plan/i').first();
@@ -411,8 +406,8 @@ test.describe('Plan Feature', () => {
       || await page.locator('button[role="tab"]').first().isVisible({ timeout: 3000 }).catch(() => false);
     expect(hasPlan).toBeTruthy();
 
-    // Reload and verify plan still loads
-    await page.reload();
+    // Reload and verify plan still loads after re-navigating to plan view
+    await page.goto(`${INDEX_URL}#plan`);
     await waitForPlanLoad(page);
 
     const planNameAfter = page.locator('button[role="tab"]').first();

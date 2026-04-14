@@ -2399,6 +2399,9 @@
       touch-action: manipulation;
       cursor: pointer;
     }
+
+    /* Plan view transition */
+    @keyframes planFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
     
   </style>
 </head>
@@ -3479,10 +3482,10 @@
                     <i class="fas fa-question-circle text-gray-500"></i>
                     {{ $t('header.quiz') }}
                   </a>
-                  <a href="./plan.html" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button @click.prevent="scrollToSection('plan-section')" class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-calendar-alt text-gray-500"></i>
                     {{ $t('plan.nav') }}
-                  </a>
+                  </button>
 
                   <a href="https://discord.gg/Vycfm28anP" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item">
                         <i class="fab fa-discord"></i>
@@ -5721,7 +5724,275 @@
                 </div>
               </section>
 
-              <!-- Call to Action - Download App -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- PLAN SECTION (v-if gated — only rendered when active) -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div v-if="viewMode === 'plan'" id="plan-section" class="max-w-2xl mx-auto px-3 sm:px-4 py-4 pb-24">
+              <!-- Loading Overlay -->
+              <div v-if="planIsLoading" class="flex items-center justify-center py-12">
+                <div class="text-center">
+                  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                  <p class="mt-4 text-gray-600">{{ $t('plan.title') }}...</p>
+                </div>
+              </div>
+
+              <!-- Error Message -->
+              <div v-if="planError" class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+                <p class="flex items-center">
+                  <span class="mr-2">⚠️</span>
+                  {{ planError }}
+                </p>
+              </div>
+
+              <!-- Milestone Celebration Toast -->
+              <div v-if="planCelebrationMessage" class="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-bounce">
+                <span class="text-xl">🎉</span>
+                <span class="font-medium">{{ planCelebrationMessage }}</span>
+              </div>
+
+              <template v-if="!planIsLoading">
+                <!-- Page Title -->
+                <div class="mb-4">
+                  <h1 class="text-lg font-bold text-gray-900">{{ $t('plan.title') }}</h1>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ $t('plan.subtitle') }}</p>
+                </div>
+
+                <!-- No Plan State -->
+                <div v-if="planActivePlans.length === 0 && !planShowSetup">
+                  <!-- Smart Plan Suggestion -->
+                  <div v-if="planSmartPlan" class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
+                    <div class="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                      <div class="flex items-center gap-2">
+                        <i class="fas fa-magic text-lg"></i>
+                        <div>
+                          <h2 class="text-sm font-semibold">{{ $t('plan.smart.title') }}</h2>
+                          <p class="text-xs text-blue-100 mt-0.5">{{ $t('plan.smart.subtitle') }}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="p-4 space-y-3">
+                      <!-- Analysis summary -->
+                      <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-blue-50 rounded-lg p-2">
+                          <div class="text-lg font-bold text-blue-700">{{ planSmartPlan.analysis.totalMemorized }}</div>
+                          <div class="text-[10px] text-blue-500">{{ $t('plan.smart.memorized') }}</div>
+                        </div>
+                        <div class="bg-orange-50 rounded-lg p-2">
+                          <div class="text-lg font-bold text-orange-700">{{ planSmartPlan.analysis.weakPageCount }}</div>
+                          <div class="text-[10px] text-orange-500">{{ $t('plan.smart.weakPages') }}</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-2">
+                          <div class="text-lg font-bold text-green-700">{{ planSmartPlan.analysis.pagesInPlan }}</div>
+                          <div class="text-[10px] text-green-500">{{ $t('plan.smart.inPlan') }}</div>
+                        </div>
+                      </div>
+
+                      <!-- Detected plan info -->
+                      <div class="bg-gray-50 rounded-lg p-3 space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="text-gray-500">{{ $t('plan.smart.detectedLevel') }}</span>
+                          <span class="font-medium text-gray-800">
+                            <i :class="['mr-1', planSmartPlan.analysis.detectedType === 'beginner' ? 'fas fa-seedling text-green-500' : planSmartPlan.analysis.detectedType === 'hafiz' ? 'fas fa-star text-yellow-500' : 'fas fa-layer-group text-purple-500']"></i>
+                            {{ $t('plan.setup.' + planSmartPlan.analysis.detectedType + 'Label') }}
+                          </span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="text-gray-500">{{ $t('plan.smart.coverage') }}</span>
+                          <span class="font-medium text-gray-800">{{ planSmartPlan.analysis.juzInPlan.length }} {{ $t('plan.smart.juz') }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="text-gray-500">{{ $t('plan.smart.pace') }}</span>
+                          <span class="font-medium text-gray-800">
+                            <template v-if="planSmartPlan.planConfig.pace.newPagesPerDay > 0">
+                              {{ planSmartPlan.planConfig.pace.newPagesPerDay }} {{ $t('plan.smart.newDay') }} +
+                            </template>
+                            {{ planSmartPlan.planConfig.pace.revisionPagesPerDay }} {{ $t('plan.smart.revDay') }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Top weak pages hint -->
+                      <div v-if="planSmartPlan.analysis.topWeakPages.length > 0" class="text-xs text-orange-600 flex items-start gap-1.5">
+                        <i class="fas fa-exclamation-circle mt-0.5"></i>
+                        <span>{{ $t('plan.smart.weakHint') }}: {{ planSmartPlan.analysis.topWeakPages.map(w => $t('plan.today.openPage') + ' ' + w.page).join(', ') }}</span>
+                      </div>
+
+                      <!-- Action buttons -->
+                      <div class="flex gap-2 pt-1">
+                        <button @click="planAcceptSmartPlan"
+                          class="flex-1 bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5">
+                          <i class="fas fa-check"></i>
+                          {{ $t('plan.smart.start') }}
+                        </button>
+                        <button @click="planShowSetup = true"
+                          class="flex-none bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                          {{ $t('plan.smart.customize') }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Fallback: no data at all -->
+                  <div v-else class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+                    <i class="fas fa-calendar-plus text-4xl text-gray-300 mb-3"></i>
+                    <h2 class="text-base font-semibold text-gray-800 mb-1">{{ $t('plan.empty.title') }}</h2>
+                    <p class="text-sm text-gray-500 mb-4">{{ $t('plan.empty.description') }}</p>
+                    <button @click="planShowSetup = true"
+                      class="bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
+                      {{ $t('plan.empty.cta') }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Setup Wizard -->
+                <plan-setup-wizard v-if="planShowSetup"
+                  :memorized-pages="memorizedStore.memorizedPages"
+                  :layout="settingsStore.layout"
+                  :t="$t"
+                  @plan-created="planOnPlanCreated"
+                  @cancel="planShowSetup = false">
+                </plan-setup-wizard>
+
+                <!-- Active Plan Views -->
+                <template v-if="planActivePlan && !planShowSetup">
+                  <!-- Plan Selector (multi-plan) -->
+                  <div v-if="planActivePlans.length > 0" class="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                    <button v-for="(p, idx) in planActivePlans" :key="p.id"
+                      @click="planSelectPlan(idx)"
+                      :class="['flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+                        idx === planSelectedIndex
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300']"
+                    >
+                      <i :class="['mr-1', p.type === 'beginner' ? 'fas fa-seedling' : 'fas fa-book-open']"></i>
+                      {{ p.name }}
+                    </button>
+                    <button @click="planShowSetup = true"
+                      class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors border border-gray-200"
+                      :title="$t('plan.smart.customPlan')">
+                      <i class="fas fa-plus text-[10px]"></i>
+                      <span class="hidden sm:inline">{{ $t('plan.smart.customPlan') }}</span>
+                    </button>
+                  </div>
+
+                  <!-- Tab Navigation -->
+                  <div class="flex border-b border-gray-200 mb-4 -mx-3 px-3 overflow-x-auto" style="-ms-overflow-style:none;scrollbar-width:none;">
+                    <button v-for="tab in planTabs" :key="tab.id"
+                      @click="planCurrentTab = tab.id"
+                      :class="['flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                        planCurrentTab === tab.id
+                          ? 'text-blue-600 border-blue-500'
+                          : 'text-gray-500 border-transparent hover:text-gray-700']"
+                      :aria-selected="planCurrentTab === tab.id"
+                      role="tab">
+                      <i :class="tab.icon"></i>
+                      {{ tab.label }}
+                    </button>
+                  </div>
+
+                  <!-- Today View -->
+                  <div v-if="planCurrentTab === 'today'" style="animation:planFadeIn 0.2s ease">
+                    <plan-today-card
+                      :plan="planActivePlan"
+                      :today-tasks="planTodayTasks"
+                      :day-number="planDayNumber"
+                      :t="$t"
+                      :unmemorized-pages="planUnmemorizedPages"
+                      @complete-task="planOnCompleteTask"
+                      @rate-task="planOnRateTask"
+                      @open-page="planOpenPage"
+                      @open-quiz="planOpenQuiz"
+                      @set-memorization-page="planOnSetMemorizationPage">
+                    </plan-today-card>
+
+                    <!-- Audio Player Card -->
+                    <plan-audio-card
+                      v-if="planTodayTasks && !planTodayTasks.metadata?.isOffDay"
+                      :today-tasks="planTodayTasks"
+                      :t="$t">
+                    </plan-audio-card>
+                  </div>
+
+                  <!-- Calendar View -->
+                  <div v-if="planCurrentTab === 'calendar'" style="animation:planFadeIn 0.2s ease">
+                    <plan-calendar-component
+                      :plan="planActivePlan"
+                      :history="planHistory"
+                      :today-tasks="planTodayTasks"
+                      :generate-preview="planGeneratePreview"
+                      :t="$t"
+                      @select-day="planOnSelectDay"
+                      @open-page="planOpenPage">
+                    </plan-calendar-component>
+                  </div>
+
+                  <!-- Progress View -->
+                  <div v-if="planCurrentTab === 'progress'" style="animation:planFadeIn 0.2s ease">
+                    <plan-progress-view
+                      :plan="planActivePlan"
+                      :t="$t"
+                      @open-settings="planOnOpenSettings"
+                      @pause-plan="planOnPausePlan"
+                      @resume-plan="planOnResumePlan"
+                      @abandon-plan="planOnAbandonPlan">
+                    </plan-progress-view>
+                  </div>
+                </template>
+
+                <!-- Missed Days Modal -->
+                <div v-if="planMissedDaysInfo" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div class="bg-white rounded-xl p-5 max-w-sm w-full shadow-xl">
+                    <h2 class="text-lg font-bold text-gray-900 mb-2">{{ $t('plan.missed.welcomeBack') }}</h2>
+                    <p class="text-sm text-gray-600 mb-3">
+                      {{ $t('plan.missed.missedDays').replace('{count}', planMissedDaysInfo.count) }}
+                    </p>
+                    <p class="text-sm text-gray-500 mb-4">{{ planMissedDaysInfo.message }}</p>
+
+                    <div v-if="planMissedDaysInfo.needsReset" class="flex flex-col gap-2">
+                      <button @click="planResumeAfterMissed" class="w-full bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
+                        {{ $t('plan.missed.resume') }}
+                      </button>
+                      <button @click="planStartNewPlan" class="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200">
+                        {{ $t('plan.missed.newPlan') }}
+                      </button>
+                    </div>
+                    <div v-else>
+                      <button @click="planDismissMissed" class="w-full bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-600">
+                        {{ $t('plan.missed.resume') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Plan Settings Modal -->
+                <plan-settings-modal
+                  v-if="planShowSettings && planActivePlan"
+                  :plan="planActivePlan"
+                  :t="$t"
+                  @save="planOnSaveSettings"
+                  @close="planShowSettings = false">
+                </plan-settings-modal>
+              </template>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- JOURNAL / NOTES SECTION (hidden by default)           -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div v-if="viewMode === 'journal'" id="notes-section" class="max-w-4xl mx-auto px-2 sm:px-4 py-4 pb-24">
+              <notes-component
+                :notes-store="notesStore"
+                :current-page="appStore.currentPage"
+                :surah-names="quranData && quranData.surahNames ? quranData.surahNames : {}"
+                :locale-surahs="currentLocaleSurahs"
+                :current-locale="currentLocale"
+                :current-surah-number="currentSurahNumber"
+                :current-surah-name="currentSurahName"
+                :db="murajahDB"
+                ref="notesComponentRef"
+              ></notes-component>
+            </div>
+
+            <!-- Call to Action - Download App -->
             <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-12 px-4 mt-12 rounded-b-4xl">
               <div class="max-w-7xl mx-auto text-center">
                 <div class="mb-6">
@@ -5748,22 +6019,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Notes Section -->
-            <div id="notes-section" class="max-w-4xl mx-auto px-2 sm:px-4 py-4">
-              <notes-component
-                :notes-store="notesStore"
-                :current-page="appStore.currentPage"
-                :surah-names="quranData && quranData.surahNames ? quranData.surahNames : {}"
-                :locale-surahs="currentLocaleSurahs"
-                :current-locale="currentLocale"
-                :current-surah-number="currentSurahNumber"
-                :current-surah-name="currentSurahName"
-                :db="murajahDB"
-                ref="notesComponentRef"
-              ></notes-component>
-            </div>
-
 
             </main>
 
@@ -5844,13 +6099,13 @@
                   <i class="fas fa-bullseye"></i>
                   <span>{{ $t('header.sections.dailyGoals') }}</span>
                 </button>
+                <button class="bottom-nav-item" :class="{ active: activeBottomTab === 'plan' }" @click="scrollToSection('plan-section')">
+                  <i class="fas fa-calendar-alt"></i>
+                  <span>{{ $t('plan.nav') }}</span>
+                </button>
                 <a class="bottom-nav-item" href="./quiz.html">
                   <i class="fas fa-question-circle"></i>
                   <span>{{ $t('header.quiz') }}</span>
-                </a>
-                <a class="bottom-nav-item" href="./plan.html">
-                  <i class="fas fa-calendar-alt"></i>
-                  <span>{{ $t('plan.nav') }}</span>
                 </a>
                 <button class="bottom-nav-item" @click="showMobileMenu = true">
                   <i class="fas fa-ellipsis-h"></i>
@@ -5867,7 +6122,7 @@
             currentPage: parseInt(new URLSearchParams(window.location.search).get('page') || 1),
             isLoading: false,
             theme: 'light', // Will be loaded from IndexedDB in initializeApp
-            appVersion: '26.04.12',
+            appVersion: '26.04.13',
             errorMessage: '',
             successMessage: ''
           });
@@ -5953,10 +6208,12 @@
           const isInitializing = ref(true);
           const showLanguageSelectionModal = ref(false);
           const quranData = ref(null);
-          // UI view mode: 'core' | 'analytics' | 'dailyGoals'
+          // UI view mode: 'core' | 'analytics' | 'dailyGoals' | 'live' | 'plan'
           const viewMode = ref('core');
           // Active bottom navigation tab (derived from viewMode and surah view state)
           const activeBottomTab = computed(() => {
+            if (viewMode.value === 'plan') return 'plan';
+            if (viewMode.value === 'journal') return 'journal';
             if (viewMode.value === 'dailyGoals') return 'goals';
             if (viewMode.value === 'core' && settingsStore.showSurahView) return 'surahs';
             return 'read';
@@ -6024,7 +6281,432 @@
 
           // track previous view when opening Live
           const previousViewMode = ref(null);
-          
+
+          // ── Plan View State (lazy-loaded on first navigation) ──
+          const planActivePlans = ref([]);
+          const planSelectedIndex = ref(0);
+          const planHistory = ref([]);
+          const planTodayTasks = ref(null);
+          const planShowSetup = ref(false);
+          const planCurrentTab = ref('today');
+          const planMissedDaysInfo = ref(null);
+          const planShowSettings = ref(false);
+          const planSmartPlan = ref(null);
+          const planCelebrationMessage = ref('');
+          const planIsInitialized = ref(false);
+          const planIsLoading = ref(false);
+          const planError = ref(null);
+          // Plan module references (populated by lazy import)
+          let _planMod = null;   // planManager exports
+          let _planSched = null; // planScheduler exports
+          let _planComponents = null; // lazy-loaded component definitions
+
+          const planActivePlan = computed(() => planActivePlans.value[planSelectedIndex.value] || null);
+
+          const planTabs = computed(() => [
+            { id: 'today', label: t('plan.today.title'), icon: 'fas fa-sun' },
+            { id: 'calendar', label: t('plan.calendar.title'), icon: 'fas fa-calendar' },
+            { id: 'progress', label: t('plan.progress.title'), icon: 'fas fa-chart-line' },
+          ]);
+
+          const planDayNumber = computed(() => {
+            if (!planActivePlan.value) return 0;
+            const start = new Date(planActivePlan.value.startDate + 'T00:00:00');
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            return Math.max(1, Math.floor((now - start) / 86400000) + 1);
+          });
+
+          const planUnmemorizedPages = computed(() => {
+            if (!planActivePlan.value || !_planSched) return [];
+            const targetPages = planActivePlan.value.targetPages || [];
+            return targetPages.filter(p =>
+              !_planSched.isPageMemorized(p, memorizedStore.memorizedPages, perfectRevisionsStore.perfectRevisions)
+            );
+          });
+
+          // ── Plan Lazy Initialization ──
+          async function ensurePlanModules() {
+            if (_planMod) return;
+            const [planMod, planSched, SetupWiz, TodayCard, CalComp, ProgressView, AudioCard, SettingsModal] = await Promise.all([
+              import('./resources/js/utils/planManager.js'),
+              import('./resources/js/utils/planScheduler.js'),
+              import('./resources/js/components/PlanSetupWizard.js'),
+              import('./resources/js/components/PlanTodayCard.js'),
+              import('./resources/js/components/PlanCalendarComponent.js'),
+              import('./resources/js/components/PlanProgressView.js'),
+              import('./resources/js/components/PlanAudioCard.js'),
+              import('./resources/js/components/PlanSettingsModal.js'),
+            ]);
+            _planMod = planMod;
+            _planSched = planSched;
+            _planComponents = { SetupWiz, TodayCard, CalComp, ProgressView, AudioCard, SettingsModal };
+            // Dynamically register components on the app instance
+            if (window.__murajahApp) {
+              window.__murajahApp.component('plan-setup-wizard', SetupWiz.default);
+              window.__murajahApp.component('plan-today-card', TodayCard.default);
+              window.__murajahApp.component('plan-calendar-component', CalComp.default);
+              window.__murajahApp.component('plan-progress-view', ProgressView.default);
+              window.__murajahApp.component('plan-audio-card', AudioCard.default);
+              window.__murajahApp.component('plan-settings-modal', SettingsModal.default);
+            }
+          }
+
+          async function initializePlan() {
+            if (planIsInitialized.value) return;
+            planIsLoading.value = true;
+            planError.value = null;
+            try {
+              await ensurePlanModules();
+              const db = murajahDB.db;
+
+              // Load all active plans
+              const plans = await _planMod.loadActivePlans(db);
+              if (plans.length > 0) {
+                planActivePlans.value = plans;
+                planSelectedIndex.value = 0;
+
+                // Sync external memorization for all plans
+                for (const plan of plans) {
+                  const synced = _planMod.syncExternalMemorization(plan, memorizedStore.memorizedPages, perfectRevisionsStore.perfectRevisions);
+                  if (synced.newlyMemorizedInPlan.length > 0) {
+                    await _planMod.savePlan(db, plan);
+                  }
+                }
+
+                // Check for missed days on selected plan
+                await planCheckMissedDays(planActivePlan.value);
+
+                // Generate today's tasks
+                await planRefreshTodayTasks();
+
+                // Load history
+                const history = await _planMod.loadPlanHistory(db, planActivePlan.value.id, 90);
+                planHistory.value = history;
+              } else {
+                // No active plans — generate smart plan suggestion
+                try {
+                  const result = _planMod.generateSmartPlan({
+                    memorizedPages: memorizedStore.memorizedPages,
+                    perfectRevisions: perfectRevisionsStore.perfectRevisions,
+                    mistakesMap: mistakesStore.mistakes,
+                    quizScores: {},
+                    layout: settingsStore.layout,
+                  });
+                  if (result.planConfig.targetPages.length > 0) {
+                    planSmartPlan.value = result;
+                  }
+                } catch (e) {
+                  console.warn('[Plan] Smart plan generation failed:', e);
+                }
+              }
+              planIsInitialized.value = true;
+            } catch (e) {
+              console.error('[Plan] Initialization error:', e);
+              planError.value = 'Failed to load plan data. Please try refreshing.';
+            } finally {
+              planIsLoading.value = false;
+            }
+          }
+
+          // ── Plan Helper Functions ──
+          function planShowMilestoneCelebration(plan) {
+            const milestones = plan._newlyCompletedMilestones;
+            if (!milestones || milestones.length === 0) return;
+            const names = milestones.map(m => m.name || m.type).join(', ');
+            planCelebrationMessage.value = `🎉 ${names} ${t('plan.progress.milestoneComplete') || 'complete!'}`;
+            setTimeout(() => { planCelebrationMessage.value = ''; }, 4000);
+            delete plan._newlyCompletedMilestones;
+          }
+
+          async function planCheckMissedDays(plan) {
+            if (!plan || plan.status !== 'active' || !_planSched) return;
+            const today = _planSched.formatDate(new Date());
+            const lastActive = plan.lastActiveDate || plan.startDate;
+            if (!lastActive || lastActive >= today) return;
+            const last = new Date(lastActive + 'T00:00:00');
+            const now = new Date(today + 'T00:00:00');
+            const daysMissed = Math.floor((now - last) / 86400000);
+            if (daysMissed <= 0) return;
+            const result = _planSched.handleMissedDays(plan, lastActive, new Date());
+            if (result.updatedPageReviewData) {
+              if (!plan.schedulerState) plan.schedulerState = {};
+              plan.schedulerState.pageReviewData = result.updatedPageReviewData;
+            }
+            await _planMod.savePlan(murajahDB.db, plan);
+            let message = '';
+            if (daysMissed >= 14) {
+              message = t('plan.missed.planResetNeeded');
+              planMissedDaysInfo.value = { count: daysMissed, message, needsReset: true };
+            } else if (daysMissed >= 5) {
+              message = t('plan.missed.heavyReschedule');
+              planMissedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+            } else if (daysMissed >= 2) {
+              message = t('plan.missed.mediumReschedule');
+              planMissedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+            } else {
+              message = t('plan.missed.lightReschedule');
+              planMissedDaysInfo.value = { count: daysMissed, message, needsReset: false };
+            }
+          }
+
+          async function planRefreshTodayTasks({ force = false } = {}) {
+            if (!planActivePlan.value || planActivePlan.value.status !== 'active' || !_planMod) {
+              planTodayTasks.value = null;
+              return;
+            }
+            // Restore from today's saved day record to preserve completed states across reloads
+            if (!force) {
+              try {
+                const savedRecord = await _planMod.loadTodayDayRecord(murajahDB.db, planActivePlan.value.id);
+                if (savedRecord?.tasks && (savedRecord.tasks.newMemorization || savedRecord.tasks.revision || savedRecord.tasks.weakReinforcement)) {
+                  planTodayTasks.value = savedRecord.tasks;
+                  return;
+                }
+              } catch (e) {
+                console.error('[Plan] Failed to load day record:', e);
+              }
+            }
+            const appData = {
+              memorizedPages: memorizedStore.memorizedPages,
+              perfectRevisions: perfectRevisionsStore.perfectRevisions,
+              mistakesMap: mistakesStore.mistakes,
+            };
+            planTodayTasks.value = _planMod.getTodayTasks(planActivePlan.value, appData, {});
+          }
+
+          async function planAcceptSmartPlan() {
+            if (!planSmartPlan.value || !_planMod) return;
+            try {
+              const plan = _planMod.createPlan(planSmartPlan.value.planConfig);
+              await _planMod.savePlan(murajahDB.db, plan);
+              planActivePlans.value.push(plan);
+              planSelectedIndex.value = planActivePlans.value.length - 1;
+              planSmartPlan.value = null;
+              planCurrentTab.value = 'today';
+              await planRefreshTodayTasks();
+            } catch (e) {
+              console.error('[Plan] Smart plan create error:', e);
+              planError.value = 'Failed to create plan.';
+            }
+          }
+
+          async function planOnPlanCreated(planConfig) {
+            try {
+              const plan = _planMod.createPlan(planConfig);
+              await _planMod.savePlan(murajahDB.db, plan);
+              planActivePlans.value.push(plan);
+              planSelectedIndex.value = planActivePlans.value.length - 1;
+              planShowSetup.value = false;
+              planCurrentTab.value = 'today';
+              await planRefreshTodayTasks();
+            } catch (e) {
+              console.error('[Plan] Create error:', e);
+              planError.value = 'Failed to create plan.';
+            }
+          }
+
+          async function planOnCompleteTask(taskType) {
+            if (!planActivePlan.value || !planTodayTasks.value) return;
+            const task = planTodayTasks.value[taskType];
+            if (!task) return;
+            try {
+              task.completed = !task.completed;
+              task.completedAt = task.completed ? new Date().toISOString() : null;
+              const pages = task.pages || [];
+              if (task.completed && pages.length > 0) {
+                const appData = {
+                  memorizedPages: memorizedStore.memorizedPages,
+                  perfectRevisions: perfectRevisionsStore.perfectRevisions,
+                  mistakesMap: mistakesStore.mistakes,
+                };
+                _planMod.recordTaskCompletion(planActivePlan.value, taskType, pages, 3, appData);
+                planShowMilestoneCelebration(planActivePlan.value);
+                if (taskType === 'newMemorization' && planActivePlan.value.currentMemorizationPage) {
+                  _planMod.advanceMemorizationPage(planActivePlan.value, memorizedStore.memorizedPages, perfectRevisionsStore.perfectRevisions);
+                }
+              }
+              // Update streak based on overall completion status
+              const tasks = planTodayTasks.value;
+              const allDone = (!tasks.newMemorization || tasks.newMemorization.completed)
+                && (!tasks.revision || tasks.revision.completed)
+                && (!tasks.weakReinforcement || tasks.weakReinforcement.completed)
+                && (tasks.newMemorization || tasks.revision || tasks.weakReinforcement);
+              _planMod.updateStreak(planActivePlan.value, allDone);
+              planActivePlan.value.lastActiveDate = _planSched.formatDate(new Date());
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+            } catch (e) {
+              console.error('[Plan] Complete task error:', e);
+            }
+          }
+
+          async function planOnSetMemorizationPage(pageNum) {
+            if (!planActivePlan.value) return;
+            planActivePlan.value.currentMemorizationPage = pageNum;
+            await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+            await planRefreshTodayTasks({ force: true });
+          }
+
+          async function planOnRateTask(taskType, rating) {
+            if (!planActivePlan.value || !planTodayTasks.value) return;
+            const task = planTodayTasks.value[taskType];
+            if (!task) return;
+            try {
+              const pages = task.pages || [];
+              const appData = {
+                memorizedPages: memorizedStore.memorizedPages,
+                perfectRevisions: perfectRevisionsStore.perfectRevisions,
+                mistakesMap: mistakesStore.mistakes,
+              };
+              _planMod.recordTaskCompletion(planActivePlan.value, taskType, pages, rating, appData);
+              planShowMilestoneCelebration(planActivePlan.value);
+              task.performance = rating;
+              planActivePlan.value.lastActiveDate = _planSched.formatDate(new Date());
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+            } catch (e) {
+              console.error('[Plan] Rate task error:', e);
+            }
+          }
+
+          function planOpenPage(pageNum) {
+            const page = parseInt(pageNum, 10);
+            if (!Number.isInteger(page) || page < 1 || page > 700) return;
+            // Navigate within the same page — just change the Quran view
+            viewMode.value = 'core';
+            appStore.currentPage = page;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+
+          function planOpenQuiz() {
+            window.location.href = './quiz.html';
+          }
+
+          function planOnSelectDay(dateStr) {
+            console.log('[Plan] Selected day:', dateStr);
+          }
+
+          function planOnOpenSettings() {
+            planShowSettings.value = true;
+          }
+
+          function planGeneratePreview(date) {
+            if (!planActivePlan.value || !_planSched) return null;
+            const appData = {
+              memorizedPages: memorizedStore.memorizedPages,
+              perfectRevisions: perfectRevisionsStore.perfectRevisions,
+              mistakesMap: mistakesStore.mistakes,
+            };
+            return _planSched.generateDailyTasks({ plan: planActivePlan.value, appData, quizScores: {}, today: date });
+          }
+
+          async function planOnSaveSettings(settings) {
+            if (!planActivePlan.value) return;
+            try {
+              _planMod.updatePlanPace(planActivePlan.value, settings);
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+              planShowSettings.value = false;
+              await planRefreshTodayTasks({ force: true });
+            } catch (e) {
+              console.error('[Plan] Settings save error:', e);
+            }
+          }
+
+          async function planOnPausePlan() {
+            if (!planActivePlan.value) return;
+            try {
+              _planMod.transitionPlanStatus(planActivePlan.value, 'paused');
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+              planTodayTasks.value = null;
+            } catch (e) {
+              console.error('[Plan] Pause error:', e);
+            }
+          }
+
+          async function planOnResumePlan() {
+            if (!planActivePlan.value) return;
+            try {
+              _planMod.transitionPlanStatus(planActivePlan.value, 'active');
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+              await planCheckMissedDays(planActivePlan.value);
+              await planRefreshTodayTasks({ force: true });
+            } catch (e) {
+              console.error('[Plan] Resume error:', e);
+            }
+          }
+
+          async function planOnAbandonPlan() {
+            if (!planActivePlan.value) return;
+            try {
+              if (planTodayTasks.value) {
+                const record = _planMod.createDayRecord(planActivePlan.value.id, planTodayTasks.value);
+                await _planMod.saveDayRecord(murajahDB.db, record);
+              }
+              _planMod.transitionPlanStatus(planActivePlan.value, 'abandoned');
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+              planActivePlans.value.splice(planSelectedIndex.value, 1);
+              planSelectedIndex.value = Math.max(0, Math.min(planSelectedIndex.value, planActivePlans.value.length - 1));
+              planTodayTasks.value = null;
+              planHistory.value = [];
+              planCurrentTab.value = 'today';
+              if (planActivePlan.value) await planRefreshTodayTasks();
+            } catch (e) {
+              console.error('[Plan] Abandon error:', e);
+            }
+          }
+
+          async function planResumeAfterMissed() {
+            planMissedDaysInfo.value = null;
+            await planRefreshTodayTasks({ force: true });
+          }
+
+          async function planStartNewPlan() {
+            if (planActivePlan.value) {
+              _planMod.transitionPlanStatus(planActivePlan.value, 'abandoned');
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+              planActivePlans.value.splice(planSelectedIndex.value, 1);
+              planSelectedIndex.value = Math.max(0, Math.min(planSelectedIndex.value, planActivePlans.value.length - 1));
+            }
+            planTodayTasks.value = null;
+            planMissedDaysInfo.value = null;
+            planShowSetup.value = true;
+          }
+
+          function planDismissMissed() {
+            planMissedDaysInfo.value = null;
+          }
+
+          async function planSelectPlan(index) {
+            if (index === planSelectedIndex.value) return;
+            planSelectedIndex.value = index;
+            planTodayTasks.value = null;
+            planHistory.value = [];
+            planCurrentTab.value = 'today';
+            if (planActivePlan.value) {
+              await planCheckMissedDays(planActivePlan.value);
+              await planRefreshTodayTasks();
+              const history = await _planMod.loadPlanHistory(murajahDB.db, planActivePlan.value.id, 90);
+              planHistory.value = history;
+            }
+          }
+
+          async function planAutoSaveDayRecord() {
+            if (!planActivePlan.value || !planTodayTasks.value || !_planMod) return;
+            try {
+              const record = _planMod.createDayRecord(planActivePlan.value.id, planTodayTasks.value);
+              await _planMod.saveDayRecord(murajahDB.db, record);
+              await _planMod.savePlan(murajahDB.db, planActivePlan.value);
+            } catch (e) {
+              console.error('[Plan] Auto-save day record error:', e);
+            }
+          }
+
+          // Watch plan tasks for auto-save
+          watch(planTodayTasks, async (newVal) => {
+            if (newVal && planActivePlan.value) {
+              await planAutoSaveDayRecord();
+            }
+          }, { deep: true });
+
           // Word interaction state
           const hoveredWordId = ref(null);
           const selectedWords = ref(new Set());
@@ -6281,6 +6963,25 @@
           const scrollToSection = async (sectionId) => {
             showMobileMenu.value = false;
             showHomeDropdown.value = false;
+
+            // Special handling for Plan: lazy-load and switch to plan view
+            if (sectionId === 'plan-section' || sectionId === 'plan') {
+              viewMode.value = 'plan';
+              forceQuranMode.value = false;
+              await initializePlan();
+              await nextTick();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
+
+            // Special handling for Journal/Notes: switch to journal view
+            if (sectionId === 'notes-section' || sectionId === 'journal') {
+              viewMode.value = 'journal';
+              forceQuranMode.value = false;
+              await nextTick();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              return;
+            }
 
             // Special handling for Live: open live view and remember previous
             if (sectionId === 'live-section') {
@@ -10343,7 +11044,42 @@ Display:
             liveContainer,
             liveActiveChannel,
             playChannel,
-            stopLivePlayback
+            stopLivePlayback,
+            // Plan view bindings
+            planActivePlans,
+            planSelectedIndex,
+            planActivePlan,
+            planHistory,
+            planTodayTasks,
+            planShowSetup,
+            planCurrentTab,
+            planMissedDaysInfo,
+            planShowSettings,
+            planSmartPlan,
+            planCelebrationMessage,
+            planIsLoading,
+            planError,
+            planTabs,
+            planDayNumber,
+            planUnmemorizedPages,
+            planAcceptSmartPlan,
+            planOnPlanCreated,
+            planOnCompleteTask,
+            planOnRateTask,
+            planOnSetMemorizationPage,
+            planOpenPage,
+            planOpenQuiz,
+            planOnSelectDay,
+            planOnOpenSettings,
+            planGeneratePreview,
+            planOnSaveSettings,
+            planOnPausePlan,
+            planOnResumePlan,
+            planOnAbandonPlan,
+            planResumeAfterMissed,
+            planStartNewPlan,
+            planDismissMissed,
+            planSelectPlan,
           };
         }
       });
@@ -10356,6 +11092,9 @@ Display:
       app.component('FloatingAudioPlayerComponent', FloatingAudioPlayerComponent);
       app.component('MorphologyPopup', MorphologyPopupComponent);
       app.component('notes-component', NotesComponent);
+
+      // Expose app instance for lazy plan component registration
+      window.__murajahApp = app;
 
       app.mount('#app');
       const initialLoader = document.getElementById('initial-loader');
