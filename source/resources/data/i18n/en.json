@@ -179,6 +179,7 @@
     "qpc": "Uthmani",
       "tajweed": "Tajweed",
     "indopak": "Indopak",
+    "mushaf": "Mushaf",
     "switchToUthmani": "Switch to Uthmani Layout (604 pages)",
     "switchToQpc": "Switch to QPC Uthmani Layout (604 pages)",
     "switchToIndopak": "Switch to Indopak Layout (610 pages)"
@@ -316,8 +317,7 @@
     "partOf": "Part {current} of {total}",
     "noPageAudio": "No audio available for this page",
     "pageByPageReciter": "Mishary Rashid Al Afasy",
-    "speed": "Speed:",
-    "reciterFallback": "Selected reciter ({reciter}) unavailable — using fallback"
+    "speed": "Speed:"
   },
   "reciters": {
     "shuraim": "Sheikh Shuraim",

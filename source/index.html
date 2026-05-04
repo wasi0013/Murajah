@@ -3446,7 +3446,7 @@
                         <i class="fas fa-headphones"></i>
                         {{ $t('header.sections.audio') }}
                       </a>
-                      <a href="#mistakes-section" class="nav-dropdown-item" @click.prevent="scrollToSection('mistakes-section')">
+                      <a v-if="!isMushaf" href="#mistakes-section" class="nav-dropdown-item" @click.prevent="scrollToSection('mistakes-section')">
                         <i class="fas fa-exclamation-triangle"></i>
                         {{ $t('header.sections.mistakes') }}
                       </a>
@@ -3576,7 +3576,7 @@
                   <i class="fas fa-headphones"></i>
                   {{ $t('header.sections.audio') }}
                 </a>
-                <a href="#mistakes-section" class="mobile-menu-item" @click.prevent="scrollToSection('mistakes-section')">
+                <a v-if="!isMushaf" href="#mistakes-section" class="mobile-menu-item" @click.prevent="scrollToSection('mistakes-section')">
                   <i class="fas fa-exclamation-triangle"></i>
                   {{ $t('header.sections.mistakes') }}
                 </a>
@@ -3666,7 +3666,7 @@
             </div>
 
             <!-- Main Content -->
-            <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+            <main :class="['max-w-7xl mx-auto px-4 space-y-8', isMushaf ? '' : 'py-8']">
               <!-- Quran Text Display with Overlay Navigation -->
               <div v-if="viewMode === 'core'">
               
@@ -4073,7 +4073,7 @@
                 @touchstart="quranSwipeHandlers.onTouchStart"
                 @touchend="quranSwipeHandlers.onTouchEnd"
               >
-                <div class="text-center space-y-1 sm:space-y-2 relative">
+                <div v-if="!isMushaf" class="text-center space-y-1 sm:space-y-2 relative">
                   <p class="text-xs sm:text-sm font-medium text-gray-600 ">
                     {{ $t('tafsir.page') }} {{ appStore.currentPage }} ({{ $t('dashboard.stats.ofPages', { total: totalPages }) }})
                   </p>
@@ -4111,7 +4111,7 @@
                 </div>
 
                 <!-- Color Palette for Quran Background -->
-                <div class="absolute top-2 left-2 z-10 flex items-center gap-1">
+                <div v-if="!isMushaf" class="absolute top-2 left-2 z-10 flex items-center gap-1">
                   <button 
                     @click="cycleQuranBackgroundColor"
                     class="w-10 h-10 sm:w-12 sm:h-12 bg-transparent  cursor-pointer transition-all duration-200 hover:scale-130 active:scale-95 shadow-md flex items-center justify-center"
@@ -4130,10 +4130,21 @@
                   </button>
                 </div>
 
+                <!-- Mushaf View - Image-based rendering (QPC/Tajweed layout only) -->
+                <div v-if="isMushaf" id="mushaf-view-section" class="mushaf-view -mx-2 sm:-mx-4 md:-mx-6 lg:-mx-8 -mt-2 sm:-mt-4 md:-mt-6 lg:-mt-8 -mb-2 sm:-mb-4 md:-mb-6 lg:-mb-8 rounded-xl overflow-hidden" :style="{ backgroundColor: settingsStore.quranBackgroundColor }">
+                  <img
+                    :src="mushafImageUrl"
+                    :alt="'Quran pages ' + (appStore.currentPage % 2 === 0 ? appStore.currentPage - 1 : appStore.currentPage) + '-' + (appStore.currentPage % 2 === 0 ? appStore.currentPage : appStore.currentPage + 1)"
+                    class="w-full block select-none"
+                    loading="lazy"
+                    draggable="false"
+                  />
+                </div>
+
                 <!-- Tafsir Section -->
                 <div 
                   id="tafsir-section"
-                  v-if="settingsStore.showTafsir && currentPageTafsir.length > 0" 
+                  v-if="settingsStore.showTafsir && currentPageTafsir.length > 0 && !isMushaf" 
                   class="bg-white rounded-lg shadow-lg overflow-hidden border border-emerald-200 mb-4"
                   
                 >
@@ -4191,7 +4202,7 @@
                 </div>
 
                 <!-- Quran Text Content - Word by Word Display -->
-                <div v-if="!settingsStore.showTafsir && !settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
+                <div v-if="!isMushaf && !settingsStore.showTafsir && !settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-1 sm:space-y-2 md:space-y-2 relative', { 'layout-indopak': isIndopak }]">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
@@ -4230,7 +4241,7 @@
                 </div>
 
                 <!-- Word-by-Word Quran View with Translations -->
-                <div v-if="settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-4 sm:space-y-6 relative', { 'layout-indopak': isIndopak }]">
+                <div v-if="!isMushaf && settingsStore.showWordByWord && quranData && currentPageWords.length > 0" :style="fontSizeStyle" :class="['quran-text text-center p-2 sm:p-4 md:p-6 lg:p-8 rounded-lg min-h-96 overflow-x-hidden overflow-y-auto space-y-4 sm:space-y-6 relative', { 'layout-indopak': isIndopak }]">
 
                   <!-- Mistakes Counter Badge -->
                   <div v-if="currentPageMistakeCount > 0" class="absolute top-2 left-7 text-red-500 font-bold text-2xl" style="opacity: 0.4;" title="Number of mistakes on this page">
@@ -4268,7 +4279,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-else-if="!settingsStore.showTafsir && !settingsStore.showWordByWord && (!quranData || currentPageWords.length === 0)" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
+                <div v-else-if="!isMushaf && !settingsStore.showTafsir && !settingsStore.showWordByWord && (!quranData || currentPageWords.length === 0)" class="flex flex-col items-center justify-center p-12 bg-gray-100  rounded-lg">
                   <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
                   <p class="text-gray-600 ">Loading Quran text...</p>
                 </div>
@@ -4432,12 +4443,12 @@
                 <!-- Action Buttons -->
               <div class="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4">
                 <div class="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
-                  <button @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-gray-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
+                  <button v-if="!isMushaf" @click="toggleMemorized" :class="isCurrentPageMemorized ? 'bg-gray-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-500'" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 text-white rounded-lg transition-colors text-xs sm:text-sm">
                   <i :class="isCurrentPageMemorized ? 'fas fa-check-circle' : 'fas fa-circle'"></i>
                     <span>{{ isCurrentPageMemorized ? $t('actions.memorized') : $t('actions.memorize') }}</span>
                   </button>
 
-                  <button @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
+                  <button v-if="!isMushaf" @click="incrementPerfectRevision(appStore.currentPage)" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-star"></i>
                     <span>{{ $t('actions.perfect') }}</span>
                     <span v-if="currentPagePerfectCount > 0" class="font-bold">({{ currentPagePerfectCount }})</span>
@@ -4448,7 +4459,7 @@
                     <span>{{ $t('actions.record') }}</span>
                   </button>
 
-                  <button v-if="!audioStore.isRecording" @click="scrollToSection('notes-section'); openNewNoteFromPage()" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm">
+                  <button v-if="!audioStore.isRecording && !isMushaf" @click="scrollToSection('notes-section'); openNewNoteFromPage()" class="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm">
                     <i class="fas fa-sticky-note"></i>
                     <span>{{ $t('actions.note') }}</span>
                   </button>
@@ -4480,18 +4491,19 @@
               <div id="audio-section" v-if="quranData && quranData.quranWithPages">
               <quran-audio-player-component 
                 :current-page="appStore.currentPage"
+                :extra-page="mushafExtraPage"
                 :quran-data="quranData.quranWithPages"
                 :surah-names="quranData.surahNames"
                 :locale-surahs="currentLocaleSurahs"
                 :current-locale="currentLocale"
                 :db="murajahDB"
                 :audio-play-mode="settingsStore.audioPlayMode"
-                @reciter-fallback="(reciterId) => { const message = $t('audio.reciterFallback', { reciter: reciterId }); appStore.errorMessage = (message &amp;&amp; message !== 'audio.reciterFallback') ? message : ('Reciter ' + reciterId + ' is unavailable; using fallback audio.'); setTimeout(() => appStore.errorMessage = '', 4000); }"
+                @reciter-fallback="(reciterId) => { console.warn('[Murajah] Reciter', reciterId, 'unavailable; using fallback audio.'); }"
               ></quran-audio-player-component>
               </div>
 
               <!-- Mistake Bubble Grid -->
-              <div v-if="currentPageMistakeCount > 0" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
+              <div v-if="currentPageMistakeCount > 0 && !isMushaf" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   {{ $t('mistakes.headerOnPage', { page: appStore.currentPage }) }}
@@ -4520,7 +4532,7 @@
               </div>
 
               <!-- Pages with Mistakes (Full Width) -->
-              <div id="mistakes-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 mb-5">
+              <div v-if="!isMushaf" id="mistakes-section" class="bg-white  rounded-lg shadow-lg p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 mb-5">
                 <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-900 ">
                   <i class="fas fa-exclamation-circle text-red-600 "></i>
                   {{ $t('mistakes.pagesWith') }}
@@ -6145,6 +6157,7 @@
             showSurahView: false, // Show Surah-by-Surah view mode
             showMorphology: false, // Enable morphology popup on word click
             layout: 'qpc', // 'qpc' (604 pages) or 'indopak' (610 pages) — default QPC with tajweed for new users
+            mushafEnabled: false, // Show Mushaf image view (QPC/Tajweed only, not Indopak)
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
             quranBackgroundColor: '#f1ece7',
             audioPlayMode: _cachedAudioPlayMode // 'verse' (default) or 'page' — eagerly loaded from localStorage
@@ -6881,9 +6894,7 @@
               iframe.className = 'w-full h-full';
               container.appendChild(iframe);
             } catch (e) {
-              console.error('[Murajah][Live] Failed to play channel', e);
-              appStore.errorMessage = 'Failed to start live stream';
-              setTimeout(() => appStore.errorMessage = '', 3000);
+              console.warn('[Murajah][Live] Failed to play channel', e);
             }
           };
 
@@ -7461,6 +7472,10 @@
             if (!['qpc', 'indopak'].includes(settingsStore.layout)) {
               settingsStore.layout = 'qpc';
             }
+            // Mushaf view is only valid for qpc layout (604-page layouts)
+            if (settingsStore.mushafEnabled && settingsStore.layout === 'indopak') {
+              settingsStore.mushafEnabled = false;
+            }
             // Load audioPlayMode from individual IndexedDB setting
             // (localStorage was already loaded eagerly at store init time)
             try {
@@ -7504,6 +7519,7 @@
               showTafsir: Boolean(settingsStore.showTafsir),
               showMorphology: Boolean(settingsStore.showMorphology),
               layout: String(settingsStore.layout),
+              mushafEnabled: Boolean(settingsStore.mushafEnabled),
               selectedTasks: Array.isArray(dailyGoalsStore.selectedTasks) 
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
                 : [],
@@ -7680,9 +7696,7 @@
               dailyGoalsStore.lastUpdated = new Date().toISOString();
               Logger.log(`[Murajah] Daily goals initialized | Streak: ${dailyGoalsStore.streak} | Tasks: ${Object.keys(dailyGoalsStore.todayGoal?.tasks || {}).length}`);
             } catch (error) {
-              console.error('[Murajah] Error initializing daily goals:', error);
-              appStore.errorMessage = t('app.dailyGoalInitError');
-              setTimeout(() => appStore.errorMessage = '', 3000);
+              console.warn('[Murajah] Error initializing daily goals:', error);
             }
           };
 
@@ -7764,9 +7778,7 @@
               appStore.successMessage = 'Daily goals updated!';
               setTimeout(() => appStore.successMessage = '', 2000);
             } catch (error) {
-              console.error('[Murajah] Error reinitializing daily goals:', error);
-              appStore.errorMessage = 'Failed to update daily goals';
-              setTimeout(() => appStore.errorMessage = '', 3000);
+              console.warn('[Murajah] Error reinitializing daily goals:', error);
             }
           };
 
@@ -7802,9 +7814,7 @@
               
               await murajahDB.saveDailyGoal(goalToSave);
             } catch (error) {
-              console.error('[Murajah] Failed to save daily goal:', error);
-              appStore.errorMessage = 'Failed to save task - will save in memory';
-              setTimeout(() => appStore.errorMessage = '', 3000);
+              console.warn('[Murajah] Failed to save daily goal:', error);
             }
           };
 
@@ -7957,7 +7967,13 @@
             }
 
             if (appStore.currentPage > 1) {
-              appStore.currentPage--;
+              if (isMushaf.value) {
+                // Snap to the previous image pair (odd-page boundary - 2)
+                const oddPage = appStore.currentPage % 2 === 0 ? appStore.currentPage - 1 : appStore.currentPage;
+                appStore.currentPage = Math.max(1, oddPage - 2);
+              } else {
+                appStore.currentPage--;
+              }
               await nextTick();
               const quranSection = document.getElementById('quran-text-section');
               if (quranSection) quranSection.scrollIntoView({ behavior: 'instant', block: 'start' });
@@ -7972,7 +7988,13 @@
             }
 
             if (appStore.currentPage < totalPages.value) {
-              appStore.currentPage++;
+              if (isMushaf.value) {
+                // Snap to the next image pair (odd-page boundary + 2)
+                const oddPage = appStore.currentPage % 2 === 0 ? appStore.currentPage - 1 : appStore.currentPage;
+                appStore.currentPage = Math.min(totalPages.value, oddPage + 2);
+              } else {
+                appStore.currentPage++;
+              }
               await nextTick();
               const quranSection = document.getElementById('quran-text-section');
               if (quranSection) quranSection.scrollIntoView({ behavior: 'instant', block: 'start' });
@@ -8113,12 +8135,37 @@
             return settingsStore.layout === 'indopak';
           });
 
-          const fontModes = ['indopak', 'tajweed', 'uthmani'];
+          const fontModes = ['indopak', 'tajweed', 'uthmani', 'mushaf'];
 
           const currentFontMode = computed(() => {
             if (settingsStore.layout === 'indopak') return 'indopak';
+            if (settingsStore.mushafEnabled) return 'mushaf';
             if (settingsStore.tajweedEnabled) return 'tajweed';
             return 'uthmani';
+          });
+
+          // Mushaf mode: QPC/Tajweed-only image-based Quran view (604-page layout)
+          const isMushaf = computed(() => currentFontMode.value === 'mushaf');
+
+          /**
+           * Returns the "extra" paired page number for mushaf audio loading.
+           * Each mushaf image shows two pages; audio should cover both.
+           */
+          const mushafExtraPage = computed(() => {
+            if (!isMushaf.value) return null;
+            const p = appStore.currentPage;
+            return p % 2 === 0 ? p - 1 : p + 1;
+          });
+
+          /**
+           * Returns the image path for the current page in mushaf view.
+           * Images cover two pages each: page-1-2.png, page-3-4.png, etc.
+           */
+          const mushafImageUrl = computed(() => {
+            const page = appStore.currentPage;
+            const oddPage = page % 2 === 0 ? page - 1 : page;
+            const evenPage = oddPage + 1;
+            return `./resources/assets/images/quran_pages/page-${oddPage}-${evenPage}.png`;
           });
 
           const totalPages = computed(() => {
@@ -8129,6 +8176,7 @@
             const mode = currentFontMode.value;
             if (mode === 'indopak') return t('layout.indopak');
             if (mode === 'tajweed') return t('layout.tajweed');
+            if (mode === 'mushaf') return t('layout.mushaf');
             return t('layout.uthmani');
           });
 
@@ -8136,21 +8184,41 @@
             const currentIndex = fontModes.indexOf(currentFontMode.value);
             const nextIndex = (currentIndex + 1) % fontModes.length;
             const nextMode = fontModes[nextIndex];
+            const previousLayout = settingsStore.layout; // track before changing
 
             if (nextMode === 'indopak') {
               settingsStore.layout = 'indopak';
               settingsStore.tajweedEnabled = false;
+              settingsStore.mushafEnabled = false;
               settingsStore.audioPlayMode = 'verse'; // Page-by-page only works with QPC
               persistAudioPlayMode('verse');
             } else if (nextMode === 'tajweed') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = true;
+              settingsStore.mushafEnabled = false;
             } else if (nextMode === 'uthmani') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = false;
+              settingsStore.mushafEnabled = false;
+            } else if (nextMode === 'mushaf') {
+              settingsStore.layout = 'qpc';
+              settingsStore.tajweedEnabled = false;
+              settingsStore.mushafEnabled = true;
+            }
+
+            // Skip data reload when staying within QPC sub-modes (tajweed ↔ uthmani ↔ mushaf)
+            if (previousLayout === settingsStore.layout) {
+              // Only reload font CSS when switching between font-based QPC modes
+              if (nextMode !== 'mushaf') {
+                loadPageFont(appStore.currentPage);
+              }
+              appStore.successMessage = t('settings.fontSwitched', { font: t(`layout.${nextMode}`) });
+              setTimeout(() => appStore.successMessage = '', 2000);
+              updateSettings();
+              return;
             }
             
-            // Clear cached data and reload with new layout
+            // Clear cached data and reload with new layout (qpc ↔ indopak transition)
             clearDataCache();
             appStore.loading = true;
             
@@ -8181,8 +8249,10 @@
                 await goToPageNumber(totalPages.value);
               }
               
-              // Reload font for new layout
-              loadPageFont(appStore.currentPage);
+              // Reload font CSS for new layout (skip for mushaf - image-based, no font needed)
+              if (nextMode !== 'mushaf') {
+                loadPageFont(appStore.currentPage);
+              }
               
               appStore.successMessage = t('settings.fontSwitched', { font: t(`layout.${nextMode}`) });
               setTimeout(() => appStore.successMessage = '', 2000);
@@ -10924,6 +10994,9 @@ Display:
             handleWordClickGuard,
             isCurrentPageMemorized,
             isIndopak,
+            isMushaf,
+            mushafExtraPage,
+            mushafImageUrl,
             totalPages,
             layoutLabel,
             currentFontMode,

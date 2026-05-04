@@ -393,6 +393,10 @@ export const QuranAudioPlayerComponent = {
     audioPlayMode: {
       type: String,
       default: 'verse' // 'verse' or 'page'
+    },
+    extraPage: {
+      type: Number,
+      default: null
     }
   },
 
@@ -648,9 +652,17 @@ export const QuranAudioPlayerComponent = {
 
       // Filter all verses on this page and sort by surah and ayah
       const versesBeforeFilter = allVerses.length;
-      this.pageVerses = allVerses
-        .filter(verse => verse && verse.page === this.currentPage)
+      let filteredVerses = allVerses.filter(verse => verse && verse.page === this.currentPage);
+
+      // In mushaf mode, also load verses from the paired page
+      if (this.extraPage != null) {
+        const extraVerses = allVerses.filter(verse => verse && verse.page === this.extraPage);
+        filteredVerses = [...filteredVerses, ...extraVerses];
+      }
+
+      this.pageVerses = filteredVerses
         .sort((a, b) => {
+          if (a.page !== b.page) return a.page - b.page;
           if (a.chapter !== b.chapter) {
             return a.chapter - b.chapter;
           }
@@ -1292,7 +1304,20 @@ export const QuranAudioPlayerComponent = {
      * Load page audio URLs for the current page
      */
     loadPageAudioUrls() {
-      this.pageAudioUrls = getPageAudioUrls(this.currentPage, this.selectedPageReciter);
+      let urls = getPageAudioUrls(this.currentPage, this.selectedPageReciter);
+
+      // In mushaf mode, also load audio for the paired page
+      if (this.extraPage != null) {
+        const extraUrls = getPageAudioUrls(this.extraPage, this.selectedPageReciter);
+        // Always put the lower-numbered page first
+        if (this.extraPage < this.currentPage) {
+          urls = [...extraUrls, ...urls];
+        } else {
+          urls = [...urls, ...extraUrls];
+        }
+      }
+
+      this.pageAudioUrls = urls;
       this.currentPageAudioIndex = 0;
       this.currentTime = 0;
       this.duration = 0;
@@ -1421,6 +1446,12 @@ export const QuranAudioPlayerComponent = {
 
   watch: {
     currentPage() {
+      this.loadPageVerses();
+      if (this.isPageMode) {
+        this.loadPageAudioUrls();
+      }
+    },
+    extraPage() {
       this.loadPageVerses();
       if (this.isPageMode) {
         this.loadPageAudioUrls();
