@@ -33,7 +33,7 @@ export const QuranAudioPlayerComponent = {
           </h3>
         </div>
         <button 
-          v-if="!isPageMode"
+          v-if="!isPageMode || pageAudioUrls.length > 1"
           @click="togglePlaylist" 
           class="text-gray-500 hover:text-gray-700 transition"
           :title="showPlaylist ? $t('audio.hidePlaylist') : $t('audio.showPlaylist')"
@@ -56,13 +56,30 @@ export const QuranAudioPlayerComponent = {
 
       <!-- Page-by-page Player Controls -->
       <div v-if="isPageMode && pageAudioUrls.length > 0" class="space-y-4">
-        <!-- Progress bar -->
+        <!-- Progress bar with A-B markers -->
         <div class="flex items-center gap-2">
           <span class="text-xs font-medium text-gray-600 w-10">{{ currentPageAudioIndex + 1 }}</span>
-          <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden cursor-pointer" @click="seekAudio">
-            <div 
-              class="bg-blue-600 h-full transition-all"
-              :style="{ width: progressPercentage + '%' }"
+          <div class="flex-1 relative cursor-pointer h-3 flex items-center" @click="seekAudio">
+            <div class="absolute inset-x-0 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                class="bg-blue-600 h-full transition-all"
+                :style="{ width: progressPercentage + '%' }"
+              ></div>
+              <div
+                v-if="abRepeatA !== null && abRepeatB !== null && duration > 0"
+                class="absolute inset-y-0 bg-orange-400 opacity-50"
+                :style="abRegionStyle"
+              ></div>
+            </div>
+            <div
+              v-if="abRepeatA !== null && duration > 0"
+              class="absolute top-1/2 -translate-y-1/2 h-4 w-1 rounded-sm bg-green-500 pointer-events-none"
+              :style="{ left: (abRepeatA / duration * 100) + '%' }"
+            ></div>
+            <div
+              v-if="abRepeatB !== null && duration > 0"
+              class="absolute top-1/2 -translate-y-1/2 h-4 w-1 rounded-sm bg-red-500 pointer-events-none"
+              :style="{ left: (abRepeatB / duration * 100) + '%' }"
             ></div>
           </div>
           <span class="text-xs font-medium text-gray-600 w-10 text-right">{{ pageAudioUrls.length }}</span>
@@ -134,6 +151,34 @@ export const QuranAudioPlayerComponent = {
             >
               <i class="fas fa-stop"></i>
             </button>
+
+            <!-- A-B Repeat controls -->
+            <div class="flex items-center gap-1 border-l pl-2 ml-1">
+              <button
+                @click="setAbPointA"
+                class="p-2 rounded-full transition text-xs font-bold w-8 h-8"
+                :class="abRepeatA !== null ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-600'"
+                :title="$t('audio.setPointA')"
+              >A</button>
+              <button
+                @click="setAbPointB"
+                class="p-2 rounded-full transition text-xs font-bold w-8 h-8"
+                :class="abRepeatB !== null ? 'bg-red-100 text-red-600' : 'hover:bg-gray-100 text-gray-600'"
+                :title="$t('audio.setPointB')"
+              >B</button>
+              <button
+                @click="toggleAbRepeat"
+                class="p-2 rounded-full transition"
+                :class="abRepeatEnabled ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100 text-gray-500'"
+                :title="$t('audio.abRepeat')"
+              ><i class="fas fa-exchange-alt text-xs"></i></button>
+              <button
+                v-if="abRepeatA !== null || abRepeatB !== null"
+                @click="clearAbRepeat"
+                class="p-1 rounded-full hover:bg-gray-100 text-gray-400 text-xs transition leading-none"
+                :title="$t('audio.clearAB')"
+              >✕</button>
+            </div>
           </div>
 
           <!-- Speed + Reciter selector (page mode) -->
@@ -162,17 +207,56 @@ export const QuranAudioPlayerComponent = {
             </div>
           </div>
         </div>
+
+        <!-- Page Mode Playlist -->
+        <div v-if="showPlaylist && pageAudioUrls.length > 1" class="mt-4 border-t pt-4">
+          <div class="max-h-40 overflow-y-auto space-y-1">
+            <button
+              v-for="(url, idx) in pageAudioUrls"
+              :key="idx"
+              @click="playPageAudioPart(idx)"
+              class="w-full text-left px-3 py-2 rounded transition text-sm"
+              :class="[
+                currentPageAudioIndex === idx
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'hover:bg-gray-100 text-gray-700'
+              ]"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-medium">{{ getPageAudioPartLabel(idx) }}</span>
+                <i v-if="isPlaying && currentPageAudioIndex === idx" class="fas fa-volume-up text-blue-500 ml-2 flex-shrink-0"></i>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Verse-by-verse Player Controls (original) -->
       <div v-if="!isPageMode && versesToPlay.length > 0" class="space-y-4">
-        <!-- Progress bar -->
+        <!-- Progress bar with A-B markers -->
         <div class="flex items-center gap-2">
           <span class="text-xs font-medium text-gray-600 w-10">{{ currentVerseName }}</span>
-          <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden cursor-pointer" @click="seekAudio">
-            <div 
-              class="bg-blue-600 h-full transition-all"
-              :style="{ width: progressPercentage + '%' }"
+          <div class="flex-1 relative cursor-pointer h-3 flex items-center" @click="seekAudio">
+            <div class="absolute inset-x-0 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                class="bg-blue-600 h-full transition-all"
+                :style="{ width: progressPercentage + '%' }"
+              ></div>
+              <div
+                v-if="abRepeatA !== null && abRepeatB !== null && duration > 0"
+                class="absolute inset-y-0 bg-orange-400 opacity-50"
+                :style="abRegionStyle"
+              ></div>
+            </div>
+            <div
+              v-if="abRepeatA !== null && duration > 0"
+              class="absolute top-1/2 -translate-y-1/2 h-4 w-1 rounded-sm bg-green-500 pointer-events-none"
+              :style="{ left: (abRepeatA / duration * 100) + '%' }"
+            ></div>
+            <div
+              v-if="abRepeatB !== null && duration > 0"
+              class="absolute top-1/2 -translate-y-1/2 h-4 w-1 rounded-sm bg-red-500 pointer-events-none"
+              :style="{ left: (abRepeatB / duration * 100) + '%' }"
             ></div>
           </div>
           <span class="text-xs font-medium text-gray-600 w-10 text-right">{{ versesToPlay.length }}</span>
@@ -245,6 +329,34 @@ export const QuranAudioPlayerComponent = {
             >
               <i class="fas fa-stop"></i>
             </button>
+
+            <!-- A-B Repeat controls -->
+            <div class="flex items-center gap-1 border-l pl-2 ml-1">
+              <button
+                @click="setAbPointA"
+                class="p-2 rounded-full transition text-xs font-bold w-8 h-8"
+                :class="abRepeatA !== null ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-600'"
+                :title="$t('audio.setPointA')"
+              >A</button>
+              <button
+                @click="setAbPointB"
+                class="p-2 rounded-full transition text-xs font-bold w-8 h-8"
+                :class="abRepeatB !== null ? 'bg-red-100 text-red-600' : 'hover:bg-gray-100 text-gray-600'"
+                :title="$t('audio.setPointB')"
+              >B</button>
+              <button
+                @click="toggleAbRepeat"
+                class="p-2 rounded-full transition"
+                :class="abRepeatEnabled ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100 text-gray-500'"
+                :title="$t('audio.abRepeat')"
+              ><i class="fas fa-exchange-alt text-xs"></i></button>
+              <button
+                v-if="abRepeatA !== null || abRepeatB !== null"
+                @click="clearAbRepeat"
+                class="p-1 rounded-full hover:bg-gray-100 text-gray-400 text-xs transition leading-none"
+                :title="$t('audio.clearAB')"
+              >&#x2715;</button>
+            </div>
           </div>
 
           <!-- Right side: Speed, Reciter selector, Surah selector, and Spaced Repetition button -->
@@ -456,7 +568,11 @@ export const QuranAudioPlayerComponent = {
       pageReciters: PAGE_RECITERS,
       // Playback speed
       playbackSpeed: 1,
-      speedOptions: [0.25, 0.5, 0.75, 0.85, 1, 1.5, 1.75, 2]
+      speedOptions: [0.25, 0.5, 0.75, 0.85, 1, 1.5, 1.75, 2],
+      // A-B repeat
+      abRepeatEnabled: false,
+      abRepeatA: null, // time in seconds or null
+      abRepeatB: null  // time in seconds or null
     };
   },
 
@@ -492,20 +608,22 @@ export const QuranAudioPlayerComponent = {
     },
 
     totalSpacedRepetitionPlays() {
-      // Calculate total number of audio files that will play
-      // Each item in spacedPlaylist has:
-      // - verseIndices: array of verse indices
-      // - repeatCount: how many times to repeat the sequence
-      // Total plays = sum of (verseIndices.length * repeatCount) for each item
-      
       if (this.spacedPlaylist.length === 0) return 0;
-      
       let totalPlays = 0;
       for (let item of this.spacedPlaylist) {
-        // Each verse in the sequence plays once per repeat
         totalPlays += item.verseIndices.length * item.repeatCount;
       }
       return totalPlays;
+    },
+
+    abRegionStyle() {
+      if (this.abRepeatA === null || this.abRepeatB === null || this.duration <= 0) return {};
+      const a = Math.min(this.abRepeatA, this.abRepeatB);
+      const b = Math.max(this.abRepeatA, this.abRepeatB);
+      return {
+        left: (a / this.duration * 100) + '%',
+        width: ((b - a) / this.duration * 100) + '%'
+      };
     }
   },
 
@@ -1138,6 +1256,18 @@ export const QuranAudioPlayerComponent = {
      */
     updateProgress() {
       this.currentTime = this.audioElement.currentTime;
+      // A-B repeat: loop back to A when playback reaches B
+      if (
+        this.abRepeatEnabled &&
+        this.abRepeatA !== null &&
+        this.abRepeatB !== null
+      ) {
+        const a = Math.min(this.abRepeatA, this.abRepeatB);
+        const b = Math.max(this.abRepeatA, this.abRepeatB);
+        if (this.currentTime >= b) {
+          this.audioElement.currentTime = a;
+        }
+      }
     },
 
     /**
@@ -1286,6 +1416,45 @@ export const QuranAudioPlayerComponent = {
      */
     togglePlaylist() {
       this.showPlaylist = !this.showPlaylist;
+    },
+
+    // ===== A-B Repeat methods =====
+
+    setAbPointA() {
+      this.abRepeatA = this.currentTime;
+      Logger.log('[Murajah-Audio] A-B: Set point A at', this.abRepeatA);
+    },
+
+    setAbPointB() {
+      this.abRepeatB = this.currentTime;
+      Logger.log('[Murajah-Audio] A-B: Set point B at', this.abRepeatB);
+    },
+
+    toggleAbRepeat() {
+      this.abRepeatEnabled = !this.abRepeatEnabled;
+      Logger.log('[Murajah-Audio] A-B repeat', this.abRepeatEnabled ? 'enabled' : 'disabled');
+    },
+
+    clearAbRepeat() {
+      this.abRepeatA = null;
+      this.abRepeatB = null;
+      this.abRepeatEnabled = false;
+      Logger.log('[Murajah-Audio] A-B repeat cleared');
+    },
+
+    // ===== Page audio playlist helpers =====
+
+    getPageAudioPartLabel(idx) {
+      if (this.pageAudioUrls.length === 1) {
+        return this.$t('audio.pageAudio', { page: this.currentPage });
+      }
+      const url = this.pageAudioUrls[idx];
+      const match = url && url.match(/page\d{3}-(\d{3})\d{3}\.mp3/);
+      if (match) {
+        const surahNum = parseInt(match[1], 10);
+        return `${this.$t('audio.part')} ${idx + 1} · ${this.$t('audio.surah')} ${surahNum}`;
+      }
+      return `${this.$t('audio.part')} ${idx + 1}`;
     },
 
     applyPlaybackSpeed() {

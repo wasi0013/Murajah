@@ -317,7 +317,13 @@
     "partOf": "Part {current} of {total}",
     "noPageAudio": "No audio available for this page",
     "pageByPageReciter": "Mishary Rashid Al Afasy",
-    "speed": "Speed:"
+    "speed": "Speed:",
+    "part": "Part",
+    "surah": "Surah",
+    "abRepeat": "A-B Repeat",
+    "setPointA": "Set point A at current position",
+    "setPointB": "Set point B at current position",
+    "clearAB": "Clear A-B markers"
   },
   "reciters": {
     "shuraim": "Sheikh Shuraim",

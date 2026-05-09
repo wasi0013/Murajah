@@ -316,7 +316,13 @@
     "partOf": "الجزء {current} من {total}",
     "noPageAudio": "لا يتوفر صوت لهذه الصفحة",
     "pageByPageReciter": "مشاري راشد العفاسي",
-    "speed": "السرعة:"
+    "speed": "السرعة:",
+    "part": "جزء",
+    "surah": "سورة",
+    "abRepeat": "تكرار أ-ب",
+    "setPointA": "تعيين نقطة أ عند الموضع الحالي",
+    "setPointB": "تعيين نقطة ب عند الموضع الحالي",
+    "clearAB": "مسح نقطتي أ-ب"
   },
   "reciters": {
     "shuraim": "الشيخ الشريم",

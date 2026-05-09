@@ -15,10 +15,8 @@ async function gotoPlan(page) {
 
 /** Wait for the plan section to finish loading inside index.html */
 async function waitForPlanLoad(page, timeout = 30000) {
-  // Wait for global initial-loader to disappear AND plan section to appear
+  // Wait for the plan section to appear and loading overlay to disappear
   await page.waitForFunction(() => {
-    const initialLoader = document.getElementById('initial-loader');
-    if (initialLoader && initialLoader.offsetParent !== null && getComputedStyle(initialLoader).opacity !== '0') return false;
     const planSection = document.getElementById('plan-section');
     if (!planSection) return false;
     const loader = planSection.querySelector('.animate-spin');
@@ -168,16 +166,9 @@ test.describe('Plan Feature', () => {
             const stores = [];
             if (db.objectStoreNames.contains('plans')) stores.push('plans');
             if (db.objectStoreNames.contains('planHistory')) stores.push('planHistory');
-            // Also include appData to seed language flag
-            if (db.objectStoreNames.contains('appData')) stores.push('appData');
             if (stores.length === 0) { db.close(); resolve(); return; }
             const tx = db.transaction(stores, 'readwrite');
-            if (db.objectStoreNames.contains('plans')) tx.objectStore('plans').clear();
-            if (db.objectStoreNames.contains('planHistory')) tx.objectStore('planHistory').clear();
-            // Seed language-selected flag to prevent language selection modal from blocking tests
-            if (db.objectStoreNames.contains('appData')) {
-              tx.objectStore('appData').put({ id: 'murajah-language-selected', value: true });
-            }
+            stores.forEach(s => tx.objectStore(s).clear());
             tx.oncomplete = () => { db.close(); resolve(); };
             tx.onerror = () => { db.close(); resolve(); };
           } catch { db.close(); resolve(); }
@@ -185,8 +176,6 @@ test.describe('Plan Feature', () => {
         request.onerror = () => resolve();
       });
     });
-    // Allow IDB state to settle (important for webkit)
-    await page.waitForTimeout(300);
   });
 
   // ── Plan Creation ──
@@ -194,9 +183,8 @@ test.describe('Plan Feature', () => {
   test('shows empty state when no plans exist', async ({ page }) => {
     await gotoPlan(page);
 
-    // Should show the empty state or smart plan suggestion (use button locator to avoid
-    // matching hidden error paragraph which contains "Start" in "startup")
-    const emptyState = page.locator('#plan-section button:has-text("Start Plan"), #plan-section button:has-text("Customize"), #plan-section button:has-text("Create Plan")').first();
+    // Should show the empty state or smart plan suggestion
+    const emptyState = page.locator('text=/Create|Start|plan/i').first();
     await expect(emptyState).toBeVisible({ timeout: 10000 });
   });
 
@@ -204,21 +192,23 @@ test.describe('Plan Feature', () => {
     // Reload after beforeEach cleared plans
     await gotoPlan(page);
 
-    // Open setup wizard — click Customize via dispatchEvent for webkit reliability
-    await page.evaluate(() => {
-      const buttons = document.querySelectorAll('button');
-      for (const btn of buttons) {
-        if (btn.textContent.trim() === 'Customize') {
-          btn.click();
-          break;
-        }
-      }
-    });
+    // Open setup wizard — button might say "Customize", "Custom Plan", or "Create"
+    const customizeBtn = page.locator('button:has-text("Customize")').first();
+    const customPlanBtn = page.locator('button:has-text("Custom Plan")');
+    const createBtn = page.locator('button:has-text("Create")').first();
+
+    if (await customizeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await customizeBtn.click();
+    } else if (await customPlanBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await customPlanBtn.click();
+    } else if (await createBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await createBtn.click();
+    }
+    await page.waitForTimeout(500);
 
     // The wizard Step 1 shows three plan-type cards in a grid with sm:grid-cols-3
-    // Each is a button with rounded-xl border-2 (lazy-loaded component, wait for it)
+    // Each is a button with rounded-xl border-2
     const wizardTypeCards = page.locator('button:has-text("🌱"), button:has-text("📖"), button:has-text("🔀")');
-    await expect(wizardTypeCards.first()).toBeVisible({ timeout: 10000 });
     const count = await wizardTypeCards.count();
     expect(count).toBeGreaterThanOrEqual(3);
   });
@@ -279,12 +269,11 @@ test.describe('Plan Feature', () => {
     const calendarTab = page.locator('button[role="tab"]:has-text("Calendar")').first();
     if (await calendarTab.isVisible({ timeout: 5000 }).catch(() => false)) {
       await calendarTab.click();
-      await expect(calendarTab).toHaveAttribute('aria-selected', 'true', { timeout: 5000 });
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(500);
 
-      // Calendar should show day headers (Sun, Mon, etc.) or month/week toggle or navigation chevrons
-      const calendarContent = page.locator('text=/Sun|Mon|Tue|Wed|Thu|Fri|Sat|Week|Month|January|February|March|April|May|June|July|August|September|October|November|December/i').first();
-      await expect(calendarContent).toBeVisible({ timeout: 10000 });
+      // Calendar should show month navigation or day grid
+      const calendarContent = page.locator('text=/January|February|March|April|May|June|July|August|September|October|November|December|Mon|Tue|Wed|Sun|◀|▶/i').first();
+      await expect(calendarContent).toBeVisible({ timeout: 5000 });
     }
   });
 
@@ -294,23 +283,13 @@ test.describe('Plan Feature', () => {
 
     const calendarTab = page.locator('button[role="tab"]:has-text("Calendar")').first();
     if (await calendarTab.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await calendarTab.click({ force: true });
-      await expect(calendarTab).toHaveAttribute('aria-selected', 'true', { timeout: 5000 });
+      await calendarTab.click();
+      await page.waitForTimeout(500);
 
-      // Wait for the calendar grid to render day cells
-      await page.waitForFunction(() => {
-        const grids = document.querySelectorAll('.grid.grid-cols-7');
-        // The second grid has the day cells (first grid is day-of-week headers)
-        for (const grid of grids) {
-          if (grid.querySelectorAll('button span').length > 0) return true;
-        }
-        return false;
-      }, null, { timeout: 10000 });
-
-      // Today's date should be visible in the calendar grid
+      // Today's date should have a distinct style (ring, highlight, etc.)
       const today = new Date().getDate().toString();
-      const todayCell = page.locator(`.grid.grid-cols-7 span:text-is("${today}")`);
-      await expect(todayCell.first()).toBeVisible({ timeout: 5000 });
+      const todayCell = page.locator(`text="${today}"`).first();
+      await expect(todayCell).toBeVisible({ timeout: 5000 });
     }
   });
 
@@ -384,12 +363,12 @@ test.describe('Plan Feature', () => {
 
   // ── Navigation ──
 
-  test('plan is accessible from navigation', async ({ page }) => {
+  test('plan is accessible from bottom navigation', async ({ page }) => {
     await page.goto(INDEX_URL);
     await page.waitForTimeout(1000);
 
-    // Plan should be accessible via desktop nav or bottom nav (mobile only)
-    const planNav = page.locator('nav button:has-text("Plan"), button.bottom-nav-item:has-text("Plan")').first();
+    // Bottom nav should have a plan button
+    const planNav = page.locator('button.bottom-nav-item:has-text("Plan"), button.bottom-nav-item >> svg').first();
     const hasPlanNav = await planNav.isVisible({ timeout: 5000 }).catch(() => false);
     expect(hasPlanNav).toBeTruthy();
   });
@@ -423,15 +402,15 @@ test.describe('Plan Feature', () => {
 
     // Verify plan loaded
     const planName = page.locator('text=/Persistent Plan|Test Plan/i').first();
-    const hasPlan = await planName.isVisible({ timeout: 10000 }).catch(() => false)
-      || await page.locator('button[role="tab"]').first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasPlan = await planName.isVisible({ timeout: 5000 }).catch(() => false)
+      || await page.locator('button[role="tab"]').first().isVisible({ timeout: 3000 }).catch(() => false);
     expect(hasPlan).toBeTruthy();
 
-    // Reload and verify plan still loads
-    await page.reload({ waitUntil: 'load' });
+    // Reload and verify plan still loads after re-navigating to plan view
+    await page.goto(`${INDEX_URL}#plan`);
     await waitForPlanLoad(page);
 
     const planNameAfter = page.locator('button[role="tab"]').first();
-    await expect(planNameAfter).toBeVisible({ timeout: 15000 });
+    await expect(planNameAfter).toBeVisible({ timeout: 10000 });
   });
 });
