@@ -8524,6 +8524,12 @@
             
             try {
               const data = await loadDetailedQuranData();
+              
+              // Guard: user may have navigated back during async load
+              if (surahViewState.selectedSurah !== surahNum) {
+                return;
+              }
+              
               const surahVerses = data[surahNum.toString()];
               
               if (!surahVerses || !Array.isArray(surahVerses)) {

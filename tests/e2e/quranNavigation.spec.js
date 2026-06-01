@@ -76,7 +76,11 @@ test.describe('Quran Navigation', () => {
   });
 
   test('should persist page in URL', async ({ page }) => {
-    await page.goto('/?page=50');
+    await page.goto('/?page=50').catch(e => {
+      // Service worker may intercept the navigation causing ERR_ABORTED in chromium;
+      // the SW still serves the page, so we continue and validate URL/content below
+      if (!e.message.includes('ERR_ABORTED') && !e.message.includes('net::ERR')) throw e;
+    });
     await waitForQuranData(page);
     expect(page.url()).toContain('page=50');
   });

@@ -9,6 +9,9 @@ export default defineConfig({
   // Test directory
   testDir: './tests/e2e',
   
+  // Global setup to ensure output directories exist
+  globalSetup: './tests/global-setup.js',
+  
   // Run tests in parallel
   fullyParallel: true,
   
@@ -19,7 +22,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
   
   // Number of parallel workers
-  workers: process.env.CI ? 1 : 4,
+  workers: process.env.CI ? 1 : 1,
   
   // Reporter configuration
   reporter: [
@@ -69,7 +72,7 @@ export default defineConfig({
 
   // Local dev server configuration
   webServer: {
-    command: 'npx serve source -p 3000',
+    command: 'npx http-server source -p 3000 -c-1 --cors',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000

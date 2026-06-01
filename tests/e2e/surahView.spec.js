@@ -295,7 +295,7 @@ test.describe('Surah View', () => {
       const backButton = page.locator('button:has-text("All Surahs"), button:has-text("جميع السور"), button:has-text("সব সূরা")').first();
       if (await backButton.isVisible()) {
         await backButton.click({ force: true });
-        await page.waitForTimeout(1000);
+        await page.waitForFunction(() => !window.location.href.includes('surah=1'), { timeout: 15000 });
         
         // URL should not contain surah parameter
         expect(page.url()).not.toContain('surah=1');
@@ -328,11 +328,10 @@ test.describe('Surah View', () => {
       }, { timeout: 15000 });
       
       // Should show "7 verses" for Al-Fatihah (in any language)
-      const hasVerseCount = await page.evaluate(() => {
+      await page.waitForFunction(() => {
         const text = document.body.textContent;
         return text && (text.includes('7 verses') || text.includes('7 آيات') || text.includes('7 আয়াত'));
-      });
-      expect(hasVerseCount).toBeTruthy();
+      }, { timeout: 20000 });
     });
   });
 

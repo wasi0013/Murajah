@@ -234,6 +234,9 @@ export async function waitForQuizLoad(page, options = {}) {
     return !overlay;
   }, null, { timeout }).catch(() => {});
 
-  // Give Vue one tick to finish rendering after the overlay is removed
-  await page.waitForTimeout(400);
+  // Wait for all network requests (including large quiz data JSON) to complete.
+  // isLoading is set false inside initializeApp(), but loadQuizData() fires after
+  // and fetches up to 7.5MB. networkidle ensures those fetches are done before we
+  // proceed — critical on webkit where an interrupted fetch logs a critical error.
+  await page.waitForLoadState('networkidle', { timeout }).catch(() => {});
 }

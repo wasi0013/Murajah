@@ -66,7 +66,7 @@ test.describe('Touch Interaction - Main Page', () => {
         if (isVisible) {
             // Tap the word
             await wordElement.tap();
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(500);
 
             // Verify no text is selected
             const hasSelection = await page.evaluate(() => {
