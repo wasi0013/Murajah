@@ -4,18 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Helper to wait for app to finish loading
-async function waitForAppLoad(page) {
-  // Wait for the initial loader to disappear
-  await page.waitForFunction(() => {
-    const loader = document.getElementById('initial-loader');
-    return !loader || loader.style.display === 'none' || loader.classList.contains('hidden');
-  }, { timeout: 60000 });
-  
-  // Also wait for Vue app to be mounted
-  await page.waitForTimeout(1000);
-}
+import { waitForAppLoad } from './helpers.js';
 
 test.describe('App Initialization', () => {
   

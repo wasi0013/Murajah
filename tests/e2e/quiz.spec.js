@@ -4,12 +4,13 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { waitForQuizLoad } from './helpers.js';
 
 test.describe('Quiz Page', () => {
   
   test.beforeEach(async ({ page }) => {
     await page.goto('/quiz.html');
-    await page.waitForTimeout(3000);
+    await waitForQuizLoad(page);
   });
 
   test('should load quiz page', async ({ page }) => {

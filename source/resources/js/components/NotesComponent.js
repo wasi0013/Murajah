@@ -275,7 +275,7 @@ export default {
       this.showExportMenu = this.showExportMenu === noteId ? null : noteId;
     },
 
-    downloadNote(note, format) {
+    async downloadNote(note, format) {
       const filename = (note.title || 'note').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').substring(0, 40) + (format === 'md' ? '.md' : '.txt');
       let content;
 
@@ -286,6 +286,25 @@ export default {
       }
 
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+
+      // iOS Safari/Chrome ignores <a download> and navigates to the blob URL instead.
+      // The immediately-revoked blob URL then gets saved as the PWA's session URL,
+      // causing a 404 loop on every subsequent launch. Use the Web Share API instead.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS && navigator.share) {
+        const file = new File([blob], filename, { type: 'text/plain' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file] });
+          } catch (err) {
+            if (err.name !== 'AbortError') console.warn('[Murajah] Share failed:', err);
+          }
+          this.showExportMenu = null;
+          return;
+        }
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -293,7 +312,7 @@ export default {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
       this.showExportMenu = null;
     },
 

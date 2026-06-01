@@ -19,7 +19,7 @@
  * - Critical resource failures prevent activation (skipWaiting gated)
  */
 
-const CACHE_VERSION = '26.04.13';
+const CACHE_VERSION = '26.05.31';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`; // Versioned with app — old font caches cleaned on activate
 

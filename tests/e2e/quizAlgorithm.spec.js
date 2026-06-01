@@ -4,13 +4,13 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { waitForQuizLoad } from './helpers.js';
 
 test.describe('Quiz Algorithm Correctness', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/quiz.html');
-        // Wait for data to load
-        await page.waitForTimeout(4000);
+        await waitForQuizLoad(page);
     });
 
     test('quiz page should load without errors', async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe('Quiz Algorithm Correctness', () => {
         });
 
         await page.reload();
-        await page.waitForTimeout(4000);
+        await waitForQuizLoad(page);
 
         // Filter out expected network errors (font loading, etc)
         const criticalErrors = errors.filter(e =>

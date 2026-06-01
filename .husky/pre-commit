@@ -1,2 +1,4 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 echo "🧪 Running pre-commit tests..."
-npm run test:unit && npm run test:e2e -- --workers=4
+npm run test:unit && npm run test:e2e

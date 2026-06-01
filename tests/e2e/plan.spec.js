@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissLanguageModal } from './helpers.js';
 
 const INDEX_URL = '/index.html';
 
@@ -15,7 +16,18 @@ async function gotoPlan(page) {
 
 /** Wait for the plan section to finish loading inside index.html */
 async function waitForPlanLoad(page, timeout = 30000) {
-  // Wait for the plan section to appear and loading overlay to disappear
+  // Wait for initial loader to disappear
+  await page.waitForFunction(() => {
+    const loader = document.getElementById('initial-loader');
+    if (!loader) return true;
+    const style = window.getComputedStyle(loader);
+    return style.display === 'none' || style.opacity === '0' || loader.classList.contains('hidden');
+  }, null, { timeout });
+
+  // Dismiss language selection modal — mandatory before any interaction
+  await dismissLanguageModal(page, { retries: 8 });
+
+  // Wait for the plan section to be rendered and any in-section spinner to finish
   await page.waitForFunction(() => {
     const planSection = document.getElementById('plan-section');
     if (!planSection) return false;
@@ -29,7 +41,6 @@ async function waitForPlanLoad(page, timeout = 30000) {
     }
     return true;
   }, null, { timeout });
-  await page.waitForTimeout(500);
 }
 
 /** Create a plan via the setup wizard using the given type */
@@ -76,27 +87,8 @@ async function createPlanViaWizard(page, type = 'beginner') {
 async function seedPlan(page, overrides = {}) {
   await page.evaluate((opts) => {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('murajah-db', 6);
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains('appData')) db.createObjectStore('appData', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
-        if (!db.objectStoreNames.contains('dailyGoals')) db.createObjectStore('dailyGoals', { keyPath: 'date' });
-        if (!db.objectStoreNames.contains('quranCache')) db.createObjectStore('quranCache', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('resourceCache')) db.createObjectStore('resourceCache', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('plans')) {
-          const ps = db.createObjectStore('plans', { keyPath: 'id' });
-          ps.createIndex('status', 'status', { unique: false });
-          ps.createIndex('type', 'type', { unique: false });
-        }
-        if (!db.objectStoreNames.contains('planHistory')) {
-          const hs = db.createObjectStore('planHistory', { keyPath: 'id' });
-          hs.createIndex('planId', 'planId', { unique: false });
-          hs.createIndex('date', 'date', { unique: false });
-          hs.createIndex('planId_date', ['planId', 'date'], { unique: true });
-        }
-      };
+      // Open without a version to use the app's current schema — never bootstrap here
+      const request = indexedDB.open('murajah-db');
       request.onsuccess = () => {
         const db = request.result;
         const d = new Date();
@@ -154,9 +146,14 @@ async function seedPlan(page, overrides = {}) {
 test.describe('Plan Feature', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Navigate to index and clear plans store from within the open DB
+    // Navigate to index and wait for DB to be initialized before clearing
     await page.goto(INDEX_URL);
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(() => {
+      const loader = document.getElementById('initial-loader');
+      if (!loader) return true;
+      const style = window.getComputedStyle(loader);
+      return style.display === 'none' || style.opacity === '0' || loader.classList.contains('hidden');
+    }, null, { timeout: 30000 });
     await page.evaluate(() => {
       return new Promise((resolve) => {
         const request = indexedDB.open('murajah-db');
@@ -365,10 +362,10 @@ test.describe('Plan Feature', () => {
 
   test('plan is accessible from bottom navigation', async ({ page }) => {
     await page.goto(INDEX_URL);
-    await page.waitForTimeout(1000);
+    await dismissLanguageModal(page);
 
-    // Bottom nav should have a plan button
-    const planNav = page.locator('button.bottom-nav-item:has-text("Plan"), button.bottom-nav-item >> svg').first();
+    // Bottom nav 'Plan' button — actual DOM uses .bottom-nav-item with a span text child
+    const planNav = page.locator('.bottom-nav-item').filter({ hasText: 'Plan' }).first();
     const hasPlanNav = await planNav.isVisible({ timeout: 5000 }).catch(() => false);
     expect(hasPlanNav).toBeTruthy();
   });

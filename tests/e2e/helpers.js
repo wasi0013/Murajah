@@ -94,11 +94,7 @@ export async function waitForAppLoad(page, options = {}) {
   // Give Vue a moment to finish mounting
   await page.waitForTimeout(500);
   
-  // Dismiss language selection modal if it appears (try multiple times)
-  await dismissLanguageModal(page, { retries: 5 });
-  
-  // Wait a bit more and try again in case modal appears after initial load
-  await page.waitForTimeout(500);
+  // Dismiss language selection modal if it appears
   await dismissLanguageModal(page, { retries: 5 });
   
   // Final check: ensure no overlays remain

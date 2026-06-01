@@ -507,6 +507,9 @@ test.describe('Surah View', () => {
         const words = document.querySelectorAll('.quran-word');
         return words.length > 0;
       }, { timeout: 15000 });
+
+      // Guard against in-flight hash navigation that would destroy the execution context
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
       
       // Should have loaded page 564 (the last page of Al-Mulk) which is shared with Al-Qalam
       // Check that the surah name is in header (this confirms content loaded correctly)
