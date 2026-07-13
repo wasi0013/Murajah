@@ -4,15 +4,18 @@
  * Mushaf view renders 604-page QPC Quran images instead of font-based text.
  * Each image covers two pages (e.g. page-1-2.png, page-3-4.png).
  * Available only in QPC/Tajweed layout, not in Indopak layout.
+ *
+ * Mushaf is a dedicated nav destination (desktop "Home" dropdown / mobile menu),
+ * decoupled from the Indopak/Tajweed/Uthmani font-toggle cycle.
  */
 
 import { test, expect } from '@playwright/test';
 import { waitForAppLoad, waitForQuranData } from './helpers.js';
 
-// Helper: switch the font mode to the given mode name by clicking the layout button
+// Helper: switch the font mode (Indopak/Tajweed/Uthmani) by clicking the layout toggle button.
 // Clicks until the button label matches the target mode label.
-async function switchToFontMode(page, targetLabel, maxClicks = 6) {
-  const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak|Mushaf/i }).first();
+async function switchToFontMode(page, targetLabel, maxClicks = 4) {
+  const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak/i }).first();
   for (let i = 0; i < maxClicks; i++) {
     const current = await fontButton.textContent();
     if (current && current.trim().toLowerCase() === targetLabel.toLowerCase()) break;
@@ -21,38 +24,22 @@ async function switchToFontMode(page, targetLabel, maxClicks = 6) {
   }
 }
 
-// Helper: activate mushaf mode via Vue app internals (faster than UI clicks)
-async function enableMushafMode(page) {
-  await page.evaluate(() => {
-    // Access the Vue app store through the exposed app instance
-    const app = document.querySelector('#app')?.__vue_app__;
-    if (!app) return;
-    const instance = app._instance;
-    if (!instance) return;
-    const { settingsStore } = instance.setupContext.expose || instance.exposed || {};
-    if (settingsStore) {
-      settingsStore.layout = 'qpc';
-      settingsStore.tajweedEnabled = false;
-      settingsStore.mushafEnabled = true;
-    }
-  });
-  await page.waitForTimeout(300);
+// Helper: navigate to the dedicated "Mushaf" nav item via the desktop "Home" dropdown.
+// Note: use a plain substring filter (not an anchored regex) — the item's accessible
+// text includes the icon glyph/whitespace, which an anchored `/^Mushaf$/` won't match.
+async function openMushafView(page) {
+  await page.hover('.nav-dropdown > button');
+  await page.waitForTimeout(200);
+  await page.locator('.nav-dropdown-item').filter({ hasText: 'Mushaf' }).first().click();
+  await page.waitForTimeout(400);
 }
 
-// Helper: disable mushaf mode (back to uthmani)
-async function disableMushafMode(page) {
-  await page.evaluate(() => {
-    const app = document.querySelector('#app')?.__vue_app__;
-    if (!app) return;
-    const instance = app._instance;
-    if (!instance) return;
-    const { settingsStore } = instance.setupContext.expose || instance.exposed || {};
-    if (settingsStore) {
-      settingsStore.mushafEnabled = false;
-      settingsStore.tajweedEnabled = true;
-    }
-  });
-  await page.waitForTimeout(300);
+// Helper: leave Mushaf view by navigating to the "Quran" nav item.
+async function closeMushafView(page) {
+  await page.hover('.nav-dropdown > button');
+  await page.waitForTimeout(200);
+  await page.locator('.nav-dropdown-item').filter({ hasText: 'Quran' }).first().click();
+  await page.waitForTimeout(400);
 }
 
 test.describe('Mushaf View', () => {
@@ -65,7 +52,7 @@ test.describe('Mushaf View', () => {
 
   test('shows mushaf image when mushaf mode is active', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const mushafSection = page.locator('#mushaf-view-section');
     await expect(mushafSection).toBeVisible({ timeout: 5000 });
@@ -77,7 +64,7 @@ test.describe('Mushaf View', () => {
   test('mushaf image src uses correct page-pair naming for odd page', async ({ page }) => {
     await page.goto('/?page=1');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -89,7 +76,7 @@ test.describe('Mushaf View', () => {
   test('mushaf image src uses correct page-pair naming for even page', async ({ page }) => {
     await page.goto('/?page=2');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -102,7 +89,7 @@ test.describe('Mushaf View', () => {
   test('mushaf image src updates on page navigation', async ({ page }) => {
     await page.goto('/?page=3');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -115,7 +102,7 @@ test.describe('Mushaf View', () => {
   test('mushaf image src at page 603 uses page-603-604.png', async ({ page }) => {
     await page.goto('/?page=603');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -128,7 +115,7 @@ test.describe('Mushaf View', () => {
 
   test('hides font-based quran text when mushaf mode is active', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // The font-rendered quran text container should not exist
     const fontText = page.locator('.quran-text');
@@ -160,15 +147,15 @@ test.describe('Mushaf View', () => {
     const mushafSection = page.locator('#mushaf-view-section');
     await expect(mushafSection).not.toBeVisible();
 
-    // Verify font button does not show mushaf label when in indopak
-    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak|Mushaf/i }).first();
+    // Verify font button does not show a mushaf label when in indopak
+    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak/i }).first();
     const label = await fontButton.textContent();
     expect(label?.trim().toLowerCase()).toBe('indopak');
   });
 
   test('mushaf mode is available in QPC (uthmani) mode', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const mushafSection = page.locator('#mushaf-view-section');
     await expect(mushafSection).toBeVisible({ timeout: 5000 });
@@ -176,13 +163,13 @@ test.describe('Mushaf View', () => {
 
   // ── Cycling through modes ──────────────────────────────────────────────────
 
-  test('font mode cycles include mushaf as 4th mode', async ({ page }) => {
+  test('font mode cycle no longer includes mushaf (decoupled into dedicated nav item)', async ({ page }) => {
     await waitForQuranData(page);
 
-    // From default tajweed mode, cycle through all 4 modes and verify mushaf appears
-    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak|Mushaf/i }).first();
+    // The font toggle only cycles Indopak/Tajweed/Uthmani; Mushaf is reached via its
+    // own nav item and should never appear as one of the toggle's labels.
+    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak/i }).first();
 
-    // Collect all labels seen across 4 clicks
     const labels = [];
     for (let i = 0; i < 4; i++) {
       const label = await fontButton.textContent();
@@ -191,24 +178,29 @@ test.describe('Mushaf View', () => {
       await page.waitForTimeout(400);
     }
 
-    expect(labels).toContain('mushaf');
+    expect(labels).not.toContain('mushaf');
+    expect(new Set(labels)).toEqual(new Set(['indopak', 'tajweed', 'uthmani']));
   });
 
-  test('cycling back from mushaf returns to next mode in sequence', async ({ page }) => {
+  test('clicking the font toggle while in Mushaf exits to a text mode', async ({ page }) => {
     await waitForQuranData(page);
 
-    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak|Mushaf/i }).first();
+    const fontButton = page.locator('button').filter({ hasText: /Uthmani|Tajweed|Indopak/i }).first();
 
-    // Reach mushaf mode
-    await switchToFontMode(page, 'Mushaf');
-    await expect(fontButton).toHaveText(/Mushaf/i);
+    // Enter Mushaf via its dedicated nav item
+    await openMushafView(page);
+    const mushafSection = page.locator('#mushaf-view-section');
+    await expect(mushafSection).toBeVisible({ timeout: 5000 });
 
-    // One more click should leave mushaf
+    // Clicking the font toggle while in Mushaf should exit Mushaf entirely and show
+    // one of the text modes — never "mushaf" (it's no longer part of this control).
     await fontButton.click();
     await page.waitForTimeout(400);
 
     const label = await fontButton.textContent();
     expect(label?.trim().toLowerCase()).not.toBe('mushaf');
+    expect(['indopak', 'tajweed', 'uthmani']).toContain(label?.trim().toLowerCase());
+    await expect(mushafSection).not.toBeVisible();
   });
 
   // ── Navigation ─────────────────────────────────────────────────────────────
@@ -216,7 +208,7 @@ test.describe('Mushaf View', () => {
   test('page navigation updates mushaf image', async ({ page }) => {
     await page.goto('/?page=1');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -241,7 +233,7 @@ test.describe('Mushaf View', () => {
   test('mushaf image has accessible alt text with page numbers', async ({ page }) => {
     await page.goto('/?page=5');
     await waitForAppLoad(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const img = page.locator('#mushaf-view-section img');
     await expect(img).toBeVisible({ timeout: 5000 });
@@ -255,7 +247,7 @@ test.describe('Mushaf View', () => {
 
   test('quran-text-section remains visible in mushaf mode', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const section = page.locator('#quran-text-section');
     await expect(section).toBeVisible({ timeout: 5000 });
@@ -265,7 +257,7 @@ test.describe('Mushaf View', () => {
 
   test('record button remains visible in mushaf mode', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // Record button should be visible (it's always shown regardless of mushaf mode)
     const recordBtn = page.locator('button').filter({ hasText: /^Record$/i });
@@ -279,7 +271,7 @@ test.describe('Mushaf View', () => {
     const memorizeBtn = page.locator('button span').filter({ hasText: /^Memorized?$/i });
     await expect(memorizeBtn.first()).toBeVisible({ timeout: 5000 });
 
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // Should be hidden in mushaf mode
     await expect(memorizeBtn.first()).not.toBeVisible();
@@ -291,7 +283,7 @@ test.describe('Mushaf View', () => {
     const perfectBtn = page.locator('button').filter({ hasText: /Recited without mistakes/i });
     await expect(perfectBtn.first()).toBeVisible({ timeout: 5000 });
 
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     await expect(perfectBtn.first()).not.toBeVisible();
   });
@@ -302,14 +294,14 @@ test.describe('Mushaf View', () => {
     const noteBtn = page.locator('button span').filter({ hasText: /^Note$/i });
     await expect(noteBtn.first()).toBeVisible({ timeout: 5000 });
 
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     await expect(noteBtn.first()).not.toBeVisible();
   });
 
   test('action card is visible in mushaf mode (contains record button)', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // The action card itself is always visible now (v-if removed)
     const recordBtn = page.locator('button').filter({ hasText: /^Record$/i });
@@ -320,7 +312,7 @@ test.describe('Mushaf View', () => {
 
   test('audio player section is visible in mushaf mode', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     const audioSection = page.locator('#audio-section');
     await expect(audioSection).toBeVisible({ timeout: 5000 });
@@ -335,7 +327,7 @@ test.describe('Mushaf View', () => {
     // It uses `v-if="!isMushaf"` with class "absolute top-2 left-2 z-10"
     const palette = page.locator('#quran-text-section .absolute.\\!isMushaf, #quran-text-section [class*="absolute"][class*="top-2"][class*="left-2"]').first();
 
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // The palette div should not be visible (v-if="!isMushaf")
     const count = await page.locator('#quran-text-section').locator('[class*="absolute"][class*="top-2"]').count();
@@ -357,16 +349,14 @@ test.describe('Mushaf View', () => {
 
   test('memorize and perfect buttons reappear after leaving mushaf mode', async ({ page }) => {
     await waitForQuranData(page);
-    await switchToFontMode(page, 'Mushaf');
+    await openMushafView(page);
 
     // Hidden in mushaf
     const memorizeBtn = page.locator('button span').filter({ hasText: /^Memorized?$/i });
     await expect(memorizeBtn.first()).not.toBeVisible();
 
-    // Leave mushaf mode
-    const fontButton = page.locator('button').filter({ hasText: /Mushaf/i }).first();
-    await fontButton.click();
-    await page.waitForTimeout(400);
+    // Leave mushaf mode via the "Quran" nav item
+    await closeMushafView(page);
 
     // Should be visible again
     await expect(memorizeBtn.first()).toBeVisible({ timeout: 5000 });

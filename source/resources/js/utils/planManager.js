@@ -1069,9 +1069,10 @@ export async function loadTodayDayRecord(db, planId, today = new Date()) {
  * @param {IDBDatabase} db - The database reference
  * @param {string} planId - Plan ID
  * @param {number} [daysBack=90] - Number of days to look back
+ * @param {Date} [today] - Override today's date (for testing)
  * @returns {Object[]} Array of PlanDayRecord objects
  */
-export async function loadPlanHistory(db, planId, daysBack = 90) {
+export async function loadPlanHistory(db, planId, daysBack = 90, today = new Date()) {
   if (!db || !db.objectStoreNames.contains('planHistory')) {
     return [];
   }
@@ -1083,7 +1084,7 @@ export async function loadPlanHistory(db, planId, daysBack = 90) {
   return new Promise((resolve, reject) => {
     const request = index.getAll(planId);
     request.onsuccess = () => {
-      const cutoff = new Date();
+      const cutoff = new Date(today);
       cutoff.setDate(cutoff.getDate() - daysBack);
       const cutoffStr = formatDate(cutoff);
 

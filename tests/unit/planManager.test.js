@@ -510,12 +510,18 @@ describe('planManager.js', () => {
     });
 
     it('should save and load day records', async () => {
+      // Constructed as a local date (not parsed from a UTC date-only string) so the
+      // resulting date string is stable regardless of the test runner's timezone.
+      const recordDate = new Date(2026, 3, 10); // April 10, 2026
       const record = createDayRecord('plan_123', {
         revision: { pages: [1, 2], completed: false },
-      }, new Date('2026-04-10'));
+      }, recordDate);
 
       await saveDayRecord(db, record);
-      const history = await loadPlanHistory(db, 'plan_123');
+      // Pass the same fixed date as "today" so the 90-day lookback window is anchored
+      // to the test's own timeline instead of the real wall clock — otherwise this test
+      // would start failing once the real date drifted more than 90 days past recordDate.
+      const history = await loadPlanHistory(db, 'plan_123', 90, recordDate);
 
       expect(history.length).toBe(1);
       expect(history[0].date).toBe('2026-04-10');
