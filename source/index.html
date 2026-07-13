@@ -3426,6 +3426,10 @@
                       <i class="fas fa-chevron-down text-xs text-gray-400"></i>
                     </button>
                     <div class="nav-dropdown-menu">
+                      <a href="#mushaf-section" class="nav-dropdown-item" @click.prevent="scrollToSection('mushaf-section')">
+                        <i class="fas fa-book-open-reader"></i>
+                        {{ $t('header.sections.mushaf') }}
+                      </a>
                       <a href="#quran-text-section" class="nav-dropdown-item" @click.prevent="scrollToSection('quran-text-section')">
                         <i class="fas fa-quran"></i>
                         {{ $t('header.sections.quran') }}
@@ -3556,6 +3560,10 @@
                   {{ $t('header.home') }}
                   <span v-if="hasPendingDailyTasks" class="w-2 h-2 bg-orange-500 rounded-full"></span>
                 </div>
+                <a href="#mushaf-section" class="mobile-menu-item" @click.prevent="scrollToSection('mushaf-section')">
+                  <i class="fas fa-book-open-reader"></i>
+                  {{ $t('header.sections.mushaf') }}
+                </a>
                 <a href="#quran-text-section" class="mobile-menu-item" @click.prevent="scrollToSection('quran-text-section')">
                   <i class="fas fa-quran"></i>
                   {{ $t('header.sections.quran') }}
@@ -4068,9 +4076,10 @@
               <!-- Regular Page Navigation (hidden in Surah View mode) -->
               <template v-if="!settingsStore.showSurahView">
 
-              <div id="quran-text-section" 
+              <div id="quran-text-section"
                 class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 relative group"
                 @touchstart="quranSwipeHandlers.onTouchStart"
+                @touchmove="quranSwipeHandlers.onTouchMove"
                 @touchend="quranSwipeHandlers.onTouchEnd"
               >
                 <div v-if="!isMushaf" class="text-center space-y-1 sm:space-y-2 relative">
@@ -4489,15 +4498,16 @@
 
                 <!-- Quran Audio Player -->
               <div id="audio-section" v-if="quranData && quranData.quranWithPages">
-              <quran-audio-player-component 
+              <quran-audio-player-component
                 :current-page="appStore.currentPage"
                 :extra-page="mushafExtraPage"
+                :is-mushaf-mode="isMushaf"
                 :quran-data="quranData.quranWithPages"
                 :surah-names="quranData.surahNames"
                 :locale-surahs="currentLocaleSurahs"
                 :current-locale="currentLocale"
                 :db="murajahDB"
-                :audio-play-mode="settingsStore.audioPlayMode"
+                :audio-play-mode="activeAudioPlayMode"
                 @reciter-fallback="(reciterId) => { console.warn('[Murajah] Reciter', reciterId, 'unavailable; using fallback audio.'); }"
               ></quran-audio-player-component>
               </div>
@@ -4887,11 +4897,11 @@
                         <label class="block text-sm font-medium mb-2 text-gray-700">{{ $t('settings.audioPlayMode') }}</label>
                         <div class="flex flex-col gap-2">
                           <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="audioPlayMode" value="verse" v-model="settingsStore.audioPlayMode" @change="updateSettings()" class="text-blue-600">
+                            <input type="radio" name="audioPlayMode" value="verse" v-model="activeAudioPlayMode" @change="updateSettings()" class="text-blue-600">
                             <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModeVerse') }}</span>
                           </label>
                           <label class="flex items-center gap-2 cursor-pointer" :class="{ 'opacity-50': isIndopak }">
-                            <input type="radio" name="audioPlayMode" value="page" v-model="settingsStore.audioPlayMode" @change="updateSettings()" class="text-blue-600" :disabled="isIndopak">
+                            <input type="radio" name="audioPlayMode" value="page" v-model="activeAudioPlayMode" @change="updateSettings()" class="text-blue-600" :disabled="isIndopak">
                             <span class="text-sm text-gray-700">{{ $t('settings.audioPlayModePage') }}</span>
                           </label>
                         </div>
@@ -6099,6 +6109,10 @@
             <!-- Bottom Navigation Bar (mobile only) -->
             <nav class="bottom-nav" aria-label="Bottom navigation">
               <div class="bottom-nav-inner">
+                <button class="bottom-nav-item" :class="{ active: activeBottomTab === 'mushaf' }" @click="scrollToSection('mushaf-section')">
+                  <i class="fas fa-book-open-reader"></i>
+                  <span>{{ $t('header.sections.mushaf') }}</span>
+                </button>
                 <button class="bottom-nav-item" :class="{ active: activeBottomTab === 'read' }" @click="scrollToSection('quran-text-section')">
                   <i class="fas fa-book-quran"></i>
                   <span>{{ $t('header.sections.quran') }}</span>
@@ -6115,10 +6129,6 @@
                   <i class="fas fa-calendar-alt"></i>
                   <span>{{ $t('plan.nav') }}</span>
                 </button>
-                <a class="bottom-nav-item" href="./quiz.html">
-                  <i class="fas fa-question-circle"></i>
-                  <span>{{ $t('header.quiz') }}</span>
-                </a>
                 <button class="bottom-nav-item" @click="showMobileMenu = true">
                   <i class="fas fa-ellipsis-h"></i>
                   <span>{{ $t('header.menu') || 'More' }}</span>
@@ -6139,12 +6149,23 @@
             successMessage: ''
           });
 
-          // Eagerly load audioPlayMode from localStorage for instant restore before async IndexedDB
-          const _cachedAudioPlayMode = (() => {
+          // Eagerly load audioPlayMode from localStorage for instant restore before async IndexedDB.
+          // Mushaf and Quran/Tafsir/Word-by-word each keep their own play-mode preference so
+          // switching views doesn't affect the other's setting. One-time migration: seed both
+          // from the legacy shared key if the new per-view keys haven't been saved yet.
+          const _cachedAudioPlayModes = (() => {
+            const isValidMode = (v) => v === 'verse' || v === 'page';
             try {
-              const v = localStorage.getItem('murajah-audioPlayMode');
-              return (v === 'verse' || v === 'page') ? v : 'verse';
-            } catch (_) { return 'verse'; }
+              const legacy = localStorage.getItem('murajah-audioPlayMode');
+              const mushaf = localStorage.getItem('murajah-audioPlayMode-mushaf');
+              const text = localStorage.getItem('murajah-audioPlayMode-text');
+              return {
+                mushaf: isValidMode(mushaf) ? mushaf : (isValidMode(legacy) ? legacy : 'verse'),
+                text: isValidMode(text) ? text : (isValidMode(legacy) ? legacy : 'verse')
+              };
+            } catch (_) {
+              return { mushaf: 'verse', text: 'verse' };
+            }
           })();
 
           const settingsStore = reactive({
@@ -6160,7 +6181,10 @@
             mushafEnabled: false, // Show Mushaf image view (QPC/Tajweed only, not Indopak)
             adjustRevisionChunk: 0,  // Manual adjustment to rotation index (0 = no adjustment)
             quranBackgroundColor: '#f1ece7',
-            audioPlayMode: _cachedAudioPlayMode // 'verse' (default) or 'page' — eagerly loaded from localStorage
+            // 'verse' (default) or 'page' — scoped separately per view so the audio player's
+            // progress/mode in Mushaf doesn't get clobbered by switching to Quran/Tafsir, and vice versa.
+            audioPlayModeMushaf: _cachedAudioPlayModes.mushaf,
+            audioPlayModeText: _cachedAudioPlayModes.text
           });
 
           const memorizedStore = reactive({
@@ -6228,6 +6252,7 @@
             if (viewMode.value === 'plan') return 'plan';
             if (viewMode.value === 'journal') return 'journal';
             if (viewMode.value === 'dailyGoals') return 'goals';
+            if (viewMode.value === 'core' && isMushaf.value) return 'mushaf';
             if (viewMode.value === 'core' && settingsStore.showSurahView) return 'surahs';
             return 'read';
           });
@@ -7020,11 +7045,18 @@
               previousViewMode.value = null;
             }
 
+            // Special handling for Mushaf: dedicated image-based reading view
+            if (sectionId === 'mushaf-section' || sectionId === 'mushaf') {
+              await openMushafView();
+              return;
+            }
+
             // Special handling for 'quran' section - user explicitly requested Quran
             if (sectionId === 'quran' || sectionId === 'quran-text-section') {
               // Mark that user explicitly chose Quran; keep Quran active across navigation
               forceQuranMode.value = true;
               viewMode.value = 'core';
+              settingsStore.mushafEnabled = false;
               try {
                 settingsStore.showTafsir = false;
                 settingsStore.showWordByWord = false;
@@ -7092,6 +7124,7 @@
             if (sectionId === 'tafsir-section') {
               // Clear explicit Quran override so Tafsir stays active across navigation
               forceQuranMode.value = false;
+              settingsStore.mushafEnabled = false;
               try {
                 settingsStore.showTafsir = true;
                 settingsStore.showWordByWord = false; // Disable word-by-word when tafsir is enabled
@@ -7134,6 +7167,7 @@
             if (sectionId === 'wordbyword-section') {
               // Clear explicit Quran override so Word-by-Word stays active across navigation
               forceQuranMode.value = false;
+              settingsStore.mushafEnabled = false;
               try {
                 settingsStore.showWordByWord = true;
                 settingsStore.showTafsir = false; // Disable tafsir when word-by-word is enabled
@@ -7176,6 +7210,7 @@
             if (sectionId === 'surah-section') {
               // Clear explicit Quran override
               forceQuranMode.value = false;
+              settingsStore.mushafEnabled = false;
               try {
                 settingsStore.showSurahView = true;
                 settingsStore.showTafsir = false;
@@ -7476,28 +7511,50 @@
             if (settingsStore.mushafEnabled && settingsStore.layout === 'indopak') {
               settingsStore.mushafEnabled = false;
             }
-            // Load audioPlayMode from individual IndexedDB setting
+            // Load audioPlayMode from individual IndexedDB settings, scoped per view
             // (localStorage was already loaded eagerly at store init time)
             try {
-              const savedAudioPlayMode = await murajahDB.getSetting('audioPlayMode');
-              if (savedAudioPlayMode && ['verse', 'page'].includes(savedAudioPlayMode)) {
-                settingsStore.audioPlayMode = savedAudioPlayMode;
+              const savedMushafMode = await murajahDB.getSetting('audioPlayModeMushaf');
+              const savedTextMode = await murajahDB.getSetting('audioPlayModeText');
+              const isValidMode = (v) => v && ['verse', 'page'].includes(v);
+
+              if (isValidMode(savedMushafMode)) {
+                settingsStore.audioPlayModeMushaf = savedMushafMode;
+              }
+              if (isValidMode(savedTextMode)) {
+                settingsStore.audioPlayModeText = savedTextMode;
+              } else {
+                // One-time migration: neither per-view key was ever saved to IndexedDB —
+                // fall back to the legacy shared setting for both views.
+                const legacyMode = await murajahDB.getSetting('audioPlayMode');
+                if (isValidMode(legacyMode)) {
+                  settingsStore.audioPlayModeText = legacyMode;
+                  if (!isValidMode(savedMushafMode)) {
+                    settingsStore.audioPlayModeMushaf = legacyMode;
+                  }
+                }
               }
             } catch (e) {
-              console.warn('[Murajah] Failed to load audioPlayMode setting:', e);
+              console.warn('[Murajah] Failed to load audioPlayMode settings:', e);
             }
 
-            // Ensure audioPlayMode is always a valid value
-            if (!['verse', 'page'].includes(settingsStore.audioPlayMode)) {
-              settingsStore.audioPlayMode = 'verse';
+            // Ensure audioPlayMode values are always valid
+            if (!['verse', 'page'].includes(settingsStore.audioPlayModeMushaf)) {
+              settingsStore.audioPlayModeMushaf = 'verse';
+            }
+            if (!['verse', 'page'].includes(settingsStore.audioPlayModeText)) {
+              settingsStore.audioPlayModeText = 'verse';
             }
             // Force verse mode if layout is indopak (page-by-page only works with QPC)
-            if (settingsStore.layout === 'indopak' && settingsStore.audioPlayMode === 'page') {
-              settingsStore.audioPlayMode = 'verse';
+            if (settingsStore.layout === 'indopak' && settingsStore.audioPlayModeText === 'page') {
+              settingsStore.audioPlayModeText = 'verse';
             }
 
-            // Sync localStorage with the final resolved value
-            try { localStorage.setItem('murajah-audioPlayMode', settingsStore.audioPlayMode); } catch (_) {}
+            // Sync localStorage with the final resolved values
+            try {
+              localStorage.setItem('murajah-audioPlayMode-mushaf', settingsStore.audioPlayModeMushaf);
+              localStorage.setItem('murajah-audioPlayMode-text', settingsStore.audioPlayModeText);
+            } catch (_) {}
           };
 
           // Save data to IndexedDB
@@ -7524,7 +7581,8 @@
                 ? dailyGoalsStore.selectedTasks.map(t => String(t))
                 : [],
               quranBackgroundColor: String(settingsStore.quranBackgroundColor),
-              audioPlayMode: String(settingsStore.audioPlayMode)
+              audioPlayModeMushaf: String(settingsStore.audioPlayModeMushaf),
+              audioPlayModeText: String(settingsStore.audioPlayModeText)
             };
 
             const data = {
@@ -8135,17 +8193,33 @@
             return settingsStore.layout === 'indopak';
           });
 
-          const fontModes = ['indopak', 'tajweed', 'uthmani', 'mushaf'];
+          const fontModes = ['indopak', 'tajweed', 'uthmani'];
 
           const currentFontMode = computed(() => {
             if (settingsStore.layout === 'indopak') return 'indopak';
-            if (settingsStore.mushafEnabled) return 'mushaf';
             if (settingsStore.tajweedEnabled) return 'tajweed';
             return 'uthmani';
           });
 
-          // Mushaf mode: QPC/Tajweed-only image-based Quran view (604-page layout)
-          const isMushaf = computed(() => currentFontMode.value === 'mushaf');
+          // Mushaf mode: QPC/Tajweed-only image-based Quran view (604-page layout).
+          // Entered via the dedicated "Mushaf" nav item (openMushafView), independent
+          // of the Indopak/Tajweed/Uthmani font-toggle cycle above.
+          const isMushaf = computed(() => settingsStore.mushafEnabled);
+
+          // The audio play mode (verse-by-verse vs page-by-page) for whichever view is
+          // currently active — Mushaf and Quran/Tafsir/Word-by-word each keep their own
+          // preference (settingsStore.audioPlayMode{Mushaf,Text}) so switching views doesn't
+          // affect the other's setting.
+          const activeAudioPlayMode = computed({
+            get: () => isMushaf.value ? settingsStore.audioPlayModeMushaf : settingsStore.audioPlayModeText,
+            set: (value) => {
+              if (isMushaf.value) {
+                settingsStore.audioPlayModeMushaf = value;
+              } else {
+                settingsStore.audioPlayModeText = value;
+              }
+            }
+          });
 
           /**
            * Returns the "extra" paired page number for mushaf audio loading.
@@ -8176,11 +8250,62 @@
             const mode = currentFontMode.value;
             if (mode === 'indopak') return t('layout.indopak');
             if (mode === 'tajweed') return t('layout.tajweed');
-            if (mode === 'mushaf') return t('layout.mushaf');
             return t('layout.uthmani');
           });
 
+          /**
+           * Clears cached Quran data and reloads it for a new layout ('qpc' | 'indopak'),
+           * preserving data that doesn't vary by layout. Shared by switchFont (indopak ↔ qpc)
+           * and openMushafView (forcing qpc, since Mushaf images only exist for that layout).
+           * Assumes settingsStore.layout has already been set to newLayout by the caller.
+           * Returns true on success, false if the reload failed.
+           */
+          const reloadQuranDataForLayout = async (newLayout) => {
+            clearDataCache();
+            appStore.loading = true;
+
+            try {
+              // Preserve existing data that doesn't change with layout
+              const preservedData = {
+                quranWithPages: quranData.value?.quranWithPages,
+                translationsBn: quranData.value?.translationsBn
+              };
+
+              // Reload Quran data with new layout (includes tafsirMapping)
+              const data = await loadAllQuranData(newLayout, {
+                murajahDB
+              });
+
+              quranData.value = data;
+
+              // Restore preserved data
+              if (preservedData.quranWithPages) {
+                quranData.value.quranWithPages = preservedData.quranWithPages;
+              }
+              if (preservedData.translationsBn) {
+                quranData.value.translationsBn = preservedData.translationsBn;
+              }
+
+              // Adjust current page if it exceeds new layout's total pages
+              if (appStore.currentPage > totalPages.value) {
+                await goToPageNumber(totalPages.value);
+              }
+
+              return true;
+            } catch (error) {
+              console.error('[Murajah] Failed to reload Quran data for layout:', newLayout, error);
+              appStore.errorMessage = 'Failed to switch font. Please try again.';
+              setTimeout(() => appStore.errorMessage = '', 3000);
+              return false;
+            } finally {
+              appStore.loading = false;
+            }
+          };
+
           const switchFont = async () => {
+            // Selecting a text font always exits Mushaf reading mode.
+            settingsStore.mushafEnabled = false;
+
             const currentIndex = fontModes.indexOf(currentFontMode.value);
             const nextIndex = (currentIndex + 1) % fontModes.length;
             const nextMode = fontModes[nextIndex];
@@ -8189,83 +8314,58 @@
             if (nextMode === 'indopak') {
               settingsStore.layout = 'indopak';
               settingsStore.tajweedEnabled = false;
-              settingsStore.mushafEnabled = false;
-              settingsStore.audioPlayMode = 'verse'; // Page-by-page only works with QPC
-              persistAudioPlayMode('verse');
+              settingsStore.audioPlayModeText = 'verse'; // Page-by-page only works with QPC
+              persistAudioPlayMode('text', 'verse');
             } else if (nextMode === 'tajweed') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = true;
-              settingsStore.mushafEnabled = false;
             } else if (nextMode === 'uthmani') {
               settingsStore.layout = 'qpc';
               settingsStore.tajweedEnabled = false;
-              settingsStore.mushafEnabled = false;
-            } else if (nextMode === 'mushaf') {
-              settingsStore.layout = 'qpc';
-              settingsStore.tajweedEnabled = false;
-              settingsStore.mushafEnabled = true;
             }
 
-            // Skip data reload when staying within QPC sub-modes (tajweed ↔ uthmani ↔ mushaf)
+            // Skip data reload when staying within QPC sub-modes (tajweed ↔ uthmani)
             if (previousLayout === settingsStore.layout) {
-              // Only reload font CSS when switching between font-based QPC modes
-              if (nextMode !== 'mushaf') {
-                loadPageFont(appStore.currentPage);
-              }
+              loadPageFont(appStore.currentPage);
               appStore.successMessage = t('settings.fontSwitched', { font: t(`layout.${nextMode}`) });
               setTimeout(() => appStore.successMessage = '', 2000);
               updateSettings();
               return;
             }
-            
+
             // Clear cached data and reload with new layout (qpc ↔ indopak transition)
-            clearDataCache();
-            appStore.loading = true;
-            
-            try {
-              // Preserve existing data that doesn't change with layout
-              const preservedData = {
-                quranWithPages: quranData.value?.quranWithPages,
-                translationsBn: quranData.value?.translationsBn
-              };
-              
-              // Reload Quran data with new layout (includes tafsirMapping)
-              const data = await loadAllQuranData(settingsStore.layout, {
-                murajahDB
-              });
-              
-              quranData.value = data;
-              
-              // Restore preserved data
-              if (preservedData.quranWithPages) {
-                quranData.value.quranWithPages = preservedData.quranWithPages;
-              }
-              if (preservedData.translationsBn) {
-                quranData.value.translationsBn = preservedData.translationsBn;
-              }
-              
-              // Adjust current page if it exceeds new layout's total pages
-              if (appStore.currentPage > totalPages.value) {
-                await goToPageNumber(totalPages.value);
-              }
-              
-              // Reload font CSS for new layout (skip for mushaf - image-based, no font needed)
-              if (nextMode !== 'mushaf') {
-                loadPageFont(appStore.currentPage);
-              }
-              
+            const success = await reloadQuranDataForLayout(settingsStore.layout);
+            if (success) {
+              loadPageFont(appStore.currentPage);
               appStore.successMessage = t('settings.fontSwitched', { font: t(`layout.${nextMode}`) });
               setTimeout(() => appStore.successMessage = '', 2000);
-              
-              // Save the settings
               updateSettings();
-            } catch (error) {
-              console.error('[Murajah] Failed to switch font:', error);
-              appStore.errorMessage = 'Failed to switch font. Please try again.';
-              setTimeout(() => appStore.errorMessage = '', 3000);
-            } finally {
-              appStore.loading = false;
             }
+          };
+
+          /**
+           * Opens the dedicated Mushaf reading view (image-based, QPC-only).
+           * Independent of switchFont/fontModes — invoked from the "Mushaf" nav item.
+           */
+          const openMushafView = async () => {
+            showMobileMenu.value = false;
+            showHomeDropdown.value = false;
+            forceQuranMode.value = false;
+            settingsStore.showTafsir = false;
+            settingsStore.showWordByWord = false;
+            settingsStore.showSurahView = false;
+            viewMode.value = 'core';
+            settingsStore.mushafEnabled = true;
+
+            if (settingsStore.layout !== 'qpc') {
+              settingsStore.layout = 'qpc';
+              settingsStore.tajweedEnabled = false;
+              await reloadQuranDataForLayout('qpc');
+            }
+
+            updateSettings();
+            await nextTick();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           };
 
           // Theme functions - Always use light mode
@@ -9083,18 +9183,21 @@
           // Settings functions
           const updateSettings = () => {
             saveDataBackground(); // Save to IndexedDB
-            // Persist audioPlayMode via multiple channels for reliability
-            persistAudioPlayMode(settingsStore.audioPlayMode);
+            // Persist both views' audioPlayMode via multiple channels for reliability
+            persistAudioPlayMode('mushaf', settingsStore.audioPlayModeMushaf);
+            persistAudioPlayMode('text', settingsStore.audioPlayModeText);
             appStore.successMessage = t('notifications.settingsUpdated');
             setTimeout(() => appStore.successMessage = '', 2000);
           };
 
-          // Robust persistence for audioPlayMode across localStorage + IndexedDB
-          const persistAudioPlayMode = (mode) => {
+          // Robust persistence for audioPlayMode across localStorage + IndexedDB, scoped per view
+          // ('mushaf' or 'text') so Mushaf and Quran/Tafsir/Word-by-word keep independent settings.
+          const persistAudioPlayMode = (view, mode) => {
+            const settingKey = view === 'mushaf' ? 'audioPlayModeMushaf' : 'audioPlayModeText';
             // Synchronous localStorage write — survives even if IndexedDB fails
-            try { localStorage.setItem('murajah-audioPlayMode', mode); } catch (_) {}
+            try { localStorage.setItem(`murajah-audioPlayMode-${view}`, mode); } catch (_) {}
             // Async IndexedDB write
-            murajahDB.setSetting('audioPlayMode', mode).catch(console.error);
+            murajahDB.setSetting(settingKey, mode).catch(console.error);
           };
 
           const cycleQuranBackgroundColor = () => {
@@ -10685,10 +10788,16 @@
             saveDataBackground();
           });
 
-          // Watch audioPlayMode and persist via multiple channels
-          watch(() => settingsStore.audioPlayMode, (newMode) => {
+          // Watch each view's audioPlayMode independently and persist via multiple channels
+          watch(() => settingsStore.audioPlayModeMushaf, (newMode) => {
             if (isAppInitialized.value) {
-              persistAudioPlayMode(newMode);
+              persistAudioPlayMode('mushaf', newMode);
+              saveDataBackground();
+            }
+          });
+          watch(() => settingsStore.audioPlayModeText, (newMode) => {
+            if (isAppInitialized.value) {
+              persistAudioPlayMode('text', newMode);
               saveDataBackground();
             }
           });
@@ -11001,12 +11110,14 @@ Display:
             isCurrentPageMemorized,
             isIndopak,
             isMushaf,
+            activeAudioPlayMode,
             mushafExtraPage,
             mushafImageUrl,
             totalPages,
             layoutLabel,
             currentFontMode,
             switchFont,
+            openMushafView,
             currentPagePerfectCount,
             currentPageHifzStatus,
             currentPageAudioCount,

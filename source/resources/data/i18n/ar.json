@@ -16,6 +16,7 @@
     "menu": "القائمة",
     "reload": "إعادة تحميل",
     "sections": {
+      "mushaf": "مصحف",
       "quran": "القرآن",
       "surahView": "السور/الأجزاء",
       "wordByWord": "كلمة بكلمة",

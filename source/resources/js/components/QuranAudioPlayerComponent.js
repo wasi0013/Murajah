@@ -509,6 +509,13 @@ export const QuranAudioPlayerComponent = {
     extraPage: {
       type: Number,
       default: null
+    },
+    // Explicit mode signal — distinct from `extraPage` (which only means "which paired
+    // page's verses/audio to include"). Used to snapshot/restore playback progress
+    // separately for Mushaf vs. Quran/Tafsir/Word-by-word (see `isMushafMode` watcher).
+    isMushafMode: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -572,7 +579,13 @@ export const QuranAudioPlayerComponent = {
       // A-B repeat
       abRepeatEnabled: false,
       abRepeatA: null, // time in seconds or null
-      abRepeatB: null  // time in seconds or null
+      abRepeatB: null,  // time in seconds or null
+      // Snapshots of playback progress per reading mode ('mushaf' vs 'text'), so switching
+      // between Mushaf and Quran/Tafsir/Word-by-word doesn't reset the other mode's position.
+      modeSnapshots: { mushaf: null, text: null },
+      // Guards against the audioPlayMode watcher redundantly resetting playback state
+      // while the isMushafMode watcher is already restoring/loading for a view switch.
+      isSwitchingReadingMode: false
     };
   },
 
@@ -715,6 +728,54 @@ export const QuranAudioPlayerComponent = {
           }
         }
       } catch (e) { /* ignore */ }
+    },
+
+    /**
+     * Captures the progress-relevant playback state for the mode being left, keyed by
+     * the page/extraPage it belongs to, so it can be restored if the user comes back to
+     * this mode without navigating to a different page in the meantime.
+     */
+    snapshotCurrentState() {
+      return {
+        page: this.currentPage,
+        extraPage: this.extraPage,
+        pageVerses: this.pageVerses,
+        currentVerseIndex: this.currentVerseIndex,
+        currentTime: this.currentTime,
+        duration: this.duration,
+        pageAudioUrls: this.pageAudioUrls,
+        currentPageAudioIndex: this.currentPageAudioIndex,
+        showPlaylist: this.showPlaylist,
+        currentSequenceIndices: this.currentSequenceIndices,
+        currentSequencePosition: this.currentSequencePosition,
+        currentSequenceRepeatCount: this.currentSequenceRepeatCount,
+        currentSequenceRepeatPosition: this.currentSequenceRepeatPosition,
+        currentPlaylistIndex: this.currentPlaylistIndex,
+        spacedPlaylist: this.spacedPlaylist
+      };
+    },
+
+    /**
+     * Restores a previously captured snapshot when switching back into a mode.
+     * Playback itself is never auto-resumed — only position/progress — since only one
+     * shared <audio> element exists and resuming without a user action would be surprising.
+     */
+    restoreSnapshot(snapshot) {
+      this.pageVerses = snapshot.pageVerses;
+      this.currentVerseIndex = snapshot.currentVerseIndex;
+      this.currentTime = snapshot.currentTime;
+      this.duration = snapshot.duration;
+      this.pageAudioUrls = snapshot.pageAudioUrls;
+      this.currentPageAudioIndex = snapshot.currentPageAudioIndex;
+      this.showPlaylist = snapshot.showPlaylist;
+      this.currentSequenceIndices = snapshot.currentSequenceIndices;
+      this.currentSequencePosition = snapshot.currentSequencePosition;
+      this.currentSequenceRepeatCount = snapshot.currentSequenceRepeatCount;
+      this.currentSequenceRepeatPosition = snapshot.currentSequenceRepeatPosition;
+      this.currentPlaylistIndex = snapshot.currentPlaylistIndex;
+      this.spacedPlaylist = snapshot.spacedPlaylist;
+      this.isPlaying = false;
+      this.needsReload = true;
     },
 
     /**
@@ -1615,16 +1676,48 @@ export const QuranAudioPlayerComponent = {
 
   watch: {
     currentPage() {
+      // Genuine page navigation (in either mode) — reload verse/audio lists for the new page.
       this.loadPageVerses();
       if (this.isPageMode) {
         this.loadPageAudioUrls();
       }
     },
-    extraPage() {
-      this.loadPageVerses();
-      if (this.isPageMode) {
-        this.loadPageAudioUrls();
+    // Note: no standalone `extraPage` watcher. `extraPage` only means "which paired page's
+    // verses/audio to include" — it changes together with `currentPage` on real navigation
+    // (handled above) and together with `isMushafMode` on a bare view switch (handled below).
+    // Treating it as its own reload trigger was what caused switching Mushaf ↔ Quran/Tafsir
+    // to reset playback position even when the page hadn't actually changed.
+    isMushafMode(newVal, oldVal) {
+      const outgoingKey = oldVal ? 'mushaf' : 'text';
+      const incomingKey = newVal ? 'mushaf' : 'text';
+
+      this.isSwitchingReadingMode = true;
+
+      // Save the outgoing mode's progress so it can be resumed later.
+      this.modeSnapshots[outgoingKey] = this.snapshotCurrentState();
+
+      // Only one <audio> element exists, so playback can't continue across the switch —
+      // but the saved position/mode selection let the user pick up where they left off.
+      if (this.audioElement) {
+        this.audioElement.pause();
       }
+
+      const saved = this.modeSnapshots[incomingKey];
+      const pagesMatch = saved && saved.page === this.currentPage && saved.extraPage === this.extraPage;
+
+      if (pagesMatch) {
+        this.restoreSnapshot(saved);
+      } else {
+        // No valid snapshot for this page yet (first visit, or the page changed while away).
+        this.loadPageVerses();
+        if (this.isPageMode) {
+          this.loadPageAudioUrls();
+        }
+      }
+
+      this.$nextTick(() => {
+        this.isSwitchingReadingMode = false;
+      });
     },
     quranData() {
       this.loadPageVerses();
@@ -1632,6 +1725,11 @@ export const QuranAudioPlayerComponent = {
       this.populateAvailableSurahs();
     },
     audioPlayMode(newVal) {
+      // A bare view switch can surface a different audioPlayMode value (each view keeps its
+      // own), but the isMushafMode watcher above already restores/loads the correct state —
+      // skip this reset so it doesn't clobber what was just restored.
+      if (this.isSwitchingReadingMode) return;
+
       // Stop any currently playing audio
       if (this.audioElement) {
         this.audioElement.pause();

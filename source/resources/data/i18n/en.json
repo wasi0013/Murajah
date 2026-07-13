@@ -16,6 +16,7 @@
     "menu": "Menu",
     "reload": "Reload",
     "sections": {
+      "mushaf": "Mushaf",
       "quran": "Quran",
       "surahView": "Surahs/Juzs",
       "wordByWord": "Word by Word",

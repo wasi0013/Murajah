@@ -133,7 +133,7 @@ export function debounceTouch(callback, delay = 300) {
  * @param {number} [options.maxDuration=500] — max touch duration in ms
  * @param {number} [options.ratioThreshold=1.5] — minimum horizontal:vertical ratio to distinguish from scroll
  * @param {Function} [options.shouldIgnore] — return true to skip swipe detection (e.g. on interactive elements)
- * @returns {{ onTouchStart: Function, onTouchEnd: Function }}
+ * @returns {{ onTouchStart: Function, onTouchMove: Function, onTouchEnd: Function }}
  */
 export function createSwipeHandler(callbacks, options = {}) {
     const threshold = options.threshold || 50;
@@ -144,19 +144,45 @@ export function createSwipeHandler(callbacks, options = {}) {
     let startX = 0;
     let startY = 0;
     let startTime = 0;
+    // True once a second finger has been involved in the current gesture (e.g. a
+    // pinch-to-zoom) — cancels swipe detection so the first finger's own movement
+    // isn't misread as a page-flip swipe.
+    let multiTouch = false;
 
     function onTouchStart(event) {
         if (shouldIgnore(event)) return;
+
+        if (event.touches && event.touches.length > 1) {
+            // A second finger joined — this is a pinch/multi-touch gesture, not a swipe.
+            multiTouch = true;
+            startTime = 0;
+            return;
+        }
+
         if (event.touches && event.touches.length === 1) {
             const touch = event.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
             startTime = Date.now();
+            multiTouch = false;
+        }
+    }
+
+    function onTouchMove(event) {
+        if (event.touches && event.touches.length > 1) {
+            multiTouch = true;
         }
     }
 
     function onTouchEnd(event) {
         if (startTime === 0) return;
+
+        // Gesture involved (or still involves) more than one touch point — never a swipe.
+        if (multiTouch || (event.touches && event.touches.length > 0)) {
+            multiTouch = false;
+            startTime = 0;
+            return;
+        }
 
         const duration = Date.now() - startTime;
         startTime = 0;
@@ -184,5 +210,5 @@ export function createSwipeHandler(callbacks, options = {}) {
         }
     }
 
-    return { onTouchStart, onTouchEnd };
+    return { onTouchStart, onTouchMove, onTouchEnd };
 }
