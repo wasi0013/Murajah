@@ -8,6 +8,12 @@ const routes: RouteRecordRaw[] = [
     name: 'reader',
     component: () => import('@/features/reader/ReaderView.vue'),
   },
+  {
+    // Design gallery (dev/design tool). Code-split → never in the reader bundle.
+    path: '/gallery',
+    name: 'gallery',
+    component: () => import('@/features/gallery/GalleryView.vue'),
+  },
 ]
 
 export const router = createRouter({
