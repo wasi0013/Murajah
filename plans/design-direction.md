@@ -42,7 +42,13 @@ Applied to Arabic glyphs when tajweed is on; these come from the per-page color 
 - **Arabic mushaf:** the real QPC uthmani / color-tajweed / Indopak fonts (Phase 1) — unchanged.
 - Numerals: tabular in stats/goals.
 
-## Open items carried forward
-- Confirm accent-shifts-by-theme (pine↔amber) vs. one constant accent — default: shift.
-- Pick the UI type pairing (2.1.2).
-- Lock tajweed rule→colour names against the font (2.7.3).
+## Backlog idea — tajweed colours on Indopak (new feature)
+
+Today tajweed colour exists **only for QPC** (baked into per-page colour fonts); Indopak has no colour variant, and we hold **no tajweed rule data** (confirmed — only the UI label matches "tajweed"). Indopak is real Unicode Arabic with harakat, so tajweed colouring is feasible via **data-driven segment colouring**: source per-letter tajweed rule tags (QUL / quran.com / Tarteel) keyed by `s:a:w`, render coloured spans over the Indopak text. Font-independent, so it lights up tajweed for the large subcontinent/Bengali base — something legacy never offered.
+
+**Scope (not Phase 2):** a research + data spike (source + validate tajweed annotation data against an authoritative mushaf), a `data-pipeline` dataset (per-word tajweed segments), and a reader rendering layer. Land in **Phase 3** (reader) as an enhancement; keep QPC's colour font for its proven fidelity. Semantic tajweed token colours (below) are shared by both paths.
+
+## Confirmed decisions (2.1.2)
+- **Accent shifts by theme:** pine (light/sepia) ↔ amber (dark). Confirmed.
+- **UI font:** native **system stack** now (fast, zero-download, OS-native Bengali/Arabic fallback — right for the mobile/webview + subcontinent base). A bespoke self-hosted face stays a one-line token swap for later.
+- Lock tajweed rule→colour names against the font in 2.7.3.
