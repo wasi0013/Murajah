@@ -59,8 +59,8 @@
 ## 1.8 — Port domain logic into `app/src/core/`
 - [ ] **1.8.1** Port the "port-as-is" modules from the Phase 0 map (calculations, pageHasanah, weaknessScorer, scoreFormatter, planScheduler, planManager, dailyGoalsManager) into `core/` as typed modules.
   - *Verify:* their existing unit tests (moved over) pass unchanged in `app/`.
-- [ ] **1.8.2** Port the storage-facing stores (notes, morphology, i18n) behind the new storage layer, decoupled from Vue where they were coupled.
-  - *Verify:* unit tests green; no Vue import in `core/`.
+- [x] **1.8.1 DONE** — ported `logger`, `pageHasanah`, `scoreFormatter`, `calculations`, `weaknessScorer`, `planManager`, `planScheduler`, `dailyGoalsManager` byte-identical into `app/src/core/memorization/`; their legacy suites run green (**272 tests**). Kept as `.js` for a faithful port (`allowJs`); typing them as `.ts` is deferred tech-debt, done incrementally with tests guarding.
+- [ ] **1.8.2 DEFERRED to feature phases.** The `notes`/`morphology`/`i18n` stores are Vue + IndexedDB coupled and feature-adjacent — porting them now (before the user-data storage layer and their features exist) would be speculative and need re-adaptation. Port when their feature lands: **morphology → Phase 3**, **i18n + notes → Phase 8**, behind the user-data storage layer. Constraint stands: no Vue import in `core/`.
 
 ## 1.9 — Legacy data migration (safety-critical)
 - [ ] **1.9.1** Document the legacy IndexedDB schema (object stores + shapes) used by the current app for memorization, mistakes, notes, plans, goals, recordings.
