@@ -6,6 +6,7 @@
   "description": "Build-time scripts: chunk + compress Quran data/assets from source/ into app/public.",
   "scripts": {
     "data:build": "node src/build.mjs",
+    "assets:build": "node src/assets.mjs",
     "test": "node --test"
   }
 }

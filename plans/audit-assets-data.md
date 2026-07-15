@@ -78,9 +78,9 @@ Tools: `cwebp`, `avifenc` (installed). Sample: `page-1-2.png` (2.4M, 1356×966).
 Candidates:
 1. **Keep current QPC v2 per-page woff2 (recommended baseline).** Already present, proven fidelity. Change is purely runtime: lazy-load current page + prefetch ±1, `font-display: block` on the Arabic to avoid glyph-substitution flashes. Zero fidelity risk.
 2. **quran.com / Quranic Universal Library (QUL)** — same lineage as our current data source (README credits TarteelAI/QUL). Worth checking for newer/smaller per-page woff2 or a v4 layout, but only adopt if pixel-identical.
-3. **Tajweed coloring mechanism** — determine whether the 50M tajweed set is COLR/CPAL color fonts or paired with segment data. If segment-based CSS coloring is viable, it could drop the 50M font set entirely and color via spans. **Phase 1 spike with screenshot diffs required before deciding.**
+3. **Tajweed coloring mechanism — RESOLVED (Phase 1.4).** The 50M tajweed set is **604 per-page color fonts** (`tajweed/p{N}.woff2`, COLR/CPAL). Legacy renders tajweed by injecting a per-page `@font-face` under family `TajweedPage` and swapping it for the uthmani `QPCPage` family when tajweed is toggled. **Decision: keep this exact model** — proven, pixel-identical, so priority-1 fidelity is guaranteed; no segment-based rewrite needed. Only the *loading* changes (lazy per-page, Phase 1.6).
 
-**Recommendation:** ship Phase 1 on candidate (1) (lowest risk), run the tajweed-mechanism spike (3) in parallel; adopt (2)/(3) only on a proven pixel-diff match.
+**Recommendation:** ship Phase 1 on candidate (1) + the confirmed tajweed color-font model. Font families carried into the new app: `QPCPage` (uthmani), `TajweedPage` (color tajweed), `IndopakNastaleeq` (single Nastaleeq font). The font pipeline (`copy-fonts.mjs`) emits `fonts/manifest.json` with these families + per-page path templates.
 
 ---
 

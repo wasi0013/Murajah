@@ -29,6 +29,13 @@ export function createManifest() {
       runtime.datasets[name] = { pathTemplate, count }
       buildInfo.datasets[name] = { chunks }
     },
+    /** A single non-chunked file (an index/mapping the app loads whole). */
+    addIndex(name, { path, bytes, hash }) {
+      runtime.indexes ??= {}
+      runtime.indexes[name] = { path }
+      buildInfo.indexes ??= {}
+      buildInfo.indexes[name] = { bytes, hash }
+    },
     write(outputData) {
       writeJson(`${outputData}/manifest.json`, runtime)
       writeJson(`${outputData}/build-info.json`, buildInfo)
