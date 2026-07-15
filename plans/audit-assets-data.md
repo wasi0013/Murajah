@@ -68,6 +68,8 @@ Tools: `cwebp`, `avifenc` (installed). Sample: `page-1-2.png` (2.4M, 1356×966).
 
 **Findings:** the source resolution is modest (≈678px/page), so the dominant win is simply **re-encoding PNG→WebP** plus **splitting spreads into single pages**. Recommendation: **WebP** (better than AVIF at this resolution), single-page assets (604), 1–2 responsive widths. Projected total: **611M → ~70–110M**, and *per-page transfer ~120–180K* (lazy, never bulk by default). Re-evaluate AVIF only if higher-res source scans are sourced later.
 
+**Layout requirement:** desktop/computer users value the **2-page side-by-side spread** — keep it. Compose the desktop spread from **two adjacent single-page images**, so one single-page asset set serves both mobile (one page) and desktop (two pages side by side). No separate spread assets needed.
+
 ---
 
 ## 3. Font source research (task 0.6.3)

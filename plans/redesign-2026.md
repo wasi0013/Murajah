@@ -96,7 +96,7 @@ There are **three** reading surfaces, all of which we keep and improve:
 
 Hard rules:
 - **Uthmani script + color-coded tajweed (QPC) and Indopak are priority-1.** We may swap to a *better-compiling/rendering source* for these fonts, but the script (uthmani) and tajweed coloring must remain identical in output. Candidate sources to evaluate in Phase 1: quran.com / Quranic Universal Library (QUL) fonts, COLR/CPAL color-tajweed fonts vs. segment-based tajweed coloring.
-- **Mushaf image view mobile fix:** today it forces a 2-page spread → tiny on phones → pinch-zoom. New behavior: **single-page mode on narrow screens** (one page at a time), 2-up only where width allows, with smooth pinch-zoom retained as an option, not a requirement.
+- **Mushaf image view — responsive, both layouts matter:** the **2-page side-by-side spread is important to desktop/computer users** and must be preserved on wide screens. The fix is *only* for phones, where the spread becomes tiny and forces pinch-zoom: **collapse to single-page mode on narrow screens** (one page at a time). So: single page on mobile, 2-up spread on desktop (width-driven), pinch-zoom retained as an option in both.
 
 ---
 
@@ -147,7 +147,7 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 ### Phase 3b — Mushaf image view (standalone)
 **Goal:** Keep the "real Quran" scan experience, fixed for phones.
 - Dedicated menu/route (as today), fed by the optimized AVIF/WebP single-page assets from Phase 1.
-- **Single-page mode on narrow screens**, 2-up spread where width allows; smooth pinch-zoom retained as an option (no longer mandatory to read).
+- **Responsive layout:** single-page on narrow/mobile screens; **2-up side-by-side spread on desktop** (valued by computer users — keep it). Compose the desktop spread from two adjacent single-page images so one asset set serves both; smooth pinch-zoom retained as an option (no longer mandatory to read).
 - Lazy per-page image load with neighbor prefetch; page/juz/surah quick-jump shared with the text reader.
 **Acceptance:** On a phone, a page is legible without pinch-zoom; image transfer per page is a fraction of the old ~2MB PNG; view is not in the initial bundle.
 
