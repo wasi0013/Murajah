@@ -105,9 +105,12 @@ Hard rules:
 Greenfield, but **de-risked**: the new app is built alongside `source/` on the `redesign` branch (legacy stays live from `master`, no time pressure), so we can optionally flag the reader to real users early. Quality-first: each phase is broken into granular, individually-verifiable tasks and gated by its acceptance criteria before the next begins. Near-term phases get their own detailed task file; later phases are detailed as we reach them to avoid stale speculation.
 
 **Granular task files:**
-- [phase-0-foundations.md](./phase-0-foundations.md) — scaffold, CI, perf gates, deploy, audit
-- [phase-1-data-assets.md](./phase-1-data-assets.md) — chunking, fonts, images, workers, migration
+- [phase-0-foundations.md](./phase-0-foundations.md) — scaffold, CI, perf gates, deploy, audit ✅
+- [phase-1-data-assets.md](./phase-1-data-assets.md) — chunking, fonts, images, workers, migration ✅
+- [phase-2-design-system.md](./phase-2-design-system.md) — tokens, primitives, reading-surface spec, gallery
 - _(later phases granularized when reached)_
+
+**Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md)
 
 ### Phase 0 — Foundations & audit
 **Goal:** New app boots, CI/deploy/test harness in place, decisions locked.
