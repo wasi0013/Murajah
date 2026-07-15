@@ -37,6 +37,8 @@ export class DataClient {
   async init(): Promise<Manifest> {
     if (!this.manifest) {
       this.manifest = await this.transport.fetchJson<Manifest>(MANIFEST_PATH)
+      // Let a persistent-cache transport purge stale chunks on a new deploy.
+      this.transport.setVersion?.(this.manifest.version)
     }
     return this.manifest
   }

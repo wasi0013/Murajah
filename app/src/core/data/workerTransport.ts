@@ -32,6 +32,9 @@ export function createWorkerTransport(): Transport {
         worker.postMessage({ id, url })
       })
     },
+    setVersion(version: string) {
+      worker.postMessage({ cmd: 'setVersion', version })
+    },
   }
 }
 

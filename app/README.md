@@ -34,6 +34,18 @@ npm run preview   # serve the built dist/
 - **Every route is code-split** (dynamic `import()` in the router) to protect the
   reader bundle budget (see redesign plan §3).
 
+## Caching ownership (no double-caching)
+
+Each asset type has exactly one cache owner:
+
+| Asset | Owner | Where |
+|---|---|---|
+| `/data/*.json` chunks | **IndexedDB AssetCache** (versioned, LRU + cap) | inside the data worker |
+| `/fonts/*`, `/img/*`, app shell | **Service Worker** Cache API (Phase 8) | — |
+| User data (progress, notes, goals…) | **IndexedDB** (separate DB) | Phase 1.9+ |
+
+The Service Worker must **not** runtime-cache `/data/*` — the AssetCache owns it.
+
 ## Deploy (Cloudflare Pages)
 
 The redesign runs as a **second, separate** Cloudflare Pages project so the legacy

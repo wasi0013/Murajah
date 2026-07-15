@@ -3,6 +3,9 @@
 // direct fetch/mock in tests.
 export interface Transport {
   fetchJson<T>(path: string): Promise<T>
+  /** Optional: tell a persistent-cache transport the current data version
+   * (a change purges stale entries). No-op for memory-only transports. */
+  setVersion?(version: string): void
 }
 
 /**
