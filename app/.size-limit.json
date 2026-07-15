@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Initial JS (reader route, gzip)",
+    "path": ["dist/assets/index-*.js", "dist/assets/ReaderView-*.js"],
+    "limit": "120 kB",
+    "gzip": true
+  },
+  {
+    "name": "App shell CSS (gzip)",
+    "path": "dist/assets/*.css",
+    "limit": "30 kB",
+    "gzip": true
+  }
+]

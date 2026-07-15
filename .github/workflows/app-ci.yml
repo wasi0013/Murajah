@@ -1,0 +1,52 @@
+name: app CI
+
+# Redesign app (app/) quality + performance gates.
+# Legacy source/ is unaffected; this only runs on app/ changes.
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - '.github/workflows/app-ci.yml'
+  push:
+    branches: [redesign]
+    paths:
+      - 'app/**'
+      - '.github/workflows/app-ci.yml'
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  test:
+    name: Type-check, unit & e2e tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  budgets:
+    name: Performance budgets (bundle size + Lighthouse)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Bundle-size gate
+        run: npm run size
+      - name: Lighthouse CI gate
+        run: npx --yes @lhci/cli@0.14.x autorun

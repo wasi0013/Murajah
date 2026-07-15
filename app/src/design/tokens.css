@@ -1,0 +1,79 @@
+/*
+ * Murajah design tokens — Phase 0 skeleton (structured, minimal).
+ * Semantic CSS variables that switch by theme at runtime via [data-theme].
+ * Fleshed out into the full 2026 design language in Phase 2.
+ */
+
+:root,
+:root[data-theme='light'] {
+  /* Color — semantic roles */
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f8;
+  --color-text: #1a1a1e;
+  --color-text-muted: #6b6b73;
+  --color-border: #e5e5ea;
+  --color-accent: #10b981; /* emerald — calm, reading-friendly */
+  --color-accent-contrast: #ffffff;
+
+  /* Spacing scale (rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Type scale */
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #101014;
+  --color-surface: #1a1a20;
+  --color-text: #ececf1;
+  --color-text-muted: #9a9aa5;
+  --color-border: #2b2b33;
+  --color-accent: #34d399;
+  --color-accent-contrast: #06251a;
+}
+
+:root[data-theme='sepia'] {
+  --color-bg: #f4ecd8;
+  --color-surface: #ece0c6;
+  --color-text: #3b2f22;
+  --color-text-muted: #7a6a52;
+  --color-border: #d9c9a8;
+  --color-accent: #0f766e;
+  --color-accent-contrast: #f4ecd8;
+}
+
+/*
+ * Bridge tokens into Tailwind v4 utilities (bg-bg, text-text, etc.).
+ * `inline` means the utility references the live CSS var, so runtime theme
+ * switching via [data-theme] flows through automatically.
+ */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-accent-contrast: var(--color-accent-contrast);
+}
