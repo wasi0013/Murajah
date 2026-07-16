@@ -8,6 +8,9 @@ import { useMushafImages } from '@/composables/useMushafImages'
 import { useMushafZoom } from '@/composables/useMushafZoom'
 import { useMushafQuickJump } from '@/composables/useMushafQuickJump'
 import { useMushafLocation } from '@/composables/useMushafLocation'
+import { useProgressPersistence } from '@/composables/useProgressPersistence'
+import { useReadingReward } from '@/composables/useReadingReward'
+import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { pageStep, visiblePages } from '@/core/mushaf/spread'
 import { keyToPageDelta } from '@/core/reader/keyboard'
 import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
@@ -34,6 +37,10 @@ const img = useMushafImages(store)
 const zoom = useMushafZoom()
 const { jumpTo } = useMushafQuickJump(store)
 const { juz, surahName } = useMushafLocation(store)
+
+// Reading-time hasanah (mushaf pages are already the canonical 604 scheme).
+const progressPersistence = useProgressPersistence()
+useReadingReward(() => store.page, getPageHasanah)
 
 const reduceMotion =
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -265,6 +272,7 @@ watch(
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
+  void progressPersistence.hydrate() // load hasanah before reading rewards accrue
   await nav.hydrate() // saved last page first…
   nav.applyRoute() // …then a deep-linked /mushaf/:page wins
 })
@@ -272,6 +280,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   mq?.removeEventListener('change', onMqChange)
   nav.dispose()
+  progressPersistence.dispose()
 })
 
 function backToReader() {

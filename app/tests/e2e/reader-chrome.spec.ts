@@ -29,16 +29,16 @@ test('quick-jump resolves ayah / surah name / page to the right page', async ({ 
   await expect(page).toHaveURL(/\/read\/qpc\/300(\?|$)/) // unchanged
 })
 
-test('other tabs show a coming-soon toast and keep Read active', async ({ page }) => {
+test('not-yet-built tabs show a coming-soon toast and keep Home active', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
 
-  const read = page.getByRole('button', { name: 'Read', exact: true })
-  await expect(read).toHaveAttribute('aria-current', 'page')
+  const home = page.getByRole('button', { name: 'Home', exact: true })
+  await expect(home).toHaveAttribute('aria-current', 'page')
 
   await page.getByRole('button', { name: 'Goals' }).click()
   await expect(page.getByText('Coming in a later phase')).toBeVisible()
-  await expect(read).toHaveAttribute('aria-current', 'page') // still Read
+  await expect(home).toHaveAttribute('aria-current', 'page') // still Home
 })
 
 test('reader feature flag off shows the disabled placeholder', async ({ page }) => {

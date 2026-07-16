@@ -11,9 +11,28 @@ const DB_NAME = 'murajah-userdata'
 const DB_VERSION = 1
 const STORE = 'data'
 const MISTAKES_KEY = 'mistakes'
+const PROGRESS_KEY = 'progress'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
+
+/**
+ * On-disk memorization progress (canonical 604-page Madani scheme). `memorized`
+ * and `perfectRevisions` reuse the legacy export keys; `hasanah` is the new
+ * cumulative reward counter (Phase 4). `perfectRevisions` is the UI "memorization
+ * strength".
+ */
+export interface StoredProgress {
+  memorized: number[]
+  perfectRevisions: Record<string, number>
+  hasanah: number
+}
+
+export interface Progress {
+  memorized: Set<number>
+  strength: Map<number, number>
+  hasanah: number
+}
 
 let dbPromise: Promise<IDBDatabase> | null = null
 function db(): Promise<IDBDatabase> {
@@ -56,6 +75,45 @@ export async function saveMistakes(map: Map<number, Set<number>>): Promise<void>
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeMistakes(map), MISTAKES_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+export function serializeProgress(p: Progress): StoredProgress {
+  const perfectRevisions: Record<string, number> = {}
+  for (const [page, n] of p.strength) if (n > 0) perfectRevisions[String(page)] = n
+  return { memorized: [...p.memorized].sort((a, b) => a - b), perfectRevisions, hasanah: p.hasanah }
+}
+
+export function deserializeProgress(stored: StoredProgress | undefined): Progress {
+  const strength = new Map<number, number>()
+  for (const [page, n] of Object.entries(stored?.perfectRevisions ?? {})) strength.set(Number(page), n)
+  return {
+    memorized: new Set((stored?.memorized ?? []).map(Number)),
+    strength,
+    hasanah: stored?.hasanah ?? 0,
+  }
+}
+
+/** Load persisted progress (empty if none / on error). */
+export async function loadProgress(): Promise<Progress> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredProgress>(tx.objectStore(STORE), PROGRESS_KEY)
+    await txDone(tx)
+    return deserializeProgress(stored)
+  } catch {
+    return deserializeProgress(undefined)
+  }
+}
+
+/** Persist progress (best-effort). */
+export async function saveProgress(p: Progress): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(serializeProgress(p), PROGRESS_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */

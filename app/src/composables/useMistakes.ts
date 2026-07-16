@@ -1,6 +1,7 @@
 import { watch } from 'vue'
 import type { useReaderStore } from '@/stores/reader'
 import { useMistakesStore } from '@/stores/mistakes'
+import { useProgressStore } from '@/stores/progress'
 import type { DataClient } from '@/core/data'
 import type { NavIndex } from '@/core/data/types'
 import { getDataClient } from '@/core/data'
@@ -18,6 +19,7 @@ export function useMistakes(
   data: DataClient = getDataClient(),
 ) {
   const store = useMistakesStore()
+  const progress = useProgressStore()
   let qpcNav: NavIndex | undefined
 
   async function qpcPageFor(location: string): Promise<number | undefined> {
@@ -33,11 +35,16 @@ export function useMistakes(
     return qpcNav.ayahToPage[ayah]
   }
 
-  /** Toggle the tapped word's mistake mark (resolving its QPC page). */
+  /**
+   * Toggle the tapped word's mistake mark (resolving its QPC page). Marking a new
+   * mistake also drops that page's memorization strength by 1 (Phase 4.1.4);
+   * un-marking never restores it (strength only rises via a clean recitation).
+   */
   async function markWord(location: string, wordId: number): Promise<void> {
     const qpcPage =
       reader.layout === 'qpc' ? reader.page : ((await qpcPageFor(location)) ?? reader.page)
-    store.toggle(qpcPage, wordId)
+    const marked = store.toggle(qpcPage, wordId)
+    if (marked) progress.penalizeMistake(qpcPage)
   }
 
   async function hydrate(): Promise<void> {

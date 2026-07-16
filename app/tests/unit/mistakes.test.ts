@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useMistakesStore } from '@/stores/mistakes'
 import { useMistakes } from '@/composables/useMistakes'
 import { useReaderStore } from '@/stores/reader'
+import { useProgressStore } from '@/stores/progress'
 import {
   serializeMistakes,
   deserializeMistakes,
@@ -84,6 +85,19 @@ describe('useMistakes marking', () => {
     const { store, markWord } = useMistakes(reader, mockData({ '2:255': 42 }))
     await markWord('2:255:1', 5436)
     expect(store.byPage.get(42)?.has(5436)).toBe(true) // QPC page, not Indopak 52
+  })
+
+  it('marking a mistake drops that page’s strength; un-marking does not restore it', async () => {
+    const reader = useReaderStore()
+    reader.goToPage(50)
+    const progress = useProgressStore()
+    progress.bumpStrength(50, 5) // strong page
+    const { markWord } = useMistakes(reader, mockData({}))
+
+    await markWord('2:200:3', 1234) // mark → strength -1
+    expect(progress.strengthOf(50)).toBe(4)
+    await markWord('2:200:3', 1234) // un-mark → NO restore
+    expect(progress.strengthOf(50)).toBe(4)
   })
 })
 

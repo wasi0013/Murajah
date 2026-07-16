@@ -18,6 +18,10 @@ import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader
 import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
+import { useProgressPersistence } from '@/composables/useProgressPersistence'
+import { useReadingReward } from '@/composables/useReadingReward'
+import { useMadaniPage } from '@/composables/useMadaniPage'
+import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
 import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
@@ -47,11 +51,16 @@ const router = useRouter()
 
 const sync = useReaderRouteSync(reader, router)
 const persistence = useReaderPersistence(reader)
+const progressPersistence = useProgressPersistence()
 const { juz, surahName } = useReaderLocation(reader)
 const { switchTo } = useLayoutSwitch(reader)
 const study = useVerseStudy(reader)
 const { jumpTo } = useQuickJump(reader)
 useReaderKeyboard(reader)
+
+// Reading-time hasanah: accrue against the canonical Madani page (Indopak maps in).
+const madaniPage = useMadaniPage(reader)
+useReadingReward(madaniPage, getPageHasanah)
 
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
@@ -89,12 +98,14 @@ watch(activeTab, (v) => {
 })
 
 onMounted(async () => {
+  void progressPersistence.hydrate() // load memorization/hasanah before rewards accrue
   await persistence.hydrate() // saved prefs first…
   sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
 })
 onBeforeUnmount(() => {
   sync.dispose()
   persistence.dispose()
+  progressPersistence.dispose()
 })
 
 const maxStep = READING_WIDTHS.length - 1
