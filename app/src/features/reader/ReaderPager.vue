@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
+import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
 
 /**
  * Paged reader host: mounts only the current page and its two neighbours in a
- * track (the rest stay virtual), so a long surah never mounts more than three
- * surfaces. Data + fonts for the window are loaded and neighbours prefetched by
- * useReaderPages; a mushaf-frame skeleton shows until a page resolves.
+ * track (the rest virtual), so a long surah never mounts more than three
+ * surfaces. Horizontal pointer drags turn pages — RTL-aware (rightward = next,
+ * like an Arabic book) with a distance/velocity threshold and edge rubber-band —
+ * and the slide animation is skipped under prefers-reduced-motion.
  */
 const reader = useReaderStore()
 const pages = useReaderPages(reader)
 
-// Surah names are tiny and shared across pages — load once.
+// Both mushaf surfaces read right-to-left, so paging is mirrored vs an LTR
+// carousel. Column DOM order left→right: [next, current, prev].
+const RTL = true
+const OFFSETS = [1, 0, -1] as const
+
 const surahNames = ref<SurahNames>({})
 onMounted(async () => {
   try {
@@ -28,14 +34,113 @@ onMounted(async () => {
   }
 })
 
-// Fixed slots relative to the current page keep the DOM structure stable while
-// paging; the track is translated so the middle slot is centred (3.3 animates).
-const OFFSETS = [-1, 0, 1] as const
+const reduceMotion =
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// Track transform: translateX(calc(-centerIndex*100% + dragPx)). centerIndex is
+// normally 1 (middle column); it animates to a neighbour on commit.
+const root = ref<HTMLElement>()
+const centerIndex = ref(1)
+const dragPx = ref(0)
+const transition = ref(false)
+const dragging = ref(false)
+const SLIDE_MS = 280
+
+const trackStyle = computed(() => ({
+  transform: `translateX(calc(${-centerIndex.value * 100}% + ${dragPx.value}px))`,
+  transition: transition.value ? `transform ${SLIDE_MS}ms var(--ease-emphasized)` : 'none',
+}))
+
+let startX = 0
+let lastX = 0
+let lastT = 0
+let active = false
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  active = true
+  dragging.value = false
+  transition.value = false
+  startX = lastX = e.clientX
+  lastT = e.timeStamp
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!active) return
+  const dx = e.clientX - startX
+  if (!dragging.value) {
+    if (Math.abs(dx) < 8) return // below tap threshold — let word taps through
+    dragging.value = true
+    root.value?.setPointerCapture(e.pointerId)
+  }
+  lastX = e.clientX
+  lastT = e.timeStamp
+  // dx > 0 reveals the left column (next in RTL); dx < 0 the right (prev).
+  const atEdge = dx > 0 ? reader.page >= reader.pageCount : reader.page <= 1
+  dragPx.value = dampenIfAtEdge(dx, atEdge)
+}
+
+function onPointerUp(e: PointerEvent) {
+  if (!active) return
+  active = false
+  if (!dragging.value) return
+  dragging.value = false
+
+  const deltaX = e.clientX - startX
+  const dt = Math.max(1, e.timeStamp - lastT)
+  const velocityX = (e.clientX - lastX) / dt
+  const width = root.value?.clientWidth ?? window.innerWidth
+  const delta = resolveSwipe({ deltaX, velocityX, width, rtl: RTL })
+  const target = reader.page + delta
+
+  if (delta !== 0 && target >= 1 && target <= reader.pageCount) {
+    commit(delta)
+  } else {
+    snapBack()
+  }
+}
+
+/** Animate to the target neighbour, then swap the page and re-centre silently. */
+function commit(delta: -1 | 1) {
+  if (reduceMotion) {
+    dragPx.value = 0
+    reader.goToPage(reader.page + delta)
+    return
+  }
+  const idx = OFFSETS.indexOf(delta)
+  transition.value = true
+  dragPx.value = 0
+  centerIndex.value = idx
+  window.setTimeout(() => {
+    transition.value = false
+    reader.goToPage(reader.page + delta)
+    centerIndex.value = 1
+  }, SLIDE_MS)
+}
+
+function snapBack() {
+  if (reduceMotion) {
+    dragPx.value = 0
+    return
+  }
+  transition.value = true
+  dragPx.value = 0
+  centerIndex.value = 1
+  window.setTimeout(() => (transition.value = false), SLIDE_MS)
+}
 </script>
 
 <template>
-  <div class="pager" aria-busy="false">
-    <div class="track">
+  <div
+    ref="root"
+    class="pager"
+    :class="{ dragging }"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+    @pointercancel="onPointerUp"
+  >
+    <div class="track" :style="trackStyle">
       <div v-for="offset in OFFSETS" :key="offset" class="col" :aria-hidden="offset !== 0">
         <template v-if="reader.page + offset >= 1 && reader.page + offset <= reader.pageCount">
           <ReadingSurface
@@ -58,11 +163,16 @@ const OFFSETS = [-1, 0, 1] as const
 .pager {
   overflow: hidden;
   width: 100%;
+  /* Let vertical scroll through; we own the horizontal axis for paging. */
+  touch-action: pan-y;
+}
+.pager.dragging {
+  user-select: none;
+  cursor: grabbing;
 }
 .track {
   display: flex;
-  /* Three 100%-wide columns; show the middle one. 3.3 animates this during swipe. */
-  transform: translateX(-100%);
+  will-change: transform;
 }
 .col {
   flex: 0 0 100%;

@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, Type } from 'lucide-vue-next'
 import { useReaderStore, READING_SIZES } from '@/stores/reader'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
+import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
+import { useReaderLocation } from '@/composables/useReaderLocation'
 import ReaderPager from './ReaderPager.vue'
 import Slider from '@/components/Slider.vue'
 import Button from '@/components/Button.vue'
@@ -21,6 +23,8 @@ const router = useRouter()
 
 const sync = useReaderRouteSync(reader, router)
 const persistence = useReaderPersistence(reader)
+const { juz, surahName } = useReaderLocation(reader)
+useReaderKeyboard(reader)
 
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
@@ -51,7 +55,12 @@ const canNext = computed(() => reader.page < reader.pageCount)
       </Button>
 
       <span class="page-indicator" aria-live="polite">
-        Page {{ reader.page }} / {{ reader.pageCount }}
+        <span class="page-n">Page {{ reader.page }} / {{ reader.pageCount }}</span>
+        <span v-if="juz || surahName" class="page-meta">
+          <template v-if="juz">Juz {{ juz }}</template>
+          <template v-if="juz && surahName"> · </template>
+          <bdi v-if="surahName" lang="ar">{{ surahName }}</bdi>
+        </span>
       </span>
 
       <label class="size-control">
@@ -94,10 +103,17 @@ const canNext = computed(() => reader.page < reader.pageCount)
   border-top: 1px solid var(--color-border);
 }
 .page-indicator {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.page-meta {
+  font-size: var(--text-xs);
+  opacity: 0.85;
 }
 .size-control {
   display: flex;
