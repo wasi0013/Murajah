@@ -4,6 +4,14 @@ import { BookOpen, Search, Settings, Target, ListChecks, Play } from 'lucide-vue
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
 import Icon from '@/components/Icon.vue'
 import Button from '@/components/Button.vue'
+import SegmentedControl from '@/components/SegmentedControl.vue'
+import Toggle from '@/components/Toggle.vue'
+import Slider from '@/components/Slider.vue'
+
+const layout = ref('qpc')
+const tajweedOn = ref(true)
+const wbw = ref(false)
+const textSize = ref(2)
 
 // Dev/design gallery — every primitive in every theme + RTL. Code-split, so it
 // never enters the reader bundle. Grows as Phase 2 primitives land.
@@ -124,6 +132,34 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           <Button disabled>Disabled</Button>
           <Button variant="primary"><Icon :icon="Play" :size="18" /> With icon</Button>
         </div>
+      </section>
+
+      <!-- Form controls -->
+      <section class="grid gap-5">
+        <h2 class="text-xl font-semibold">Form controls</h2>
+        <div class="flex flex-wrap items-center gap-8">
+          <label class="grid gap-1.5 text-sm text-text-muted">
+            Layout
+            <SegmentedControl
+              v-model="layout"
+              label="Reading layout"
+              :options="[
+                { value: 'qpc', label: 'Madani' },
+                { value: 'indopak', label: 'Indopak' },
+              ]"
+            />
+          </label>
+          <label class="flex items-center gap-2.5 text-sm">
+            <Toggle v-model="tajweedOn" label="Tajweed" /> Tajweed
+          </label>
+          <label class="flex items-center gap-2.5 text-sm">
+            <Toggle v-model="wbw" label="Word by word" /> Word-by-word
+          </label>
+        </div>
+        <label class="grid max-w-xs gap-1.5 text-sm text-text-muted">
+          Text size — step {{ textSize }}
+          <Slider v-model="textSize" :min="1" :max="5" :step="1" label="Text size" />
+        </label>
       </section>
     </main>
   </div>
