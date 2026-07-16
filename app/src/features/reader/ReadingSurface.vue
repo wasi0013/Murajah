@@ -100,6 +100,11 @@ const lines = computed<RenderLine[]>(() => {
 .surface {
   color: var(--color-text);
   padding: 1rem 0.5rem;
+  /* Constrain to a mushaf-page column and centre it, so space-between line
+     justification reads naturally on wide desktops instead of stretching
+     full-bleed. Phones (narrower than this) are unaffected. */
+  max-width: 43rem;
+  margin-inline: auto;
   /* line-height + letter-spacing are set inline (per-layout metrics). */
 }
 .line {
@@ -110,13 +115,20 @@ const lines = computed<RenderLine[]>(() => {
   flex-wrap: nowrap;
 }
 /* WBW mode: glosses widen words, so lines wrap and centre instead of strict
-   justification, keeping each word+gloss as an intact unit. */
+   justification, keeping each word+gloss as an intact unit. A subtle hairline +
+   spacing keeps the 15 mushaf lines perceivable even when one wraps. */
 .line-ayah.wbw {
   justify-content: center;
   flex-wrap: wrap;
   align-items: flex-start;
   row-gap: 0.5em;
   column-gap: 0.4em;
+  padding-bottom: 0.55em;
+  margin-bottom: 0.15em;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 50%, transparent);
+}
+.line-ayah.wbw:last-child {
+  border-bottom: none;
 }
 .line-surah {
   justify-content: center;
