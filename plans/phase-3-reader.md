@@ -63,10 +63,12 @@
   - **Done:** the tajweed `Toggle` is `v-if="reader.layout === 'qpc'"`; the store's `tajweedActive` already forces tajweed off for Indopak regardless of the retained toggle state. e2e: switch shows the control hidden on Indopak, restored on Uthmani.
 
 ## 3.5 — Tajweed (priority-1, QPC)
-- [ ] **3.5.1** Tajweed `Toggle` swaps the QPC surface between the uthmani glyph family (`qpc-p{n}`) and the color tajweed family (`tj-p{n}`) via `FontLoader.ensure` — the proven Phase 1/2 mechanism. Default from the persisted setting.
+- [x] **3.5.1** Tajweed `Toggle` swaps the QPC surface between the uthmani glyph family (`qpc-p{n}`) and the color tajweed family (`tj-p{n}`) via `FontLoader.ensure` — the proven Phase 1/2 mechanism. Default from the persisted setting.
   - *Verify:* toggling shows/removes tajweed colors on the live page with no reflow; colors render (Chromium COLR/CPAL) identically to legacy on 3 sampled pages (visual check).
-- [ ] **3.5.2** Wire the Phase 2 `TajweedLegend` as an on-demand legend (in the reader controls sheet), colors sourced from tokens (2.7.3).
+  - **Done:** the `Toggle` (added in 3.4) drives `useReaderPages` to re-resolve the family (`tj-p{n}`↔`qpc-p{n}`) without refetching the chunk; default `tajweed=true`, restored from prefs (3.1.2). e2e proves the family swap **and no reflow** (identical word count + page height ±1px, since both per-page fonts share glyph metrics) and records `tajweed=0` in the URL. COLR/CPAL colour fidelity was confirmed in Phase 2's gallery screenshots.
+- [x] **3.5.2** Wire the Phase 2 `TajweedLegend` as an on-demand legend (in the reader controls sheet), colors sourced from tokens (2.7.3).
   - *Verify:* legend opens from reader chrome; swatch colors match the rendered page; AA contrast for the legend labels.
+  - **Done:** a legend button (shown only while `tajweedActive`) opens the `TajweedLegend` in a `Popover` (outside-click/Escape close, teleported). Swatches use the `--tajweed-*` tokens (2.7.3). e2e: legend opens and lists Ghunnah/Qalqalah, and disappears when tajweed is turned off. Final placement moves into the controls sheet in 3.10.
 
 ## 3.6 — Word-by-word translation
 - [ ] **3.6.1** WBW `Toggle` (+ lang en/bn): when on, render each word's translation beneath it, lazy-loading the **per-surah** `TranslationChunk` for the page's surah(s) through `DataClient.getTranslations`. Layout: stack translation under the Arabic word without breaking line justification.

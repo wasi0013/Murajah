@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronLeft, ChevronRight, Type } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Palette, Type } from 'lucide-vue-next'
 import { useReaderStore, READING_SIZES } from '@/stores/reader'
 import type { Layout } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
@@ -15,6 +15,8 @@ import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Toggle from '@/components/Toggle.vue'
+import Popover from '@/components/Popover.vue'
+import TajweedLegend from '@/components/TajweedLegend.vue'
 
 /**
  * Reader host. Renders the paged reading surface and binds it to the URL +
@@ -35,6 +37,8 @@ const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
   { value: 'indopak', label: 'Indopak' },
 ]
+
+const legendOpen = ref(false)
 
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
@@ -59,14 +63,24 @@ const canNext = computed(() => reader.page < reader.pageCount)
         label="Reading script"
         @update:model-value="switchTo($event as Layout)"
       />
-      <label v-if="reader.layout === 'qpc'" class="tajweed-control">
-        <span>Tajweed</span>
-        <Toggle
-          :model-value="reader.tajweed"
-          label="Tajweed colours"
-          @update:model-value="reader.toggleTajweed()"
-        />
-      </label>
+      <div v-if="reader.layout === 'qpc'" class="tajweed-cluster">
+        <label class="tajweed-control">
+          <span>Tajweed</span>
+          <Toggle
+            :model-value="reader.tajweed"
+            label="Tajweed colours"
+            @update:model-value="reader.toggleTajweed()"
+          />
+        </label>
+        <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" label="Tajweed legend">
+          <template #trigger>
+            <button type="button" class="legend-btn" aria-label="Tajweed legend">
+              <Icon :icon="Palette" :size="16" />
+            </button>
+          </template>
+          <TajweedLegend />
+        </Popover>
+      </div>
     </div>
 
     <ReaderPager class="reader-surface" />
@@ -128,12 +142,34 @@ const canNext = computed(() => reader.page < reader.pageCount)
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
+.tajweed-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 .tajweed-control {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+.legend-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  width: 2rem;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+}
+.legend-btn:hover {
+  background: var(--color-elevated);
+  color: var(--color-text);
+}
+.legend-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .reader-controls {
   position: sticky;
