@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  BookImage,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -67,7 +67,7 @@ const modeOptions = [
 ]
 const tabs = [
   { value: 'home', label: 'Home', icon: Home },
-  { value: 'mushaf', label: 'Mushaf', icon: BookImage },
+  { value: 'mushaf', label: 'Mushaf', icon: BookOpen },
   { value: 'surahs', label: 'Surahs', icon: ListOrdered },
   { value: 'goals', label: 'Goals', icon: Target },
   { value: 'quiz', label: 'Quiz', icon: GraduationCap },
