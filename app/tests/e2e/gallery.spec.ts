@@ -71,3 +71,23 @@ test('popover and toast work', async ({ page }) => {
   await page.getByRole('button', { name: 'Success toast' }).click()
   await expect(page.getByRole('status')).toContainText('memorized')
 })
+
+test('command palette parses a jump and tab bar switches', async ({ page }) => {
+  await page.goto('/gallery')
+
+  // Tab bar
+  await page.getByRole('button', { name: 'Goals' }).click()
+  await expect(page.getByText('Active tab:')).toContainText('goals')
+
+  // Palette
+  await page.getByRole('button', { name: /Quick jump/ }).click()
+  const palette = page.getByRole('dialog', { name: 'Quick jump' })
+  await expect(palette).toBeVisible()
+  await palette.getByRole('textbox').fill('2:255')
+  await expect(palette.getByRole('option')).toContainText('Ayah 2:255')
+  await page.waitForTimeout(250)
+  await page.screenshot({ path: `${SHOT}/palette.png` })
+  await palette.getByRole('option').first().click()
+  await expect(palette).toBeHidden()
+  await expect(page.getByRole('status')).toContainText('"type":"ayah"')
+})

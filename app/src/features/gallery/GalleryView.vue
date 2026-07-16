@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { BookOpen, Search, Settings, Target, ListChecks, Play } from 'lucide-vue-next'
+import { BookOpen, Search, Settings, Target, ListChecks, Play, HelpCircle, Menu } from 'lucide-vue-next'
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
 import Icon from '@/components/Icon.vue'
 import Button from '@/components/Button.vue'
@@ -12,10 +12,25 @@ import Modal from '@/components/Modal.vue'
 import Tabs from '@/components/Tabs.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import Popover from '@/components/Popover.vue'
+import BottomTabBar from '@/components/BottomTabBar.vue'
+import CommandPalette from '@/components/CommandPalette.vue'
 import { toast } from '@/composables/useToast'
+import type { Jump } from '@/core/navigation/parseJump'
 
 const layout = ref('qpc')
 const tafsirLang = ref('ar')
+const activeTab = ref('read')
+const paletteOpen = ref(false)
+const navTabs = [
+  { value: 'read', label: 'Read', icon: BookOpen },
+  { value: 'surahs', label: 'Surahs', icon: ListChecks },
+  { value: 'goals', label: 'Goals', icon: Target },
+  { value: 'quiz', label: 'Quiz', icon: HelpCircle },
+  { value: 'more', label: 'More', icon: Menu },
+]
+function onJump(j: Jump) {
+  toast(`Jump → ${JSON.stringify(j)}`)
+}
 const tajweedOn = ref(true)
 const wbw = ref(false)
 const textSize = ref(2)
@@ -259,6 +274,21 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           <Skeleton height="1rem" />
           <Skeleton width="80%" height="1rem" />
         </div>
+      </section>
+
+      <!-- Navigation shell -->
+      <section class="grid gap-4">
+        <h2 class="text-xl font-semibold">Navigation</h2>
+        <div>
+          <Button variant="secondary" @click="paletteOpen = true">
+            <Icon :icon="Search" :size="16" /> Quick jump (⌘K)
+          </Button>
+        </div>
+        <div class="max-w-sm overflow-hidden rounded-lg border border-border">
+          <BottomTabBar v-model="activeTab" :tabs="navTabs" />
+        </div>
+        <p class="text-sm text-text-muted">Active tab: <b class="text-text">{{ activeTab }}</b></p>
+        <CommandPalette v-model:open="paletteOpen" :shortcut="false" @select="onJump" />
       </section>
     </main>
   </div>
