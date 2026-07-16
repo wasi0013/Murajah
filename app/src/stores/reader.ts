@@ -17,9 +17,14 @@ export interface ReaderPrefs {
   mode: ReaderMode
 }
 
-/** Arabic reading sizes (rem), finest→largest. `textSizeStep` indexes this. */
-export const READING_SIZES = ['1.4rem', '1.65rem', '1.9rem', '2.2rem', '2.55rem', '2.95rem'] as const
-const DEFAULT_SIZE_STEP = 2 // 1.9rem (matches --reading-size-md)
+/**
+ * Mushaf page-column widths (rem), narrow→wide. Both scripts scale each line to
+ * fill this column with the font's natural word spacing, so text size follows
+ * the column width — the "text size" control sets how wide the mushaf page is
+ * (capped at the viewport on phones). `textSizeStep` indexes this.
+ */
+export const READING_WIDTHS = ['22rem', '27rem', '32rem', '37rem', '42rem', '48rem'] as const
+const DEFAULT_SIZE_STEP = 2 // 32rem
 
 /** Default page counts until the manifest is loaded (QPC 604 / Indopak 610). */
 const DEFAULT_PAGE_COUNTS: Record<Layout, number> = { qpc: 604, indopak: 610 }
@@ -48,7 +53,7 @@ export const useReaderStore = defineStore('reader', () => {
   const mode = ref<ReaderMode>('read')
 
   const pageCount = computed(() => pageCounts.value[layout.value])
-  const readingSize = computed(() => READING_SIZES[textSizeStep.value])
+  const readingWidth = computed(() => READING_WIDTHS[textSizeStep.value])
   /** Indopak has no tajweed font — the surface only honours tajweed on QPC. */
   const tajweedActive = computed(() => layout.value === 'qpc' && tajweed.value)
 
@@ -79,7 +84,7 @@ export const useReaderStore = defineStore('reader', () => {
   }
 
   function setTextSizeStep(step: number) {
-    textSizeStep.value = clamp(Math.trunc(step), 0, READING_SIZES.length - 1)
+    textSizeStep.value = clamp(Math.trunc(step), 0, READING_WIDTHS.length - 1)
   }
 
   function toggleTajweed() {
@@ -149,7 +154,7 @@ export const useReaderStore = defineStore('reader', () => {
     mode,
     // derived
     pageCount,
-    readingSize,
+    readingWidth,
     tajweedActive,
     // actions
     configure,

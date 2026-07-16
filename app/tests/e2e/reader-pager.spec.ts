@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
 
+// Text size now widens the mushaf column; scale-to-fill grows the line font to
+// match — so we measure a line's (scaled) font-size, not the fixed surface base.
 const fontSizePx = (page: import('@playwright/test').Page) =>
-  page.locator('.col[aria-hidden="false"] .surface').evaluate(
+  page.locator('.col[aria-hidden="false"] .surface .line-ayah').first().evaluate(
     (el) => parseFloat(getComputedStyle(el).fontSize),
   )
 
@@ -23,7 +25,11 @@ test('pager mounts at most 3 pages and pages forward', async ({ page }) => {
 })
 
 test('text-size slider resizes the reading surface', async ({ page }) => {
-  await page.goto('/')
+  // A viewport wide enough that the column steps aren't capped by it, and a
+  // full page (not Al-Fatiha's short lines, which hit the fit's scale clamp), so
+  // widening the page column visibly scales the (fitted) line font up.
+  await page.setViewportSize({ width: 1000, height: 900 })
+  await page.goto('/read/qpc/22')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
   const before = await fontSizePx(page)

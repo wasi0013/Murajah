@@ -15,8 +15,8 @@ const props = defineProps<{
   /** Reading script — selects per-surface line-height / tracking metrics. */
   layout?: Layout
   surahNames?: Record<string, string>
-  /** CSS font-size for the Arabic (from the text-size setting). */
-  textSize?: string
+  /** Mushaf page-column width (from the text-size setting); lines scale to fill it. */
+  pageWidth?: string
   /** location (`s:a:w`) → state class suffix */
   wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
   /** word ids currently marked as mistakes (global, layout-independent). */
@@ -63,28 +63,34 @@ const lines = computed<RenderLine[]>(() => {
 })
 
 /**
- * Indopak uses one Nastaleeq font (not QPC's per-page glyph fonts), so the 15
- * authentic mushaf lines (word grouping comes from indopak-15-lines.json) render
- * at varying natural widths. To present them justified edge-to-edge like a
- * printed mushaf — exactly 15 lines, no wrap, no clip, no ragged short lines —
- * each line is scaled so its content fills the column width. Most lines land at
- * near-identical scale; the clamp keeps any outlier from looking out of place,
- * and space-between absorbs sub-pixel residual. QPC (pre-justified per-page
- * fonts) and WBW (allowed to wrap) are left untouched.
+ * Fit each of the 15 mushaf lines to fill the page column with the font's
+ * *natural* word spacing (not stretched). Both scripts need this: QPC per-page
+ * fonts render a line narrower than a wide column (so `space-between` would
+ * stretch it) yet wider than a phone (so it would clip); Indopak's single
+ * Nastaleeq font varies more still. We measure each line's natural width (with
+ * justification momentarily off), then scale that line's font-size so it fills
+ * the column — justified edge-to-edge like a printed mushaf, exactly 15 lines,
+ * no stretch, no clip. The clamp keeps an outlier line near its neighbours'
+ * size. WBW is allowed to wrap, so it's left alone.
  */
 const surfaceEl = ref<HTMLElement>()
 
-function fitIndopakLines() {
+function fitLines() {
   const root = surfaceEl.value
-  if (!root || props.layout !== 'indopak' || props.wbw) return
+  if (!root || props.wbw) return
   const rows = Array.from(root.querySelectorAll<HTMLElement>('.line-ayah'))
-  for (const row of rows) row.style.fontSize = '' // reset to base before measuring
+  // Reset size + drop justification so the measured width is the natural one.
+  for (const row of rows) {
+    row.style.fontSize = ''
+    row.style.justifyContent = 'flex-start'
+  }
   for (const row of rows) {
     const avail = row.clientWidth
     const words = row.children
-    if (avail <= 0 || words.length === 0) continue
-    // Measure the real content span as the union of the word rects (robust to
-    // whatever justification is in effect).
+    if (avail <= 0 || words.length === 0) {
+      row.style.justifyContent = ''
+      continue
+    }
     let min = Infinity
     let max = -Infinity
     for (const w of words) {
@@ -93,29 +99,29 @@ function fitIndopakLines() {
       if (r.right > max) max = r.right
     }
     const content = max - min
-    if (content <= 0) continue
-    const base = parseFloat(getComputedStyle(row).fontSize)
-    // Scale to fill the column; clamp so an unusually short/long line stays close
-    // to its neighbours' size rather than ballooning or vanishing.
-    const factor = Math.min(Math.max(avail / content, 0.5), 1.15)
-    row.style.fontSize = `${base * factor}px`
+    if (content > 0) {
+      const base = parseFloat(getComputedStyle(row).fontSize)
+      const factor = Math.min(Math.max(avail / content, 0.35), 1.6)
+      row.style.fontSize = `${base * factor}px`
+    }
+    row.style.justifyContent = '' // restore space-between (absorbs sub-pixel residual)
   }
 }
 
-const scheduleFit = () => nextTick(fitIndopakLines)
+const scheduleFit = () => nextTick(fitLines)
 
 let ro: ResizeObserver | undefined
 onMounted(() => {
   scheduleFit()
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => fitIndopakLines())
+    ro = new ResizeObserver(() => fitLines())
     if (surfaceEl.value) ro.observe(surfaceEl.value)
   }
 })
 onBeforeUnmount(() => ro?.disconnect())
-// Re-fit when the page, script, size, font, or WBW state changes.
+// Re-fit when the page, script, column width, font, or WBW state changes.
 watch(
-  () => [props.page, props.layout, props.textSize, props.fontFamily, props.wbw],
+  () => [props.page, props.layout, props.pageWidth, props.fontFamily, props.wbw],
   scheduleFit,
 )
 </script>
@@ -129,9 +135,10 @@ watch(
     lang="ar"
     :style="{
       fontFamily,
-      fontSize: textSize ?? 'var(--reading-size-md)',
+      fontSize: 'var(--reading-size-md)',
       lineHeight: metrics.lineHeight,
       letterSpacing: metrics.letterSpacing,
+      maxWidth: pageWidth ? `min(${pageWidth}, 100%)` : undefined,
     }"
   >
     <template v-for="(line, i) in lines" :key="i">
@@ -179,13 +186,17 @@ watch(
 .line-ayah {
   justify-content: space-between;
   flex-wrap: nowrap;
+  /* Subtle per-line rule in every mode, so the 15 mushaf lines are always
+     distinct (consistent with WBW) — an aid for line-by-line hifz. */
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 32%, transparent);
 }
 /* Indopak (single font): each non-WBW line is scaled to fill the column in
    script (fitIndopakLines), then space-between (inherited) justifies the tiny
    residual — mushaf-style edge-to-edge justification, exactly 15 lines. */
 /* WBW mode: glosses widen words, so lines wrap and centre instead of strict
-   justification, keeping each word+gloss as an intact unit. A subtle hairline +
-   spacing keeps the 15 mushaf lines perceivable even when one wraps. */
+   justification, keeping each word+gloss as an intact unit. The per-line rule
+   (above) keeps the 15 mushaf lines perceivable even when one wraps. */
 .line-ayah.wbw {
   justify-content: center;
   flex-wrap: wrap;
@@ -193,11 +204,6 @@ watch(
   row-gap: 0.5em;
   column-gap: 0.4em;
   padding-bottom: 0.55em;
-  margin-bottom: 0.15em;
-  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 50%, transparent);
-}
-.line-ayah.wbw:last-child {
-  border-bottom: none;
 }
 .line-surah {
   justify-content: center;

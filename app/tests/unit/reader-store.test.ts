@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { useReaderStore, READING_SIZES } from '@/stores/reader'
+import { useReaderStore, READING_WIDTHS } from '@/stores/reader'
 import { remapPage, ayahAtPageTop } from '@/core/navigation/remapPage'
 import type { NavIndex } from '@/core/data/types'
 
@@ -59,9 +59,9 @@ describe('reader store', () => {
     const r = useReaderStore()
     r.setTextSizeStep(-3)
     expect(r.textSizeStep).toBe(0)
-    expect(r.readingSize).toBe(READING_SIZES[0])
+    expect(r.readingWidth).toBe(READING_WIDTHS[0])
     r.setTextSizeStep(999)
-    expect(r.textSizeStep).toBe(READING_SIZES.length - 1)
+    expect(r.textSizeStep).toBe(READING_WIDTHS.length - 1)
   })
 
   it('tajweedActive only true on QPC with tajweed on', () => {

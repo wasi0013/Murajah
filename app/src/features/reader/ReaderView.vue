@@ -2,14 +2,16 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Palette, Type } from 'lucide-vue-next'
-import { useReaderStore, READING_SIZES, type ReaderMode } from '@/stores/reader'
+import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
 import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
+import { useVerseStudy } from '@/composables/useVerseStudy'
 import ReaderPager from './ReaderPager.vue'
+import TafsirPanel from './TafsirPanel.vue'
 import Slider from '@/components/Slider.vue'
 import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
@@ -31,6 +33,7 @@ const sync = useReaderRouteSync(reader, router)
 const persistence = useReaderPersistence(reader)
 const { juz, surahName } = useReaderLocation(reader)
 const { switchTo } = useLayoutSwitch(reader)
+const study = useVerseStudy(reader)
 useReaderKeyboard(reader)
 
 const layoutOptions = [
@@ -50,6 +53,7 @@ const modeOptions = [
   { value: 'mark-mistake', label: 'Mark' },
 ]
 
+
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
   sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
@@ -59,7 +63,7 @@ onBeforeUnmount(() => {
   persistence.dispose()
 })
 
-const maxStep = READING_SIZES.length - 1
+const maxStep = READING_WIDTHS.length - 1
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
 </script>
@@ -110,6 +114,15 @@ const canNext = computed(() => reader.page < reader.pageCount)
         />
       </div>
 
+      <label class="ctrl-label">
+        <span>Tafsir</span>
+        <Toggle
+          :model-value="reader.tafsir"
+          label="Tafsir and translations"
+          @update:model-value="reader.toggleTafsir()"
+        />
+      </label>
+
       <SegmentedControl
         :model-value="reader.mode"
         :options="modeOptions"
@@ -119,6 +132,15 @@ const canNext = computed(() => reader.page < reader.pageCount)
     </div>
 
     <ReaderPager class="reader-surface" />
+
+    <TafsirPanel
+      v-if="reader.tafsir"
+      :entries="study.entries.value"
+      :font-family="study.fontFamily.value"
+      :tafsir="study.tafsir.value"
+      :loading="study.loading.value"
+      @expand="study.expandTafsir($event)"
+    />
 
     <div class="reader-controls" role="toolbar" aria-label="Reader controls">
       <Button
@@ -166,7 +188,8 @@ const canNext = computed(() => reader.page < reader.pageCount)
   background: var(--color-bg);
 }
 .reader-surface {
-  flex: 1;
+  /* Fill the viewport when alone; grow (never collapse) when tafsir sits below. */
+  flex: 1 0 auto;
 }
 .reader-options {
   display: flex;

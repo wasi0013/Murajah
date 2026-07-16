@@ -195,7 +195,7 @@ function snapBack() {
             :font-family="pages.entry(reader.page + offset)!.family!"
             :layout="reader.layout"
             :surah-names="surahNames"
-            :text-size="reader.readingSize"
+            :page-width="reader.readingWidth"
             :wbw="reader.wbw"
             :translations="pages.entry(reader.page + offset)?.translations"
             :wbw-lang="reader.wbwLang"
