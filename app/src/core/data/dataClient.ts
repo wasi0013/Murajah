@@ -10,6 +10,7 @@ import type { Transport } from './transport'
 import type {
   Layout,
   Manifest,
+  NavIndex,
   PageChunk,
   SurahNames,
   TafsirChunk,
@@ -71,6 +72,12 @@ export class DataClient {
   getTafsirMapping(layout: Layout): Promise<TafsirMapping> {
     const name = layout === 'qpc' ? 'tafsirMapQpc' : 'tafsirMapIndopak'
     return this.transport.fetchJson<TafsirMapping>(indexPath(this.m, name))
+  }
+
+  /** Quick-jump index (ayah/surah/juz → page) for a layout. Loaded once, cached. */
+  getNavIndex(layout: Layout): Promise<NavIndex> {
+    const name = layout === 'qpc' ? 'navQpc' : 'navIndopak'
+    return this.transport.fetchJson<NavIndex>(indexPath(this.m, name))
   }
 
   /**

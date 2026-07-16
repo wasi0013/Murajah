@@ -4,6 +4,7 @@ import { SOURCE_DATA, OUTPUT_DATA, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { createManifest, writeJson } from './lib/manifest.mjs'
 import { chunkQuranLayout } from './chunk-quran.mjs'
 import { chunkFlatBySurah } from './chunk-by-surah.mjs'
+import { writeNavIndexes } from './build-nav-index.mjs'
 
 /** Orchestrates the full data build. Add datasets here as phases land. */
 function main() {
@@ -54,6 +55,15 @@ function main() {
     const value = JSON.parse(readFileSync(idx.src, 'utf8'))
     const { bytes, hash } = writeJson(`${OUTPUT_DATA}/${idx.out}`, value)
     manifest.addIndex(idx.name, { path: `data/${idx.out}`, bytes, hash })
+  }
+
+  // Per-layout navigation indexes (ayah/juz/surah → page) for quick-jump.
+  for (const { name, path, bytes, hash } of writeNavIndexes({
+    quranFile: `${SOURCE_DATA}/quran/quran.json`,
+    outputData: OUTPUT_DATA,
+  })) {
+    manifest.addIndex(name, { path, bytes, hash })
+    console.log(`[${name}] ${kb(bytes)}`)
   }
 
   const { runtime } = manifest.write(OUTPUT_DATA)

@@ -43,6 +43,17 @@ export type TafsirMapping = Record<string, string[]>
 /** Surah number (as string) → Arabic surah name. */
 export type SurahNames = Record<string, string>
 
+/**
+ * Per-layout navigation index for quick-jump: resolves an ayah / surah / juz to
+ * a page number for that layout (QPC 604 pages, Indopak 610). Keys are strings
+ * (`"s:a"`, `"s"`, `"j"`) as emitted by data-pipeline/build-nav-index.mjs.
+ */
+export interface NavIndex {
+  ayahToPage: Record<string, number>
+  surahToPage: Record<string, number>
+  juzToPage: Record<string, number>
+}
+
 export interface Manifest {
   version: string
   datasets: Record<string, { pathTemplate: string; count: number }>

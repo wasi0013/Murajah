@@ -11,7 +11,11 @@ const manifest: Manifest = {
     qpc: { pathTemplate: 'data/qpc/pages/{page}.json', count: 604 },
     'tr-en': { pathTemplate: 'data/tr/en/{surah}.json', count: 114 },
   },
-  indexes: { surahNames: { path: 'data/surah-names.json' } },
+  indexes: {
+    surahNames: { path: 'data/surah-names.json' },
+    navQpc: { path: 'data/nav/qpc.json' },
+    navIndopak: { path: 'data/nav/indopak.json' },
+  },
 }
 
 /** Mock transport returning canned JSON, recording calls. */
@@ -44,6 +48,20 @@ describe('DataClient (mock transport)', () => {
     const { transport } = mockTransport({})
     const client = new DataClient(transport)
     expect(() => client.pageCount('qpc')).toThrow(/init/)
+  })
+
+  it('getNavIndex picks the per-layout index path', async () => {
+    const { transport, calls } = mockTransport({
+      'data/manifest.json': manifest,
+      'data/nav/qpc.json': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
+      'data/nav/indopak.json': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
+    })
+    const client = new DataClient(transport)
+    await client.init()
+    calls.length = 0
+    await client.getNavIndex('qpc')
+    await client.getNavIndex('indopak')
+    expect(calls).toEqual(['data/nav/qpc.json', 'data/nav/indopak.json'])
   })
 
   it('prefetch clamps out-of-range pages (no fetch)', async () => {
@@ -87,5 +105,18 @@ describe.skipIf(!hasData)('DataClient (real generated fixtures)', () => {
     await client.init()
     const tr = await client.getTranslations('en', 1)
     expect(tr['1:1:1']).toBeTruthy()
+  })
+
+  it('resolves quick-jump targets to pages via the nav index', async () => {
+    const client = new DataClient(fsTransport)
+    await client.init()
+    const nav = await client.getNavIndex('qpc')
+    expect(nav.ayahToPage['2:255']).toBe(42) // Ayat al-Kursi
+    expect(nav.surahToPage['36']).toBe(440) // Ya-Sin
+    expect(nav.juzToPage['1']).toBe(1)
+    expect(Object.keys(nav.juzToPage)).toHaveLength(30)
+    // Indopak has its own paging (610 pages).
+    const navIndo = await client.getNavIndex('indopak')
+    expect(navIndo.ayahToPage['1:1']).toBe(1)
   })
 })
