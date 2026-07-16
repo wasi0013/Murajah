@@ -34,7 +34,7 @@
   --reading-size-sm: 1.5rem;
   --reading-size-md: 1.9rem;
   --reading-size-lg: 2.4rem;
-  --qpc-line-height: 1.7;
+  --qpc-line-height: 2; /* airier vertical rhythm, matching Indopak's */
   --qpc-tracking: 0.06em;
   --indopak-line-height: 2.2;
   --indopak-tracking: 0.03em;

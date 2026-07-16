@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
+import { useMorphology } from '@/composables/useMorphology'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
+
+// Code-split: the popup + its data stay out of the initial reader bundle.
+const MorphologyPopup = defineAsyncComponent(() => import('./MorphologyPopup.vue'))
 
 /**
  * Paged reader host: mounts only the current page and its two neighbours in a
@@ -17,6 +21,27 @@ import Skeleton from '@/components/Skeleton.vue'
  */
 const reader = useReaderStore()
 const pages = useReaderPages(reader)
+
+const {
+  open: morphOpen,
+  location: morphLocation,
+  anchor: morphAnchor,
+  content: morphContent,
+  loading: morphLoading,
+  openFor: openMorphology,
+  close: closeMorphology,
+} = useMorphology()
+
+// The active word gets the morphology-active highlight on its surface.
+const wordStates = computed<Record<string, 'morphology'>>(() =>
+  morphLocation.value ? { [morphLocation.value]: 'morphology' } : {},
+)
+
+// Paging or switching layout dismisses an open analysis.
+watch(
+  () => [reader.page, reader.layout],
+  () => closeMorphology(),
+)
 
 // Both mushaf surfaces read right-to-left, so paging is mirrored vs an LTR
 // carousel. Column DOM order left→right: [next, current, prev].
@@ -83,7 +108,10 @@ function onPointerMove(e: PointerEvent) {
 function onPointerUp(e: PointerEvent) {
   if (!active) return
   active = false
-  if (!dragging.value) return
+  if (!dragging.value) {
+    handleTap(e)
+    return
+  }
   dragging.value = false
 
   const deltaX = e.clientX - startX
@@ -98,6 +126,15 @@ function onPointerUp(e: PointerEvent) {
   } else {
     snapBack()
   }
+}
+
+/** A tap that never became a drag: open the tapped word's morphology (read mode). */
+function handleTap(e: PointerEvent) {
+  const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-loc]')
+  const loc = el?.dataset.loc
+  if (!el || !loc) return
+  if (reader.mode === 'read') void openMorphology(loc, el)
+  // mark-mistake tapping arrives in 3.8.
 }
 
 /** Animate to the target neighbour, then swap the page and re-centre silently. */
@@ -153,6 +190,7 @@ function snapBack() {
             :wbw="reader.wbw"
             :translations="pages.entry(reader.page + offset)?.translations"
             :wbw-lang="reader.wbwLang"
+            :word-states="offset === 0 ? wordStates : undefined"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
@@ -160,6 +198,15 @@ function snapBack() {
         </template>
       </div>
     </div>
+
+    <MorphologyPopup
+      v-if="morphOpen"
+      :anchor="morphAnchor"
+      :location="morphLocation!"
+      :content="morphContent"
+      :loading="morphLoading"
+      @close="closeMorphology()"
+    />
   </div>
 </template>
 

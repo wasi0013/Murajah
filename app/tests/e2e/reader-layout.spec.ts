@@ -43,3 +43,16 @@ test('tajweed control is hidden on Indopak, shown on Uthmani', async ({ page }) 
   await page.getByRole('radio', { name: 'Uthmani' }).click()
   await expect(tajweed).toBeVisible()
 })
+
+test('Indopak keeps 15 lines fitted to width on a phone (no overflow)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/read/indopak/3')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  const surface = page.locator('.col[aria-hidden="false"] .surface')
+  await expect(surface.locator('.line-ayah')).toHaveCount(15)
+  // Shrink-to-fit keeps every line within the column — no horizontal overflow.
+  await expect
+    .poll(() => surface.evaluate((el) => (el as HTMLElement).scrollWidth - (el as HTMLElement).clientWidth))
+    .toBeLessThanOrEqual(1)
+})

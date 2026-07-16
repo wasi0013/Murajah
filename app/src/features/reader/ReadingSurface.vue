@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Layout, PageChunk, Word } from '@/core/data/types'
 
 /**
@@ -59,11 +59,65 @@ const lines = computed<RenderLine[]>(() => {
     }
   })
 })
+
+/**
+ * Indopak uses one Nastaleeq font (not per-page glyph fonts like QPC), so a
+ * mushaf line's natural width varies and can exceed the column. To keep all 15
+ * lines without wrapping or clipping, any over-wide line is shrunk to fit by
+ * lowering just that line's font-size (floored, so it never gets tiny). QPC and
+ * WBW (which is allowed to wrap) are left untouched.
+ */
+const surfaceEl = ref<HTMLElement>()
+
+function fitIndopakLines() {
+  const root = surfaceEl.value
+  if (!root || props.layout !== 'indopak' || props.wbw) return
+  const rows = Array.from(root.querySelectorAll<HTMLElement>('.line-ayah'))
+  for (const row of rows) row.style.fontSize = '' // reset to base before measuring
+  for (const row of rows) {
+    const avail = row.clientWidth
+    const words = row.children
+    if (avail <= 0 || words.length === 0) continue
+    // Centered overflow spills both sides, so scrollWidth is unreliable — measure
+    // the real content span as the union of the word rects.
+    let min = Infinity
+    let max = -Infinity
+    for (const w of words) {
+      const r = w.getBoundingClientRect()
+      if (r.left < min) min = r.left
+      if (r.right > max) max = r.right
+    }
+    const content = max - min
+    if (content <= avail + 1) continue
+    const base = parseFloat(getComputedStyle(row).fontSize)
+    const factor = Math.max(avail / content, 0.55) // don't shrink below 55%
+    row.style.fontSize = `${base * factor}px`
+  }
+}
+
+const scheduleFit = () => nextTick(fitIndopakLines)
+
+let ro: ResizeObserver | undefined
+onMounted(() => {
+  scheduleFit()
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => fitIndopakLines())
+    if (surfaceEl.value) ro.observe(surfaceEl.value)
+  }
+})
+onBeforeUnmount(() => ro?.disconnect())
+// Re-fit when the page, script, size, font, or WBW state changes.
+watch(
+  () => [props.page, props.layout, props.textSize, props.fontFamily, props.wbw],
+  scheduleFit,
+)
 </script>
 
 <template>
   <div
+    ref="surfaceEl"
     class="surface"
+    :class="{ 'surface-indopak': layout === 'indopak' }"
     dir="rtl"
     lang="ar"
     :style="{
@@ -113,6 +167,13 @@ const lines = computed<RenderLine[]>(() => {
 .line-ayah {
   justify-content: space-between;
   flex-wrap: nowrap;
+}
+/* Indopak (single font): consistent, tighter word spacing instead of full-width
+   justification, so short lines don't over-stretch. Over-wide lines are shrunk
+   to fit in script (fitIndopakLines). WBW lines keep their wrap behaviour. */
+.surface-indopak .line-ayah:not(.wbw) {
+  justify-content: center;
+  column-gap: 0.28em;
 }
 /* WBW mode: glosses widen words, so lines wrap and centre instead of strict
    justification, keeping each word+gloss as an intact unit. A subtle hairline +
