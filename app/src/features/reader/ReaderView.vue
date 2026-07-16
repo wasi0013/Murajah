@@ -3,14 +3,18 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Type } from 'lucide-vue-next'
 import { useReaderStore, READING_SIZES } from '@/stores/reader'
+import type { Layout } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
 import { useReaderLocation } from '@/composables/useReaderLocation'
+import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
 import ReaderPager from './ReaderPager.vue'
 import Slider from '@/components/Slider.vue'
 import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
+import SegmentedControl from '@/components/SegmentedControl.vue'
+import Toggle from '@/components/Toggle.vue'
 
 /**
  * Reader host. Renders the paged reading surface and binds it to the URL +
@@ -24,7 +28,13 @@ const router = useRouter()
 const sync = useReaderRouteSync(reader, router)
 const persistence = useReaderPersistence(reader)
 const { juz, surahName } = useReaderLocation(reader)
+const { switchTo } = useLayoutSwitch(reader)
 useReaderKeyboard(reader)
+
+const layoutOptions = [
+  { value: 'qpc', label: 'Uthmani' },
+  { value: 'indopak', label: 'Indopak' },
+]
 
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
@@ -42,6 +52,23 @@ const canNext = computed(() => reader.page < reader.pageCount)
 
 <template>
   <main class="reader">
+    <div class="reader-options" role="toolbar" aria-label="Reading options">
+      <SegmentedControl
+        :model-value="reader.layout"
+        :options="layoutOptions"
+        label="Reading script"
+        @update:model-value="switchTo($event as Layout)"
+      />
+      <label v-if="reader.layout === 'qpc'" class="tajweed-control">
+        <span>Tajweed</span>
+        <Toggle
+          :model-value="reader.tajweed"
+          label="Tajweed colours"
+          @update:model-value="reader.toggleTajweed()"
+        />
+      </label>
+    </div>
+
     <ReaderPager class="reader-surface" />
 
     <div class="reader-controls" role="toolbar" aria-label="Reader controls">
@@ -91,6 +118,22 @@ const canNext = computed(() => reader.page < reader.pageCount)
 }
 .reader-surface {
   flex: 1;
+}
+.reader-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-top));
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+.tajweed-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 .reader-controls {
   position: sticky;

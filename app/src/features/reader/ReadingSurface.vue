@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { PageChunk, Word } from '@/core/data/types'
+import type { Layout, PageChunk, Word } from '@/core/data/types'
 
 /**
  * Static styled mushaf page — the visual core the Phase 3 reader wraps with
@@ -12,12 +12,21 @@ const props = defineProps<{
   page: PageChunk
   /** Resolved font-family from FontLoader (`qpc-p{n}` uthmani or `tj-p{n}` tajweed). */
   fontFamily: string
+  /** Reading script — selects per-surface line-height / tracking metrics. */
+  layout?: Layout
   surahNames?: Record<string, string>
   /** CSS font-size for the Arabic (from the text-size setting). */
   textSize?: string
   /** location (`s:a:w`) → state class suffix */
   wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
 }>()
+
+// Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
+const metrics = computed(() =>
+  props.layout === 'indopak'
+    ? { lineHeight: 'var(--indopak-line-height)', letterSpacing: 'var(--indopak-tracking)' }
+    : { lineHeight: 'var(--qpc-line-height)', letterSpacing: 'var(--qpc-tracking)' },
+)
 
 interface RenderLine {
   type: string
@@ -51,7 +60,12 @@ const lines = computed<RenderLine[]>(() => {
     class="surface"
     dir="rtl"
     lang="ar"
-    :style="{ fontFamily, fontSize: textSize ?? 'var(--reading-size-md)', lineHeight: 'var(--qpc-line-height)' }"
+    :style="{
+      fontFamily,
+      fontSize: textSize ?? 'var(--reading-size-md)',
+      lineHeight: metrics.lineHeight,
+      letterSpacing: metrics.letterSpacing,
+    }"
   >
     <template v-for="(line, i) in lines" :key="i">
       <div v-if="line.type === 'surah_name'" class="line line-surah">
@@ -76,7 +90,7 @@ const lines = computed<RenderLine[]>(() => {
 .surface {
   color: var(--color-text);
   padding: 1rem 0.5rem;
-  letter-spacing: var(--qpc-tracking);
+  /* line-height + letter-spacing are set inline (per-layout metrics). */
 }
 .line {
   display: flex;

@@ -147,6 +147,7 @@ function snapBack() {
             v-if="pages.entry(reader.page + offset)?.status === 'ready'"
             :page="pages.entry(reader.page + offset)!.chunk!"
             :font-family="pages.entry(reader.page + offset)!.family!"
+            :layout="reader.layout"
             :surah-names="surahNames"
             :text-size="reader.readingSize"
           />
