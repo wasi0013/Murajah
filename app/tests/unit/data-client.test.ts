@@ -10,6 +10,7 @@ const manifest: Manifest = {
   datasets: {
     qpc: { pathTemplate: 'data/qpc/pages/{page}.json', count: 604 },
     'tr-en': { pathTemplate: 'data/tr/en/{surah}.json', count: 114 },
+    morphology: { pathTemplate: 'data/morphology/{surah}.json', count: 114 },
   },
   indexes: {
     surahNames: { path: 'data/surah-names.json' },
@@ -48,6 +49,19 @@ describe('DataClient (mock transport)', () => {
     const { transport } = mockTransport({})
     const client = new DataClient(transport)
     expect(() => client.pageCount('qpc')).toThrow(/init/)
+  })
+
+  it('getMorphology builds the per-surah path', async () => {
+    const { transport, calls } = mockTransport({
+      'data/manifest.json': manifest,
+      'data/morphology/2.json': { '2:255:1': '<i>the</i>' },
+    })
+    const client = new DataClient(transport)
+    await client.init()
+    calls.length = 0
+    const morph = await client.getMorphology(2)
+    expect(calls).toEqual(['data/morphology/2.json'])
+    expect(morph['2:255:1']).toContain('the')
   })
 
   it('getNavIndex picks the per-layout index path', async () => {
@@ -118,5 +132,13 @@ describe.skipIf(!hasData)('DataClient (real generated fixtures)', () => {
     // Indopak has its own paging (610 pages).
     const navIndo = await client.getNavIndex('indopak')
     expect(navIndo.ayahToPage['1:1']).toBe(1)
+  })
+
+  it('serves real per-surah morphology keyed by word location', async () => {
+    const client = new DataClient(fsTransport)
+    await client.init()
+    const morph = await client.getMorphology(1)
+    expect(morph['1:1:1']).toContain('س م و') // bismillah root, unwrapped from .data
+    expect(Object.keys(morph).length).toBeGreaterThan(0)
   })
 })

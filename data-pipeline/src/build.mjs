@@ -4,6 +4,7 @@ import { SOURCE_DATA, OUTPUT_DATA, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { createManifest, writeJson } from './lib/manifest.mjs'
 import { chunkQuranLayout } from './chunk-quran.mjs'
 import { chunkFlatBySurah } from './chunk-by-surah.mjs'
+import { chunkMorphology } from './chunk-morphology.mjs'
 import { writeNavIndexes } from './build-nav-index.mjs'
 
 /** Orchestrates the full data build. Add datasets here as phases land. */
@@ -44,6 +45,15 @@ function main() {
     manifest.addDataset(entry.name, entry)
     reportSurahSizes(entry)
   }
+
+  // Morphology → per-surah chunks (source is already per-surah, wrapped in `.data`).
+  const morphology = chunkMorphology({
+    srcDir: `${SOURCE_DATA}/morphology`,
+    outDir: 'morphology',
+    outputData: OUTPUT_DATA,
+  })
+  manifest.addDataset(morphology.name, morphology)
+  reportSurahSizes(morphology)
 
   // Whole-file indexes the app loads once (small).
   const indexes = [

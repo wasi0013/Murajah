@@ -27,6 +27,10 @@ export function tafsirPath(manifest: Manifest, lang: TafsirLang, surah: number):
   return fill(dataset(manifest, `tafsir-${lang}`).pathTemplate, 'surah', surah)
 }
 
+export function morphologyPath(manifest: Manifest, surah: number): string {
+  return fill(dataset(manifest, 'morphology').pathTemplate, 'surah', surah)
+}
+
 export function indexPath(manifest: Manifest, name: string): string {
   const idx = manifest.indexes?.[name]
   if (!idx) throw new Error(`manifest: unknown index "${name}"`)

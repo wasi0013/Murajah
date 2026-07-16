@@ -1,5 +1,6 @@
 import {
   indexPath,
+  morphologyPath,
   pageCount,
   pagePath,
   tafsirPath,
@@ -10,6 +11,7 @@ import type { Transport } from './transport'
 import type {
   Layout,
   Manifest,
+  MorphologyChunk,
   NavIndex,
   PageChunk,
   SurahNames,
@@ -63,6 +65,11 @@ export class DataClient {
 
   getTafsir(lang: TafsirLang, surah: number): Promise<TafsirChunk> {
     return this.transport.fetchJson<TafsirChunk>(tafsirPath(this.m, lang, surah))
+  }
+
+  /** Per-surah morphology (location → HTML analysis). Lazy; prefetch by surah. */
+  getMorphology(surah: number): Promise<MorphologyChunk> {
+    return this.transport.fetchJson<MorphologyChunk>(morphologyPath(this.m, surah))
   }
 
   getSurahNames(): Promise<SurahNames> {

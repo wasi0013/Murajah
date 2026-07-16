@@ -37,6 +37,12 @@ export type TranslationChunk = Record<string, string>
 /** Tafsir chunk (per surah), keyed by `s:a`. */
 export type TafsirChunk = Record<string, { text: string }>
 
+/**
+ * Morphology chunk (per surah), keyed by `s:a:w`. Each value is a self-contained
+ * HTML analysis string rendered as-is in the morphology popup.
+ */
+export type MorphologyChunk = Record<string, string>
+
 /** Page → verse list (`s:a`) for a layout. */
 export type TafsirMapping = Record<string, string[]>
 
