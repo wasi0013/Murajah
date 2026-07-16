@@ -88,6 +88,17 @@ Candidates:
 - The 611M PNGs are committed to git (source total 824M). This bloats clones.
 - **Decision:** the raw PNGs become **inputs to the `data-pipeline`**, not shipped assets. Optimized WebP output goes to `app/public` (or a separate assets host). Move the raw PNGs to **Git LFS** or an untracked `assets-src/` referenced by the pipeline. Executed in Phase 1 (produce optimized set) and finalized in Phase 9 (drop raw PNGs from the deployed app). No history rewrite in Phase 0.
 
+### 4.1 Mushaf WebP hosting — RESOLVED (task 3b.0.4)
+The full transcode produced **604 single-page WebP** at `app/public/img/mushaf/{page}.webp` (uniform **678×966**, **98.7–146.8 KB** each, **67.8 MB** total) plus `img/mushaf/manifest.json` (`{pageCount, pathTemplate, width, height}`).
+
+**Decision: commit the optimized WebP set to git** (un-ignored in `app/.gitignore`; `/public/img/` stays ignored otherwise so fonts and any future generated images don't leak in). Rationale:
+- The static **Cloudflare Pages** deploy then serves `img/mushaf/{page}.webp` directly — **no `cwebp` in the build image, no 611 MB PNG checkout at build time.** Aligns with the local-first / no-backend posture (§8 of the master plan).
+- **68 MB is a fraction of the 611 MB PNGs already tracked**, which Phase 9 removes from git — so the committed WebP is a net *reduction* in the repo's image footprint, not an addition.
+- The scans are effectively immutable; regeneration is rare, so re-encoding in CI on every deploy buys nothing.
+- **Fonts stay generated in CI** (`assets.mjs`, 144 MB — too large to commit); only the mushaf WebP is committed. This is why the ignore rule is narrowed to `!/public/img/mushaf/` rather than un-ignoring all of `/public/img/`.
+
+A clean checkout + `npm run build` in `app/` therefore serves the mushaf pages with zero image tooling. Phase 9 drops the raw PNGs from git and finalizes the committed WebP as the sole mushaf asset set.
+
 ---
 
 ## 5. Per-page budget projection (the point of all this)

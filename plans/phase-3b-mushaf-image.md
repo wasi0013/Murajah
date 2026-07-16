@@ -13,13 +13,13 @@
 ## 3b.0 — Image assets: generate, verify, manifest
 > The `data-pipeline/src/transcode-images.mjs` exists (splits `page-{a}-{b}.png` spreads → single-page WebP q80, RTL crop: page `a` right half, `b` left half) but has only been smoke-run. This task produces the real set and the manifest the app needs.
 
-- [ ] **3b.0.1** **Verify the RTL crop + page pairing** (flagged in `transcode-images.mjs`): transcode a handful of spreads and confirm visually that page `a` is the **right** half and `b` the **left**, and that the page numbers match the reader's page scheme (Madani 604). Fix the crop/orientation if wrong before the full run.
+- [x] **3b.0.1** **Verify the RTL crop + page pairing** (flagged in `transcode-images.mjs`): transcode a handful of spreads and confirm visually that page `a` is the **right** half and `b` the **left**, and that the page numbers match the reader's page scheme (Madani 604). Fix the crop/orientation if wrong before the full run.
   - *Verify:* 3–4 sampled pages render the correct content right-side/left-side; page N's image = the same ayahs as QPC text page N.
-- [ ] **3b.0.2** **Full transcode**: run the pipeline over all spreads → `app/public/img/mushaf/{page}.webp`. Confirm the count (≈604 pages) and measure total + per-page sizes. Consider one smaller responsive width only if the native (~1100w) is heavier than needed on phones.
+- [x] **3b.0.2** **Full transcode**: run the pipeline over all spreads → `app/public/img/mushaf/{page}.webp`. Confirm the count (≈604 pages) and measure total + per-page sizes. Consider one smaller responsive width only if the native (~1100w) is heavier than needed on phones.
   - *Verify:* all pages present (no gaps); per-page ≤ ~180KB; total in the projected ~70–110MB range; a missing/blank page fails loudly.
-- [ ] **3b.0.3** **Image manifest**: emit `img/mushaf/manifest.json` (page count, path template `img/mushaf/{page}.webp`, intrinsic width/height for aspect-ratio boxing to avoid CLS). Register in the build (`assets.mjs`), like the font manifest.
+- [x] **3b.0.3** **Image manifest**: emit `img/mushaf/manifest.json` (page count, path template `img/mushaf/{page}.webp`, intrinsic width/height for aspect-ratio boxing to avoid CLS). Register in the build (`assets.mjs`), like the font manifest.
   - *Verify:* manifest lists 604 pages with dimensions; app can resolve a page → URL + aspect ratio purely from it.
-- [ ] **3b.0.4** **Asset hosting decision** (source PNGs are 611MB, WebP output ~100MB): decide how the WebP set is produced for deploy and whether it's committed. Options: commit the optimized WebP to `app/public` (Pages serves it); or generate in CI (needs `cwebp` + source PNGs via Git LFS / untracked `assets-src/`). Record the choice; keep raw PNGs out of the deployed app (Phase 9 finalizes their removal from git).
+- [x] **3b.0.4** **Asset hosting decision** (source PNGs are 611MB, WebP output ~100MB): decide how the WebP set is produced for deploy and whether it's committed. Options: commit the optimized WebP to `app/public` (Pages serves it); or generate in CI (needs `cwebp` + source PNGs via Git LFS / untracked `assets-src/`). Record the choice; keep raw PNGs out of the deployed app (Phase 9 finalizes their removal from git).
   - *Verify:* a clean deploy serves `img/mushaf/{page}.webp`; the reader/text deploy is unaffected; decision documented in [audit-assets-data.md](./audit-assets-data.md) §4.
 
 ## 3b.1 — Image data access (worker + cache)
