@@ -23,6 +23,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/reader/ReaderDisabled.vue'),
   },
   {
+    // Standalone mushaf image (scan) surface. Code-split → never in the reader
+    // bundle. `:page` is optional; the view restores the last page when absent.
+    path: '/mushaf/:page(\\d+)?',
+    name: 'mushaf',
+    component: () => import('@/features/mushaf/MushafView.vue'),
+  },
+  {
     // Design gallery (dev/design tool). Code-split → never in the reader bundle.
     path: '/gallery',
     name: 'gallery',

@@ -29,52 +29,52 @@
   - *Verify:* opening page N warms N±1 (network assertion); prefetch never fetches out-of-range or the whole set.
 
 ## 3b.2 — Mushaf view + route (single page)
-- [ ] **3b.2.1** `features/mushaf/MushafView.vue` at a **dedicated route** `/mushaf/:page` (lazy/code-split — must **not** enter the reader bundle). Renders the current page image centred, boxed to its intrinsic aspect ratio (from the manifest) so there's **no layout shift** while it loads; `Skeleton`/blur-up placeholder until the Blob resolves.
+- [x] **3b.2.1** `features/mushaf/MushafView.vue` at a **dedicated route** `/mushaf/:page` (lazy/code-split — must **not** enter the reader bundle). Renders the current page image centred, boxed to its intrinsic aspect ratio (from the manifest) so there's **no layout shift** while it loads; `Skeleton`/blur-up placeholder until the Blob resolves.
   - *Verify:* route is a separate chunk (size gate); page image renders sharp and centred; aspect-ratio box reserves space (CLS≈0); cold load shows placeholder then image.
-- [ ] **3b.2.2** A small `useMushafPage` store/composable for `page` + persistence (last mushaf page) + URL sync (`/mushaf/:page`), mirroring the reader store's slice (reuse the persistence/URL patterns, not the whole reader store).
+- [x] **3b.2.2** A small `useMushafPage` store/composable for `page` + persistence (last mushaf page) + URL sync (`/mushaf/:page`), mirroring the reader store's slice (reuse the persistence/URL patterns, not the whole reader store).
   - *Verify:* deep-link `/mushaf/50` opens page 50; reload restores the last page; back/forward pages.
 
 ## 3b.3 — Responsive spread (single on mobile, 2-up on desktop)
-- [ ] **3b.3.1** **Width-driven layout**: below a breakpoint show **one page**; at/above it show a **2-up spread** composed from two adjacent single-page images — **RTL: lower page on the right, next page on the left** (per the source pairing). No separate spread assets; the desktop spread is two `<img>` side by side.
+- [x] **3b.3.1** **Width-driven layout**: below a breakpoint show **one page**; at/above it show a **2-up spread** composed from two adjacent single-page images — **RTL: lower page on the right, next page on the left** (per the source pairing). No separate spread assets; the desktop spread is two `<img>` side by side.
   - *Verify:* at ≤~ the breakpoint one page shows; above it the correct pair shows with the right page = lower number; resizing across the breakpoint reflows without a broken pair.
-- [ ] **3b.3.2** **Spread paging semantics**: in 2-up mode, "next" advances by **two** pages (to the next spread), not one; the current-page indicator reflects the visible pair (e.g. "Pages 2–3"). Single mode advances by one.
+- [x] **3b.3.2** **Spread paging semantics**: in 2-up mode, "next" advances by **two** pages (to the next spread), not one; the current-page indicator reflects the visible pair (e.g. "Pages 2–3"). Single mode advances by one.
   - *Verify:* desktop next/prev moves whole spreads and never splits a pair mid-way; the indicator matches the visible pages.
 
 ## 3b.4 — Navigation (gestures, keyboard, quick-jump)
-- [ ] **3b.4.1** Page turns: **RTL-aware swipe** (reuse `core/reader/swipe`) + keyboard (`core/reader/keyboard`), honouring `prefers-reduced-motion`; on-screen prev/next; page indicator (page/pages · juz · surah, from the shared nav index).
+- [x] **3b.4.1** Page turns: **RTL-aware swipe** (reuse `core/reader/swipe`) + keyboard (`core/reader/keyboard`), honouring `prefers-reduced-motion`; on-screen prev/next; page indicator (page/pages · juz · surah, from the shared nav index).
   - *Verify:* swipe/keyboard page in the correct RTL direction; reduced-motion has no transform animation; indicator updates (single + spread).
-- [ ] **3b.4.2** **Shared quick-jump**: reuse `CommandPalette` + `useQuickJump`/`resolveJump` so `2:255`, `page 50`, `juz 5`, and surah names jump to the right **mushaf page** (image page scheme = the QPC nav index). ⌘K + a chrome affordance.
+- [x] **3b.4.2** **Shared quick-jump**: reuse `CommandPalette` + `useQuickJump`/`resolveJump` so `2:255`, `page 50`, `juz 5`, and surah names jump to the right **mushaf page** (image page scheme = the QPC nav index). ⌘K + a chrome affordance.
   - *Verify:* each jump lands on the correct mushaf page (single + spread); invalid input no-ops.
 
 ## 3b.5 — Zoom (retained, optional)
-- [ ] **3b.5.1** Pinch-zoom + double-tap-to-zoom on a page image (pan while zoomed), so it's *available* but no longer *required* to read (the point of the phone fix). Reset on page change.
+- [x] **3b.5.1** Pinch-zoom + double-tap-to-zoom on a page image (pan while zoomed), so it's *available* but no longer *required* to read (the point of the phone fix). Reset on page change.
   - *Verify:* pinch/double-tap zooms and pans; a normal read needs no zoom (page legible at fit-width); zoom resets when paging.
 
 ## 3b.6 — Entry point & chrome
-- [ ] **3b.6.1** A way in/out: open the mushaf view from the reader (e.g. the "More" tab / a menu entry — "dedicated menu, as today") and return to the text reader. Consistent top-bar chrome (indicator + quick-jump + back).
+- [x] **3b.6.1** A way in/out: open the mushaf view from the reader (e.g. the "More" tab / a menu entry — "dedicated menu, as today") and return to the text reader. Consistent top-bar chrome (indicator + quick-jump + back).
   - *Verify:* user can switch text reader ↔ mushaf image view and back; deep-links to each work; safe-area insets + all 3 themes correct.
 
 ## 3b.7 — Caching & offline posture
-- [ ] **3b.7.1** Confirm images cache in IndexedDB (3b.1.1) with a sensible byte cap; they are **not** part of the default precache/offline pack — opt-in only (the download-manager UI lands in Phase 8; here just ensure the SW/cache config doesn't bulk-precache the 100MB set).
+- [x] **3b.7.1** Confirm images cache in IndexedDB (3b.1.1) with a sensible byte cap; they are **not** part of the default precache/offline pack — opt-in only (the download-manager UI lands in Phase 8; here just ensure the SW/cache config doesn't bulk-precache the 100MB set).
   - *Verify:* first visit fetches, revisit serves from cache; a fresh install does **not** eagerly download all pages.
 
 ## 3b.8 — Perf, a11y & test gate
-- [ ] **3b.8.1** **Perf**: per-page image transfer ≤ ~180KB; no CLS (aspect-ratio box); spread mode loads two images bounded; the view + its JS are absent from the initial reader bundle (size gate). Lighthouse pass on the mushaf route.
+- [x] **3b.8.1** **Perf**: per-page image transfer ≤ ~180KB; no CLS (aspect-ratio box); spread mode loads two images bounded; the view + its JS are absent from the initial reader bundle (size gate). Lighthouse pass on the mushaf route.
   - *Verify:* measured per-page transfer recorded; CLS≈0; size gate green; mushaf chunk separate.
-- [ ] **3b.8.2** **A11y**: each page `<img>` has a meaningful `alt` (e.g. "Mushaf page 50"); prev/next/zoom controls keyboard-operable + labelled; `prefers-reduced-motion` honoured; axe clean across light/dark/sepia.
+- [x] **3b.8.2** **A11y**: each page `<img>` has a meaningful `alt` (e.g. "Mushaf page 50"); prev/next/zoom controls keyboard-operable + labelled; `prefers-reduced-motion` honoured; axe clean across light/dark/sepia.
   - *Verify:* axe WCAG 2 A/AA clean; full keyboard walkthrough; reduced-motion verified.
-- [ ] **3b.8.3** **Tests**: unit (manifest/URL resolution, spread-pairing math, spread paging), e2e (single vs spread by width, paging, quick-jump, cache-on-revisit, deep-link). No flaky waits.
+- [x] **3b.8.3** **Tests**: unit (manifest/URL resolution, spread-pairing math, spread paging), e2e (single vs spread by width, paging, quick-jump, cache-on-revisit, deep-link). No flaky waits.
   - *Verify:* `test:unit` + `test:e2e` green; `size` under budget; `build` clean.
 
 ---
 
 ### Exit checklist (all true to close Phase 3b)
-- [ ] Optimized single-page WebP set generated + manifested; per-page ≤ ~180KB; raw PNGs kept out of the deployed app.
-- [ ] Phone: one page, legible without pinch-zoom. Desktop: correct RTL 2-up spread from adjacent singles.
-- [ ] Lazy image load + neighbour prefetch + IndexedDB cache; not bulk-precached.
-- [ ] Swipe/keyboard paging (RTL, reduced-motion) + shared quick-jump land on the right page(s).
-- [ ] Dedicated code-split route/menu; switch to/from the text reader works; deep-links + persistence.
-- [ ] Budgets green (view absent from reader bundle; per-page transfer bounded; CLS≈0); a11y clean.
+- [x] Optimized single-page WebP set generated + manifested; per-page ≤ ~180KB; raw PNGs kept out of the deployed app.
+- [x] Phone: one page, legible without pinch-zoom. Desktop: correct RTL 2-up spread from adjacent singles.
+- [x] Lazy image load + neighbour prefetch + IndexedDB cache; not bulk-precached.
+- [x] Swipe/keyboard paging (RTL, reduced-motion) + shared quick-jump land on the right page(s).
+- [x] Dedicated code-split route/menu; switch to/from the text reader works; deep-links + persistence.
+- [x] Budgets green (view absent from reader bundle; per-page transfer bounded; CLS≈0); a11y clean.
 
 ### What later phases consume from here
 Phase 8 (PWA/offline) adds the opt-in "download all pages" manager over this cache; Phase 9 removes the raw PNGs from git and finalizes the optimized set on the deploy.

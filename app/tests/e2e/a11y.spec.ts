@@ -41,3 +41,20 @@ test('open dialog has no serious a11y violations', async ({ page }) => {
   )
   expect(serious, JSON.stringify(serious.map((v) => v.id))).toEqual([])
 })
+
+// Mushaf image surface (3b.8.2): chrome must be axe-clean in all three themes.
+// The scan `<img>`s carry meaningful alt; the scan artwork itself is content.
+for (const theme of themes) {
+  test(`mushaf surface has no serious a11y violations — ${theme}`, async ({ page }) => {
+    await page.goto('/mushaf/50')
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    await expect(page.locator('img[alt="Mushaf page 50"]')).toBeVisible({ timeout: 10_000 })
+
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+    const serious = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    )
+    expect(serious, JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length })))).toEqual([])
+  })
+}

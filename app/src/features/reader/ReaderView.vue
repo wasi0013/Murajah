@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  BookImage,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -97,6 +98,18 @@ onBeforeUnmount(() => {
 const maxStep = READING_WIDTHS.length - 1
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
+
+/**
+ * Open the standalone mushaf scan surface. QPC pages share the mushaf's 604-page
+ * scheme, so hand off the current page; from Indopak (a different page count) the
+ * mushaf restores its own last page instead of landing on a mismatched one.
+ */
+function openMushaf() {
+  void router.push({
+    name: 'mushaf',
+    params: reader.layout === 'qpc' ? { page: String(reader.page) } : {},
+  })
+}
 </script>
 
 <template>
@@ -130,6 +143,10 @@ const canNext = computed(() => reader.page < reader.pageCount)
         @click="reader.nextPage()"
       >
         <Icon :icon="ChevronRight" :size="22" />
+      </button>
+
+      <button class="icon-btn" aria-label="Mushaf scan view" @click="openMushaf">
+        <Icon :icon="BookImage" :size="20" />
       </button>
 
       <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">
