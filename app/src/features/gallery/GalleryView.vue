@@ -9,8 +9,13 @@ import Toggle from '@/components/Toggle.vue'
 import Slider from '@/components/Slider.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import Modal from '@/components/Modal.vue'
+import Tabs from '@/components/Tabs.vue'
+import Skeleton from '@/components/Skeleton.vue'
+import Popover from '@/components/Popover.vue'
+import { toast } from '@/composables/useToast'
 
 const layout = ref('qpc')
+const tafsirLang = ref('ar')
 const tajweedOn = ref(true)
 const wbw = ref(false)
 const textSize = ref(2)
@@ -201,6 +206,59 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
             </div>
           </template>
         </Modal>
+      </section>
+
+      <!-- Tabs -->
+      <section class="grid gap-4">
+        <h2 class="text-xl font-semibold">Tabs</h2>
+        <Tabs
+          v-model="tafsirLang"
+          label="Tafsir language"
+          :tabs="[
+            { value: 'ar', label: 'العربية' },
+            { value: 'en', label: 'English' },
+            { value: 'bn', label: 'বাংলা' },
+          ]"
+        >
+          <template #default="{ active }">
+            <p class="max-w-[60ch] text-sm text-text-muted">
+              Tafsir panel for <b class="text-text">{{ active }}</b> — the reader swaps
+              per-surah tafsir chunks here (Phase 3/8).
+            </p>
+          </template>
+        </Tabs>
+      </section>
+
+      <!-- Feedback: Popover, Toast, Skeleton -->
+      <section class="grid gap-5">
+        <h2 class="text-xl font-semibold">Feedback</h2>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <Popover label="Word morphology">
+            <template #trigger>
+              <Button variant="secondary">Tap a word</Button>
+            </template>
+            <template #default>
+              <p class="text-sm font-semibold" style="font-family: var(--font-arabic)" dir="rtl">
+                الْحَمْدُ
+              </p>
+              <p class="mt-1 text-xs text-text-muted">noun · definite · nominative — "the praise"</p>
+            </template>
+          </Popover>
+
+          <Button variant="secondary" @click="toast('Marked page as memorized', { variant: 'success' })">
+            Success toast
+          </Button>
+          <Button variant="secondary" @click="toast('Could not save — retry', { variant: 'error' })">
+            Error toast
+          </Button>
+        </div>
+
+        <div class="grid max-w-sm gap-2">
+          <Skeleton width="60%" height="1.25rem" />
+          <Skeleton height="1rem" />
+          <Skeleton width="80%" height="1rem" />
+        </div>
       </section>
     </main>
   </div>

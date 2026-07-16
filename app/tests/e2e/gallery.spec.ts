@@ -55,3 +55,19 @@ test('overlays open, trap focus, and close on Escape', async ({ page }) => {
   await page.mouse.click(5, 5) // click scrim (top-left, outside panel)
   await expect(modal).toBeHidden()
 })
+
+test('popover and toast work', async ({ page }) => {
+  await page.goto('/gallery')
+
+  // Popover
+  await page.getByRole('button', { name: 'Tap a word' }).click()
+  const pop = page.getByRole('dialog', { name: 'Word morphology' })
+  await expect(pop).toBeVisible()
+  await expect(pop).toContainText('the praise')
+  await page.keyboard.press('Escape')
+  await expect(pop).toBeHidden()
+
+  // Toast (auto-dismisses; just assert it appears)
+  await page.getByRole('button', { name: 'Success toast' }).click()
+  await expect(page.getByRole('status')).toContainText('memorized')
+})

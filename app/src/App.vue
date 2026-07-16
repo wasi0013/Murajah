@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const settings = useSettingsStore()
 
@@ -12,4 +13,5 @@ onMounted(() => {
 
 <template>
   <RouterView />
+  <ToastContainer />
 </template>
