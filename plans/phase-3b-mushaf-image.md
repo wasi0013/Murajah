@@ -23,9 +23,9 @@
   - *Verify:* a clean deploy serves `img/mushaf/{page}.webp`; the reader/text deploy is unaffected; decision documented in [audit-assets-data.md](./audit-assets-data.md) §4.
 
 ## 3b.1 — Image data access (worker + cache)
-- [ ] **3b.1.1** `MushafClient` (or extend `DataClient`): load the image manifest once; expose `pageCount`, `imageUrl(page)`, `dimensions(page)`. Images are large binaries — fetch as **Blob** (not JSON) through the worker/asset layer; cache in IndexedDB (`AssetCache`, byte-capped LRU, version-purged) so revisits/offline are instant.
+- [x] **3b.1.1** `MushafClient` (or extend `DataClient`): load the image manifest once; expose `pageCount`, `imageUrl(page)`, `dimensions(page)`. Images are large binaries — fetch as **Blob** (not JSON) through the worker/asset layer; cache in IndexedDB (`AssetCache`, byte-capped LRU, version-purged) so revisits/offline are instant.
   - *Verify:* unit tests (mock transport) for URL/dimension resolution; an e2e confirms a revisited page loads from cache (no second network fetch).
-- [ ] **3b.1.2** Neighbour **prefetch**: warming ±1 page (±2 in desktop spread mode) off the main thread, clamped to range. Reuse the reader's prefetch pattern.
+- [x] **3b.1.2** Neighbour **prefetch**: warming ±1 page (±2 in desktop spread mode) off the main thread, clamped to range. Reuse the reader's prefetch pattern.
   - *Verify:* opening page N warms N±1 (network assertion); prefetch never fetches out-of-range or the whole set.
 
 ## 3b.2 — Mushaf view + route (single page)

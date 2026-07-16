@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { SOURCE_IMAGES, OUTPUT_PUBLIC } from './lib/paths.mjs'
-import { writeJson } from './lib/manifest.mjs'
+import { writeJson, hash } from './lib/manifest.mjs'
 
 /**
  * Transcode the mushaf page scans (611MB of ~2.4MB PNG spreads) into WebP and
@@ -59,6 +59,11 @@ function writeManifest(outDir, dims) {
       pages.filter((p) => dims[p].w !== first.w || dims[p].h !== first.h).map((p) => [p, dims[p]]),
     )
   }
+  // Content signature: stable across rebuilds of the SAME page set, so the app's
+  // image cache (murajah-images) is only purged when the pages actually change —
+  // not on every deploy (the scans are immutable; re-downloading 68MB would be
+  // wasteful). URLs are unhashed (`{page}.webp`), so this version is the guard.
+  manifest.version = hash(JSON.stringify(manifest))
   writeJson(`${outDir}/manifest.json`, manifest)
   return { pageCount: pages.length, uniform, width: first.w, height: first.h }
 }

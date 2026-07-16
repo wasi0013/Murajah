@@ -8,7 +8,7 @@ import { idbGet, idbGetAll, openDb, txDone } from './idb'
  *
  * Runs inside the data worker, so all of this is off the main thread.
  */
-const DB_NAME = 'murajah-assets'
+const DEFAULT_DB_NAME = 'murajah-assets'
 const DB_VERSION = 1 // schema version (not data version)
 const STORE = 'assets'
 const META = 'meta'
@@ -25,6 +25,12 @@ export interface AssetCacheOptions {
   version: string
   /** Byte cap before LRU eviction kicks in. Default 24MB. */
   maxBytes?: number
+  /**
+   * IndexedDB database name. Defaults to `murajah-assets` (reader JSON chunks).
+   * The mushaf image cache passes its own name (`murajah-images`) so large
+   * page Blobs get an independent byte cap and never evict reader data.
+   */
+  name?: string
 }
 
 export class AssetCache {
@@ -45,7 +51,7 @@ export class AssetCache {
   }
 
   static async open(opts: AssetCacheOptions): Promise<AssetCache> {
-    const db = await openDb(DB_NAME, DB_VERSION, (d) => {
+    const db = await openDb(opts.name ?? DEFAULT_DB_NAME, DB_VERSION, (d) => {
       if (!d.objectStoreNames.contains(STORE)) {
         const s = d.createObjectStore(STORE, { keyPath: 'url' })
         s.createIndex('ts', 'ts')
