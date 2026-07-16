@@ -7,11 +7,15 @@ import Button from '@/components/Button.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Toggle from '@/components/Toggle.vue'
 import Slider from '@/components/Slider.vue'
+import BottomSheet from '@/components/BottomSheet.vue'
+import Modal from '@/components/Modal.vue'
 
 const layout = ref('qpc')
 const tajweedOn = ref(true)
 const wbw = ref(false)
 const textSize = ref(2)
+const sheetOpen = ref(false)
+const modalOpen = ref(false)
 
 // Dev/design gallery — every primitive in every theme + RTL. Code-split, so it
 // never enters the reader bundle. Grows as Phase 2 primitives land.
@@ -160,6 +164,43 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           Text size — step {{ textSize }}
           <Slider v-model="textSize" :min="1" :max="5" :step="1" label="Text size" />
         </label>
+      </section>
+
+      <!-- Overlays -->
+      <section class="grid gap-4">
+        <h2 class="text-xl font-semibold">Overlays</h2>
+        <div class="flex flex-wrap gap-3">
+          <Button variant="secondary" @click="sheetOpen = true">Open bottom sheet</Button>
+          <Button variant="secondary" @click="modalOpen = true">Open modal</Button>
+        </div>
+
+        <BottomSheet v-model:open="sheetOpen" label="Reading settings">
+          <template #default="{ close }">
+            <h3 class="mb-3 text-lg font-semibold">Reading settings</h3>
+            <div class="grid gap-4">
+              <label class="flex items-center justify-between text-sm">
+                Tajweed <Toggle v-model="tajweedOn" label="Tajweed" />
+              </label>
+              <label class="flex items-center justify-between text-sm">
+                Word-by-word <Toggle v-model="wbw" label="Word by word" />
+              </label>
+              <Button block @click="close">Done</Button>
+            </div>
+          </template>
+        </BottomSheet>
+
+        <Modal v-model:open="modalOpen" label="Reset progress">
+          <template #default="{ close }">
+            <h3 class="mb-2 text-lg font-semibold">Reset progress?</h3>
+            <p class="mb-5 text-sm text-text-muted">
+              This clears memorized pages and mistakes on this device. This can't be undone.
+            </p>
+            <div class="flex justify-end gap-2">
+              <Button variant="ghost" @click="close">Cancel</Button>
+              <Button variant="danger" @click="close">Reset</Button>
+            </div>
+          </template>
+        </Modal>
       </section>
     </main>
   </div>

@@ -32,3 +32,26 @@ test('gallery renders and switches themes', async ({ page }) => {
   expect(await primaryBg()).toBe('rgb(15, 95, 87)') // #0f5f57
   await page.screenshot({ path: `${SHOT}/gallery-sepia.png`, fullPage: true })
 })
+
+test('overlays open, trap focus, and close on Escape', async ({ page }) => {
+  await page.goto('/gallery')
+  await page.getByRole('button', { name: 'dark', exact: true }).click()
+
+  // Bottom sheet
+  await page.getByRole('button', { name: 'Open bottom sheet' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Reading settings' })
+  await expect(sheet).toBeVisible()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `${SHOT}/sheet-dark.png` })
+  await page.keyboard.press('Escape')
+  await expect(sheet).toBeHidden()
+
+  // Modal + scrim close
+  await page.getByRole('button', { name: 'Open modal' }).click()
+  const modal = page.getByRole('dialog', { name: 'Reset progress' })
+  await expect(modal).toBeVisible()
+  // focus moved into the dialog
+  await expect(page.locator(':focus')).toBeVisible()
+  await page.mouse.click(5, 5) // click scrim (top-left, outside panel)
+  await expect(modal).toBeHidden()
+})
