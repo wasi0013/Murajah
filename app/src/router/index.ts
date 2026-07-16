@@ -5,6 +5,13 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    name: 'home',
+    component: () => import('@/features/reader/ReaderView.vue'),
+  },
+  {
+    // Reading surface — layout + page in the path, view toggles in the query
+    // (see core/navigation/readerRoute). Wired to the reader store in 3.10.
+    path: '/read/:layout/:page',
     name: 'reader',
     component: () => import('@/features/reader/ReaderView.vue'),
   },
