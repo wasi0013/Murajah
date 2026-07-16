@@ -1,7 +1,12 @@
 [
   {
     "name": "Initial JS (reader route, gzip)",
-    "path": ["dist/assets/index-*.js", "dist/assets/ReaderView-*.js"],
+    "path": [
+      "dist/assets/index-*.js",
+      "dist/assets/ReaderView-*.js",
+      "dist/assets/_plugin-vue_export-helper-*.js",
+      "dist/assets/Icon-*.js"
+    ],
     "limit": "120 kB",
     "gzip": true
   },

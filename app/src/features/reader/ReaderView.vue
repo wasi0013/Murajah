@@ -1,7 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronLeft, ChevronRight, Palette, Type } from 'lucide-vue-next'
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  ListOrdered,
+  Menu,
+  Palette,
+  Search,
+  SlidersHorizontal,
+  Target,
+} from 'lucide-vue-next'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
@@ -10,21 +21,25 @@ import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
 import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
 import { useVerseStudy } from '@/composables/useVerseStudy'
+import { useQuickJump } from '@/composables/useQuickJump'
+import { toast } from '@/composables/useToast'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
 import Slider from '@/components/Slider.vue'
-import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Toggle from '@/components/Toggle.vue'
 import Popover from '@/components/Popover.vue'
 import TajweedLegend from '@/components/TajweedLegend.vue'
+import BottomSheet from '@/components/BottomSheet.vue'
+import BottomTabBar from '@/components/BottomTabBar.vue'
+import CommandPalette from '@/components/CommandPalette.vue'
 
 /**
- * Reader host. Renders the paged reading surface and binds it to the URL +
- * persisted prefs. This is an interim shell: the full chrome (controls sheet,
- * bottom tab bar, layout/tajweed toggles, quick-jump) arrives in 3.10. The
- * text-size Slider (3.2.3) and prev/next live here for now.
+ * Reader shell: a top bar (quick-jump + settings), the paged reading surface,
+ * an optional verse-study panel, and the primary bottom tab bar. All view
+ * options live in a controls bottom sheet; quick-jump resolves through the nav
+ * indexes. Reader state is bound to the URL + persisted prefs.
  */
 const reader = useReaderStore()
 const router = useRouter()
@@ -34,25 +49,41 @@ const persistence = useReaderPersistence(reader)
 const { juz, surahName } = useReaderLocation(reader)
 const { switchTo } = useLayoutSwitch(reader)
 const study = useVerseStudy(reader)
+const { jumpTo } = useQuickJump(reader)
 useReaderKeyboard(reader)
 
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
   { value: 'indopak', label: 'Indopak' },
 ]
-
-const legendOpen = ref(false)
-
 const wbwLangOptions = [
   { value: 'en', label: 'EN' },
   { value: 'bn', label: 'বাংলা' },
 ]
-
 const modeOptions = [
   { value: 'read', label: 'Read' },
   { value: 'mark-mistake', label: 'Mark' },
 ]
+const tabs = [
+  { value: 'read', label: 'Read', icon: BookOpen },
+  { value: 'surahs', label: 'Surahs', icon: ListOrdered },
+  { value: 'goals', label: 'Goals', icon: Target },
+  { value: 'quiz', label: 'Quiz', icon: GraduationCap },
+  { value: 'more', label: 'More', icon: Menu },
+]
 
+const sheetOpen = ref(false)
+const paletteOpen = ref(false)
+const legendOpen = ref(false)
+const activeTab = ref('read')
+
+// Only the reader exists today; other tabs arrive in later phases.
+watch(activeTab, (v) => {
+  if (v !== 'read') {
+    toast('Coming in a later phase', { variant: 'info' })
+    activeTab.value = 'read'
+  }
+})
 
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
@@ -70,66 +101,41 @@ const canNext = computed(() => reader.page < reader.pageCount)
 
 <template>
   <main class="reader">
-    <div class="reader-options" role="toolbar" aria-label="Reading options">
-      <SegmentedControl
-        :model-value="reader.layout"
-        :options="layoutOptions"
-        label="Reading script"
-        @update:model-value="switchTo($event as Layout)"
-      />
-      <div v-if="reader.layout === 'qpc'" class="tajweed-cluster">
-        <label class="tajweed-control">
-          <span>Tajweed</span>
-          <Toggle
-            :model-value="reader.tajweed"
-            label="Tajweed colours"
-            @update:model-value="reader.toggleTajweed()"
-          />
-        </label>
-        <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" label="Tajweed legend">
-          <template #trigger>
-            <button type="button" class="legend-btn" aria-label="Tajweed legend">
-              <Icon :icon="Palette" :size="16" />
-            </button>
-          </template>
-          <TajweedLegend />
-        </Popover>
-      </div>
+    <header class="topbar">
+      <button
+        class="icon-btn"
+        :disabled="!canPrev"
+        aria-label="Previous page"
+        @click="reader.prevPage()"
+      >
+        <Icon :icon="ChevronLeft" :size="22" />
+      </button>
 
-      <div class="wbw-cluster">
-        <label class="ctrl-label">
-          <span>Words</span>
-          <Toggle
-            :model-value="reader.wbw"
-            label="Word-by-word translation"
-            @update:model-value="reader.toggleWbw()"
-          />
-        </label>
-        <SegmentedControl
-          v-if="reader.wbw"
-          :model-value="reader.wbwLang"
-          :options="wbwLangOptions"
-          label="Translation language"
-          @update:model-value="reader.setWbwLang($event as WbwLang)"
-        />
-      </div>
+      <button class="jump" aria-label="Go to page, ayah or surah" @click="paletteOpen = true">
+        <Icon :icon="Search" :size="16" />
+        <span class="indicator">
+          <span class="page-n">Page {{ reader.page }} / {{ reader.pageCount }}</span>
+          <span v-if="juz || surahName" class="page-meta">
+            <template v-if="juz">Juz {{ juz }}</template>
+            <template v-if="juz && surahName"> · </template>
+            <bdi v-if="surahName" lang="ar">{{ surahName }}</bdi>
+          </span>
+        </span>
+      </button>
 
-      <label class="ctrl-label">
-        <span>Tafsir</span>
-        <Toggle
-          :model-value="reader.tafsir"
-          label="Tafsir and translations"
-          @update:model-value="reader.toggleTafsir()"
-        />
-      </label>
+      <button
+        class="icon-btn"
+        :disabled="!canNext"
+        aria-label="Next page"
+        @click="reader.nextPage()"
+      >
+        <Icon :icon="ChevronRight" :size="22" />
+      </button>
 
-      <SegmentedControl
-        :model-value="reader.mode"
-        :options="modeOptions"
-        label="Tap mode"
-        @update:model-value="reader.setMode($event as ReaderMode)"
-      />
-    </div>
+      <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">
+        <Icon :icon="SlidersHorizontal" :size="20" />
+      </button>
+    </header>
 
     <ReaderPager class="reader-surface" />
 
@@ -142,41 +148,94 @@ const canNext = computed(() => reader.page < reader.pageCount)
       @expand="study.expandTafsir($event)"
     />
 
-    <div class="reader-controls" role="toolbar" aria-label="Reader controls">
-      <Button
-        variant="ghost"
-        :disabled="!canPrev"
-        aria-label="Previous page"
-        @click="reader.prevPage()"
-      >
-        <Icon :icon="ChevronLeft" />
-      </Button>
+    <BottomTabBar v-model="activeTab" :tabs="tabs" class="tabbar" />
 
-      <span class="page-indicator" aria-live="polite">
-        <span class="page-n">Page {{ reader.page }} / {{ reader.pageCount }}</span>
-        <span v-if="juz || surahName" class="page-meta">
-          <template v-if="juz">Juz {{ juz }}</template>
-          <template v-if="juz && surahName"> · </template>
-          <bdi v-if="surahName" lang="ar">{{ surahName }}</bdi>
-        </span>
-      </span>
+    <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
-      <label class="size-control">
-        <Icon :icon="Type" :size="16" label="Text size" />
-        <Slider
-          :model-value="reader.textSizeStep"
-          :min="0"
-          :max="maxStep"
-          :step="1"
-          label="Text size"
-          @update:model-value="reader.setTextSizeStep($event)"
-        />
-      </label>
+    <BottomSheet v-model:open="sheetOpen" label="Reader settings">
+      <div class="settings">
+        <h2 class="settings-title">Reader settings</h2>
 
-      <Button variant="ghost" :disabled="!canNext" aria-label="Next page" @click="reader.nextPage()">
-        <Icon :icon="ChevronRight" />
-      </Button>
-    </div>
+        <div class="row">
+          <span class="row-label">Reading script</span>
+          <SegmentedControl
+            :model-value="reader.layout"
+            :options="layoutOptions"
+            label="Reading script"
+            @update:model-value="switchTo($event as Layout)"
+          />
+        </div>
+
+        <div class="row">
+          <label class="row-label" for="size-slider">Page width</label>
+          <Slider
+            id="size-slider"
+            :model-value="reader.textSizeStep"
+            :min="0"
+            :max="maxStep"
+            :step="1"
+            label="Page width"
+            @update:model-value="reader.setTextSizeStep($event)"
+          />
+        </div>
+
+        <div v-if="reader.layout === 'qpc'" class="row">
+          <span class="row-label">Tajweed colours</span>
+          <div class="row-end">
+            <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" label="Tajweed legend">
+              <template #trigger>
+                <button type="button" class="legend-btn" aria-label="Tajweed legend">
+                  <Icon :icon="Palette" :size="16" />
+                </button>
+              </template>
+              <TajweedLegend />
+            </Popover>
+            <Toggle
+              :model-value="reader.tajweed"
+              label="Tajweed colours"
+              @update:model-value="reader.toggleTajweed()"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <span class="row-label">Word-by-word</span>
+          <div class="row-end">
+            <SegmentedControl
+              v-if="reader.wbw"
+              :model-value="reader.wbwLang"
+              :options="wbwLangOptions"
+              label="Translation language"
+              @update:model-value="reader.setWbwLang($event as WbwLang)"
+            />
+            <Toggle
+              :model-value="reader.wbw"
+              label="Word-by-word translation"
+              @update:model-value="reader.toggleWbw()"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <span class="row-label">Tafsir &amp; translations</span>
+          <Toggle
+            :model-value="reader.tafsir"
+            label="Tafsir and translations"
+            @update:model-value="reader.toggleTafsir()"
+          />
+        </div>
+
+        <div class="row">
+          <span class="row-label">Tap mode</span>
+          <SegmentedControl
+            :model-value="reader.mode"
+            :options="modeOptions"
+            label="Tap mode"
+            @update:model-value="reader.setMode($event as ReaderMode)"
+          />
+        </div>
+      </div>
+    </BottomSheet>
   </main>
 </template>
 
@@ -188,41 +247,107 @@ const canNext = computed(() => reader.page < reader.pageCount)
   background: var(--color-bg);
 }
 .reader-surface {
-  /* Fill the viewport when alone; grow (never collapse) when tafsir sits below. */
   flex: 1 0 auto;
 }
-.reader-options {
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem 0.9rem;
-  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-top));
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem calc(0.5rem);
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
-.wbw-cluster {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
 }
-.ctrl-label {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--color-elevated);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.jump {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: var(--text-sm);
+  flex: 1;
+  min-width: 0;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--color-elevated);
   color: var(--color-text-muted);
 }
-.tajweed-cluster {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.jump:hover {
+  color: var(--color-text);
 }
-.tajweed-control {
+.jump:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.indicator {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.page-n {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.page-meta {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding-bottom: 0.5rem;
+}
+.settings-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+.row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.row-label {
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text);
+}
+.row-end {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 .legend-btn {
   display: inline-flex;
@@ -241,35 +366,8 @@ const canNext = computed(() => reader.page < reader.pageCount)
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.reader-controls {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-}
-.page-indicator {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.page-meta {
-  font-size: var(--text-xs);
-  opacity: 0.85;
-}
-.size-control {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
-  color: var(--color-text-muted);
+/* The page-width slider shouldn't stretch full-width in the row. */
+.row :deep(.murajah-slider) {
+  width: 12rem;
 }
 </style>

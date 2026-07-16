@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings } from './helpers'
 
 /** surah:ayah of the first word on the visible page (layout-independent). */
 async function topAyah(page: import('@playwright/test').Page): Promise<string> {
@@ -18,6 +19,7 @@ test('switching to Indopak keeps the ayah and swaps the font', async ({ page }) 
     .locator('.col[aria-hidden="false"] .surface')
     .evaluate((el) => getComputedStyle(el).fontFamily)
 
+  await openSettings(page)
   await page.getByRole('radio', { name: 'Indopak' }).click()
 
   // Lands on an Indopak page showing the same ayah (page number differs).
@@ -33,6 +35,7 @@ test('switching to Indopak keeps the ayah and swaps the font', async ({ page }) 
 test('tajweed control is hidden on Indopak, shown on Uthmani', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await openSettings(page)
 
   const tajweed = page.getByRole('switch', { name: 'Tajweed colours' })
   await expect(tajweed).toBeVisible() // QPC default

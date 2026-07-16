@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings } from './helpers'
 
 // Text size now widens the mushaf column; scale-to-fill grows the line font to
 // match — so we measure a line's (scaled) font-size, not the fixed surface base.
@@ -33,7 +34,8 @@ test('text-size slider resizes the reading surface', async ({ page }) => {
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
   const before = await fontSizePx(page)
-  const slider = page.getByRole('slider', { name: 'Text size' })
+  await openSettings(page)
+  const slider = page.getByRole('slider', { name: 'Page width' })
   await slider.focus()
   await slider.press('ArrowRight')
   await expect.poll(() => fontSizePx(page)).toBeGreaterThan(before)

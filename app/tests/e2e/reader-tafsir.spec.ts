@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings, closeSettings } from './helpers'
 
 test('verse-study panel: translations upfront, Arabic tafsir on demand, mushaf untouched', async ({
   page,
@@ -12,7 +13,9 @@ test('verse-study panel: translations upfront, Arabic tafsir on demand, mushaf u
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
   await expect(page.locator('.study')).toHaveCount(0)
 
+  await openSettings(page)
   await page.getByRole('switch', { name: 'Tafsir and translations' }).click()
+  await closeSettings(page)
 
   const study = page.locator('.study')
   await expect(study).toBeVisible({ timeout: 10_000 })
@@ -37,6 +40,7 @@ test('verse-study panel: translations upfront, Arabic tafsir on demand, mushaf u
   // The 15-line mushaf above is untouched.
   await expect(page.locator('.col[aria-hidden="false"] .surface .word').first()).not.toBeEmpty()
 
+  await openSettings(page)
   await page.getByRole('switch', { name: 'Tafsir and translations' }).click()
   await expect(page.locator('.study')).toHaveCount(0)
 })

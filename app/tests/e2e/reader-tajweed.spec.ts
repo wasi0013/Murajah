@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings } from './helpers'
 
 const family = (page: import('@playwright/test').Page) =>
   page.locator('.col[aria-hidden="false"] .surface').evaluate((el) => getComputedStyle(el).fontFamily)
@@ -6,6 +7,7 @@ const family = (page: import('@playwright/test').Page) =>
 test('tajweed toggle swaps the QPC font without reflowing the page', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await openSettings(page)
 
   // Default on → coloured tajweed per-page font.
   await expect.poll(() => family(page)).toContain('tj-p')
@@ -30,9 +32,10 @@ test('tajweed toggle swaps the QPC font without reflowing the page', async ({ pa
   expect(Math.abs(heightAfter - heightBefore)).toBeLessThan(heightBefore * 0.06)
 })
 
-test('tajweed legend opens from the reader and lists the rules', async ({ page }) => {
+test('tajweed legend opens from the settings sheet and lists the rules', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await openSettings(page)
 
   await page.getByRole('button', { name: 'Tajweed legend' }).click()
   const legend = page.getByRole('dialog', { name: 'Tajweed legend' })
@@ -40,8 +43,7 @@ test('tajweed legend opens from the reader and lists the rules', async ({ page }
   await expect(legend.getByText('Ghunnah')).toBeVisible()
   await expect(legend.getByText('Qalqalah')).toBeVisible()
 
-  // Legend disappears when tajweed is turned off (no colours to explain).
-  await page.keyboard.press('Escape')
+  // Turning tajweed off (also dismisses the popover) hides the legend trigger.
   await page.getByRole('switch', { name: 'Tajweed colours' }).click()
   await expect(page.getByRole('button', { name: 'Tajweed legend' })).toBeHidden()
 })

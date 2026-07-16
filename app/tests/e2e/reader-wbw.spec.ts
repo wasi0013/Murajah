@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings } from './helpers'
 
 test('word-by-word: toggle shows glosses, only the page surah loads, en↔bn swaps', async ({
   page,
@@ -11,6 +12,7 @@ test('word-by-word: toggle shows glosses, only the page surah loads, en↔bn swa
   await page.goto('/') // page 1 = Al-Fatiha (surah 1)
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
   await expect(page.locator('.gloss')).toHaveCount(0) // off by default
+  await openSettings(page)
 
   await page.getByRole('switch', { name: 'Word-by-word translation' }).click()
 
