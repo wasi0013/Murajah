@@ -3,10 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   BookImage,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Home,
   ListOrdered,
   Menu,
   Palette,
@@ -66,7 +66,8 @@ const modeOptions = [
   { value: 'mark-mistake', label: 'Mark' },
 ]
 const tabs = [
-  { value: 'read', label: 'Read', icon: BookOpen },
+  { value: 'home', label: 'Home', icon: Home },
+  { value: 'mushaf', label: 'Mushaf', icon: BookImage },
   { value: 'surahs', label: 'Surahs', icon: ListOrdered },
   { value: 'goals', label: 'Goals', icon: Target },
   { value: 'quiz', label: 'Quiz', icon: GraduationCap },
@@ -76,14 +77,15 @@ const tabs = [
 const sheetOpen = ref(false)
 const paletteOpen = ref(false)
 const legendOpen = ref(false)
-const activeTab = ref('read')
+const activeTab = ref('home')
 
-// Only the reader exists today; other tabs arrive in later phases.
+// "Home" is this text reader; "Mushaf" opens the scan surface. The rest arrive
+// in later phases. Selecting a not-yet-built tab toasts and snaps back to Home.
 watch(activeTab, (v) => {
-  if (v !== 'read') {
-    toast('Coming in a later phase', { variant: 'info' })
-    activeTab.value = 'read'
-  }
+  if (v === 'home') return
+  if (v === 'mushaf') openMushaf()
+  else toast('Coming in a later phase', { variant: 'info' })
+  activeTab.value = 'home'
 })
 
 onMounted(async () => {
@@ -143,10 +145,6 @@ function openMushaf() {
         @click="reader.nextPage()"
       >
         <Icon :icon="ChevronRight" :size="22" />
-      </button>
-
-      <button class="icon-btn" aria-label="Mushaf scan view" @click="openMushaf">
-        <Icon :icon="BookImage" :size="20" />
       </button>
 
       <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">

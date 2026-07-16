@@ -81,7 +81,7 @@ test.describe('mushaf image surface', () => {
   test('entry point: open from the reader and return', async ({ page }) => {
     await page.setViewportSize(PHONE)
     await page.goto('/read/qpc/5')
-    await page.getByRole('button', { name: 'Mushaf scan view' }).click()
+    await page.getByRole('button', { name: 'Mushaf', exact: true }).click()
     await expect(page).toHaveURL(/\/mushaf\/5/)
     await expectPageLoaded(page, 5)
     await page.getByRole('button', { name: 'Back to reader' }).click()
