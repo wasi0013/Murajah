@@ -44,15 +44,38 @@ test('tajweed control is hidden on Indopak, shown on Uthmani', async ({ page }) 
   await expect(tajweed).toBeVisible()
 })
 
-test('Indopak keeps 15 lines fitted to width on a phone (no overflow)', async ({ page }) => {
+test('Indopak shows exactly 15 mushaf lines, each justified to fill the width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/read/indopak/3')
+  await page.goto('/read/indopak/22') // a full 15-line page (Al-Baqarah)
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
   const surface = page.locator('.col[aria-hidden="false"] .surface')
   await expect(surface.locator('.line-ayah')).toHaveCount(15)
-  // Shrink-to-fit keeps every line within the column — no horizontal overflow.
-  await expect
-    .poll(() => surface.evaluate((el) => (el as HTMLElement).scrollWidth - (el as HTMLElement).clientWidth))
-    .toBeLessThanOrEqual(1)
+  // No horizontal overflow, and every line fills the column edge-to-edge
+  // (scale-to-fill justification) — the minimum line-fill is ~100%.
+  const stats = await surface.evaluate((s) => {
+    const el = s as HTMLElement
+    const rows = Array.from(s.querySelectorAll('.line-ayah')) as HTMLElement[]
+    const fills = rows.map((r) => {
+      let min = Infinity
+      let max = -Infinity
+      for (const w of Array.from(r.children)) {
+        const b = w.getBoundingClientRect()
+        min = Math.min(min, b.left)
+        max = Math.max(max, b.right)
+      }
+      return (max - min) / r.clientWidth
+    })
+    return { overflow: el.scrollWidth - el.clientWidth, minFill: Math.min(...fills) }
+  })
+  expect(stats.overflow).toBeLessThanOrEqual(1)
+  expect(stats.minFill).toBeGreaterThan(0.97)
+
+  // Words (incl. tokens with a trailing waqf mark after a space) never wrap, so
+  // the mark can't detach onto its own row — guard against that regression.
+  const noWrap = await surface
+    .locator('.arabic')
+    .first()
+    .evaluate((el) => getComputedStyle(el).whiteSpace)
+  expect(noWrap).toBe('nowrap')
 })

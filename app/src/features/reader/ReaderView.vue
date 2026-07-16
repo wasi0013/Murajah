@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Palette, Type } from 'lucide-vue-next'
-import { useReaderStore, READING_SIZES } from '@/stores/reader'
+import { useReaderStore, READING_SIZES, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
@@ -43,6 +43,11 @@ const legendOpen = ref(false)
 const wbwLangOptions = [
   { value: 'en', label: 'EN' },
   { value: 'bn', label: 'বাংলা' },
+]
+
+const modeOptions = [
+  { value: 'read', label: 'Read' },
+  { value: 'mark-mistake', label: 'Mark' },
 ]
 
 onMounted(async () => {
@@ -104,6 +109,13 @@ const canNext = computed(() => reader.page < reader.pageCount)
           @update:model-value="reader.setWbwLang($event as WbwLang)"
         />
       </div>
+
+      <SegmentedControl
+        :model-value="reader.mode"
+        :options="modeOptions"
+        label="Tap mode"
+        @update:model-value="reader.setMode($event as ReaderMode)"
+      />
     </div>
 
     <ReaderPager class="reader-surface" />

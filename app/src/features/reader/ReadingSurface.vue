@@ -19,6 +19,8 @@ const props = defineProps<{
   textSize?: string
   /** location (`s:a:w`) → state class suffix */
   wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
+  /** word ids currently marked as mistakes (global, layout-independent). */
+  mistakeIds?: Set<number>
   /** Word-by-word: show a per-word gloss beneath each word. */
   wbw?: boolean
   /** location → gloss text (for the active WBW language). */
@@ -61,11 +63,14 @@ const lines = computed<RenderLine[]>(() => {
 })
 
 /**
- * Indopak uses one Nastaleeq font (not per-page glyph fonts like QPC), so a
- * mushaf line's natural width varies and can exceed the column. To keep all 15
- * lines without wrapping or clipping, any over-wide line is shrunk to fit by
- * lowering just that line's font-size (floored, so it never gets tiny). QPC and
- * WBW (which is allowed to wrap) are left untouched.
+ * Indopak uses one Nastaleeq font (not QPC's per-page glyph fonts), so the 15
+ * authentic mushaf lines (word grouping comes from indopak-15-lines.json) render
+ * at varying natural widths. To present them justified edge-to-edge like a
+ * printed mushaf — exactly 15 lines, no wrap, no clip, no ragged short lines —
+ * each line is scaled so its content fills the column width. Most lines land at
+ * near-identical scale; the clamp keeps any outlier from looking out of place,
+ * and space-between absorbs sub-pixel residual. QPC (pre-justified per-page
+ * fonts) and WBW (allowed to wrap) are left untouched.
  */
 const surfaceEl = ref<HTMLElement>()
 
@@ -78,8 +83,8 @@ function fitIndopakLines() {
     const avail = row.clientWidth
     const words = row.children
     if (avail <= 0 || words.length === 0) continue
-    // Centered overflow spills both sides, so scrollWidth is unreliable — measure
-    // the real content span as the union of the word rects.
+    // Measure the real content span as the union of the word rects (robust to
+    // whatever justification is in effect).
     let min = Infinity
     let max = -Infinity
     for (const w of words) {
@@ -88,9 +93,11 @@ function fitIndopakLines() {
       if (r.right > max) max = r.right
     }
     const content = max - min
-    if (content <= avail + 1) continue
+    if (content <= 0) continue
     const base = parseFloat(getComputedStyle(row).fontSize)
-    const factor = Math.max(avail / content, 0.55) // don't shrink below 55%
+    // Scale to fill the column; clamp so an unusually short/long line stays close
+    // to its neighbours' size rather than ballooning or vanishing.
+    const factor = Math.min(Math.max(avail / content, 0.5), 1.15)
     row.style.fontSize = `${base * factor}px`
   }
 }
@@ -137,8 +144,13 @@ watch(
           v-for="w in line.words"
           :key="w.id"
           class="word"
-          :class="[wordStates?.[w.location] ? `state-${wordStates[w.location]}` : '', { wbw }]"
+          :class="[
+            mistakeIds?.has(w.id) ? 'state-mistake' : '',
+            wordStates?.[w.location] ? `state-${wordStates[w.location]}` : '',
+            { wbw },
+          ]"
           :data-loc="w.location"
+          :data-id="w.id"
         >
           <span class="arabic">{{ w.text }}</span>
           <span v-if="wbw" class="gloss" dir="ltr" :lang="wbwLang">{{
@@ -168,13 +180,9 @@ watch(
   justify-content: space-between;
   flex-wrap: nowrap;
 }
-/* Indopak (single font): consistent, tighter word spacing instead of full-width
-   justification, so short lines don't over-stretch. Over-wide lines are shrunk
-   to fit in script (fitIndopakLines). WBW lines keep their wrap behaviour. */
-.surface-indopak .line-ayah:not(.wbw) {
-  justify-content: center;
-  column-gap: 0.28em;
-}
+/* Indopak (single font): each non-WBW line is scaled to fill the column in
+   script (fitIndopakLines), then space-between (inherited) justifies the tiny
+   residual — mushaf-style edge-to-edge justification, exactly 15 lines. */
 /* WBW mode: glosses widen words, so lines wrap and centre instead of strict
    justification, keeping each word+gloss as an intact unit. A subtle hairline +
    spacing keeps the 15 mushaf lines perceivable even when one wraps. */
@@ -208,6 +216,11 @@ watch(
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
+}
+/* Some Indopak tokens carry a trailing waqf mark after a space (e.g. "عَلَیْهَا ؕ").
+   Keep the word + its mark on one line so the mark never wraps into the gap. */
+.arabic {
+  white-space: nowrap;
 }
 .word.wbw {
   display: inline-flex;

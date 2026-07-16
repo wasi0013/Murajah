@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { useMorphology } from '@/composables/useMorphology'
+import { useMistakes } from '@/composables/useMistakes'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
@@ -36,6 +37,10 @@ const {
 const wordStates = computed<Record<string, 'morphology'>>(() =>
   morphLocation.value ? { [morphLocation.value]: 'morphology' } : {},
 )
+
+const mistakes = useMistakes(reader)
+onMounted(() => void mistakes.hydrate())
+onBeforeUnmount(() => mistakes.dispose())
 
 // Paging or switching layout dismisses an open analysis.
 watch(
@@ -128,13 +133,17 @@ function onPointerUp(e: PointerEvent) {
   }
 }
 
-/** A tap that never became a drag: open the tapped word's morphology (read mode). */
+/** A tap that never became a drag: morphology (read) or mistake toggle (mark). */
 function handleTap(e: PointerEvent) {
   const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-loc]')
   const loc = el?.dataset.loc
   if (!el || !loc) return
-  if (reader.mode === 'read') void openMorphology(loc, el)
-  // mark-mistake tapping arrives in 3.8.
+  if (reader.mode === 'mark-mistake') {
+    const id = Number(el.dataset.id)
+    if (Number.isFinite(id)) void mistakes.markWord(loc, id)
+  } else {
+    void openMorphology(loc, el)
+  }
 }
 
 /** Animate to the target neighbour, then swap the page and re-centre silently. */
@@ -191,6 +200,7 @@ function snapBack() {
             :translations="pages.entry(reader.page + offset)?.translations"
             :wbw-lang="reader.wbwLang"
             :word-states="offset === 0 ? wordStates : undefined"
+            :mistake-ids="mistakes.store.mistakeIds"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
