@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Palette, Type } from 'lucide-vue-next'
 import { useReaderStore, READING_SIZES } from '@/stores/reader'
-import type { Layout } from '@/core/data/types'
+import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
@@ -39,6 +39,11 @@ const layoutOptions = [
 ]
 
 const legendOpen = ref(false)
+
+const wbwLangOptions = [
+  { value: 'en', label: 'EN' },
+  { value: 'bn', label: 'বাংলা' },
+]
 
 onMounted(async () => {
   await persistence.hydrate() // saved prefs first…
@@ -80,6 +85,24 @@ const canNext = computed(() => reader.page < reader.pageCount)
           </template>
           <TajweedLegend />
         </Popover>
+      </div>
+
+      <div class="wbw-cluster">
+        <label class="ctrl-label">
+          <span>Words</span>
+          <Toggle
+            :model-value="reader.wbw"
+            label="Word-by-word translation"
+            @update:model-value="reader.toggleWbw()"
+          />
+        </label>
+        <SegmentedControl
+          v-if="reader.wbw"
+          :model-value="reader.wbwLang"
+          :options="wbwLangOptions"
+          label="Translation language"
+          @update:model-value="reader.setWbwLang($event as WbwLang)"
+        />
       </div>
     </div>
 
@@ -135,12 +158,24 @@ const canNext = computed(() => reader.page < reader.pageCount)
 }
 .reader-options {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.6rem 0.9rem;
   padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-top));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+}
+.wbw-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ctrl-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 .tajweed-cluster {
   display: flex;

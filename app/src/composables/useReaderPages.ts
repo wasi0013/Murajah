@@ -11,6 +11,8 @@ export interface PageEntry {
   status: 'loading' | 'ready' | 'error'
   chunk?: PageChunk
   family?: string
+  /** location → word-by-word gloss for the current WBW language (when WBW on). */
+  translations?: Record<string, string>
 }
 
 export interface UseReaderPagesOptions {
@@ -37,6 +39,8 @@ export function useReaderPages(
   const keepRadius = options.keepRadius ?? 1
 
   const cache = reactive(new Map<number, PageEntry>())
+  // Per-surah translation chunks, keyed `${lang}:${surah}` (layout-independent).
+  const trCache = new Map<string, Record<string, string>>()
   const ready = ref(false)
   let cachedLayout = reader.layout
 
@@ -62,7 +66,36 @@ export function useReaderPages(
       entry.status = 'ready'
     } catch {
       entry.status = 'error'
+      return
     }
+    // Word-by-word glosses load after the surface is ready (non-blocking), so
+    // the page renders immediately and translations fill into reserved space.
+    if (reader.wbw) void loadTranslations(entry)
+    else entry.translations = undefined
+  }
+
+  async function loadTranslations(entry: PageEntry): Promise<void> {
+    const chunk = entry.chunk
+    if (!chunk) return
+    const lang = reader.wbwLang
+    const surahs = [...new Set(chunk.words.map((w) => Number(w.surah)))]
+    try {
+      await Promise.all(
+        surahs.map(async (surah) => {
+          const key = `${lang}:${surah}`
+          if (!trCache.has(key)) trCache.set(key, await data.getTranslations(lang, surah))
+        }),
+      )
+    } catch {
+      return // translations are enhancement-only; never break the reader
+    }
+    // Ignore if the user flipped WBW off or changed language while loading.
+    if (!reader.wbw || reader.wbwLang !== lang) return
+    const map: Record<string, string> = {}
+    for (const w of chunk.words) {
+      map[w.location] = trCache.get(`${lang}:${Number(w.surah)}`)?.[w.location] ?? ''
+    }
+    entry.translations = map
   }
 
   function refresh(): void {
@@ -86,7 +119,10 @@ export function useReaderPages(
     }
   }
 
-  const stop = watch(() => [reader.layout, reader.page, reader.tajweed], refresh)
+  const stop = watch(
+    () => [reader.layout, reader.page, reader.tajweed, reader.wbw, reader.wbwLang],
+    refresh,
+  )
 
   void (async () => {
     await Promise.all([data.init(), fonts.init()])

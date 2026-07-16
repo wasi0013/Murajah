@@ -19,6 +19,12 @@ const props = defineProps<{
   textSize?: string
   /** location (`s:a:w`) → state class suffix */
   wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
+  /** Word-by-word: show a per-word gloss beneath each word. */
+  wbw?: boolean
+  /** location → gloss text (for the active WBW language). */
+  translations?: Record<string, string>
+  /** WBW gloss language (for the `lang` attribute; en/bn are both LTR). */
+  wbwLang?: string
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -72,15 +78,19 @@ const lines = computed<RenderLine[]>(() => {
         {{ surahNames?.[String(line.surah)] ?? 'سورة' }}
       </div>
       <div v-else-if="line.type === 'basmallah'" class="line line-basmala">﷽</div>
-      <div v-else class="line line-ayah">
+      <div v-else class="line line-ayah" :class="{ wbw }">
         <span
           v-for="w in line.words"
           :key="w.id"
           class="word"
-          :class="wordStates?.[w.location] ? `state-${wordStates[w.location]}` : ''"
+          :class="[wordStates?.[w.location] ? `state-${wordStates[w.location]}` : '', { wbw }]"
           :data-loc="w.location"
-          >{{ w.text }}</span
         >
+          <span class="arabic">{{ w.text }}</span>
+          <span v-if="wbw" class="gloss" dir="ltr" :lang="wbwLang">{{
+            translations?.[w.location] ?? ''
+          }}</span>
+        </span>
       </div>
     </template>
   </div>
@@ -99,6 +109,15 @@ const lines = computed<RenderLine[]>(() => {
   justify-content: space-between;
   flex-wrap: nowrap;
 }
+/* WBW mode: glosses widen words, so lines wrap and centre instead of strict
+   justification, keeping each word+gloss as an intact unit. */
+.line-ayah.wbw {
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 0.5em;
+  column-gap: 0.4em;
+}
 .line-surah {
   justify-content: center;
   color: var(--color-accent);
@@ -116,6 +135,25 @@ const lines = computed<RenderLine[]>(() => {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
+}
+.word.wbw {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: top;
+}
+.gloss {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.4em;
+  line-height: 1.25;
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+  text-align: center;
+  /* Reserve ~one line so streamed translations don't shift layout. */
+  min-height: 1.25em;
+  max-width: 10em;
+  margin-top: 0.35em;
 }
 /* Word states (token-driven, distinguishable in every theme) */
 .state-mistake {

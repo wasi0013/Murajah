@@ -150,6 +150,9 @@ function snapBack() {
             :layout="reader.layout"
             :surah-names="surahNames"
             :text-size="reader.readingSize"
+            :wbw="reader.wbw"
+            :translations="pages.entry(reader.page + offset)?.translations"
+            :wbw-lang="reader.wbwLang"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />

@@ -88,8 +88,14 @@ export const useReaderStore = defineStore('reader', () => {
   function toggleWbw() {
     wbw.value = !wbw.value
   }
+  function setWbwLang(lang: WbwLang) {
+    wbwLang.value = lang
+  }
   function toggleTafsir() {
     tafsir.value = !tafsir.value
+  }
+  function setTafsirLang(lang: TafsirLang) {
+    tafsirLang.value = lang
   }
   function setMode(next: ReaderMode) {
     mode.value = next
@@ -154,7 +160,9 @@ export const useReaderStore = defineStore('reader', () => {
     setTextSizeStep,
     toggleTajweed,
     toggleWbw,
+    setWbwLang,
     toggleTafsir,
+    setTafsirLang,
     setMode,
     toggleMode,
     snapshot,

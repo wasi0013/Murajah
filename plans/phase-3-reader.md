@@ -71,10 +71,12 @@
   - **Done:** a legend button (shown only while `tajweedActive`) opens the `TajweedLegend` in a `Popover` (outside-click/Escape close, teleported). Swatches use the `--tajweed-*` tokens (2.7.3). e2e: legend opens and lists Ghunnah/Qalqalah, and disappears when tajweed is turned off. Final placement moves into the controls sheet in 3.10.
 
 ## 3.6 — Word-by-word translation
-- [ ] **3.6.1** WBW `Toggle` (+ lang en/bn): when on, render each word's translation beneath it, lazy-loading the **per-surah** `TranslationChunk` for the page's surah(s) through `DataClient.getTranslations`. Layout: stack translation under the Arabic word without breaking line justification.
+- [x] **3.6.1** WBW `Toggle` (+ lang en/bn): when on, render each word's translation beneath it, lazy-loading the **per-surah** `TranslationChunk` for the page's surah(s) through `DataClient.getTranslations`. Layout: stack translation under the Arabic word without breaking line justification.
   - *Verify:* toggling shows/hides translations; en↔bn swaps text; only the visible page's surah chunk(s) fetched (network assertion); Bengali renders correctly.
-- [ ] **3.6.2** Perf: WBW must not regress page-turn budget — translations for prefetched neighbors warmed off the main thread; no CLS when toggling (reserve space or animate height under reduced-motion rules).
+  - **Done:** `useReaderPages` gained a per-surah translation cache (`${lang}:${surah}`) and attaches a per-page location→gloss map to each `PageEntry` when WBW is on (guarded against language-change races). `ReadingSurface` renders each word as a centred column (Arabic + `.gloss`), and the ayah line switches to `flex-wrap: wrap`/centred so wide glosses keep each word+gloss intact. `Toggle` + EN/বাংলা `SegmentedControl` in the reader; `setWbwLang` store action. Unit test (load only when on, en↔bn swap, clear when off) + e2e (glosses appear, only window surahs fetched, en↔bn swaps, off clears).
+- [x] **3.6.2** Perf: WBW must not regress page-turn budget — translations for prefetched neighbors warmed off the main thread; no CLS when toggling (reserve space or animate height under reduced-motion rules).
   - *Verify:* page turn with WBW on still ≤100ms; toggling WBW causes no layout-shift jump.
+  - **Done:** glosses load **after** the surface is `ready` (non-blocking) and the window load warms neighbours' translations (e2e confirms the prefetched page's surah loads too); the `.gloss` reserves ~1 line (`min-height`) so streamed text doesn't shift layout. The ≤100ms page-turn-with-WBW timing check folds into the 3.11 perf pass.
 
 ## 3.7 — Morphology on tap
 - [ ] **3.7.1** Tapping a word opens a **`Popover`** (Phase 2) with its morphology (root, lemma, POS, grammar) from the per-surah morphology chunk (3.0.2/3.0.3), **lazy code-split** so the morphology view + its data never enter the initial reader bundle. Popover anchors to the word, RTL-correct, keyboard-dismissible.

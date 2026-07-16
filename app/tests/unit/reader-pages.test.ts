@@ -21,13 +21,26 @@ function makeDoubles() {
   const pageCalls: Array<[string, number]> = []
   const fontCalls: Array<{ layout: string; page: number; tajweed?: boolean }> = []
   const prefetched: number[] = []
+  const trCalls: string[] = []
 
   const data = {
     init: vi.fn(async () => ({})),
     pageCount: (layout: string) => (layout === 'qpc' ? 604 : 610),
     getPage: vi.fn(async (layout: string, page: number) => {
       pageCalls.push([layout, page])
-      return { page, layout: [], words: [] }
+      // Two words of surah 1 so translations have something to map.
+      return {
+        page,
+        layout: [],
+        words: [
+          { id: 1, surah: '1', ayah: '1', word: '1', location: '1:1:1', text: 'a' },
+          { id: 2, surah: '1', ayah: '1', word: '2', location: '1:1:2', text: 'b' },
+        ],
+      }
+    }),
+    getTranslations: vi.fn(async (lang: string, surah: number) => {
+      trCalls.push(`${lang}:${surah}`)
+      return { '1:1:1': `${lang}-the`, '1:1:2': `${lang}-praise` }
     }),
     prefetchPage: vi.fn((_layout: string, page: number) => prefetched.push(page)),
   } as unknown as DataClient
@@ -41,7 +54,7 @@ function makeDoubles() {
     prefetch: vi.fn(),
   } as unknown as FontLoader
 
-  return { data, fonts, pageCalls, fontCalls, prefetched }
+  return { data, fonts, pageCalls, fontCalls, prefetched, trCalls }
 }
 
 const flush = async () => {
@@ -96,6 +109,31 @@ describe('useReaderPages', () => {
     expect(pages.entry(1)?.family).toBe('qpc-p1') // swapped to uthmani
     expect(pageCalls.length).toBe(pageFetchesBefore) // no new chunk fetches
     expect(fontCalls.some((r) => r.tajweed === false)).toBe(true)
+    pages.dispose()
+  })
+
+  it('loads per-surah translations only when WBW is on, and swaps language', async () => {
+    const { data, fonts, trCalls } = makeDoubles()
+    const reader = useReaderStore()
+    const pages = useReaderPages(reader, { data, fonts })
+    await flush()
+    // WBW off by default → no translations fetched or attached.
+    expect(trCalls).toEqual([])
+    expect(pages.entry(1)?.translations).toBeUndefined()
+
+    reader.toggleWbw()
+    await flush()
+    expect(pages.entry(1)?.translations).toEqual({ '1:1:1': 'en-the', '1:1:2': 'en-praise' })
+    expect(trCalls).toContain('en:1')
+
+    reader.setWbwLang('bn')
+    await flush()
+    expect(pages.entry(1)?.translations?.['1:1:1']).toBe('bn-the')
+    expect(trCalls).toContain('bn:1')
+
+    reader.toggleWbw()
+    await flush()
+    expect(pages.entry(1)?.translations).toBeUndefined() // cleared when off
     pages.dispose()
   })
 
