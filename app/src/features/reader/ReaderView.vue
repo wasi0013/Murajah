@@ -1,68 +1,110 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { BookOpen } from 'lucide-vue-next'
-import { useSettingsStore, type ThemeName } from '@/stores/settings'
-import { getDataClient } from '@/core/data'
-import { getFontLoader } from '@/core/fonts'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ChevronLeft, ChevronRight, Type } from 'lucide-vue-next'
+import { useReaderStore, READING_SIZES } from '@/stores/reader'
+import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
+import { useReaderPersistence } from '@/composables/useReaderPersistence'
+import ReaderPager from './ReaderPager.vue'
+import Slider from '@/components/Slider.vue'
+import Button from '@/components/Button.vue'
+import Icon from '@/components/Icon.vue'
 
-// Placeholder reader route. The real virtualized reading surface (QPC uthmani +
-// tajweed, Indopak) arrives in Phase 3. For now it proves the Phase 1 path: the
-// DataClient loads a page's chunk through the Web Worker, and the FontLoader
-// loads that page's QPC glyph font (prefetching the next page's font).
-const settings = useSettingsStore()
-const themes: ThemeName[] = ['light', 'dark', 'sepia']
+/**
+ * Reader host. Renders the paged reading surface and binds it to the URL +
+ * persisted prefs. This is an interim shell: the full chrome (controls sheet,
+ * bottom tab bar, layout/tajweed toggles, quick-jump) arrives in 3.10. The
+ * text-size Slider (3.2.3) and prev/next live here for now.
+ */
+const reader = useReaderStore()
+const router = useRouter()
 
-const status = ref('loading…')
-const firstWord = ref('')
-const fontFamily = ref('serif')
-
-function cycleTheme() {
-  const i = themes.indexOf(settings.theme)
-  settings.setTheme(themes[(i + 1) % themes.length])
-}
+const sync = useReaderRouteSync(reader, router)
+const persistence = useReaderPersistence(reader)
 
 onMounted(async () => {
-  try {
-    const data = getDataClient()
-    const fonts = getFontLoader()
-    await Promise.all([data.init(), fonts.init()])
-
-    const page = await data.getPage('qpc', 1)
-    fontFamily.value = await fonts.ensure({ layout: 'qpc', page: 1 })
-    firstWord.value = page.words[0]?.text ?? ''
-    status.value = `page 1 · ${page.words.length} words · ${page.layout.length} lines`
-
-    // Warm the next page's data + font (reader-driven prefetch lands in Phase 3).
-    data.prefetchPage('qpc', 2)
-    fonts.prefetch({ layout: 'qpc', page: 2 })
-  } catch (err) {
-    status.value = `data error: ${err instanceof Error ? err.message : String(err)}`
-  }
+  await persistence.hydrate() // saved prefs first…
+  sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
 })
+onBeforeUnmount(() => {
+  sync.dispose()
+  persistence.dispose()
+})
+
+const maxStep = READING_SIZES.length - 1
+const canPrev = computed(() => reader.page > 1)
+const canNext = computed(() => reader.page < reader.pageCount)
 </script>
 
 <template>
-  <main class="grid min-h-dvh place-content-center gap-4 text-center">
-    <BookOpen class="mx-auto size-8 text-accent" />
-    <h1 class="text-2xl font-semibold text-text">Murajah</h1>
-    <p class="text-text-muted">Reader shell — Phase 1 data path.</p>
+  <main class="reader">
+    <ReaderPager class="reader-surface" />
 
-    <p class="font-mono text-sm text-text-muted" data-testid="page-status">{{ status }}</p>
-    <p
-      class="text-3xl"
-      :style="{ fontFamily: `'${fontFamily}', serif` }"
-      lang="ar"
-      dir="rtl"
-      data-testid="first-word"
-    >
-      {{ firstWord }}
-    </p>
+    <div class="reader-controls" role="toolbar" aria-label="Reader controls">
+      <Button
+        variant="ghost"
+        :disabled="!canPrev"
+        aria-label="Previous page"
+        @click="reader.prevPage()"
+      >
+        <Icon :icon="ChevronLeft" />
+      </Button>
 
-    <button
-      class="mx-auto rounded-lg bg-accent px-4 py-2 text-accent-contrast transition"
-      @click="cycleTheme"
-    >
-      Theme: {{ settings.theme }}
-    </button>
+      <span class="page-indicator" aria-live="polite">
+        Page {{ reader.page }} / {{ reader.pageCount }}
+      </span>
+
+      <label class="size-control">
+        <Icon :icon="Type" :size="16" label="Text size" />
+        <Slider
+          :model-value="reader.textSizeStep"
+          :min="0"
+          :max="maxStep"
+          :step="1"
+          label="Text size"
+          @update:model-value="reader.setTextSizeStep($event)"
+        />
+      </label>
+
+      <Button variant="ghost" :disabled="!canNext" aria-label="Next page" @click="reader.nextPage()">
+        <Icon :icon="ChevronRight" />
+      </Button>
+    </div>
   </main>
 </template>
+
+<style scoped>
+.reader {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+.reader-surface {
+  flex: 1;
+}
+.reader-controls {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.page-indicator {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+}
+</style>

@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 // the worker — proven by the absence of a network request for it the 2nd time.
 test('page chunk is served from IndexedDB on reload (no re-fetch)', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByTestId('page-status')).toHaveText(/page 1 · \d+ words/, { timeout: 10_000 })
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
   const secondLoad: string[] = []
   page.on('request', (r) => {
@@ -12,7 +12,7 @@ test('page chunk is served from IndexedDB on reload (no re-fetch)', async ({ pag
   })
 
   await page.reload()
-  await expect(page.getByTestId('page-status')).toHaveText(/page 1 · \d+ words/, { timeout: 10_000 })
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
   // The chunk was cached in IndexedDB on the first visit, so the reload serves
   // it from cache — no network request for page 1's JSON.

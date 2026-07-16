@@ -36,12 +36,15 @@
 
 ## 3.2 — Paged reader host + virtualization
 > Mushaf reading is **page-at-a-time**, not one long scroll — so "virtualization" here = a windowed pager that mounts only current ±1 pages, never all 604/610. This kills the legacy "v-for over every word of a long surah" jank.
-- [ ] **3.2.1** `features/reader/ReaderPager.vue`: hosts `ReadingSurface` for the current page inside a windowed track (prev/current/next mounted; the rest virtual). Drives data+font load through `DataClient`/`FontLoader`; **prefetch ±1 page data + font** on settle.
+- [x] **3.2.1** `features/reader/ReaderPager.vue`: hosts `ReadingSurface` for the current page inside a windowed track (prev/current/next mounted; the rest virtual). Drives data+font load through `DataClient`/`FontLoader`; **prefetch ±1 page data + font** on settle.
   - *Verify:* DOM contains ≤3 mounted pages at any time regardless of surah length; switching to an already-prefetched page is instant (≤100ms, e2e timing) with **no layout shift** (CLS≈0).
-- [ ] **3.2.2** Cold-load UX: `Skeleton` page frame while a page's data/font resolve; neighbor prefetch makes forward paging feel instant. FOIT-safe (font `display:block` already) — no wrong-glyph flash.
+  - **Done:** `ReaderPager.vue` (3 fixed offset slots `[-1,0,1]` in a translated track → ≤3 surfaces mounted) driven by `composables/useReaderPages.ts` (reactive cache, loads window + prefetches ±1, evicts beyond keep-radius, re-resolves font on tajweed toggle without refetch, clears on layout switch, injects manifest page counts via `configure`) over pure `core/reader/pageWindow.ts`. 10 unit tests (window + loader with mock clients) + e2e (`.track > .col` count = 3, forward paging updates indicator + URL).
+- [x] **3.2.2** Cold-load UX: `Skeleton` page frame while a page's data/font resolve; neighbor prefetch makes forward paging feel instant. FOIT-safe (font `display:block` already) — no wrong-glyph flash.
   - *Verify:* throttled cold open shows skeleton then content, no glyph flash; forward paging after warm-up shows no skeleton.
-- [ ] **3.2.3** Text-size control (Phase 2 `Slider`) wired to `textSize`; applies to the active surface's Arabic without reflowing chrome; steps from the 2.3.1 scale.
+  - **Done:** mushaf-frame skeleton (12 shimmer bars, `role="status"`) in the pager's `v-else` until an entry is `ready`; FontLoader already uses `display:block`. e2e proves skeleton→surface (word becomes non-empty). Throttled visual + no-flash checks fold into the 3.11 perf pass.
+- [x] **3.2.3** Text-size control (Phase 2 `Slider`) wired to `textSize`; applies to the active surface's Arabic without reflowing chrome; steps from the 2.3.1 scale.
   - *Verify:* dragging resizes Arabic live; min/max clamp; keyboard-operable; setting persists (3.1.2).
+  - **Done:** `Slider` in the interim `ReaderView` bound to `reader.textSizeStep` (0…`READING_SIZES.length-1`); `readingSize` flows to `ReadingSurface` `text-size`. e2e: ArrowRight on the slider increases the surface's computed font-size; clamping unit-tested (3.1.1); persistence via `snapshot`/`restore` (3.1.2).
 
 ## 3.3 — Gesture & keyboard navigation
 - [ ] **3.3.1** Swipe/drag page turns (touch + pointer): horizontal swipe advances/retreats a page, **direction respects RTL** (in Arabic reading, swipe maps to next/prev correctly); velocity + threshold; rubber-band at the ends. A real page-turn feel, **honoring `prefers-reduced-motion`** (cross-fade/instant when reduced).
