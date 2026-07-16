@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/mushaf/MushafView.vue'),
   },
   {
+    // Memorization progress (grid + stats). Code-split → never in the reader bundle.
+    path: '/progress',
+    name: 'progress',
+    component: () => import('@/features/progress/ProgressView.vue'),
+  },
+  {
     // Design gallery (dev/design tool). Code-split → never in the reader bundle.
     path: '/gallery',
     name: 'gallery',
