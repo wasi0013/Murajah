@@ -14,8 +14,14 @@ import Skeleton from '@/components/Skeleton.vue'
 import Popover from '@/components/Popover.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import TajweedLegend from '@/components/TajweedLegend.vue'
+import ReadingSurface from '@/features/reader/ReadingSurface.vue'
 import { toast } from '@/composables/useToast'
+import { onMounted } from 'vue'
 import type { Jump } from '@/core/navigation/parseJump'
+import { getDataClient } from '@/core/data'
+import { getFontLoader } from '@/core/fonts'
+import type { PageChunk, SurahNames } from '@/core/data/types'
 
 const layout = ref('qpc')
 const tafsirLang = ref('ar')
@@ -31,6 +37,36 @@ const navTabs = [
 function onJump(j: Jump) {
   toast(`Jump → ${JSON.stringify(j)}`)
 }
+
+// Reading surface — real page-1 data + fonts.
+const page1 = ref<PageChunk | null>(null)
+const surahNames = ref<SurahNames>({})
+const qpcFamily = ref('serif')
+const tajweedFamily = ref('serif')
+const surfaceTajweed = ref(true)
+const wordStates = {
+  '1:1:2': 'mistake',
+  '1:2:2': 'morphology',
+  '1:3:1': 'selected',
+} as const
+
+onMounted(async () => {
+  try {
+    const data = getDataClient()
+    const fonts = getFontLoader()
+    await Promise.all([data.init(), fonts.init()])
+    ;[page1.value, surahNames.value, qpcFamily.value, tajweedFamily.value] = await Promise.all([
+      data.getPage('qpc', 1),
+      data.getSurahNames(),
+      fonts.ensure({ layout: 'qpc', page: 1 }),
+      fonts.ensure({ layout: 'qpc', page: 1, tajweed: true }),
+    ])
+  } catch (err) {
+    toast(`Reading surface failed: ${err instanceof Error ? err.message : String(err)}`, {
+      variant: 'error',
+    })
+  }
+})
 const tajweedOn = ref(true)
 const wbw = ref(false)
 const textSize = ref(2)
@@ -88,12 +124,12 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
         </div>
         <h3 class="mt-2 text-sm font-medium text-text-muted">Tajweed (functional)</h3>
         <div class="flex flex-wrap gap-4">
-          <span
-            v-for="t in tajweed"
-            :key="t"
-            class="text-lg font-semibold"
-            :style="{ color: `var(--tajweed-${t})` }"
-          >
+          <span v-for="t in tajweed" :key="t" class="flex items-center gap-2 text-sm">
+            <span
+              class="inline-block size-4 rounded-full"
+              :style="{ background: `var(--tajweed-${t})` }"
+              aria-hidden="true"
+            />
             {{ t }}
           </span>
         </div>
@@ -274,6 +310,32 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           <Skeleton height="1rem" />
           <Skeleton width="80%" height="1rem" />
         </div>
+      </section>
+
+      <!-- Reading surface (real page 1) -->
+      <section class="grid gap-4">
+        <div class="flex flex-wrap items-center gap-4">
+          <h2 class="me-auto text-xl font-semibold">Reading surface — page 1</h2>
+          <label class="flex items-center gap-2 text-sm">
+            <Toggle v-model="surfaceTajweed" label="Tajweed" /> Tajweed
+          </label>
+        </div>
+        <TajweedLegend v-if="surfaceTajweed" />
+        <div class="mx-auto w-full max-w-md rounded-xl border border-border bg-surface p-3 shadow-sm">
+          <ReadingSurface
+            v-if="page1"
+            :page="page1"
+            :font-family="surfaceTajweed ? tajweedFamily : qpcFamily"
+            :surah-names="surahNames"
+            :word-states="wordStates"
+          />
+          <p v-else class="p-8 text-center text-sm text-text-muted">loading page…</p>
+        </div>
+        <p class="text-sm text-text-muted">
+          Word states — <span class="text-danger">mistake (wavy underline)</span>,
+          morphology-active (accent tint), selected (raised). The real reader wraps this with
+          virtualization + tap interaction in Phase 3.
+        </p>
       </section>
 
       <!-- Navigation shell -->

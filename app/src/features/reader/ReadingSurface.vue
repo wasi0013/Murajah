@@ -1,0 +1,119 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { PageChunk, Word } from '@/core/data/types'
+
+/**
+ * Static styled mushaf page — the visual core the Phase 3 reader wraps with
+ * virtualization + interaction. Renders a PageChunk line-by-line: centered
+ * surah/basmallah lines and justified ayah lines whose words carry state
+ * classes (mistake / morphology-active / selected).
+ */
+const props = defineProps<{
+  page: PageChunk
+  /** Resolved font-family from FontLoader (`qpc-p{n}` uthmani or `tj-p{n}` tajweed). */
+  fontFamily: string
+  surahNames?: Record<string, string>
+  /** CSS font-size for the Arabic (from the text-size setting). */
+  textSize?: string
+  /** location (`s:a:w`) → state class suffix */
+  wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
+}>()
+
+interface RenderLine {
+  type: string
+  centered: boolean
+  surah?: number | ''
+  words: Word[]
+}
+
+const lines = computed<RenderLine[]>(() => {
+  const byId = new Map(props.page.words.map((w) => [w.id, w]))
+  return props.page.layout.map((line) => {
+    const words: Word[] = []
+    if (line.first_word_id !== '' && line.last_word_id !== '') {
+      for (let id = +line.first_word_id; id <= +line.last_word_id; id++) {
+        const w = byId.get(id)
+        if (w) words.push(w)
+      }
+    }
+    return {
+      type: line.line_type,
+      centered: Boolean(line.is_centered),
+      surah: line.surah_number,
+      words,
+    }
+  })
+})
+</script>
+
+<template>
+  <div
+    class="surface"
+    dir="rtl"
+    lang="ar"
+    :style="{ fontFamily, fontSize: textSize ?? 'var(--reading-size-md)', lineHeight: 'var(--qpc-line-height)' }"
+  >
+    <template v-for="(line, i) in lines" :key="i">
+      <div v-if="line.type === 'surah_name'" class="line line-surah">
+        {{ surahNames?.[String(line.surah)] ?? 'سورة' }}
+      </div>
+      <div v-else-if="line.type === 'basmallah'" class="line line-basmala">﷽</div>
+      <div v-else class="line line-ayah">
+        <span
+          v-for="w in line.words"
+          :key="w.id"
+          class="word"
+          :class="wordStates?.[w.location] ? `state-${wordStates[w.location]}` : ''"
+          :data-loc="w.location"
+          >{{ w.text }}</span
+        >
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.surface {
+  color: var(--color-text);
+  padding: 1rem 0.5rem;
+  letter-spacing: var(--qpc-tracking);
+}
+.line {
+  display: flex;
+}
+.line-ayah {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+.line-surah {
+  justify-content: center;
+  color: var(--color-accent);
+  font-size: 0.7em;
+  padding: 0.75rem 0;
+  font-family: var(--font-arabic);
+}
+.line-basmala {
+  justify-content: center;
+  color: var(--color-accent);
+  padding: 0.25rem 0 0.75rem;
+}
+.word {
+  padding: 0 0.06em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+/* Word states (token-driven, distinguishable in every theme) */
+.state-mistake {
+  color: var(--color-danger);
+  text-decoration: underline wavy var(--color-danger);
+  text-underline-offset: 0.35em;
+}
+.state-morphology {
+  background: color-mix(in oklab, var(--color-accent) 22%, transparent);
+}
+.state-selected {
+  background: var(--color-elevated);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+</style>

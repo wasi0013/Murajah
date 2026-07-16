@@ -74,7 +74,7 @@
   --color-surface: #f6f7f3;
   --color-elevated: #eef0ea;
   --color-text: #161d1a;
-  --color-text-muted: #69726b;
+  --color-text-muted: #5b645c; /* AA (>=4.5) on bg */
   --color-border: #d5dbcf;
   --color-accent: #0f5f57;
   --color-accent-hover: #0c4d47;
@@ -137,7 +137,7 @@
   --color-surface: #f8f1e2;
   --color-elevated: #eee3cc;
   --color-text: #3a3020;
-  --color-text-muted: #7a6b50;
+  --color-text-muted: #6d5e44; /* AA (>=4.5) on bg */
   --color-border: #ddceb0;
   --color-accent: #0f5f57;
   --color-accent-hover: #0c4d47;
