@@ -37,6 +37,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/today/TodayView.vue'),
   },
   {
+    // Quiz mode (translation / continuation / completion). Code-split → never in
+    // the reader bundle; drills the plan's pages and feeds quiz accuracy to weakness.
+    path: '/quiz',
+    name: 'quiz',
+    component: () => import('@/features/quiz/QuizView.vue'),
+  },
+  {
     // Memorization progress (grid + stats). Code-split → never in the reader bundle.
     path: '/progress',
     name: 'progress',

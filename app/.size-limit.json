@@ -30,6 +30,24 @@
     "gzip": true
   },
   {
+    "name": "Initial JS (quiz route, gzip)",
+    "path": [
+      "dist/assets/index-*.js",
+      "dist/assets/_plugin-vue_export-helper-*.js",
+      "dist/assets/QuizView-*.js",
+      "dist/assets/Icon-*.js",
+      "dist/assets/x-*.js",
+      "dist/assets/data-*.js",
+      "dist/assets/fonts-*.js",
+      "dist/assets/useQuizPersistence-*.js",
+      "dist/assets/useProgressPersistence-*.js",
+      "dist/assets/mistakes-*.js",
+      "dist/assets/useMistakesPersistence-*.js"
+    ],
+    "limit": "120 kB",
+    "gzip": true
+  },
+  {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
     "limit": "30 kB",

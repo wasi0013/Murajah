@@ -97,6 +97,7 @@ watch(activeTab, (v) => {
   if (v === 'home') return
   if (v === 'mushaf') openMushaf()
   else if (v === 'today') void router.push({ name: 'today' })
+  else if (v === 'quiz') void router.push({ name: 'quiz' })
   else toast('Coming in a later phase', { variant: 'info' })
   activeTab.value = 'home'
 })

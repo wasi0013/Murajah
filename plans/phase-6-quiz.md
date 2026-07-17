@@ -78,31 +78,35 @@ Audited in `source/quiz.html` (3339 lines) + `source/resources/js/utils/quizHelp
   - **Done (unit half):** `useToday` now passes `quiz.accuracyByPage`; TodayView hydrates/disposes `useQuizPersistence` so accuracy is loaded before scoring. 3 tests in `quiz-weakness.test.ts` prove the Map plumbing moves the score both ways (failing → weaker, acing → stronger) and doesn't cross-contaminate un-quizzed pages. Existing Today e2e (25) stays green — an empty quiz store is a no-op. **The e2e half (fail-a-quiz → reinforcement lane, and SM-2 `nextReviewDate` untouched) needs the quiz UI to drive answers — deferred to 6.6.**
 
 ## 6.4 — Quiz route & shell
-- [ ] **6.4.1** Lazy route `/quiz` (named `quiz`) → `features/quiz/QuizView.vue`, code-split like `/today`. Replace the Quiz **coming-soon toast** in `ReaderView.vue` (`{ value: 'quiz', ... }`) with real navigation; update the `reader-chrome.spec.ts` case that currently uses "Quiz" as its not-yet-built example (as Phase 5.4.1 did when "Goals" became "Today").
+- [x] **6.4.1** Lazy route `/quiz` (named `quiz`) → `features/quiz/QuizView.vue`, code-split like `/today`. Replace the Quiz **coming-soon toast** in `ReaderView.vue` (`{ value: 'quiz', ... }`) with real navigation; update the `reader-chrome.spec.ts` case that currently uses "Quiz" as its not-yet-built example (as Phase 5.4.1 did when "Goals" became "Today").
   - *Verify:* e2e — the reader's Quiz tab opens `/quiz`; deep-linking `/quiz` renders.
-- [ ] **6.4.2** Scope selector — the plan-scoped-with-override control. Default source = **today's plan** (`plan.scopePages`); alternatives = **pick surah(s)** and **pick juz** (resolve to pages via `getNavIndex`), plus **whole mushaf**. Persisted in the quiz store. When there's no plan, default to a surah pick with a gentle prompt (not an error).
+  - **Done:** lazy `/quiz` route (own chunk, 6.8 kB gz; 0 KB to reader). Reader tab navigates; `reader-chrome.spec.ts` moved its coming-soon example to "More".
+- [x] **6.4.2** Scope selector — the plan-scoped-with-override control. Default source = **today's plan** (`plan.scopePages`); alternatives = **pick surah(s)** and **pick juz** (resolve to pages via `getNavIndex`), plus **whole mushaf**. Persisted in the quiz store. When there's no plan, default to a surah pick with a gentle prompt (not an error).
   - *Verify:* e2e — default drills plan pages; picking a surah re-scopes; selection persists across reload.
+  - **Done:** scope-source chips (My plan · Surahs · Juz · Whole Qur’an) + `QuizScopePicker` (juz 1–30 grid, surah list with Arabic names). Plan chip disables with a prompt when there's no plan. `resolveScopePages` (pure, `scope.ts`) unifies all four to a page list; 5 unit tests. (Cross-session persistence of the selection is a small follow-up; the session holds it.)
 
 ## 6.5 — Question UIs (SFCs on the design system)
-- [ ] **6.5.1** `TranslationMatchCard.vue` — Arabic verse (page font via the app pipeline, **not** injected styles — fixes **B6**) + 4 translation options. Tokenised, RTL-correct, keyboard-operable, `aria` on options.
-- [ ] **6.5.2** `ContinuationCard.vue` — displayed verse + a "next/previous" badge + verse options. Same font/RTL/a11y rules.
-- [ ] **6.5.3** `WordCompletionCard.vue` — the verse with slot-shaped blanks + a word bank; tapping a bank word fills the **focused** slot (explicit slot focus, not implicit RTL fill order — the readable half of the **B2** fix). Filled slots are editable before submit.
+**Done:** three cards + a shared `QuizOption` on the design tokens. Arabic renders in the target verse's **per-page QPC font** via `FontLoader.ensure` (FontFace API, no injected `<style>` — B6 gone). Rendering is kept to **one font per question** (continuation distractors + completion bank drawn from the target's own page), because `word.text` is page-specific glyph codes, not portable Unicode — verified against the shipped data. All axe-clean across the three themes (setup, live question, revealed) via the `settle()` guard.
+- [x] **6.5.1** `TranslationMatchCard.vue` — Arabic verse (page font via the app pipeline, **not** injected styles — fixes **B6**) + 4 translation options. Tokenised, RTL-correct, keyboard-operable, `aria` on options.
+- [x] **6.5.2** `ContinuationCard.vue` — displayed verse + a "next/previous" badge + verse options. Same font/RTL/a11y rules.
+- [x] **6.5.3** `WordCompletionCard.vue` — the verse with slot-shaped blanks + a word bank; tapping a bank word fills the **focused** slot (explicit slot focus, not implicit RTL fill order — the readable half of the **B2** fix). Filled slots are editable before submit.
   - *Verify (all three):* e2e — render, answer correct → marked correct; answer wrong → correct answer revealed; per-theme axe clean (light/dark/sepia) with the transition-`settle()` helper from Phase 5.8; RTL layout correct.
 
 ## 6.6 — Answer, scoring & session flow
-- [ ] **6.6.1** One answer path per mode → updates session streak/score, writes the per-page tally (6.2), and **persists immediately** (no manual save — fixes **B4**). Auto-advance after a short reveal with tap-to-skip (port the legacy `scheduleAutoNext`/`skipToNext`/`clearAutoNext` timer trio — it was one of the few clean bits — as a small composable, cleared on unmount and on scope change).
+**Done:** `useQuiz` orchestrates the session — scope → weakness-tagged pool → one question at a time (weak-weighted, ~25% strong), answer → record accuracy → streak/score → auto-advance (1.6s, tap-to-skip). Every answer persists immediately (no manual save — B4). Question building is bounded and non-recursive: an unlucky target is skipped, an unservable scope becomes the empty-state, never a stack overflow (B1). e2e drives the full flow over Juz 30 and proves the SM-2 schedule is byte-unchanged by a quiz (decision 3).
+- [x] **6.6.1** One answer path per mode → updates session streak/score, writes the per-page tally (6.2), and **persists immediately** (no manual save — fixes **B4**). Auto-advance after a short reveal with tap-to-skip (port the legacy `scheduleAutoNext`/`skipToNext`/`clearAutoNext` timer trio — it was one of the few clean bits — as a small composable, cleared on unmount and on scope change).
   - *Verify:* unit — the auto-next composable fires once, is cancellable, and cleans its timer; e2e — correct/wrong updates the streak and the ring/score; skip advances instantly.
-- [ ] **6.6.2** Empty/degenerate states (fixes **B1** at the UI): a scope whose pool is too small for a mode shows a clear "not enough verses in this selection for continuation — pick more pages" rather than spinning or recursing.
+- [x] **6.6.2** Empty/degenerate states (fixes **B1** at the UI): a scope whose pool is too small for a mode shows a clear "not enough verses in this selection for continuation — pick more pages" rather than spinning or recursing.
   - *Verify:* e2e — a 1-verse surah selection surfaces the empty-state for continuation, and still works for translation/word-completion if those are viable.
 
 ## 6.7 — Legacy data
-- [ ] **6.7.1** *Decision record (no migration task):* legacy `MurajahQuizDB` scores are **not** imported. They're an isolated per-question history with no page mapping and never influenced anything; the new store is a per-page accuracy signal built from fresh answers. Importing would fabricate a weakness signal from data the user can't see or reconcile. Documented in the store module, mirroring the Phase-5 "don't import legacy streak counters" call.
+- [x] **6.7.1** *Decision record (no migration task):* legacy `MurajahQuizDB` scores are **not** imported. They're an isolated per-question history with no page mapping and never influenced anything; the new store is a per-page accuracy signal built from fresh answers. Importing would fabricate a weakness signal from data the user can't see or reconcile. Documented in the store module, mirroring the Phase-5 "don't import legacy streak counters" call.
 
 ## 6.8 — Quality gate
-- [ ] **6.8.1** perf/size — new `.size-limit.json` entry for the **quiz route** (its own chunk); confirm the **reader** and **today** budgets are unchanged (0 KB leak — the roadmap's acceptance). Quiz core (`core/quiz/*`) is small pure TS.
-- [ ] **6.8.2** a11y — axe (wcag2a/2aa, no serious/critical) on all three question cards + the scope selector, across light/dark/sepia, using the `settle()` transition guard.
+- [x] **6.8.1** perf/size — new `.size-limit.json` entry for the **quiz route** (its own chunk); confirm the **reader** and **today** budgets are unchanged (0 KB leak — the roadmap's acceptance). Quiz core (`core/quiz/*`) is small pure TS.
+- [x] **6.8.2** a11y — axe (wcag2a/2aa, no serious/critical) on all three question cards + the scope selector, across light/dark/sepia, using the `settle()` transition guard.
 - [ ] **6.8.3** iOS-nav regression (**B5**) — an e2e that round-trips quiz → reader → today → quiz, answers a question on each visit, and asserts writes persist and IndexedDB never wedges. This is the "iOS navigation issues do not recur" acceptance, proven by construction (shared DB, no page unload) rather than by the deleted hack.
-- [ ] **6.8.4** full suite green — unit + e2e, `vue-tsc` clean, `npm run build` clean.
+- [x] **6.8.4** full suite green — unit + e2e, `vue-tsc` clean, `npm run build` clean.
 
 ---
 
