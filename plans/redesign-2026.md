@@ -110,7 +110,8 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - [phase-2-design-system.md](./phase-2-design-system.md) — tokens, primitives, reading-surface spec, gallery ✅
 - [phase-3-reader.md](./phase-3-reader.md) — text reader: paging, tajweed, WBW, morphology, mistakes, tafsir ✅
 - [phase-3b-mushaf-image.md](./phase-3b-mushaf-image.md) — mushaf image view: WebP pages, single/2-up spread, zoom ✅
-- [phase-4-memorization.md](./phase-4-memorization.md) — memorization: page grid, juz progress, perfect-revisions, weakness, stats
+- [phase-4-memorization.md](./phase-4-memorization.md) — memorization: page grid, juz progress, perfect-revisions, weakness, stats ✅
+- [phase-5-plans-goals.md](./phase-5-plans-goals.md) — unified daily practice: one adaptive plan (scope + pace + new front), smart SM-2/weakness scheduling, Today screen, streaks, migration
 - _(later phases granularized when reached)_
 
 **Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md)
