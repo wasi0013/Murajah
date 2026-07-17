@@ -1,4 +1,5 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, type Ref } from 'vue'
+import { useLocalDay } from './useLocalDay'
 import { useProgressStore } from '@/stores/progress'
 import { usePlanStore } from '@/stores/plan'
 import { useMistakesStore } from '@/stores/mistakes'
@@ -9,7 +10,7 @@ import { getHabit, getTodayDate, type HabitDef } from '@/core/memorization/strea
 import type { ReviewRating } from '@/core/memorization/reviewScheduler'
 
 export interface UseTodayOptions {
-  /** The clock. Inject a ref to drive midnight rollover or to make tests deterministic. */
+  /** The clock. Defaults to the shared local-day clock; inject a ref in tests. */
   today?: Ref<Date>
 }
 
@@ -28,7 +29,10 @@ export function useToday(opts: UseTodayOptions = {}) {
   const mistakes = useMistakesStore()
   const dayLog = useDayLogStore()
 
-  const today = opts.today ?? ref(new Date())
+  // Rolls at local midnight, shared with `useStreak` — so a session left open
+  // overnight regenerates the queue for the new day instead of stalling on
+  // yesterday's, and the streak header can't disagree about which day it is.
+  const today = opts.today ?? useLocalDay()
   const date = computed(() => getTodayDate(today.value))
 
   /** What's already finished today — keeps the day's list stable as it's worked. */

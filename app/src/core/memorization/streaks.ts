@@ -60,11 +60,13 @@ function computeLongestStreak(completedDates: Set<string>): number {
 /**
  * Current + longest completion streak from the day log, anchored at local midnight.
  *
- * The current streak counts consecutive completed days ending at **today** (if
- * today is complete) or **yesterday**. Preserving the legacy product rule: if
- * yesterday is not complete the current streak is 0 — a brand-new completion today
- * doesn't count until it's carried by the previous day. (Revisit for the Today UX
- * in 5.3.2 if a fresh day-1 should read as `1`.)
+ * The current streak counts consecutive completed days back from **today** if today
+ * is complete, else from **yesterday** — so a streak stays alive through a day whose
+ * work hasn't been done *yet*, and only breaks once that day is missed outright.
+ *
+ * This corrects the legacy rule, which anchored on yesterday alone and so reported 0
+ * whenever a streak *started* today: finishing your first day showed "0 day streak"
+ * until a second day carried it. Today's completion now counts the moment it lands.
  */
 export function calculateStreak(log: DayLog, today: Date = new Date()): StreakResult {
   const completedDates = new Set<string>()
@@ -83,11 +85,15 @@ export function calculateStreak(log: DayLog, today: Date = new Date()): StreakRe
   const yesterdayStr = addDays(todayStr, -1)
   const longestStreak = computeLongestStreak(completedDates)
 
-  if (!completedDates.has(yesterdayStr)) {
-    return { currentStreak: 0, longestStreak, lastCompletedDate }
-  }
+  // Today anchors the streak when it's done; otherwise yesterday still can — the day
+  // only breaks it once it's over. Neither → the run has already lapsed.
+  let anchor = completedDates.has(todayStr)
+    ? todayStr
+    : completedDates.has(yesterdayStr)
+      ? yesterdayStr
+      : null
+  if (!anchor) return { currentStreak: 0, longestStreak, lastCompletedDate }
 
-  let anchor = completedDates.has(todayStr) ? todayStr : yesterdayStr
   let currentStreak = 0
   while (completedDates.has(anchor)) {
     currentStreak += 1

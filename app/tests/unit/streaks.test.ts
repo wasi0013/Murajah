@@ -35,9 +35,31 @@ describe('streaks — calculateStreak', () => {
     })
   })
 
-  it('is 0 when yesterday was incomplete (legacy product rule)', () => {
+  it('breaks once a day goes by unfinished', () => {
     const l = log([daysAgo(2), true], [daysAgo(1), false])
     expect(calculateStreak(l, TODAY).currentStreak).toBe(0)
+  })
+
+  it('counts a streak that starts today — day one reads as 1, not 0', () => {
+    const l = log([daysAgo(0), true])
+    expect(calculateStreak(l, TODAY)).toEqual({
+      currentStreak: 1,
+      longestStreak: 1,
+      lastCompletedDate: daysAgo(0),
+    })
+  })
+
+  it('a completion today revives the count after a lapse', () => {
+    // Yesterday was missed, so the old run is gone — but today starts a new one.
+    const l = log([daysAgo(3), true], [daysAgo(2), true], [daysAgo(1), false], [daysAgo(0), true])
+    const r = calculateStreak(l, TODAY)
+    expect(r.currentStreak).toBe(1)
+    expect(r.longestStreak).toBe(2)
+  })
+
+  it('keeps the streak alive on a day whose work is still outstanding', () => {
+    const l = log([daysAgo(2), true], [daysAgo(1), true], [daysAgo(0), false])
+    expect(calculateStreak(l, TODAY).currentStreak).toBe(2) // today can still be saved
   })
 
   it('counts consecutive completed days ending yesterday', () => {
