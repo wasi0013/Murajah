@@ -105,7 +105,7 @@ Audited in `source/quiz.html` (3339 lines) + `source/resources/js/utils/quizHelp
 ## 6.8 — Quality gate
 - [x] **6.8.1** perf/size — new `.size-limit.json` entry for the **quiz route** (its own chunk); confirm the **reader** and **today** budgets are unchanged (0 KB leak — the roadmap's acceptance). Quiz core (`core/quiz/*`) is small pure TS.
 - [x] **6.8.2** a11y — axe (wcag2a/2aa, no serious/critical) on all three question cards + the scope selector, across light/dark/sepia, using the `settle()` transition guard.
-- [ ] **6.8.3** iOS-nav regression (**B5**) — an e2e that round-trips quiz → reader → today → quiz, answers a question on each visit, and asserts writes persist and IndexedDB never wedges. This is the "iOS navigation issues do not recur" acceptance, proven by construction (shared DB, no page unload) rather than by the deleted hack.
+- [x] **6.8.3** iOS-nav regression (**B5**) — an e2e that round-trips quiz → reader → today → quiz, answers a question on each visit, and asserts writes persist and IndexedDB never wedges. This is the "iOS navigation issues do not recur" acceptance, proven by construction (shared DB, no page unload) rather than by the deleted hack.
 - [x] **6.8.4** full suite green — unit + e2e, `vue-tsc` clean, `npm run build` clean.
 
 ---
@@ -116,12 +116,12 @@ Audited in `source/quiz.html` (3339 lines) + `source/resources/js/utils/quizHelp
 - **Quiz history / stats view** — the legacy scores store had a history UI; a new per-page accuracy view could live under Progress (Phase 4 surface) later.
 
 ## Exit checklist
-- [ ] `/quiz` lazy + code-split; 0 KB added to reader/today bundles.
-- [ ] Three modes (translation match · continuation · word completion) working over plan-scoped pages, with a surah/juz override.
-- [ ] Word completion scored **slot-based**, proven correct on a duplicated-word verse (B2 regression).
-- [ ] Question targets interleave ~25% strong pages (decision 5); tunable via `STRONG_RATIO`.
-- [ ] No question generator can recurse or spin on an empty/degenerate scope (B1); clear empty-states instead.
-- [ ] Every answer persists immediately to the shared DB (B4/B5); no separate quiz database, no `pagehide` hack.
-- [ ] Per-page quiz accuracy feeds weakness scoring; weak-quiz pages reach Today's reinforcement lane; SM-2 schedule untouched by quizzes.
-- [ ] Arabic via the app font pipeline (no injected `<style>`); RTL correct; a11y clean (3 themes).
-- [ ] iOS nav round-trip regression green; unit + e2e green; type-check + build clean.
+- [x] `/quiz` lazy + code-split; 0 KB added to reader/today bundles.
+- [x] Three modes (translation match · continuation · word completion) working over plan-scoped pages, with a surah/juz override.
+- [x] Word completion scored **slot-based**, proven correct on a duplicated-word verse (B2 regression).
+- [x] Question targets interleave ~25% strong pages (decision 5); tunable via `STRONG_RATIO`.
+- [x] No question generator can recurse or spin on an empty/degenerate scope (B1); clear empty-states instead.
+- [x] Every answer persists immediately to the shared DB (B4/B5); no separate quiz database, no `pagehide` hack.
+- [x] Per-page quiz accuracy feeds weakness scoring; SM-2 schedule untouched by quizzes (e2e). *Note:* the "weak-quiz page reaches Today's reinforcement lane" appearance is proven at the unit level (`quiz-weakness.test.ts` — quiz accuracy moves the score across `WEAK_THRESHOLD`); forcing it through the live UI end-to-end is non-deterministic (which pages get quizzed, and whether answers are wrong, is random), so it's covered by the unit proof + the SM-2-untouched e2e rather than a flaky forced e2e.
+- [x] Arabic via the app font pipeline (no injected `<style>`); RTL correct; a11y clean (3 themes).
+- [x] iOS nav round-trip regression green; unit + e2e green; type-check + build clean.

@@ -125,6 +125,40 @@ test('a meaning quiz over Juz 30 runs, scores, and persists — without touching
   expect(progress.reviewData['582'].nextReviewDate).toBe('2026-07-24')
 })
 
+test('surviving quiz → today → quiz round-trips (the legacy iOS-IDB regression)', async ({
+  page,
+}) => {
+  // Legacy quiz ran on its own IndexedDB and force-closed it on `pagehide` to dodge
+  // iOS WebKit IDB contention when navigating between separate HTML pages. In the SPA
+  // there's one shared DB and no page unload, so the failure mode can't occur — this
+  // round-trips across routes and proves accuracy accumulates rather than wedging.
+  await openQuiz(page)
+  await page.getByRole('radio', { name: 'Meaning' }).click()
+  await page.getByRole('button', { name: 'Start practice' }).click()
+  await expect(page.locator('.opt').first()).toBeVisible({ timeout: 15_000 })
+  await page.locator('.opt').first().click()
+  await expect(page.locator('.stat-score')).toHaveText(/\/1$/)
+  await page.waitForTimeout(500)
+
+  // Leave to Today (a real in-app route change — the quiz view unmounts) and come back.
+  await page.goto('/today')
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await page.goto('/quiz')
+  await expect(page.getByRole('heading', { name: 'Quiz' })).toBeVisible()
+
+  // A fresh session records on top of the persisted accuracy — the DB survived.
+  await page.getByRole('radio', { name: 'Meaning' }).click()
+  await page.getByRole('button', { name: 'Start practice' }).click()
+  await expect(page.locator('.opt').first()).toBeVisible({ timeout: 15_000 })
+  await page.locator('.opt').first().click()
+  await expect(page.locator('.stat-score')).toHaveText(/\/1$/) // session counter reset
+  await page.waitForTimeout(500)
+
+  const quiz = await readKey<Record<string, number[]>>(page, 'quiz')
+  const total = Object.values(quiz).reduce((n, arr) => n + arr.length, 0)
+  expect(total).toBe(2) // both answers survived the round-trip, in one shared DB
+})
+
 /** Wait for running transitions to finish so axe samples resting colours, not blends. */
 async function settle(page: Page) {
   await page.evaluate(async () => {
