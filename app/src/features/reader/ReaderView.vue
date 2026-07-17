@@ -12,6 +12,7 @@ import {
   Home,
   ListOrdered,
   Menu,
+  Mic,
   Palette,
   Search,
   SlidersHorizontal,
@@ -69,6 +70,10 @@ useReadingReward(madaniPage, getPageHasanah)
 const audio = useAudioStore()
 const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
 const audioPages = computed(() => [reader.page])
+
+// Record-your-recitation (7.6) — lazy panel, opened from the mic control.
+const recordOpen = ref(false)
+const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
 
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
@@ -187,6 +192,15 @@ function openMushaf() {
         <Icon :icon="Headphones" :size="20" />
       </button>
 
+      <button
+        class="icon-btn"
+        :aria-pressed="recordOpen"
+        aria-label="Record your recitation"
+        @click="recordOpen = true"
+      >
+        <Icon :icon="Mic" :size="20" />
+      </button>
+
       <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
@@ -208,6 +222,8 @@ function openMushaf() {
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
     <AudioHost v-if="audio.open" view="text" :layout="reader.layout" :pages="audioPages" />
+
+    <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="reader.page" />
 
     <BottomSheet v-model:open="sheetOpen" label="Reader settings">
       <div class="settings">

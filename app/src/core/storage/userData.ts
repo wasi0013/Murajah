@@ -17,6 +17,7 @@ const PLAN_KEY = 'plan'
 const DAYLOG_KEY = 'dayLog'
 const QUIZ_KEY = 'quiz'
 const AUDIO_KEY = 'audio'
+const RECORDINGS_KEY = 'recordings'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -462,6 +463,52 @@ export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
       speed: prefs.speed,
     }
     tx.objectStore(STORE).put(plain, AUDIO_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Own-recitation recordings (Phase 7.6). Stored as a plain array under one key in
+ * the shared app DB — **not** a separate database (the legacy separate DB was the
+ * iOS-contention source, bug A5/B5). Blobs are structured-cloneable, so they persist
+ * directly; we rebuild the surrounding array/objects to stay proxy-safe.
+ */
+export interface StoredRecording {
+  id: string
+  pageNumber: number
+  blob: Blob
+  mimeType: string
+  duration: number
+  recordedAt: string
+}
+
+/** Load persisted recordings (empty array if none / on error). */
+export async function loadRecordings(): Promise<StoredRecording[]> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredRecording[]>(tx.objectStore(STORE), RECORDINGS_KEY)
+    await txDone(tx)
+    return Array.isArray(stored) ? stored : []
+  } catch {
+    return []
+  }
+}
+
+/** Persist recordings (best-effort). Rebuilds plain objects around the blobs. */
+export async function saveRecordings(recordings: readonly StoredRecording[]): Promise<void> {
+  try {
+    const plain = recordings.map((r) => ({
+      id: r.id,
+      pageNumber: r.pageNumber,
+      blob: r.blob,
+      mimeType: r.mimeType,
+      duration: r.duration,
+      recordedAt: r.recordedAt,
+    }))
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(plain, RECORDINGS_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */
