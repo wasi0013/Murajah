@@ -12,6 +12,7 @@ import { usePlanPersistence } from '@/composables/usePlanPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { useDayLogPersistence } from '@/composables/useDayLogPersistence'
+import { useMilestones } from '@/composables/useMilestones'
 import { juzForPage } from '@/core/navigation/juz'
 import { toast } from '@/composables/useToast'
 import Icon from '@/components/Icon.vue'
@@ -39,18 +40,24 @@ const planPersistence = usePlanPersistence()
 const progressPersistence = useProgressPersistence()
 const mistakesPersistence = useMistakesPersistence()
 const dayLogPersistence = useDayLogPersistence()
+const milestones = useMilestones()
 
 onMounted(() => {
-  void planPersistence.hydrate()
-  void progressPersistence.hydrate()
   void mistakesPersistence.hydrate() // mistakes feed weakness scoring
   void dayLogPersistence.hydrate() // the streak and today's checked state
+  // Milestones celebrate what's crossed from here on, so they can only be armed once
+  // the plan (with the nav index) and progress are in. Arming against a half-loaded
+  // set of memorized pages would congratulate the user for the rest of them arriving.
+  void Promise.all([planPersistence.hydrate(), progressPersistence.hydrate()]).then(() =>
+    milestones.arm(),
+  )
 })
 onBeforeUnmount(() => {
   planPersistence.dispose()
   progressPersistence.dispose()
   mistakesPersistence.dispose()
   dayLogPersistence.dispose()
+  milestones.dispose()
 })
 
 const dateLabel = computed(() =>

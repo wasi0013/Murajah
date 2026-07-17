@@ -310,6 +310,53 @@ test('a page the schedule calls fine but the evidence calls weak gets its own la
   expect(stored.reviewData['3'].lastReviewDate).toBe(before(0)) // rescheduled from today
 })
 
+// —— Milestones (5.5.2) ————————————————————————————————
+
+test('memorizing the last page of a juz celebrates it, once', async ({ page }) => {
+  // Juz 1 is pages 1–21 in the derived nav index; 1–20 are already known, so the
+  // front sits on the page that completes it.
+  const memorized = Array.from({ length: 20 }, (_, i) => i + 1)
+  await open(page, {
+    progress: { ...PROGRESS, memorized },
+    plan: plan({
+      newFront: { layout: 'qpc', nextPage: 21 },
+      pace: { ...plan().pace, newPagesPerDay: 1, revisionPagesPerDay: 0 },
+    }),
+  })
+
+  await expect(page.getByRole('button', { name: 'Mark page 21 Memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.getByText('Juz 1 complete')).toHaveCount(0) // not yet — 21 is unmemorized
+
+  await page.getByRole('button', { name: 'Mark page 21 Memorized' }).click()
+  await expect(page.getByText('Juz 1 complete')).toBeVisible()
+
+  // The announcement is recorded, not re-derived: reopening must not re-celebrate a
+  // juz that is simply still complete.
+  await page.waitForTimeout(500)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await expect(page.getByText('Juz 1 complete')).toHaveCount(0)
+})
+
+test('a user who arrives with juz already complete is not celebrated for history', async ({
+  page,
+}) => {
+  // The migrated-hafiz case: everything is already done on first open. That's
+  // history, not something just earned — 30 toasts would be a bug, not a party.
+  await page.goto('/today')
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
+  await seed(page, {
+    progress: { ...PROGRESS, memorized: Array.from({ length: 604 }, (_, i) => i + 1) },
+    plan: plan(),
+  })
+  await page.reload()
+
+  await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.toast')).toHaveCount(0)
+})
+
 // —— Plan setup (5.5.1) ————————————————————————————————
 
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Your plan' })
