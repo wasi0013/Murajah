@@ -36,7 +36,9 @@ test('not-yet-built tabs show a coming-soon toast and keep Home active', async (
   const home = page.getByRole('button', { name: 'Home', exact: true })
   await expect(home).toHaveAttribute('aria-current', 'page')
 
-  await page.getByRole('button', { name: 'Goals' }).click()
+  // Quiz lands in Phase 6. (Today used to be this test's example, back when the
+  // tab was "Goals" — it navigates for real now; see today.spec.ts.)
+  await page.getByRole('button', { name: 'Quiz' }).click()
   await expect(page.getByText('Coming in a later phase')).toBeVisible()
   await expect(home).toHaveAttribute('aria-current', 'page') // still Home
 })

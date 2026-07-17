@@ -199,11 +199,11 @@ const historyOpen = ref(false)
           >
             <Icon :icon="Flame" :size="18" class="streak-icon" />
             <span class="streak-n">{{ streakLabel }}</span>
+            <!-- Nudge before celebration: a run that's about to break needs the
+                 day finishing, not congratulating. -->
             <span class="streak-sub">
-              <template v-if="streak.isPersonalBest.value && streak.currentStreak.value > 1">
-                Your best run yet
-              </template>
-              <template v-else-if="streak.isAtRisk.value">Finish today to keep it</template>
+              <template v-if="streak.isAtRisk.value">Finish today to keep it</template>
+              <template v-else-if="streak.isPersonalBest.value">Your best run yet</template>
               <template v-else-if="streak.longestStreak.value > 0">
                 Best: {{ streak.longestStreak.value }}
               </template>
