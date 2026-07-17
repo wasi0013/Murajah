@@ -260,6 +260,56 @@ test('a first-run user with nothing memorized gets a beginner plan at Juz 30', a
   await expect(page.locator('.row').first()).toContainText('Page 582')
 })
 
+// —— Weak reinforcement ————————————————————————————————
+
+test('a page the schedule calls fine but the evidence calls weak gets its own lane', async ({
+  page,
+}) => {
+  // Page 3 was reviewed 20 days ago on a 21-day interval, so SM-2 says "not due
+  // until tomorrow" — it never reaches the revision queue. But it has never been
+  // revised cleanly and carries 30 word-mistakes, scoring ~57 (WEAK_THRESHOLD 50).
+  // Catching exactly this page is why the lane exists.
+  await open(page, {
+    progress: {
+      ...PROGRESS,
+      perfectRevisions: {},
+      reviewData: {
+        '3': {
+          lastReviewDate: before(20),
+          nextReviewDate: before(-1), // tomorrow
+          interval: 21,
+          easeFactor: 2.5,
+          reviewCount: 5,
+          consecutiveCorrect: 0,
+        },
+      },
+    },
+    mistakes: { '3': Array.from({ length: 30 }, (_, i) => i + 1) },
+    plan: plan({ pace: { ...plan().pace, revisionPagesPerDay: 5, weakPagesPerDay: 2 } }),
+  })
+
+  await expect(section(page, 'Needs reinforcement').locator('.row')).toContainText(['Page 3'], {
+    timeout: 10_000,
+  })
+  // It's reinforcement, not revision — page 3 isn't due, so it must not be in both.
+  // Pages 1 and 2 are never-reviewed and *are* due, which pins the exclusion on
+  // page 3's schedule rather than on an empty revision queue.
+  await expect(section(page, 'Revision').locator('.row')).toContainText(['Page 1', 'Page 2'])
+
+  // The lane is actionable, and the reward loop runs through it like any other:
+  // one write moves hasanah, the schedule and the day's progress together.
+  await page.getByRole('button', { name: 'Page 3 recited cleanly' }).click()
+  await expect(section(page, 'Needs reinforcement').locator('.row').first()).toContainText('Done')
+
+  await page.waitForTimeout(500)
+  const stored = await readKey<{
+    hasanah: number
+    reviewData: Record<string, { lastReviewDate: string }>
+  }>(page, 'progress')
+  expect(stored.hasanah).toBeGreaterThan(0)
+  expect(stored.reviewData['3'].lastReviewDate).toBe(before(0)) // rescheduled from today
+})
+
 // —— Plan setup (5.5.1) ————————————————————————————————
 
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Your plan' })
@@ -406,12 +456,29 @@ test('history reflects work done in the session', async ({ page }) => {
 const themes = ['light', 'dark', 'sepia'] as const
 for (const theme of themes) {
   test(`today view has no serious a11y violations — ${theme}`, async ({ page }) => {
-    await open(page, { progress: PROGRESS, plan: plan({ habits: ['recite-ayahs', 'quick-test'] }) })
+    // Seed a day log so the calendar renders every cell state. An empty log would
+    // paint 90 identical blanks and check nothing that can actually fail.
+    await open(page, {
+      progress: PROGRESS,
+      plan: plan({ habits: ['recite-ayahs', 'quick-test'] }),
+      dayLog: {
+        [before(2)]: dayRecord(before(2), true, [1]),
+        [before(1)]: dayRecord(before(1), false, [1]),
+      },
+    })
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
     await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
 
     await expectAxeClean(page, `${theme} — queue`)
+
+    // The calendar encodes state as colour, so it carries the most contrast risk
+    // on the surface — and its text alternatives are the reason it's readable at all.
+    await page.getByRole('button', { name: 'View your practice history' }).click()
+    await expect(history(page)).toBeVisible()
+    await expectAxeClean(page, `${theme} — history`)
+    await page.keyboard.press('Escape')
+    await expect(history(page)).toBeHidden()
 
     // The setup sheet is the other half of the surface: a juz grid, weekday
     // toggles and number fields, all of which have to be reachable and labelled.
@@ -426,11 +493,19 @@ for (const theme of themes) {
  * Wait for every running transition to finish. Axe samples *computed* colours, so a
  * control caught mid-`transition-colors` reports a blend frame that is not a state
  * the design ever shows — a real source of flaky contrast failures.
+ *
+ * The two frames matter: Vue's <Transition> renders with the `*-enter-from` class and
+ * only swaps to `*-enter-to` on the next frame, and a sheet starts at `opacity: 0` —
+ * which Playwright counts as visible. So `getAnimations()` called the instant a sheet
+ * opens is still empty, and awaiting it would return immediately, mid-fade.
  */
 async function settle(page: Page) {
-  await page.evaluate(() =>
-    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
-  )
+  await page.evaluate(async () => {
+    const frame = () => new Promise((r) => requestAnimationFrame(() => r(undefined)))
+    await frame()
+    await frame()
+    await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)))
+  })
 }
 
 async function expectAxeClean(page: Page, label: string) {

@@ -11,6 +11,25 @@
     "gzip": true
   },
   {
+    "name": "Initial JS (today route, gzip)",
+    "path": [
+      "dist/assets/index-*.js",
+      "dist/assets/_plugin-vue_export-helper-*.js",
+      "dist/assets/TodayView-*.js",
+      "dist/assets/Icon-*.js",
+      "dist/assets/juz-*.js",
+      "dist/assets/sliders-horizontal-*.js",
+      "dist/assets/SegmentedControl-*.js",
+      "dist/assets/BottomSheet-*.js",
+      "dist/assets/data-*.js",
+      "dist/assets/useProgressPersistence-*.js",
+      "dist/assets/mistakes-*.js",
+      "dist/assets/useMistakesPersistence-*.js"
+    ],
+    "limit": "120 kB",
+    "gzip": true
+  },
+  {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
     "limit": "30 kB",

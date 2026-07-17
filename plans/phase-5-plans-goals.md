@@ -137,9 +137,14 @@ They also each kept **their own per-page review data** — separate from the Pha
     - **Fixed a test my 5.4.1 tab change broke:** `reader-chrome.spec.ts` used "Goals" as its example of a not-yet-built tab. Goals *is* Today now and navigates for real, so the test now uses Quiz (Phase 6). Full suite: **544 unit + 84 e2e green.**
 
 ## 5.8 — Quality gate
-- [ ] **5.8.1** a11y — axe (wcag2a/2aa, no serious/critical) on **TodayView** and **PlanSetup** across light/dark/sepia.
-- [ ] **5.8.2** perf/size — size-limit within the 120 KB JS / 30 KB CSS budgets (the `/today` route is code-split; scheduler/streak logic is small pure TS).
-- [ ] **5.8.3** full suite green — unit + e2e, `vue-tsc` clean, `npm run build` clean.
+- [x] **5.8.1** a11y — axe (wcag2a/2aa, no serious/critical) on **TodayView** and **PlanSetup** across light/dark/sepia.
+  **Done:** `tests/e2e/today.spec.ts` runs the sweep per theme over the queue, **the history calendar** (added here — it encodes state as colour, so it carries the most contrast risk on the surface) and the plan-setup sheet with its juz grid open. The calendar axe pass seeds a day log so every cell state actually renders; an empty log paints 90 identical blanks and proves nothing.
+  Fixed a **latent flake in `settle()`** that made the whole sweep untrustworthy: it awaited `document.getAnimations()` immediately, but Vue's `<Transition>` only swaps `*-enter-from` → `*-enter-to` on the next frame, and a sheet starts at `opacity: 0` — which Playwright counts as *visible*. So `getAnimations()` was empty, `settle()` returned instantly, and axe sampled a mid-fade blend. It now waits two frames before collecting. PlanSetup only passed before by luck (its `click()` burned the frames). Verified 5 consecutive clean runs; because axe now samples strictly at rest, the pass is real rather than suppressed.
+- [x] **5.8.2** perf/size — size-limit within the 120 KB JS / 30 KB CSS budgets (the `/today` route is code-split; scheduler/streak logic is small pure TS).
+  **Done:** reader route **54.23 kB** / today route **65.27 kB** of the 120 kB gzip budget; CSS **14.89 kB** of 30 kB. Added a third `.size-limit.json` entry for the **today route** — it's a primary surface and nothing guarded it from regressing; the CSS glob already covered it. Its path list is the static-import closure of the `TodayView` chunk.
+  ⚠️ Caveat inherited from the reader entry: the path lists are hand-maintained globs, so a *new* chunk in the closure is silently unmeasured rather than a failure.
+- [x] **5.8.3** full suite green — unit + e2e, `vue-tsc` clean, `npm run build` clean.
+  **Done:** **544 unit** (49 files) + **84 e2e** green, `vue-tsc --noEmit` clean, `npm run build` clean. Note `npm run test:unit` prints a trailing `ECONNREFUSED :3000` AggregateError after the summary — unrelated tooling noise, exit code is 0.
 
 ---
 
@@ -149,9 +154,15 @@ They also each kept **their own per-page review data** — separate from the Pha
 - **Milestones + toasts** (5.5.2) — optional stretch.
 
 ## Exit checklist
-- [ ] One editable plan (scope + pace + new front); smart-defaultable from existing data.
-- [ ] Today screen: streak + new-memorization + due revision queue + weak reinforcement, each actionable and feeding reward + schedule + streak in **one** write.
-- [ ] Review scheduling is a single per-page `ReviewSchedule`, shared by scheduler + weakness scoring (no duplicate stores).
-- [ ] Streaks reset at local midnight; survive reload; covered by tests.
-- [ ] Legacy plan + daily-goals data migrates without losing memorized pages, review history, or streak.
-- [ ] a11y clean (3 themes) · size within budget · unit + e2e green · type-check + build clean.
+- [x] One editable plan (scope + pace + new front); smart-defaultable from existing data.
+  `PlanSetup.vue` — one sheet for create + edit, drafted then committed so an abandoned edit can't half-rewrite a live plan. "Smart defaults" fills it from the user's own data; "Create my plan" is the one-tap path. (Exposes `weakPagesPerDay` beyond the spec's list — see 5.5.1.)
+- [x] Today screen: streak + new-memorization + due revision queue + weak reinforcement, each actionable and feeding reward + schedule + streak in **one** write.
+  All four lanes route through `recordReview` / `penalizeMistake`. The **weak lane had no browser coverage** until 5.8 — every e2e plan ran `weakPagesPerDay: 0`, so the one lane the criterion names was never proven actionable in a browser. Now covered by "a page the schedule calls fine but the evidence calls weak gets its own lane".
+- [x] Review scheduling is a single per-page `ReviewSchedule`, shared by scheduler + weakness scoring (no duplicate stores).
+  `progress.reviewData` is the sole store; `useToday` hands that one map to `planBuilder`, which fans it out to the scheduler and (as `pageReviewData`) the scorer. Legacy's per-plan copies collapse into it at migration.
+- [x] Streaks reset at local midnight; survive reload; covered by tests.
+  `useLocalDay` is a module singleton so the queue and the header can't disagree about the date; it re-ticks on `visibilitychange` because a backgrounded webview has its midnight timer throttled. 14 tests in `streak-composable.test.ts`.
+- [x] Legacy plan + daily-goals data migrates without losing memorized pages, review history, or streak.
+  `planMigration.ts`, 17 unit + 3 migrated-install e2e. **One accepted fidelity gap:** legacy's stored `longestStreak` is not imported — the new model derives it from the day log, so a user whose legacy `goalHistory` was pruned would lose the trophy. Preserving it needs a stored floor in the day-log schema; flagged rather than changed unilaterally.
+- [x] a11y clean (3 themes) · size within budget · unit + e2e green · type-check + build clean.
+  **544 unit + 85 e2e** green · axe clean over queue/history/setup × light/dark/sepia · JS 54–65 kB of 120 kB, CSS 14.89 kB of 30 kB · `vue-tsc` + `npm run build` clean.
