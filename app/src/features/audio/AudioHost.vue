@@ -1,0 +1,64 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import AudioMiniPlayer from './AudioMiniPlayer.vue'
+import ReciterPicker from './ReciterPicker.vue'
+import type { AudioView } from '@/core/audio/pages'
+import type { Layout } from '@/core/data/types'
+import { pageAudioAvailable } from '@/core/audio/pageMode'
+import { pageReciter, verseReciter } from '@/core/audio/reciters'
+import { useAudioEngine } from '@/composables/useAudioEngine'
+import { useQariPlayer } from '@/composables/useQariPlayer'
+import { useAudioStore } from '@/stores/audio'
+
+/**
+ * Mounts the mini-player + reciter picker for a view and wires them to the engine.
+ * The view passes the *reactive* context (which surface, layout, and page(s) are
+ * showing); the host turns player intents (start / rebuild / pick) into engine work.
+ * Rendered only when the player is open, so it and its deps stay lazy.
+ */
+const props = defineProps<{ view: AudioView; layout: Layout; pages: number[] }>()
+
+const store = useAudioStore()
+const engine = useAudioEngine()
+const player = useQariPlayer()
+
+const pickerOpen = ref(false)
+
+const pageAvailable = computed(() => pageAudioAvailable(props.layout))
+const effectiveGrain = computed<'verse' | 'page'>(() =>
+  store.grain === 'page' && pageAvailable.value ? 'page' : 'verse',
+)
+const reciterName = computed(() =>
+  effectiveGrain.value === 'page'
+    ? pageReciter(store.pageReciterId).name
+    : verseReciter(store.verseReciterId).name,
+)
+
+function ctx() {
+  return { view: props.view, layout: props.layout, pages: props.pages }
+}
+
+function onStart() {
+  void player.start(ctx())
+}
+function onRebuild() {
+  void player.restart()
+}
+function onClose() {
+  engine.stop()
+  store.open = false
+}
+</script>
+
+<template>
+  <AudioMiniPlayer
+    v-if="store.open"
+    :page-available="pageAvailable"
+    :reciter-name="reciterName"
+    @start="onStart"
+    @rebuild="onRebuild"
+    @open-picker="pickerOpen = true"
+    @close="onClose"
+  />
+  <ReciterPicker v-model:open="pickerOpen" :grain="effectiveGrain" @change="onRebuild" />
+</template>

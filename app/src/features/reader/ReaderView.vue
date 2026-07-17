@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   BookOpen,
@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Headphones,
   Home,
   ListOrdered,
   Menu,
@@ -15,6 +16,7 @@ import {
   Search,
   SlidersHorizontal,
 } from 'lucide-vue-next'
+import { useAudioStore } from '@/stores/audio'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
@@ -62,6 +64,11 @@ useReaderKeyboard(reader)
 // Reading-time hasanah: accrue against the canonical Madani page (Indopak maps in).
 const madaniPage = useMadaniPage(reader)
 useReadingReward(madaniPage, getPageHasanah)
+
+// Recitation audio — lazy, so its code stays out of the reader's initial bundle.
+const audio = useAudioStore()
+const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
+const audioPages = computed(() => [reader.page])
 
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
@@ -171,6 +178,15 @@ function openMushaf() {
         <Icon :icon="Brain" :size="20" />
       </button>
 
+      <button
+        class="icon-btn"
+        :aria-pressed="audio.open"
+        aria-label="Recitation audio"
+        @click="audio.open = true"
+      >
+        <Icon :icon="Headphones" :size="20" />
+      </button>
+
       <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
@@ -190,6 +206,8 @@ function openMushaf() {
     <BottomTabBar v-model="activeTab" :tabs="tabs" class="tabbar" />
 
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
+
+    <AudioHost v-if="audio.open" view="text" :layout="reader.layout" :pages="audioPages" />
 
     <BottomSheet v-model:open="sheetOpen" label="Reader settings">
       <div class="settings">

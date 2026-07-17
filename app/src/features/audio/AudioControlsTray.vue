@@ -1,0 +1,277 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Repeat, X } from 'lucide-vue-next'
+import Icon from '@/components/Icon.vue'
+import { useAudioEngine } from '@/composables/useAudioEngine'
+import { useAudioStore } from '@/stores/audio'
+
+/**
+ * The expandable advanced tray (7.2.2): AB-repeat, speed, repeat-count /
+ * spaced-repetition, and the autoplay-next / loop-playlist transport companions.
+ * Kept out of the always-visible mini-player so the default surface stays simple.
+ *
+ * AB-repeat is driven entirely by the engine's reducer (decision 7): setting A then
+ * B starts the loop; the Loop button toggles looping while preserving the markers.
+ * Changing repeat-count or the spaced drill needs the playlist rebuilt, so those
+ * emit `rebuild`; autoplay-next / loop-playlist are read live by the engine, so
+ * they don't.
+ */
+const store = useAudioStore()
+const engine = useAudioEngine()
+const emit = defineEmits<{ rebuild: [] }>()
+
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+
+const hasA = computed(() => store.ab.a !== null)
+const hasB = computed(() => store.ab.b !== null)
+const hasMarkers = computed(() => hasA.value || hasB.value)
+
+function setRepeat(n: number) {
+  store.repeatCount = Math.max(1, Math.min(9, n))
+  emit('rebuild')
+}
+function toggleSpaced() {
+  store.spaced = !store.spaced
+  emit('rebuild')
+}
+</script>
+
+<template>
+  <div class="tray">
+    <!-- AB-repeat -->
+    <section class="group" aria-labelledby="ab-label">
+      <span id="ab-label" class="group-label">A–B repeat</span>
+      <div class="ab-row">
+        <button
+          type="button"
+          class="chip ab"
+          :class="{ on: hasA }"
+          :aria-pressed="hasA"
+          @click="engine.markA()"
+        >
+          A<span v-if="hasA" class="ab-time">{{ store.ab.a!.toFixed(1) }}s</span>
+        </button>
+        <button
+          type="button"
+          class="chip ab"
+          :class="{ on: hasB }"
+          :aria-pressed="hasB"
+          @click="engine.markB()"
+        >
+          B<span v-if="hasB" class="ab-time">{{ store.ab.b!.toFixed(1) }}s</span>
+        </button>
+        <button
+          type="button"
+          class="chip"
+          :class="{ on: store.ab.loop }"
+          :aria-pressed="store.ab.loop"
+          :disabled="!hasMarkers"
+          @click="engine.toggleAbLoop()"
+        >
+          <Icon :icon="Repeat" :size="15" />
+          <span>Loop</span>
+        </button>
+        <button
+          v-if="hasMarkers"
+          type="button"
+          class="chip ghost"
+          aria-label="Clear A–B markers"
+          @click="engine.clearAbMarkers()"
+        >
+          <Icon :icon="X" :size="15" />
+        </button>
+      </div>
+    </section>
+
+    <!-- Speed -->
+    <section class="group" aria-labelledby="speed-label">
+      <span id="speed-label" class="group-label">Speed</span>
+      <div class="seg" role="radiogroup" aria-label="Playback speed">
+        <button
+          v-for="s in SPEEDS"
+          :key="s"
+          type="button"
+          role="radio"
+          class="seg-btn"
+          :class="{ on: store.speed === s }"
+          :aria-checked="store.speed === s"
+          @click="engine.setSpeed(s)"
+        >
+          {{ s }}×
+        </button>
+      </div>
+    </section>
+
+    <!-- Repeat count + spaced drill (verse grain) -->
+    <section class="group" aria-labelledby="drill-label">
+      <span id="drill-label" class="group-label">Repetition</span>
+      <div class="drill-row">
+        <div class="stepper" role="group" aria-label="Repeat each verse">
+          <button type="button" class="step" aria-label="Fewer repeats" @click="setRepeat(store.repeatCount - 1)">−</button>
+          <span class="step-val"><span class="step-n">{{ store.repeatCount }}×</span> each</span>
+          <button type="button" class="step" aria-label="More repeats" @click="setRepeat(store.repeatCount + 1)">+</button>
+        </div>
+        <button
+          type="button"
+          class="chip"
+          :class="{ on: store.spaced }"
+          :aria-pressed="store.spaced"
+          @click="toggleSpaced()"
+        >
+          Spaced drill
+        </button>
+      </div>
+    </section>
+
+    <!-- Transport companions -->
+    <section class="group toggles">
+      <label class="switch">
+        <input type="checkbox" v-model="store.autoNext" />
+        <span>Autoplay next</span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" v-model="store.loopPlaylist" />
+        <span>Loop list</span>
+      </label>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+.tray {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem 0.25rem 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.group-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ab-row,
+.drill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.chip.on {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+  color: var(--color-accent);
+}
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chip.ghost {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+.chip.ab {
+  min-width: 2.6rem;
+  justify-content: center;
+}
+.ab-time {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  opacity: 0.8;
+}
+.seg {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+.seg-btn {
+  min-height: 1.9rem;
+  padding: 0 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.seg-btn.on {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  padding: 0.15rem;
+}
+.step {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.step:hover {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.step-val {
+  min-width: 4.2rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.step-n {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.toggles {
+  flex-direction: row;
+  gap: 1.25rem;
+  padding-top: 0.15rem;
+}
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.switch input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--color-accent);
+}
+</style>
