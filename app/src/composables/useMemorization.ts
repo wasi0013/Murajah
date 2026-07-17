@@ -60,7 +60,7 @@ export function useMemorization(data: DataClient = getDataClient()) {
       pages,
       perfectRevisions: progress.strength,
       mistakesMap: mistakes.byPage,
-      pageReviewData: {}, // real review history arrives in Phase 5 (neutral until then)
+      pageReviewData: progress.reviewData, // lightweight recency/count (Phase 4.8)
     })
     return getWeakestPages(weakness, 10)
   })

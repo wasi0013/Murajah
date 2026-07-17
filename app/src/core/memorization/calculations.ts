@@ -3,66 +3,52 @@
  * Helper functions for statistics, progress calculations, and data transformations
  */
 
-import { PAGE_HASANAH_VALUES, getPageHasanah } from './pageHasanah.js';
+import { getPageHasanah } from './pageHasanah.js';
 
 /**
  * Calculate memorization percentage
- * @param {number} memorized - Count of memorized pages
- * @param {number} total - Total pages
- * @returns {number} Percentage (0-100)
  */
-export const calculateMemorizationPercentage = (memorized, total = 604) => {
+export const calculateMemorizationPercentage = (memorized: number, total = 604): number => {
   if (total === 0) return 0;
   return Math.round((memorized / total) * 100);
 };
 
 /**
- * Calculate Juz (Part) count from page count
- * Each Juz = 20 pages
- * @param {number} pages - Number of pages
- * @returns {number} Number of Juz
+ * Calculate Juz (Part) count from page count. Each Juz = 20 pages.
  */
-export const calculateJuzCount = (pages) => {
+export const calculateJuzCount = (pages: number): number => {
   return Math.ceil(pages / 20);
 };
 
 /**
- * Get page number from Juz and position
- * @param {number} juzNum - Juz number (1-30)
- * @param {number} position - Position in Juz (1-20)
- * @returns {number} Page number (1-604)
+ * Get page number from Juz and position (position clamped to 1..20).
  */
-export const getPageFromJuz = (juzNum, position = 1) => {
+export const getPageFromJuz = (juzNum: number, position = 1): number => {
   return (juzNum - 1) * 20 + Math.max(1, Math.min(20, position));
 };
 
 /**
- * Get Juz number from page
- * @param {number} pageNum - Page number (1-604)
- * @returns {number} Juz number (1-30)
+ * Get Juz number from page.
  */
-export const getJuzFromPage = (pageNum) => {
+export const getJuzFromPage = (pageNum: number): number => {
   return Math.ceil(pageNum / 20);
 };
 
 /**
- * Calculate remaining pages to memorize
- * @param {number} total - Total pages (604)
- * @param {number} memorized - Memorized pages
- * @returns {number} Remaining pages
+ * Calculate remaining pages to memorize.
  */
-export const calculateRemainingPages = (memorized, total = 604) => {
+export const calculateRemainingPages = (memorized: number, total = 604): number => {
   return Math.max(0, total - memorized);
 };
 
 /**
- * Estimate completion date based on pages per day
- * @param {number} remainingPages - Remaining pages
- * @param {number} pagesPerDay - Pages memorized per day
- * @param {Date} startDate - Starting date (defaults to today)
- * @returns {Date} Estimated completion date
+ * Estimate completion date based on pages per day.
  */
-export const estimateCompletionDate = (remainingPages, pagesPerDay = 1, startDate = new Date()) => {
+export const estimateCompletionDate = (
+  remainingPages: number,
+  pagesPerDay = 1,
+  startDate: Date = new Date(),
+): Date | null => {
   if (pagesPerDay <= 0) return null;
   const daysNeeded = Math.ceil(remainingPages / pagesPerDay);
   const completionDate = new Date(startDate);
@@ -71,27 +57,23 @@ export const estimateCompletionDate = (remainingPages, pagesPerDay = 1, startDat
 };
 
 /**
- * Format date to readable string
- * @param {Date} date - Date to format
- * @returns {string} Formatted date (MMM DD, YYYY)
+ * Format date to readable string (MMM DD, YYYY).
  */
-export const formatDate = (date) => {
+export const formatDate = (date: Date | null): string => {
   if (!date) return '';
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   });
 };
 
 /**
- * Format duration in seconds to readable string
- * @param {number} seconds - Duration in seconds
- * @returns {string} Formatted time (H:MM:SS or MM:SS)
+ * Format duration in seconds to readable string (H:MM:SS or MM:SS).
  */
-export const formatDuration = (seconds) => {
+export const formatDuration = (seconds: number | null | undefined): string => {
   if (!seconds || seconds < 0) return '0:00';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
@@ -99,61 +81,55 @@ export const formatDuration = (seconds) => {
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-  
+
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 };
 
 /**
- * Get color for score (6-tier system)
- * @param {number} count - Number of perfect revisions
- * @returns {string} Tailwind color class
+ * Get color for score (6-tier system).
+ *
+ * NOTE: legacy Tailwind class strings — the redesigned Progress UI colours its
+ * cells with design tokens (a `--color-success` ramp), not these classes. Kept
+ * for characterization/parity only; not wired into the new UI.
  */
-export const getScoreColor = (count) => {
-  if (count >= 6) return 'bg-green-500 text-white';      // Excellent
-  if (count >= 5) return 'bg-green-400 text-white';      // Very Good
-  if (count >= 4) return 'bg-yellow-400 text-gray-900';  // Good
-  if (count >= 3) return 'bg-yellow-500 text-white';     // Fair
-  if (count >= 1) return 'bg-orange-500 text-white';     // Poor
-  return 'bg-gray-300 text-gray-700';                    // Not started
+export const getScoreColor = (count: number): string => {
+  if (count >= 6) return 'bg-green-500 text-white'; // Excellent
+  if (count >= 5) return 'bg-green-400 text-white'; // Very Good
+  if (count >= 4) return 'bg-yellow-400 text-gray-900'; // Good
+  if (count >= 3) return 'bg-yellow-500 text-white'; // Fair
+  if (count >= 1) return 'bg-orange-500 text-white'; // Poor
+  return 'bg-gray-300 text-gray-700'; // Not started
 };
 
 /**
- * Get badge color for status
- * @param {string} status - Status type (perfect, mistake, memorized, etc)
- * @returns {string} Tailwind color class
+ * Get badge color for status (legacy Tailwind classes — see getScoreColor note).
  */
-export const getStatusColor = (status) => {
-  const colors = {
+export const getStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
     perfect: 'bg-green-500 text-white',
     memorized: 'bg-blue-500 text-white',
     mistake: 'bg-red-500 text-white',
     revision: 'bg-purple-500 text-white',
     progress: 'bg-yellow-500 text-gray-900',
-    incomplete: 'bg-gray-300 text-gray-700'
+    incomplete: 'bg-gray-300 text-gray-700',
   };
   return colors[status] || colors.incomplete;
 };
 
 /**
- * Calculate progress for progress bar
- * @param {number} current - Current value
- * @param {number} total - Total value
- * @returns {number} Percentage (0-100)
+ * Calculate progress for progress bar.
  */
-export const calculateProgress = (current, total) => {
+export const calculateProgress = (current: number, total: number): number => {
   if (total === 0) return 0;
   return Math.min(100, Math.round((current / total) * 100));
 };
 
 /**
- * Group array items by key
- * @param {Array} array - Array to group
- * @param {Function} keyFn - Function to extract group key
- * @returns {Object} Grouped object
+ * Group array items by key.
  */
-export const groupBy = (array, keyFn) => {
-  return array.reduce((groups, item) => {
-    const key = keyFn(item);
+export const groupBy = <T>(array: T[], keyFn: (item: T) => PropertyKey): Record<string, T[]> => {
+  return array.reduce<Record<string, T[]>>((groups, item) => {
+    const key = String(keyFn(item));
     if (!groups[key]) {
       groups[key] = [];
     }
@@ -163,14 +139,14 @@ export const groupBy = (array, keyFn) => {
 };
 
 /**
- * Sort pages by mistake count (descending), then by page number
- * @param {Map} mistakesMap - Map of { pageNum: Set<wordIds> }
- * @returns {Array} Sorted array of { pageNum, count }
+ * Sort pages by mistake count (descending), then by page number (ascending).
  */
-export const sortByMistakeCount = (mistakesMap) => {
+export const sortByMistakeCount = (
+  mistakesMap: Map<number, Set<unknown>>,
+): { pageNum: number; count: number }[] => {
   const pages = Array.from(mistakesMap.entries()).map(([pageNum, wordIds]) => ({
     pageNum,
-    count: wordIds.size
+    count: wordIds.size,
   }));
 
   return pages.sort((a, b) => {
@@ -181,45 +157,58 @@ export const sortByMistakeCount = (mistakesMap) => {
   });
 };
 
+export interface MistakeBubble {
+  pageNum: number;
+  count: number;
+  color: string;
+}
+
 /**
- * Generate bubble grid data for mistake tracker
- * @param {Map} mistakesMap - Map of { pageNum: Set<wordIds> }
- * @returns {Array} Array of bubble objects for grid display
+ * Generate bubble grid data for mistake tracker.
  */
-export const generateMistakeBubbles = (mistakesMap) => {
-  const bubbles = [];
-  
+export const generateMistakeBubbles = (mistakesMap: Map<number, Set<unknown>>): MistakeBubble[] => {
+  const bubbles: MistakeBubble[] = [];
+
   for (let pageNum = 1; pageNum <= 604; pageNum++) {
     const mistakeSet = mistakesMap.get(pageNum);
     const count = mistakeSet ? mistakeSet.size : 0;
-    
+
     bubbles.push({
       pageNum,
       count,
-      color: count === 0 ? 'bg-gray-200' : 
-             count === 1 ? 'bg-yellow-300' :
-             count <= 3 ? 'bg-orange-400' :
-             'bg-red-500'
+      color:
+        count === 0
+          ? 'bg-gray-200'
+          : count === 1
+            ? 'bg-yellow-300'
+            : count <= 3
+              ? 'bg-orange-400'
+              : 'bg-red-500',
     });
   }
 
   return bubbles;
 };
 
+export interface MemorizedGridItem {
+  pageNum: number;
+  isMemorized: boolean;
+  juzNum: number;
+  juzPosition: number;
+}
+
 /**
- * Create memorized grid data
- * @param {Set} memorizedSet - Set of memorized page numbers
- * @returns {Array} Array of page objects for grid display
+ * Create memorized grid data.
  */
-export const generateMemorizedGrid = (memorizedSet) => {
-  const grid = [];
-  
+export const generateMemorizedGrid = (memorizedSet: Set<number>): MemorizedGridItem[] => {
+  const grid: MemorizedGridItem[] = [];
+
   for (let pageNum = 1; pageNum <= 604; pageNum++) {
     grid.push({
       pageNum,
       isMemorized: memorizedSet.has(pageNum),
       juzNum: Math.ceil(pageNum / 20),
-      juzPosition: ((pageNum - 1) % 20) + 1
+      juzPosition: ((pageNum - 1) % 20) + 1,
     });
   }
 
@@ -227,26 +216,22 @@ export const generateMemorizedGrid = (memorizedSet) => {
 };
 
 /**
- * Calculate score for a memorized page
- * Formula: page_hasanah * perfect_revision_count
- * 
- * @param {number} pageNum - Page number (1-604)
- * @param {number} perfectRevisionCount - Number of perfect revisions for the page
- * @returns {number} Total score for the page
+ * Calculate score for a memorized page. Formula: page_hasanah * perfect_revision_count.
  */
-export const calculatePageScore = (pageNum, perfectRevisionCount = 0) => {
+export const calculatePageScore = (pageNum: number, perfectRevisionCount = 0): number => {
   if (perfectRevisionCount <= 0) return 0;
   const hasanah = getPageHasanah(pageNum);
   return hasanah * perfectRevisionCount;
 };
 
 /**
- * Calculate total score from perfect revisions data
- * 
- * @param {Object} perfectRevisionsData - Object mapping { pageNum: revisionCount }
- * @returns {number} Total score
+ * Calculate total score from perfect revisions data.
+ *
+ * NOTE: legacy `Σ hasanah × perfectRevisions`. In the redesigned reward model
+ * this is NO LONGER the live hasanah total (hasanah is a cumulative counter);
+ * it survives only as the migration seed (see progressMigration). Not wired live.
  */
-export const calculateTotalScore = (perfectRevisionsData = {}) => {
+export const calculateTotalScore = (perfectRevisionsData: Record<string, number> = {}): number => {
   let total = 0;
   for (const [pageNumStr, count] of Object.entries(perfectRevisionsData)) {
     const pageNum = parseInt(pageNumStr, 10);
@@ -257,14 +242,38 @@ export const calculateTotalScore = (perfectRevisionsData = {}) => {
   return total;
 };
 
+export interface StatisticsInput {
+  memorized?: number;
+  mistakes?: number;
+  audios?: number;
+  perfectRevisions?: number;
+  total?: number;
+}
+
+export interface Statistics {
+  memorized: number;
+  remaining: number;
+  percentage: number;
+  juzCount: number;
+  mistakes: number;
+  audios: number;
+  perfectRevisions: number;
+  averagePerfect: number;
+  totalPoints: number;
+}
+
 /**
- * Calculate statistics object
- * @param {Object} params - { memorized, mistakes, audios, perfectRevisions }
- * @returns {Object} Statistics object
+ * Calculate statistics object.
  */
-export const calculateStatistics = ({ memorized = 0, mistakes = 0, audios = 0, perfectRevisions = 0, total = 604 }) => {
+export const calculateStatistics = ({
+  memorized = 0,
+  mistakes = 0,
+  audios = 0,
+  perfectRevisions = 0,
+  total = 604,
+}: StatisticsInput): Statistics => {
   const remaining = total - memorized;
-  
+
   return {
     memorized,
     remaining,
@@ -274,18 +283,15 @@ export const calculateStatistics = ({ memorized = 0, mistakes = 0, audios = 0, p
     audios,
     perfectRevisions,
     averagePerfect: Math.round(perfectRevisions / Math.max(1, memorized)),
-    totalPoints: perfectRevisions * 10 + memorized * 5 - mistakes
+    totalPoints: perfectRevisions * 10 + memorized * 5 - mistakes,
   };
 };
 
 /**
- * Parse page number from input
- * @param {string|number} input - User input
- * @param {number} maxPages - Maximum valid page number (default: 604)
- * @returns {number} Valid page number (1-maxPages) or null
+ * Parse page number from input. Returns a valid page (1..maxPages) or null.
  */
-export const parsePageNumber = (input, maxPages = 604) => {
-  const num = parseInt(input, 10);
+export const parsePageNumber = (input: string | number, maxPages = 604): number | null => {
+  const num = parseInt(String(input), 10);
   if (isNaN(num) || num < 1 || num > maxPages) {
     return null;
   }
@@ -293,28 +299,21 @@ export const parsePageNumber = (input, maxPages = 604) => {
 };
 
 /**
- * Validate page range
- * @param {number} start - Start page
- * @param {number} end - End page
- * @param {number} maxPages - Maximum valid page number (default: 604)
- * @returns {boolean} True if valid range
+ * Validate page range.
  */
-export const isValidPageRange = (start, end, maxPages = 604) => {
+export const isValidPageRange = (start: number, end: number, maxPages = 604): boolean => {
   return start >= 1 && end <= maxPages && start <= end;
 };
 
 /**
- * Generate page range array
- * @param {number} start - Start page
- * @param {number} end - End page
- * @returns {Array} Array of page numbers
+ * Generate page range array.
  */
-export const generatePageRange = (start, end) => {
+export const generatePageRange = (start: number, end: number): number[] => {
   if (!isValidPageRange(start, end)) {
     return [];
   }
-  
-  const pages = [];
+
+  const pages: number[] = [];
   for (let i = start; i <= end; i++) {
     pages.push(i);
   }
@@ -342,5 +341,5 @@ export default {
   calculateStatistics,
   parsePageNumber,
   isValidPageRange,
-  generatePageRange
+  generatePageRange,
 };

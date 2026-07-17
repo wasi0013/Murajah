@@ -70,6 +70,23 @@ describe('progress store', () => {
     expect(p.strengthOf(1)).toBe(0)
     expect(p.hasanah).toBe(2780)
   })
+
+  it('markReviewed records a dated, counted review (and a clean revision marks one)', () => {
+    const p = useProgressStore()
+    p.markReviewed(10, '2026-07-10')
+    p.markReviewed(10, '2026-07-15')
+    expect(p.reviewData.get(10)).toEqual({ lastReviewDate: '2026-07-15', reviewCount: 2 })
+
+    // recordPerfectRevision also bumps review data for that page.
+    p.recordPerfectRevision(20)
+    expect(p.reviewData.get(20)?.reviewCount).toBe(1)
+
+    // out of range ignored
+    p.markReviewed(0, '2026-07-15')
+    p.markReviewed(605, '2026-07-15')
+    expect(p.reviewData.has(0)).toBe(false)
+    expect(p.reviewData.has(605)).toBe(false)
+  })
 })
 
 describe('progress persistence', () => {
@@ -81,13 +98,20 @@ describe('progress persistence', () => {
         [9, 0], // zero dropped on serialize
       ]),
       hasanah: 12345,
+      reviewData: new Map([[3, { lastReviewDate: '2026-07-15', reviewCount: 2 }]]),
     }
     const stored = serializeProgress(p)
-    expect(stored).toEqual({ memorized: [1, 2, 3], perfectRevisions: { '3': 4 }, hasanah: 12345 })
+    expect(stored).toEqual({
+      memorized: [1, 2, 3],
+      perfectRevisions: { '3': 4 },
+      hasanah: 12345,
+      reviewData: { '3': { lastReviewDate: '2026-07-15', reviewCount: 2 } },
+    })
     const back = deserializeProgress(stored)
     expect(back.memorized).toEqual(new Set([1, 2, 3]))
     expect(back.strength).toEqual(new Map([[3, 4]]))
     expect(back.hasanah).toBe(12345)
+    expect(back.reviewData).toEqual(new Map([[3, { lastReviewDate: '2026-07-15', reviewCount: 2 }]]))
   })
 
   it('persists to IndexedDB and reloads', async () => {
@@ -95,6 +119,7 @@ describe('progress persistence', () => {
     p.setMemorized(50, true)
     p.bumpStrength(50, +3)
     p.awardHasanah(9000)
+    p.markReviewed(50, '2026-07-14')
     await saveProgress(p.snapshot())
 
     setActivePinia(createPinia())
@@ -103,9 +128,12 @@ describe('progress persistence', () => {
     expect(p2.isMemorized(50)).toBe(true)
     expect(p2.strengthOf(50)).toBe(3)
     expect(p2.hasanah).toBe(9000)
+    expect(p2.reviewData.get(50)).toEqual({ lastReviewDate: '2026-07-14', reviewCount: 1 })
   })
 
-  it('defaults hasanah to 0 when the record is absent', async () => {
-    expect((await loadProgress()).hasanah).toBe(0)
+  it('defaults hasanah to 0 and review data to empty when the record is absent', async () => {
+    const loaded = await loadProgress()
+    expect(loaded.hasanah).toBe(0)
+    expect(loaded.reviewData.size).toBe(0)
   })
 })

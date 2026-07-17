@@ -16,22 +16,33 @@ const PROGRESS_KEY = 'progress'
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
 
+/** Lightweight per-page review history feeding weakness scoring (Phase 4.8). */
+export interface PageReview {
+  /** Local calendar date of the most recent review, `YYYY-MM-DD`. */
+  lastReviewDate: string
+  /** Times the page has been reviewed (reading-reward earned or a clean revision). */
+  reviewCount: number
+}
+
 /**
  * On-disk memorization progress (canonical 604-page Madani scheme). `memorized`
  * and `perfectRevisions` reuse the legacy export keys; `hasanah` is the new
  * cumulative reward counter (Phase 4). `perfectRevisions` is the UI "memorization
- * strength".
+ * strength". `reviewData` is the lightweight review history (Phase 4.8; absent in
+ * legacy backups → empty).
  */
 export interface StoredProgress {
   memorized: number[]
   perfectRevisions: Record<string, number>
   hasanah: number
+  reviewData?: Record<string, PageReview>
 }
 
 export interface Progress {
   memorized: Set<number>
   strength: Map<number, number>
   hasanah: number
+  reviewData: Map<number, PageReview>
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
@@ -84,16 +95,30 @@ export async function saveMistakes(map: Map<number, Set<number>>): Promise<void>
 export function serializeProgress(p: Progress): StoredProgress {
   const perfectRevisions: Record<string, number> = {}
   for (const [page, n] of p.strength) if (n > 0) perfectRevisions[String(page)] = n
-  return { memorized: [...p.memorized].sort((a, b) => a - b), perfectRevisions, hasanah: p.hasanah }
+  // Rebuild plain objects — the store's values may be Vue reactive proxies, which
+  // IndexedDB's structured clone cannot serialize.
+  const reviewData: Record<string, PageReview> = {}
+  for (const [page, r] of p.reviewData) {
+    reviewData[String(page)] = { lastReviewDate: r.lastReviewDate, reviewCount: r.reviewCount }
+  }
+  return {
+    memorized: [...p.memorized].sort((a, b) => a - b),
+    perfectRevisions,
+    hasanah: p.hasanah,
+    reviewData,
+  }
 }
 
 export function deserializeProgress(stored: StoredProgress | undefined): Progress {
   const strength = new Map<number, number>()
   for (const [page, n] of Object.entries(stored?.perfectRevisions ?? {})) strength.set(Number(page), n)
+  const reviewData = new Map<number, PageReview>()
+  for (const [page, r] of Object.entries(stored?.reviewData ?? {})) reviewData.set(Number(page), r)
   return {
     memorized: new Set((stored?.memorized ?? []).map(Number)),
     strength,
     hasanah: stored?.hasanah ?? 0,
+    reviewData,
   }
 }
 

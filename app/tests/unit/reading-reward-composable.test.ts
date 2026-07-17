@@ -36,6 +36,8 @@ describe('useReadingReward (wired)', () => {
     expect(progress.hasanah).toBe(100)
     vi.advanceTimersByTime(160_000) // 250s
     expect(progress.hasanah).toBe(200)
+    // One review counted per session, even though two reward thresholds fired.
+    expect(progress.reviewData.get(50)?.reviewCount).toBe(1)
     w.unmount()
   })
 

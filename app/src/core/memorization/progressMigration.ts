@@ -13,5 +13,6 @@ export function progressFromLegacy(user: UserData): Progress {
   const strength = new Map(user.perfectRevisions)
   let hasanah = 0
   for (const [page, count] of strength) hasanah += getPageHasanah(page) * count
-  return { memorized: new Set(user.memorized), strength, hasanah }
+  // Legacy backups carry no review history — it starts empty (real history: Phase 5).
+  return { memorized: new Set(user.memorized), strength, hasanah, reviewData: new Map() }
 }

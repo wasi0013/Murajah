@@ -19,6 +19,7 @@ export function useReadingReward(
 
   let state: ReadingRewardState = initReadingReward()
   let session: number | undefined
+  let reviewedThisSession = false
   let timer: ReturnType<typeof setInterval> | undefined
 
   const isActive = () =>
@@ -29,6 +30,7 @@ export function useReadingReward(
   function resetFor(page: number | undefined): void {
     session = page
     state = initReadingReward()
+    reviewedThisSession = false
   }
 
   function tick(): void {
@@ -38,7 +40,15 @@ export function useReadingReward(
     if (!isActive()) return
     const r = tickReadingReward(state, 1)
     state = r.state
-    if (r.units > 0) progress.awardHasanah(r.units * pageWeight(page))
+    if (r.units > 0) {
+      progress.awardHasanah(r.units * pageWeight(page))
+      // Count one review the first time this session earns a reward (recency +
+      // review-count feed weakness scoring; not once per threshold).
+      if (!reviewedThisSession) {
+        progress.markReviewed(page)
+        reviewedThisSession = true
+      }
+    }
   }
 
   onMounted(() => {

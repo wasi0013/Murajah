@@ -10,7 +10,7 @@
  * - Total hasanah: 3,253,860
  */
 
-export const PAGE_HASANAH_VALUES = [
+export const PAGE_HASANAH_VALUES: readonly number[] = [
   1390, // Page 1
   1600, // Page 2
   5600, // Page 3
@@ -622,7 +622,7 @@ export const PAGE_HASANAH_VALUES = [
  * @param {number} pageNum - Page number (1-604)
  * @returns {number} Hasanah value for the page
  */
-export const getPageHasanah = (pageNum) => {
+export const getPageHasanah = (pageNum: number): number => {
   if (pageNum < 1 || pageNum > 604) {
     console.warn(`[Murajah] Invalid page number: ${pageNum}`);
     return 0;
