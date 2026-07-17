@@ -10,6 +10,7 @@
  */
 import type { DataClient } from '@/core/data/dataClient'
 import type { Layout, TafsirLang } from '@/core/data/types'
+import { versesFromWords } from '@/core/quran/pageVerses'
 import type { Verse } from './types'
 
 /** The narrow slice of the data client the quiz needs (kept in sync structurally). */
@@ -41,25 +42,7 @@ export function createQuizSource(layout: Layout, data: QuizDataAccess): QuizSour
   function versesOnPage(page: number): Promise<Verse[]> {
     let p = pageCache.get(page)
     if (!p) {
-      p = data.getPage(layout, page).then((chunk) => {
-        // Group words by verse, preserving reading order of both verses and words.
-        const byVerse = new Map<string, { surah: number; ayah: number; words: string[] }>()
-        for (const w of chunk.words) {
-          const key = `${w.surah}:${w.ayah}`
-          let entry = byVerse.get(key)
-          if (!entry) {
-            entry = { surah: Number(w.surah), ayah: Number(w.ayah), words: [] }
-            byVerse.set(key, entry)
-          }
-          entry.words.push(w.text)
-        }
-        return [...byVerse.values()].map((v) => ({
-          surah: v.surah,
-          ayah: v.ayah,
-          page,
-          arabic: v.words.join(' '),
-        }))
-      })
+      p = data.getPage(layout, page).then((chunk) => versesFromWords(chunk.words, page))
       pageCache.set(page, p)
     }
     return p
