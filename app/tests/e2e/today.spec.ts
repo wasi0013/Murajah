@@ -14,6 +14,16 @@ const PROGRESS = {
   reviewData: {},
 }
 
+// Pin the browser's clock to a Wednesday. A smart plan rests on Fridays by
+// convention, so on a real clock the beginner case would quietly flip to a rest
+// day once a week. `setFixedTime` fakes the date but leaves timers running, so the
+// app's debounced writes still fire.
+const WEDNESDAY = new Date('2026-07-15T09:00:00')
+
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(WEDNESDAY)
+})
+
 /** `YYYY-MM-DD` for the browser's local today — plans and the day log are local-dated. */
 function localToday(): string {
   const d = new Date()
@@ -85,6 +95,10 @@ async function open(page: Page, records: Record<string, unknown>) {
 }
 
 const ring = (page: Page) => page.locator('.ring-text')
+
+/** The task section under a given heading — rows are only meaningful in context. */
+const section = (page: Page, name: string) =>
+  page.locator('section').filter({ has: page.getByRole('heading', { name, exact: true }) })
 
 test('the Today tab in the reader opens the practice loop', async ({ page }) => {
   await page.goto('/')
@@ -206,6 +220,44 @@ test('with no plan, Today shows the set-up call to action', async ({ page }) => 
   await page.goto('/today')
   await expect(page.getByRole('heading', { name: 'Set up your practice' })).toBeVisible()
   await expect(page.locator('.ring')).toHaveCount(0)
+})
+
+test('one tap builds a smart plan from existing data and Today populates', async ({ page }) => {
+  await open(page, { progress: PROGRESS }) // memorized pages, but no plan
+
+  await expect(page.getByRole('heading', { name: 'Set up your practice' })).toBeVisible()
+  // The CTA states what the tap will do, read from the user's own data.
+  await expect(page.locator('.empty-summary')).toContainText('Maintain your 3 memorized pages')
+
+  await page.getByRole('button', { name: 'Create my plan' }).click()
+
+  // A partially-memorized user maintains what they know *and* keeps growing: the
+  // three memorized pages to revise, plus the next unmemorized page as the front.
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(3)
+  await expect(section(page, 'New memorization').locator('.row')).toContainText(['Page 4'])
+  await expect(page.getByRole('switch', { name: 'Recite 10 verses' })).toBeVisible()
+  await expect(ring(page)).toHaveText('0/5') // 3 revision + 1 new + the standing habit
+
+  // It's a real plan: it survives a reload.
+  await page.waitForTimeout(500)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('heading', { name: 'Set up your practice' })).toBeHidden()
+})
+
+test('a first-run user with nothing memorized gets a beginner plan at Juz 30', async ({ page }) => {
+  await page.goto('/today')
+  await expect(page.locator('.empty-summary')).toContainText('Start with Juz 30', {
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Create my plan' }).click()
+
+  // Nothing to revise yet — the plan opens the memorization front instead.
+  await expect(page.getByRole('heading', { name: 'New memorization' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Revision' })).toBeHidden()
+  // Juz 30 starts at page 582 in the canonical scheme (from the derived nav index).
+  await expect(page.locator('.row').first()).toContainText('Page 582')
 })
 
 // Today is the app's primary surface — it must be axe-clean in all three themes.

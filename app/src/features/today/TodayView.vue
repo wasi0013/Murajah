@@ -5,6 +5,9 @@ import { Flame, GraduationCap, SlidersHorizontal, Sparkles } from 'lucide-vue-ne
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
+import { useProgressStore } from '@/stores/progress'
+import { useMistakesStore } from '@/stores/mistakes'
+import { generateSmartPlan } from '@/core/memorization/planBuilder'
 import { usePlanPersistence } from '@/composables/usePlanPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
@@ -25,6 +28,8 @@ import TaskRow from './TaskRow.vue'
  */
 const router = useRouter()
 const plan = usePlanStore()
+const progress = useProgressStore()
+const mistakes = useMistakesStore()
 const today = useToday()
 const streak = useStreak()
 
@@ -80,6 +85,45 @@ function onHabit(id: string, done: boolean) {
 function openQuiz() {
   toast('Quiz arrives in a later phase', { variant: 'info' })
 }
+
+// —— First run ————————————————————————————————————
+// A juz scope is expanded through the nav index, so a smart plan built before nav
+// lands would scope to an empty juz 30 and show an empty queue. Gate on it.
+const navReady = computed(() => Object.keys(plan.juzToPage).length > 0)
+
+/**
+ * What one tap would create, previewed live from the user's own data — so the CTA
+ * can state what it's about to do rather than asking for blind trust.
+ */
+const smart = computed(() =>
+  navReady.value
+    ? generateSmartPlan({
+        memorized: progress.memorized,
+        strength: progress.strength,
+        mistakes: mistakes.byPage,
+        reviewData: progress.reviewData,
+        juzToPage: plan.juzToPage,
+      })
+    : null,
+)
+
+const smartSummary = computed(() => {
+  const s = smart.value
+  if (!s) return ''
+  const { pace } = s.config
+  const parts: string[] = []
+  if (s.config.scope.kind === 'juz') parts.push('Start with Juz 30')
+  else parts.push(`Maintain your ${s.analysis.totalMemorized} memorized pages`)
+  if (pace.revisionPagesPerDay > 0) parts.push(`revise ${pace.revisionPagesPerDay} a day`)
+  if (pace.newPagesPerDay > 0) parts.push(`memorize ${pace.newPagesPerDay} new`)
+  return `${parts.join(' · ')}.`
+})
+
+function createSmartPlan() {
+  if (!smart.value) return
+  plan.create(smart.value.config)
+  toast('Your plan is ready — you can change it any time', { variant: 'success' })
+}
 </script>
 
 <template>
@@ -99,14 +143,26 @@ function openQuiz() {
       </button>
     </header>
 
-    <!-- No plan yet — 5.4.2 replaces this with the smart-plan call to action. -->
     <section v-if="!today.hasPlan.value" class="empty">
       <Icon :icon="Sparkles" :size="28" class="empty-icon" />
       <h2 class="empty-title">Set up your practice</h2>
       <p class="empty-body">
-        Choose what you're maintaining and how much you want to do each day, and Today will
-        build the queue for you.
+        Today builds one adaptive queue from what you already know — what to revise, what's
+        gone weak, and what to memorize next.
       </p>
+      <p v-if="smartSummary" class="empty-summary">{{ smartSummary }}</p>
+      <div class="empty-actions">
+        <button class="cta" type="button" :disabled="!smart" @click="createSmartPlan">
+          {{ smart ? 'Create my plan' : 'Preparing…' }}
+        </button>
+        <button
+          class="cta cta-ghost"
+          type="button"
+          @click="toast('Plan setup arrives in 5.5', { variant: 'info' })"
+        >
+          Set it up myself
+        </button>
+      </div>
     </section>
 
     <template v-else>
@@ -456,6 +512,52 @@ function openQuiz() {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   max-width: 26rem;
+}
+.empty-summary {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  max-width: 26rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.cta {
+  height: 2.5rem;
+  padding: 0 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.cta:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+.cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.cta-ghost {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.cta-ghost:hover {
+  background: var(--color-elevated);
+}
+.cta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
   .ring-fill {

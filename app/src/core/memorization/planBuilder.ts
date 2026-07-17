@@ -102,7 +102,7 @@ export interface SmartPlanInput {
   strength?: Map<number, number>
   /** Per-page mistake sets. */
   mistakes?: Map<number, Set<unknown>>
-  /** Optional per-page quiz accuracy (0–100). */
+  /** Optional per-page quiz accuracy (0–1 — the scorer clamps, so 0–100 reads as perfect). */
   quizScores?: Map<number, number>
   /** Global per-page review schedules (feeds weakness recency). */
   reviewData?: Map<number, ReviewSchedule>
