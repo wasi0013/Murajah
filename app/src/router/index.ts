@@ -30,6 +30,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/mushaf/MushafView.vue'),
   },
   {
+    // The merged daily practice loop (plans + goals). Code-split → never in the
+    // reader bundle, though it's the surface most sessions start from.
+    path: '/today',
+    name: 'today',
+    component: () => import('@/features/today/TodayView.vue'),
+  },
+  {
     // Memorization progress (grid + stats). Code-split → never in the reader bundle.
     path: '/progress',
     name: 'progress',

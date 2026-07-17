@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import {
   BookOpen,
   Brain,
+  CalendarCheck,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -13,7 +14,6 @@ import {
   Palette,
   Search,
   SlidersHorizontal,
-  Target,
 } from 'lucide-vue-next'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
@@ -75,11 +75,12 @@ const modeOptions = [
   { value: 'read', label: 'Read' },
   { value: 'mark-mistake', label: 'Mark' },
 ]
+// "Goals" and "Plans" are one surface now — Today (Phase 5).
 const tabs = [
   { value: 'home', label: 'Home', icon: Home },
   { value: 'mushaf', label: 'Mushaf', icon: BookOpen },
   { value: 'surahs', label: 'Surahs', icon: ListOrdered },
-  { value: 'goals', label: 'Goals', icon: Target },
+  { value: 'today', label: 'Today', icon: CalendarCheck },
   { value: 'quiz', label: 'Quiz', icon: GraduationCap },
   { value: 'more', label: 'More', icon: Menu },
 ]
@@ -89,11 +90,13 @@ const paletteOpen = ref(false)
 const legendOpen = ref(false)
 const activeTab = ref('home')
 
-// "Home" is this text reader; "Mushaf" opens the scan surface. The rest arrive
-// in later phases. Selecting a not-yet-built tab toasts and snaps back to Home.
+// "Home" is this text reader; "Mushaf" opens the scan surface; "Today" the daily
+// practice loop. The rest arrive in later phases — selecting a not-yet-built tab
+// toasts and snaps back to Home.
 watch(activeTab, (v) => {
   if (v === 'home') return
   if (v === 'mushaf') openMushaf()
+  else if (v === 'today') void router.push({ name: 'today' })
   else toast('Coming in a later phase', { variant: 'info' })
   activeTab.value = 'home'
 })
