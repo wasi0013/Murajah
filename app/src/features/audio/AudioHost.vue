@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AudioMiniPlayer from './AudioMiniPlayer.vue'
 import ReciterPicker from './ReciterPicker.vue'
 import type { AudioView } from '@/core/audio/pages'
@@ -7,6 +7,7 @@ import type { Layout } from '@/core/data/types'
 import { pageAudioAvailable } from '@/core/audio/pageMode'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { useAudioEngine } from '@/composables/useAudioEngine'
+import { useAudioPersistence } from '@/composables/useAudioPersistence'
 import { useQariPlayer } from '@/composables/useQariPlayer'
 import { useAudioStore } from '@/stores/audio'
 
@@ -21,6 +22,10 @@ const props = defineProps<{ view: AudioView; layout: Layout; pages: number[] }>(
 const store = useAudioStore()
 const engine = useAudioEngine()
 const player = useQariPlayer()
+const prefs = useAudioPersistence(store)
+
+onMounted(() => void prefs.hydrate())
+onBeforeUnmount(() => prefs.dispose())
 
 const pickerOpen = ref(false)
 

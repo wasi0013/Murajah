@@ -16,6 +16,7 @@ const PROGRESS_KEY = 'progress'
 const PLAN_KEY = 'plan'
 const DAYLOG_KEY = 'dayLog'
 const QUIZ_KEY = 'quiz'
+const AUDIO_KEY = 'audio'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -420,6 +421,47 @@ export async function saveQuizAccuracy(map: Map<number, number[]>): Promise<void
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeQuizAccuracy(map), QUIZ_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Audio player preferences (Phase 7.3): the grain, the verse/page reciters, and the
+ * playback speed. Only durable preferences — never transient playback (playlist,
+ * cursor, time), which starts clean each session. Shares the app DB.
+ */
+export interface StoredAudioPrefs {
+  grain?: string
+  verseReciterId?: string
+  pageReciterId?: string
+  speed?: number
+}
+
+/** Load persisted audio prefs (empty object if none / on error). */
+export async function loadAudioPrefs(): Promise<StoredAudioPrefs> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredAudioPrefs>(tx.objectStore(STORE), AUDIO_KEY)
+    await txDone(tx)
+    return stored ?? {}
+  } catch {
+    return {}
+  }
+}
+
+/** Persist audio prefs (best-effort). Rebuilds a plain object (proxy-safe). */
+export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const plain: StoredAudioPrefs = {
+      grain: prefs.grain,
+      verseReciterId: prefs.verseReciterId,
+      pageReciterId: prefs.pageReciterId,
+      speed: prefs.speed,
+    }
+    tx.objectStore(STORE).put(plain, AUDIO_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */
