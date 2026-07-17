@@ -76,6 +76,43 @@ test('bulk range mark memorizes a contiguous range', async ({ page }) => {
   }
 })
 
+test('grid cells are a roving-tabindex group navigable by arrow keys', async ({ page }) => {
+  await page.goto('/progress')
+  const cell1 = page.getByRole('button', { name: 'Page 1, not memorized' })
+  await expect(cell1).toBeVisible({ timeout: 10_000 })
+
+  await cell1.focus()
+  await expect(cell1).toBeFocused()
+
+  // Left/Right move one page; Home/End jump to the ends.
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('button', { name: 'Page 2, not memorized' })).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(page.getByRole('button', { name: 'Page 604, not memorized' })).toBeFocused()
+  await page.keyboard.press('Home')
+  await expect(cell1).toBeFocused()
+
+  // ArrowDown moves by a whole row (more than one page).
+  await page.keyboard.press('ArrowDown')
+  await expect(cell1).not.toBeFocused()
+
+  // Enter activates the focused cell (opens its sheet).
+  await page.keyboard.press('Home')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog', { name: 'Page 1' })).toBeVisible()
+})
+
+test('the juz-jump bar scrolls the grid to a juz', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.locator('[data-juz="30"]')).not.toBeInViewport()
+
+  await page.getByRole('button', { name: 'Jump to juz 30' }).click()
+  await expect(page.locator('[data-juz="30"]')).toBeInViewport()
+})
+
 test('a weakest-page chip opens that page and deep-links into the reader', async ({ page }) => {
   await page.goto('/progress')
   await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
