@@ -15,6 +15,7 @@ const MISTAKES_KEY = 'mistakes'
 const PROGRESS_KEY = 'progress'
 const PLAN_KEY = 'plan'
 const DAYLOG_KEY = 'dayLog'
+const QUIZ_KEY = 'quiz'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -376,6 +377,49 @@ export async function saveDayLog(log: DayLog): Promise<void> {
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeDayLog(log), DAYLOG_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * On-disk quiz accuracy: `{ "<page>": (0|1)[] }` — each page's bounded window of
+ * recent quiz outcomes (Phase 6). Only accuracy is stored; question/session state
+ * is never persisted. Shares the app DB (no separate database — that was the legacy
+ * iOS-contention source).
+ */
+export type StoredQuizAccuracy = Record<string, number[]>
+
+export function serializeQuizAccuracy(map: Map<number, number[]>): StoredQuizAccuracy {
+  const out: StoredQuizAccuracy = {}
+  for (const [page, arr] of map) out[String(page)] = [...arr] // rebuild plain arrays (proxy-safe)
+  return out
+}
+
+export function deserializeQuizAccuracy(stored: StoredQuizAccuracy | undefined): Map<number, number[]> {
+  const map = new Map<number, number[]>()
+  for (const [page, arr] of Object.entries(stored ?? {})) map.set(Number(page), [...arr])
+  return map
+}
+
+/** Load persisted quiz accuracy (empty map if none / on error). */
+export async function loadQuizAccuracy(): Promise<Map<number, number[]>> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredQuizAccuracy>(tx.objectStore(STORE), QUIZ_KEY)
+    await txDone(tx)
+    return deserializeQuizAccuracy(stored)
+  } catch {
+    return new Map()
+  }
+}
+
+/** Persist quiz accuracy (best-effort). */
+export async function saveQuizAccuracy(map: Map<number, number[]>): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(serializeQuizAccuracy(map), QUIZ_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */

@@ -3,6 +3,7 @@ import { useLocalDay } from './useLocalDay'
 import { useProgressStore } from '@/stores/progress'
 import { usePlanStore } from '@/stores/plan'
 import { useMistakesStore } from '@/stores/mistakes'
+import { useQuizStore } from '@/stores/quiz'
 import { useDayLogStore, type DaySection } from '@/stores/dayLog'
 import { generateDailyTasks } from '@/core/memorization/dailyTasks'
 import { advanceMemorizationPage } from '@/core/memorization/planBuilder'
@@ -27,6 +28,7 @@ export function useToday(opts: UseTodayOptions = {}) {
   const progress = useProgressStore()
   const plan = usePlanStore()
   const mistakes = useMistakesStore()
+  const quiz = useQuizStore()
   const dayLog = useDayLogStore()
 
   // Rolls at local midnight, shared with `useStreak` — so a session left open
@@ -46,6 +48,7 @@ export function useToday(opts: UseTodayOptions = {}) {
           reviewData: progress.reviewData,
           mistakes: mistakes.byPage,
           strength: progress.strength,
+          quizScores: quiz.accuracyByPage,
           newFront: plan.newFront,
           pace: plan.config.pace,
           completedToday: {
