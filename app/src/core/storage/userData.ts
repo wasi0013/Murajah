@@ -16,12 +16,55 @@ const PROGRESS_KEY = 'progress'
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
 
-/** Lightweight per-page review history feeding weakness scoring (Phase 4.8). */
-export interface PageReview {
+/** SM-2 defaults for a page that has never had a scheduled recall (Phase 5.0). */
+const DEFAULT_INTERVAL = 1
+const DEFAULT_EASE_FACTOR = 2.5
+
+/** Local calendar date as `YYYY-MM-DD` (storage layer has no store dependency). */
+function isoToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * The single per-page review record (Phase 5): recency (`lastReviewDate`,
+ * `reviewCount`, feeding weakness scoring) **and** the SM-2 schedule (`interval`,
+ * `easeFactor`, `nextReviewDate`, `consecutiveCorrect`, driving the daily revision
+ * queue). One record per page — shared by the scorer and the scheduler, never
+ * duplicated per-plan. Phase-4 data / legacy backups carry only the recency pair;
+ * `normalizeSchedule` fills the SM-2 fields with sane defaults on load.
+ */
+export interface ReviewSchedule {
   /** Local calendar date of the most recent review, `YYYY-MM-DD`. */
   lastReviewDate: string
   /** Times the page has been reviewed (reading-reward earned or a clean revision). */
   reviewCount: number
+  /** Current SM-2 interval in days. */
+  interval: number
+  /** Current SM-2 ease factor (≥ 1.3). */
+  easeFactor: number
+  /** Local calendar date the page is next due, `YYYY-MM-DD`. */
+  nextReviewDate: string
+  /** Consecutive passing recalls (resets to 0 on a failed recall). */
+  consecutiveCorrect: number
+}
+
+/**
+ * Fill a partial record (recency known) with SM-2 defaults, **preserving** any
+ * existing schedule fields — so a reading-reward mark bumps recency without
+ * resetting spaced-repetition state, and legacy/Phase-4 records hydrate cleanly.
+ */
+export function normalizeSchedule(
+  s: Partial<ReviewSchedule> & { lastReviewDate: string; reviewCount: number },
+): ReviewSchedule {
+  return {
+    lastReviewDate: s.lastReviewDate,
+    reviewCount: s.reviewCount,
+    interval: s.interval ?? DEFAULT_INTERVAL,
+    easeFactor: s.easeFactor ?? DEFAULT_EASE_FACTOR,
+    consecutiveCorrect: s.consecutiveCorrect ?? 0,
+    nextReviewDate: s.nextReviewDate ?? s.lastReviewDate ?? isoToday(),
+  }
 }
 
 /**
@@ -35,14 +78,14 @@ export interface StoredProgress {
   memorized: number[]
   perfectRevisions: Record<string, number>
   hasanah: number
-  reviewData?: Record<string, PageReview>
+  reviewData?: Record<string, ReviewSchedule>
 }
 
 export interface Progress {
   memorized: Set<number>
   strength: Map<number, number>
   hasanah: number
-  reviewData: Map<number, PageReview>
+  reviewData: Map<number, ReviewSchedule>
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
@@ -97,9 +140,16 @@ export function serializeProgress(p: Progress): StoredProgress {
   for (const [page, n] of p.strength) if (n > 0) perfectRevisions[String(page)] = n
   // Rebuild plain objects — the store's values may be Vue reactive proxies, which
   // IndexedDB's structured clone cannot serialize.
-  const reviewData: Record<string, PageReview> = {}
+  const reviewData: Record<string, ReviewSchedule> = {}
   for (const [page, r] of p.reviewData) {
-    reviewData[String(page)] = { lastReviewDate: r.lastReviewDate, reviewCount: r.reviewCount }
+    reviewData[String(page)] = {
+      lastReviewDate: r.lastReviewDate,
+      reviewCount: r.reviewCount,
+      interval: r.interval,
+      easeFactor: r.easeFactor,
+      nextReviewDate: r.nextReviewDate,
+      consecutiveCorrect: r.consecutiveCorrect,
+    }
   }
   return {
     memorized: [...p.memorized].sort((a, b) => a - b),
@@ -112,8 +162,10 @@ export function serializeProgress(p: Progress): StoredProgress {
 export function deserializeProgress(stored: StoredProgress | undefined): Progress {
   const strength = new Map<number, number>()
   for (const [page, n] of Object.entries(stored?.perfectRevisions ?? {})) strength.set(Number(page), n)
-  const reviewData = new Map<number, PageReview>()
-  for (const [page, r] of Object.entries(stored?.reviewData ?? {})) reviewData.set(Number(page), r)
+  const reviewData = new Map<number, ReviewSchedule>()
+  for (const [page, r] of Object.entries(stored?.reviewData ?? {})) {
+    reviewData.set(Number(page), normalizeSchedule(r))
+  }
   return {
     memorized: new Set((stored?.memorized ?? []).map(Number)),
     strength,

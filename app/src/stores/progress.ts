@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
-import type { PageReview, Progress } from '@/core/storage/userData'
+import type { ReviewSchedule, Progress } from '@/core/storage/userData'
+import { normalizeSchedule } from '@/core/storage/userData'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
@@ -27,7 +28,7 @@ export const useProgressStore = defineStore('progress', () => {
   const memorized = reactive(new Set<number>())
   const strength = reactive(new Map<number, number>())
   const hasanah = ref(0)
-  const reviewData = reactive(new Map<number, PageReview>())
+  const reviewData = reactive(new Map<number, ReviewSchedule>())
 
   const memorizedCount = computed(() => memorized.size)
   const isMemorized = (page: number) => memorized.has(page)
@@ -70,7 +71,12 @@ export const useProgressStore = defineStore('progress', () => {
   function markReviewed(page: number, date: string = todayISODate()): void {
     if (!inRange(page)) return
     const prev = reviewData.get(page)
-    reviewData.set(page, { lastReviewDate: date, reviewCount: (prev?.reviewCount ?? 0) + 1 })
+    // Bump recency but preserve any SM-2 schedule — reading a page must not reset
+    // its spaced-repetition state (that's driven by scheduled recalls, Phase 5.1).
+    reviewData.set(
+      page,
+      normalizeSchedule({ ...prev, lastReviewDate: date, reviewCount: (prev?.reviewCount ?? 0) + 1 }),
+    )
   }
 
   /**

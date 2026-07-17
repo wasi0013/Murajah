@@ -7,6 +7,7 @@ import {
   deserializeProgress,
   loadProgress,
   saveProgress,
+  normalizeSchedule,
   _resetUserDataDb,
   type Progress,
 } from '@/core/storage/userData'
@@ -75,7 +76,15 @@ describe('progress store', () => {
     const p = useProgressStore()
     p.markReviewed(10, '2026-07-10')
     p.markReviewed(10, '2026-07-15')
-    expect(p.reviewData.get(10)).toEqual({ lastReviewDate: '2026-07-15', reviewCount: 2 })
+    // Recency bumps; SM-2 fields stay at defaults (reading never advances the schedule).
+    expect(p.reviewData.get(10)).toEqual({
+      lastReviewDate: '2026-07-15',
+      reviewCount: 2,
+      interval: 1,
+      easeFactor: 2.5,
+      consecutiveCorrect: 0,
+      nextReviewDate: '2026-07-10',
+    })
 
     // recordPerfectRevision also bumps review data for that page.
     p.recordPerfectRevision(20)
@@ -98,20 +107,46 @@ describe('progress persistence', () => {
         [9, 0], // zero dropped on serialize
       ]),
       hasanah: 12345,
-      reviewData: new Map([[3, { lastReviewDate: '2026-07-15', reviewCount: 2 }]]),
+      reviewData: new Map([[3, normalizeSchedule({ lastReviewDate: '2026-07-15', reviewCount: 2 })]]),
+    }
+    const schedule3 = {
+      lastReviewDate: '2026-07-15',
+      reviewCount: 2,
+      interval: 1,
+      easeFactor: 2.5,
+      consecutiveCorrect: 0,
+      nextReviewDate: '2026-07-15',
     }
     const stored = serializeProgress(p)
     expect(stored).toEqual({
       memorized: [1, 2, 3],
       perfectRevisions: { '3': 4 },
       hasanah: 12345,
-      reviewData: { '3': { lastReviewDate: '2026-07-15', reviewCount: 2 } },
+      reviewData: { '3': schedule3 },
     })
     const back = deserializeProgress(stored)
     expect(back.memorized).toEqual(new Set([1, 2, 3]))
     expect(back.strength).toEqual(new Map([[3, 4]]))
     expect(back.hasanah).toBe(12345)
-    expect(back.reviewData).toEqual(new Map([[3, { lastReviewDate: '2026-07-15', reviewCount: 2 }]]))
+    expect(back.reviewData).toEqual(new Map([[3, schedule3]]))
+  })
+
+  it('hydrates legacy (Phase-4) review records — recency only — with SM-2 defaults', () => {
+    // A pre-Phase-5 backup stored only { lastReviewDate, reviewCount }.
+    const back = deserializeProgress({
+      memorized: [7],
+      perfectRevisions: {},
+      hasanah: 0,
+      reviewData: { '7': { lastReviewDate: '2026-07-01', reviewCount: 5 } } as never,
+    })
+    expect(back.reviewData.get(7)).toEqual({
+      lastReviewDate: '2026-07-01',
+      reviewCount: 5,
+      interval: 1,
+      easeFactor: 2.5,
+      consecutiveCorrect: 0,
+      nextReviewDate: '2026-07-01',
+    })
   })
 
   it('persists to IndexedDB and reloads', async () => {
@@ -128,7 +163,14 @@ describe('progress persistence', () => {
     expect(p2.isMemorized(50)).toBe(true)
     expect(p2.strengthOf(50)).toBe(3)
     expect(p2.hasanah).toBe(9000)
-    expect(p2.reviewData.get(50)).toEqual({ lastReviewDate: '2026-07-14', reviewCount: 1 })
+    expect(p2.reviewData.get(50)).toEqual({
+      lastReviewDate: '2026-07-14',
+      reviewCount: 1,
+      interval: 1,
+      easeFactor: 2.5,
+      consecutiveCorrect: 0,
+      nextReviewDate: '2026-07-14',
+    })
   })
 
   it('defaults hasanah to 0 and review data to empty when the record is absent', async () => {
