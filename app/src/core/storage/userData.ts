@@ -1,3 +1,4 @@
+import type { Layout } from '@/core/data/types'
 import { idbGet, openDb, txDone } from './idb'
 
 /**
@@ -12,6 +13,8 @@ const DB_VERSION = 1
 const STORE = 'data'
 const MISTAKES_KEY = 'mistakes'
 const PROGRESS_KEY = 'progress'
+const PLAN_KEY = 'plan'
+const DAYLOG_KEY = 'dayLog'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -191,6 +194,188 @@ export async function saveProgress(p: Progress): Promise<void> {
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeProgress(p), PROGRESS_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * The single daily-practice plan (Phase 5) — one editable plan, not a list.
+ * `scope` is which pages you maintain; `newFront` is where you're adding new
+ * memorization (null = maintenance only, e.g. a hafiz); `pace` is the daily
+ * budgets + off days; `habits` are enabled standing-habit ids. The legacy
+ * beginner/hafiz/mixed taxonomy collapses into "scope + are you adding new pages?".
+ */
+export type PlanScope = { kind: 'all-memorized' } | { kind: 'juz'; juz: number[] }
+
+export interface NewFront {
+  /** Reading layout the new pages are memorized in. */
+  layout: Layout
+  /** Next page to memorize (canonical 604-page scheme). */
+  nextPage: number
+}
+
+export interface PlanPace {
+  newPagesPerDay: number
+  revisionPagesPerDay: number
+  weakPagesPerDay: number
+  daysPerWeek: number
+  /** Weekday numbers to skip new memorization on (0 = Sunday … 6 = Saturday). */
+  offDays: number[]
+}
+
+export interface PlanConfig {
+  scope: PlanScope
+  newFront: NewFront | null
+  pace: PlanPace
+  /** Ids of enabled standing-habit tasks (recite ayahs, quick test, …). */
+  habits: string[]
+  startDate: string
+  createdAt: string
+}
+
+/** On-disk plan shape — identical to {@link PlanConfig} (already JSON-safe). */
+export type StoredPlan = PlanConfig
+
+const DEFAULT_PACE: PlanPace = {
+  newPagesPerDay: 1,
+  revisionPagesPerDay: 5,
+  weakPagesPerDay: 2,
+  daysPerWeek: 7,
+  offDays: [],
+}
+
+/**
+ * One day's completion record in the day log (Phase 5) — drives streaks + the
+ * history calendar. `completed` = every planned task was done that day; the arrays
+ * are the pages actually finished per section (canonical scheme), habits by id.
+ */
+export interface DayRecord {
+  date: string
+  completed: boolean
+  newMemorization: number[]
+  revision: number[]
+  weak: number[]
+  habits: string[]
+}
+
+/** Date (`YYYY-MM-DD`) → that day's completion record. */
+export type DayLog = Map<string, DayRecord>
+export type StoredDayLog = Record<string, DayRecord>
+
+export function serializePlan(p: PlanConfig | null): StoredPlan | null {
+  if (!p) return null
+  // Rebuild plain objects/arrays — the store's values may be Vue reactive proxies.
+  const scope: PlanScope =
+    p.scope.kind === 'juz' ? { kind: 'juz', juz: [...p.scope.juz] } : { kind: 'all-memorized' }
+  return {
+    scope,
+    newFront: p.newFront ? { layout: p.newFront.layout, nextPage: p.newFront.nextPage } : null,
+    pace: {
+      newPagesPerDay: p.pace.newPagesPerDay,
+      revisionPagesPerDay: p.pace.revisionPagesPerDay,
+      weakPagesPerDay: p.pace.weakPagesPerDay,
+      daysPerWeek: p.pace.daysPerWeek,
+      offDays: [...p.pace.offDays],
+    },
+    habits: [...p.habits],
+    startDate: p.startDate,
+    createdAt: p.createdAt,
+  }
+}
+
+export function deserializePlan(stored: StoredPlan | null | undefined): PlanConfig | null {
+  if (!stored) return null
+  const scope: PlanScope =
+    stored.scope?.kind === 'juz'
+      ? { kind: 'juz', juz: [...(stored.scope.juz ?? [])] }
+      : { kind: 'all-memorized' }
+  const nf = stored.newFront
+  const newFront: NewFront | null =
+    nf && typeof nf.nextPage === 'number' ? { layout: nf.layout, nextPage: nf.nextPage } : null
+  return {
+    scope,
+    newFront,
+    pace: { ...DEFAULT_PACE, ...(stored.pace ?? {}), offDays: [...(stored.pace?.offDays ?? [])] },
+    habits: [...(stored.habits ?? [])],
+    startDate: stored.startDate ?? isoToday(),
+    createdAt: stored.createdAt ?? isoToday(),
+  }
+}
+
+/** Load the persisted plan (null if none / on error). */
+export async function loadPlan(): Promise<PlanConfig | null> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredPlan>(tx.objectStore(STORE), PLAN_KEY)
+    await txDone(tx)
+    return deserializePlan(stored)
+  } catch {
+    return null
+  }
+}
+
+/** Persist the plan, or clear it when null (best-effort). */
+export async function savePlan(p: PlanConfig | null): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    if (p) store.put(serializePlan(p), PLAN_KEY)
+    else store.delete(PLAN_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+export function serializeDayLog(log: DayLog): StoredDayLog {
+  const out: StoredDayLog = {}
+  for (const [date, r] of log) {
+    out[date] = {
+      date: r.date,
+      completed: r.completed,
+      newMemorization: [...r.newMemorization],
+      revision: [...r.revision],
+      weak: [...r.weak],
+      habits: [...r.habits],
+    }
+  }
+  return out
+}
+
+export function deserializeDayLog(stored: StoredDayLog | undefined): DayLog {
+  const map: DayLog = new Map()
+  for (const [date, r] of Object.entries(stored ?? {})) {
+    map.set(date, {
+      date: r.date ?? date,
+      completed: !!r.completed,
+      newMemorization: [...(r.newMemorization ?? [])],
+      revision: [...(r.revision ?? [])],
+      weak: [...(r.weak ?? [])],
+      habits: [...(r.habits ?? [])],
+    })
+  }
+  return map
+}
+
+/** Load the persisted day log (empty map if none / on error). */
+export async function loadDayLog(): Promise<DayLog> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredDayLog>(tx.objectStore(STORE), DAYLOG_KEY)
+    await txDone(tx)
+    return deserializeDayLog(stored)
+  } catch {
+    return new Map()
+  }
+}
+
+/** Persist the day log (best-effort). */
+export async function saveDayLog(log: DayLog): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(serializeDayLog(log), DAYLOG_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */
