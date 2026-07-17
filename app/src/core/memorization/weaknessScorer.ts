@@ -63,6 +63,9 @@ const LOW_REVIEW_THRESHOLD = 3;
 // Average words per Quran page (approximate, for normalization)
 const AVG_WORDS_PER_PAGE = 128;
 
+/** Weakness score at/above which a page is treated as weak (needs reinforcement). */
+export const WEAK_THRESHOLD = 50;
+
 export interface PageWeaknessParams {
   daysSinceLastReview?: number
   perfectRevisionCount?: number

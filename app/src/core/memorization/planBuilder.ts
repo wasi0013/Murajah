@@ -17,7 +17,7 @@ import type { Layout } from '@/core/data/types'
 import type { PlanConfig, PlanScope, NewFront, PlanPace } from '@/core/storage/userData'
 import type { ReviewSchedule } from '@/core/storage/userData'
 import { juzForPage } from '@/core/navigation/juz'
-import { calculateAllWeaknesses } from './weaknessScorer'
+import { calculateAllWeaknesses, WEAK_THRESHOLD } from './weaknessScorer'
 import { getTodayDate } from './streaks'
 
 /** Canonical page count per layout (QPC/Uthmani 604, Indopak 610). */
@@ -30,8 +30,6 @@ export function totalPagesForLayout(layout: Layout = 'qpc'): number {
 
 /** A page is treated as memorized once its strength reaches this (legacy parity). */
 const STRENGTH_MEMORIZED_THRESHOLD = 40
-/** Weakness score at/above which a page counts as "weak" for pace tuning. */
-const WEAK_THRESHOLD = 50
 /** Ratio of memorized pages above which a user is treated as a hafiz. */
 const HAFIZ_RATIO = 0.85
 

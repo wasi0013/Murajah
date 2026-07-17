@@ -157,3 +157,124 @@ export function mapToPerformance({
 
   return Math.max(0, Math.min(5, base))
 }
+
+/** Shift a `YYYY-MM-DD` by `delta` days (local midnight anchored). */
+function addDays(dateStr: string, delta: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + delta)
+  return formatISODate(d)
+}
+
+/** What an absence costs: how the backlog is reshaped and what the caller should ease off. */
+export type MissedAction =
+  | 'none'
+  | 'light_reschedule'
+  | 'medium_reschedule'
+  | 'heavy_reschedule'
+  | 'plan_reset_needed'
+
+export interface MissedDaysChanges {
+  /** Days to scale new memorization down over (medium). */
+  reduceNewMemorizationDays?: number
+  /** Factor to scale the new-memorization budget by (medium). */
+  newMemorizationMultiplier?: number
+  /** Days to pause new memorization entirely (heavy). */
+  pauseNewMemorizationDays?: number
+  /** The absence was long enough that the plan should be rebuilt. */
+  needsRestart?: boolean
+}
+
+export interface MissedDaysResult {
+  action: MissedAction
+  missedDays: number
+  changes: MissedDaysChanges
+  /** An updated **copy** of the schedules (the input map is never mutated). */
+  reviewData: Map<number, ReviewSchedule>
+}
+
+/** Spread the overdue pages across the next `spreadDays` days, soonest page first. */
+function redistributeOverdue(
+  reviewData: Map<number, ReviewSchedule>,
+  todayStr: string,
+  spreadDays: number,
+): void {
+  const overdue = [...reviewData.entries()]
+    .filter(([, s]) => s.nextReviewDate < todayStr)
+    .map(([page]) => page)
+    .sort((a, b) => a - b)
+  if (overdue.length === 0) return
+
+  const perDay = Math.ceil(overdue.length / spreadDays)
+  overdue.forEach((page, i) => {
+    const schedule = reviewData.get(page)!
+    reviewData.set(page, {
+      ...schedule,
+      interval: 1,
+      nextReviewDate: addDays(todayStr, Math.floor(i / perDay)),
+    })
+  })
+}
+
+/** After a long absence, bring every page back to a 1-day interval due today. */
+function resetAllIntervals(reviewData: Map<number, ReviewSchedule>, todayStr: string): void {
+  for (const [page, schedule] of reviewData) {
+    reviewData.set(page, {
+      ...schedule,
+      interval: 1,
+      nextReviewDate: todayStr,
+      consecutiveCorrect: 0,
+      // Ease factor survives — it still reflects long-term learning.
+    })
+  }
+}
+
+/**
+ * Reshape the backlog after missed days, so returning after an absence doesn't dump
+ * every overdue page into one day. Ported from the legacy `planScheduler.js` with
+ * the same escalation, retargeted to the unified {@link ReviewSchedule} map:
+ *
+ * - **1 day** → light: spread the overdue pages over 2 days.
+ * - **2–4 days** → medium: spread over 3 days, halve new memorization for 3 days.
+ * - **5–13 days** → heavy: every page back to interval 1 due today, pause new
+ *   memorization for `ceil(missedDays / 2)` days.
+ * - **14+ days** → the plan needs rebuilding; schedules are left untouched.
+ */
+export function handleMissedDays(
+  reviewData: Map<number, ReviewSchedule>,
+  lastActiveDate: string | null | undefined,
+  today: Date = new Date(),
+): MissedDaysResult {
+  const copy = new Map(reviewData)
+  if (!lastActiveDate) return { action: 'none', missedDays: 0, changes: {}, reviewData: copy }
+
+  const todayStr = formatISODate(today)
+  const missedDays = Math.floor(
+    (new Date(todayStr + 'T00:00:00').getTime() - new Date(lastActiveDate + 'T00:00:00').getTime()) /
+      86400000,
+  )
+  if (missedDays <= 0) return { action: 'none', missedDays: 0, changes: {}, reviewData: copy }
+
+  if (missedDays === 1) {
+    redistributeOverdue(copy, todayStr, 2)
+    return { action: 'light_reschedule', missedDays, changes: {}, reviewData: copy }
+  }
+  if (missedDays <= 4) {
+    redistributeOverdue(copy, todayStr, 3)
+    return {
+      action: 'medium_reschedule',
+      missedDays,
+      changes: { reduceNewMemorizationDays: 3, newMemorizationMultiplier: 0.5 },
+      reviewData: copy,
+    }
+  }
+  if (missedDays <= 13) {
+    resetAllIntervals(copy, todayStr)
+    return {
+      action: 'heavy_reschedule',
+      missedDays,
+      changes: { pauseNewMemorizationDays: Math.ceil(missedDays / 2) },
+      reviewData: copy,
+    }
+  }
+  return { action: 'plan_reset_needed', missedDays, changes: { needsRestart: true }, reviewData: copy }
+}
