@@ -260,6 +260,88 @@ test('a first-run user with nothing memorized gets a beginner plan at Juz 30', a
   await expect(page.locator('.row').first()).toContainText('Page 582')
 })
 
+// —— Plan setup (5.5.1) ————————————————————————————————
+
+const sheet = (page: Page) => page.getByRole('dialog', { name: 'Your plan' })
+
+test('setting scope and pace by hand creates a plan Today reflects', async ({ page }) => {
+  await open(page, { progress: PROGRESS })
+
+  await page.getByRole('button', { name: 'Set it up myself' }).click()
+  await expect(sheet(page)).toBeVisible()
+
+  // Maintain everything memorized, no new pages, 2 revisions a day.
+  await sheet(page).getByLabel('Pages to revise').fill('2')
+  await page.getByRole('button', { name: 'Create plan' }).click()
+  await expect(sheet(page)).toBeHidden()
+
+  // The pace is honoured: 2 of the 3 memorized pages are queued today.
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(2)
+})
+
+test('a juz scope needs at least one juz before it can be saved', async ({ page }) => {
+  await open(page, { progress: PROGRESS })
+  await page.getByRole('button', { name: 'Set it up myself' }).click()
+
+  await sheet(page).getByRole('radio', { name: 'Pick juz' }).click()
+  // An empty juz scope would maintain nothing at all — saving is blocked until it's fixed.
+  await expect(page.getByText('Pick at least one juz')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Create plan' })).toBeDisabled()
+
+  await sheet(page).getByRole('button', { name: 'Juz 1', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Create plan' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Create plan' }).click()
+
+  // Juz 1 is pages 1–21; all three memorized pages fall inside it.
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(3)
+})
+
+test('Smart defaults pre-fills the form from existing data', async ({ page }) => {
+  await open(page, { progress: PROGRESS })
+  await page.getByRole('button', { name: 'Set it up myself' }).click()
+
+  await expect(sheet(page).getByLabel('Pages to revise')).toHaveValue('5')
+  await page.getByRole('button', { name: 'Smart defaults' }).click()
+
+  // A partially-memorized user: keeps growing, and rests Fridays by convention.
+  await expect(sheet(page).getByRole('switch', { name: 'Memorizing new pages?' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  await expect(sheet(page).getByLabel('Start at page')).toHaveValue('4')
+  await expect(sheet(page).getByRole('button', { name: 'Rest on Fri' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
+test('editing the pace re-generates the queue and persists', async ({ page }) => {
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(3)
+
+  await page.getByRole('button', { name: 'Edit your plan' }).click()
+  await sheet(page).getByLabel('Pages to revise').fill('1')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(1)
+
+  await page.waitForTimeout(500)
+  await page.reload()
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(1, { timeout: 10_000 })
+})
+
+test('an abandoned edit leaves the live plan untouched', async ({ page }) => {
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(3)
+
+  await page.getByRole('button', { name: 'Edit your plan' }).click()
+  await sheet(page).getByLabel('Pages to revise').fill('1')
+  await page.keyboard.press('Escape') // dismissed without saving
+  await expect(sheet(page)).toBeHidden()
+
+  await expect(section(page, 'Revision').locator('.row')).toHaveCount(3) // still 3
+})
+
 // Today is the app's primary surface — it must be axe-clean in all three themes.
 // Colour is never the only cue: done rows carry a check glyph and the word "Done",
 // and the streak state is spelled out in text beside the flame.
@@ -271,13 +353,22 @@ for (const theme of themes) {
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
     await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
 
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
-    const serious = results.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical',
-    )
-    expect(
-      serious,
-      JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length }))),
-    ).toEqual([])
+    await expectAxeClean(page, `${theme} — queue`)
+
+    // The setup sheet is the other half of the surface: a juz grid, weekday
+    // toggles and number fields, all of which have to be reachable and labelled.
+    await page.getByRole('button', { name: 'Edit your plan' }).click()
+    await expect(sheet(page)).toBeVisible()
+    await sheet(page).getByRole('radio', { name: 'Pick juz' }).click()
+    await expectAxeClean(page, `${theme} — plan setup`)
   })
+}
+
+async function expectAxeClean(page: Page, label: string) {
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+  expect(
+    serious,
+    `${label}: ${JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length })))}`,
+  ).toEqual([])
 }

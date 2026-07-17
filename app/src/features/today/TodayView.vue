@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Flame, GraduationCap, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
@@ -17,6 +17,7 @@ import { toast } from '@/composables/useToast'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import TaskRow from './TaskRow.vue'
+import PlanSetup from './PlanSetup.vue'
 
 /**
  * Today — the merged practice loop and the app's primary surface. One adaptive
@@ -124,6 +125,8 @@ function createSmartPlan() {
   plan.create(smart.value.config)
   toast('Your plan is ready — you can change it any time', { variant: 'success' })
 }
+
+const setupOpen = ref(false)
 </script>
 
 <template>
@@ -137,7 +140,7 @@ function createSmartPlan() {
         v-if="today.hasPlan.value"
         class="icon-btn"
         aria-label="Edit your plan"
-        @click="toast('Plan setup arrives in 5.5', { variant: 'info' })"
+        @click="setupOpen = true"
       >
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
@@ -155,11 +158,7 @@ function createSmartPlan() {
         <button class="cta" type="button" :disabled="!smart" @click="createSmartPlan">
           {{ smart ? 'Create my plan' : 'Preparing…' }}
         </button>
-        <button
-          class="cta cta-ghost"
-          type="button"
-          @click="toast('Plan setup arrives in 5.5', { variant: 'info' })"
-        >
+        <button class="cta cta-ghost" type="button" @click="setupOpen = true">
           Set it up myself
         </button>
       </div>
@@ -298,6 +297,8 @@ function createSmartPlan() {
         Today is complete. May Allah accept it from you.
       </p>
     </template>
+
+    <PlanSetup v-model:open="setupOpen" />
   </main>
 </template>
 
