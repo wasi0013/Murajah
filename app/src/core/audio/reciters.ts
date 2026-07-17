@@ -11,7 +11,10 @@
  * fall back to everyayah's Shuraim if that host is unreachable.
  */
 
+import { DEFAULT_PAGE_RECITER, DEFAULT_VERSE_RECITER } from './defaults'
 import type { AudioUrls, PageReciter, VerseReciter } from './types'
+
+export { DEFAULT_VERSE_RECITER, DEFAULT_PAGE_RECITER }
 
 const pad3 = (n: number) => String(n).padStart(3, '0')
 
@@ -71,9 +74,6 @@ export const VERSE_RECITERS: VerseReciter[] = VERSE_RECITER_DEFS.map((def) => ({
     }
   },
 }))
-
-/** Default verse reciter (the app's historical default). */
-export const DEFAULT_VERSE_RECITER = 'shuraim'
 
 // —— Page mode ————————————————————————————————————————————————————————————
 
@@ -156,9 +156,6 @@ export const PAGE_RECITERS: PageReciter[] = PAGE_RECITER_DEFS.map((def) => ({
     return [`${def.baseUrl}/Page${pad3(page)}.mp3`]
   },
 }))
-
-/** Default page reciter (the app's historical default). */
-export const DEFAULT_PAGE_RECITER = 'alafasy'
 
 const verseById = new Map(VERSE_RECITERS.map((r) => [r.id, r]))
 const pageById = new Map(PAGE_RECITERS.map((r) => [r.id, r]))

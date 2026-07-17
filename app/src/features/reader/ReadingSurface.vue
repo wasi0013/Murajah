@@ -27,6 +27,8 @@ const props = defineProps<{
   translations?: Record<string, string>
   /** WBW gloss language (for the `lang` attribute; en/bn are both LTR). */
   wbwLang?: string
+  /** The ayah currently being recited, as `"surah:ayah"` — highlighted + scrolled to. */
+  activeVerse?: string | null
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -124,6 +126,27 @@ watch(
   () => [props.page, props.layout, props.pageWidth, props.fontFamily, props.wbw],
   scheduleFit,
 )
+
+// Auto-scroll the recited ayah into view (7.4). Only when it's offscreen, so we
+// never fight the reader's own scroll; honours reduced-motion.
+watch(
+  () => props.activeVerse,
+  (key) => {
+    if (!key) return
+    void nextTick(() => {
+      const root = surfaceEl.value
+      const el = root?.querySelector<HTMLElement>(`.word[data-verse="${key}"]`)
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const offscreen = rect.top < 0 || rect.bottom > window.innerHeight
+      if (!offscreen) return
+      const reduce =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+    })
+  },
+)
 </script>
 
 <template>
@@ -154,10 +177,11 @@ watch(
           :class="[
             mistakeIds?.has(w.id) ? 'state-mistake' : '',
             wordStates?.[w.location] ? `state-${wordStates[w.location]}` : '',
-            { wbw },
+            { wbw, 'state-playing': activeVerse && `${w.surah}:${w.ayah}` === activeVerse },
           ]"
           :data-loc="w.location"
           :data-id="w.id"
+          :data-verse="`${w.surah}:${w.ayah}`"
         >
           <span class="arabic">{{ w.text }}</span>
           <span v-if="wbw" class="gloss" dir="ltr" :lang="wbwLang">{{
@@ -259,5 +283,12 @@ watch(
 .state-selected {
   background: var(--color-elevated);
   box-shadow: 0 0 0 1px var(--color-border);
+}
+/* The ayah being recited (7.4): a warm wash plus a baseline rule, so the cue
+   isn't carried by colour alone. */
+.state-playing {
+  background: color-mix(in oklab, var(--color-accent) 18%, transparent);
+  box-shadow: inset 0 -2px 0 0 var(--color-accent);
+  border-radius: var(--radius-sm);
 }
 </style>

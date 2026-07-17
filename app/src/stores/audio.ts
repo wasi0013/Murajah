@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { AB_NONE, abRegion, type AbState } from '@/core/audio/abRepeat'
-import { DEFAULT_PAGE_RECITER, DEFAULT_VERSE_RECITER } from '@/core/audio/reciters'
+import { DEFAULT_PAGE_RECITER, DEFAULT_VERSE_RECITER } from '@/core/audio/defaults'
 import type { PlaylistItem } from '@/core/audio/playlist'
 import type { AudioGrain } from '@/core/audio/types'
 

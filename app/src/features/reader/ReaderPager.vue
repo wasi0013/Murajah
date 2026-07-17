@@ -4,6 +4,7 @@ import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { useMorphology } from '@/composables/useMorphology'
 import { useMistakes } from '@/composables/useMistakes'
+import { useAudioStore } from '@/stores/audio'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
@@ -41,6 +42,12 @@ const wordStates = computed<Record<string, 'morphology'>>(() =>
 const mistakes = useMistakes(reader)
 onMounted(() => void mistakes.hydrate())
 onBeforeUnmount(() => mistakes.dispose())
+
+// The ayah currently being recited (verse grain) — highlighted on the surface.
+const audio = useAudioStore()
+const activeVerseKey = computed(() =>
+  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : null,
+)
 
 // Paging or switching layout dismisses an open analysis.
 watch(
@@ -201,6 +208,7 @@ function snapBack() {
             :wbw-lang="reader.wbwLang"
             :word-states="offset === 0 ? wordStates : undefined"
             :mistake-ids="mistakes.store.mistakeIds"
+            :active-verse="offset === 0 ? activeVerseKey : null"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
