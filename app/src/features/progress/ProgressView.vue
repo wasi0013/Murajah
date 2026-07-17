@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ArrowLeft, BookOpen, Minus, Plus } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
+import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { TOTAL_PAGES } from '@/stores/progress'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -19,9 +20,16 @@ import MemorizedGrid from './MemorizedGrid.vue'
 const router = useRouter()
 const { progress, stats, weakestPages } = useMemorization()
 const persistence = useProgressPersistence(progress)
+const mistakesPersistence = useMistakesPersistence()
 
-onMounted(() => void persistence.hydrate())
-onBeforeUnmount(() => persistence.dispose())
+onMounted(() => {
+  void persistence.hydrate()
+  void mistakesPersistence.hydrate() // load mistake marks — the reader isn't mounted here
+})
+onBeforeUnmount(() => {
+  persistence.dispose()
+  mistakesPersistence.dispose()
+})
 
 // —— Per-page sheet ————————————————————————————————
 const selectedPage = ref<number | null>(null)

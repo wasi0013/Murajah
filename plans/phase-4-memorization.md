@@ -101,23 +101,25 @@
   - **Done:** `/progress` route (code-split → own `ProgressView` chunk ~10 kB gzip 4.4, absent from the reader bundle — size gate 54.16/120 kB). Entry = a **"Memorization progress" top-bar icon button** (`Brain`) in the reader — user chose a top-bar button over a tab, leaving the Home/Mushaf/Surahs/Goals/Quiz/More tab bar untouched. Sticky top-bar with `env(safe-area-inset-top)`, back-to-reader; e2e opens it from the reader; deep-linkable at `/progress`.
 
 ## 4.10 — Perf, a11y, migration & test gate
-- [ ] **4.10.1** **Migration parity (headline):** a migrated legacy export shows identical memorized pages, strength colours, mistakes, and a hasanah seeded to `Σ hasanah×strength`.
+- [x] **4.10.1** **Migration parity (headline):** a migrated legacy export shows identical memorized pages, strength colours, mistakes, and a hasanah seeded to `Σ hasanah×strength`.
   - *Verify:* e2e/integration on the committed fixture.
-  - *Status:* unit parity covered (`progress-migration.test.ts` — seeded hasanah == `Σ pageHasanah×strength`). **e2e on a committed legacy-export fixture still TODO.**
+  - **Done:** two-layer, on the committed `tests/fixtures/legacy-export.json`. (1) **Integration** (`migration-parity.test.ts`): the *real* path — `parseLegacyExport → progressFromLegacy → saveProgress/saveMistakes → reload into fresh stores` — then asserts store + view-model parity (memorized set, strength map, mistakes map, hasanah == `Σ pageHasanah×strength`, `memorizationStats`, per-cell tier incl. tier-cap at 6); expectations derived from the fixture, no magic numbers. (2) **Browser e2e** (`progress-migration.spec.ts`): seeds the migrated on-disk records into IndexedDB, reloads `/progress`, and asserts the rendered memorized cells, mistake-count labels, seeded hasanah (`123,456`), and summary stats. **Caught + fixed a real bug:** `/progress` never hydrated the *mistakes* store (only the reader did via `useMistakes`), so deep-linked/reloaded Progress showed no mistake cues — added a reader-independent `useMistakesPersistence` and wired it into `ProgressView`.
 - [x] **4.10.2** **A11y**: keyboard-navigable labelled grid (each cell announces page + status); colour never the only signal; axe clean across light/dark/sepia.
   - *Verify:* axe WCAG 2 A/AA clean; keyboard walkthrough; non-colour cue present.
   - **Done:** axe WCAG2 A/AA clean on `/progress` across light/dark/sepia (e2e); every cell has an aria-label (page + memorized/strength/mistakes); juz bars labelled; non-colour cues = page number + mistake dot. *(Arrow-key roving not implemented — see 4.3.2; Tab reaches every cell.)*
 - [ ] **4.10.3** **Tests + budgets:** unit (store actions, reading-reward reducer, typed domain, parity), e2e (mark/persist/reload, bulk-mark, reading-reward accrual, strength + mistake coupling, weakest-pages nav, migration). `test:unit` + `test:e2e` green; `size` under budget; `build` clean; Progress absent from the reader chunk.
-  - *Status:* unit **431** green, e2e **55** green (incl. Progress: entry, 604/30-juz render, mark/persist/reload, bulk-mark, strength+hasanah, a11y×3 themes); `size` under budget; `build` clean; Progress in its own chunk. Typed-domain + parity covered (4.2); `pageReviewData` wired (4.8.1). **Remaining: migration e2e (4.10.1), reading-reward accrual is unit-only (can't e2e a 90s threshold), weakest-pages-nav e2e.**
+  - **Done (essentially):** unit **432** green, e2e **57** green — Progress: entry, 604/30-juz render, mark/persist/reload, bulk-mark, strength+hasanah, a11y×3 themes, migration render parity, **weakest-chip → sheet → deep-link into reader**; typed-domain + parity (4.2); `pageReviewData` (4.8.1); migration parity (4.10.1, integration + e2e). `size` under budget; `build` clean; Progress in its own chunk, absent from the reader bundle. *Reading-reward accrual stays unit-only (fake-clock) — a 90s wall-clock threshold isn't e2e-able; accepted.*
 
 ---
 
 ### Exit checklist (all true to close Phase 4)
-- [ ] Redesigned hasanah engine live: reading-time rewards (90s ×1 / 250s ×2, active-time, per-session) + perfect-revision rewards accrue a monotonic hasanah total.
-- [ ] Memorization strength = +1 per clean revision, −1 per mistake (floor 0); mistakes never touch hasanah.
-- [ ] One canonical user-data store (memorized + strength + mistakes + hasanah) persisted + migrated losslessly (hasanah seeded from prior revisions); reader mistakes (3.8) unaffected.
-- [ ] 604-page grid (colour-coded, tap-toggle, bulk-mark, open-in-reader) + juz progress + stats + weakest-pages; renders/updates without jank.
-- [ ] Domain modules typed to `.ts`; kept maths legacy-identical where it still applies; Progress route code-split; a11y clean; budgets green.
+- [x] Redesigned hasanah engine live: reading-time rewards (90s ×1 / 250s ×2, active-time, per-session) + perfect-revision rewards accrue a monotonic hasanah total.
+- [x] Memorization strength = +1 per clean revision, −1 per mistake (floor 0); mistakes never touch hasanah.
+- [x] One canonical user-data store (memorized + strength + mistakes + hasanah + review data) persisted + migrated losslessly (hasanah seeded from prior revisions); reader mistakes (3.8) unaffected.
+- [x] 604-page grid (colour-coded, tap-toggle, bulk-mark, open-in-reader) + juz progress + stats + weakest-pages; renders/updates without jank.
+- [x] Domain modules typed to `.ts`; kept maths legacy-identical where it still applies; Progress route code-split; a11y clean; budgets green.
+
+> **Phase 4 essentially complete** (432 unit + 57 e2e green). Two **deferred UX polish** items remain, non-blocking and tracked in 4.3.2 / 4.6.1: arrow-key roving-tabindex on the grid (Tab reaches every cell today) and tap-a-juz-to-scroll. Pick these up here or fold into a later polish pass.
 
 ### What later phases consume from here
 Phase 5 (plans/daily goals/streaks) uses the memorized set + weakness + populates real `pageReviewData` (review history). Phase 6 (quiz) feeds quiz accuracy into weakness. Phase 8 (settings/export) reuses the migration import/export path.

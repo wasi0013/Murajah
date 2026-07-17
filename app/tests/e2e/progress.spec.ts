@@ -76,6 +76,28 @@ test('bulk range mark memorizes a contiguous range', async ({ page }) => {
   }
 })
 
+test('a weakest-page chip opens that page and deep-links into the reader', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Memorize a few pages — never-reviewed pages surface as "Needs review".
+  await page.getByLabel('From page').fill('1')
+  await page.getByLabel('To page').fill('3')
+  await page.getByRole('button', { name: 'Memorized', exact: true }).click()
+
+  // The chip (exact "Page 2") is distinct from the grid cell ("Page 2, memorized").
+  const chip = page.getByRole('button', { name: 'Page 2', exact: true })
+  await expect(chip).toBeVisible()
+  await chip.click()
+
+  // Opens the per-page sheet, whose "Open in reader" deep-links /read/qpc/2.
+  await expect(page.getByRole('dialog', { name: 'Page 2' })).toBeVisible()
+  await page.getByRole('button', { name: 'Open in reader' }).click()
+  await expect(page).toHaveURL(/\/read\/qpc\/2$/)
+})
+
 // The progress chrome must be axe-clean in all three themes. Colour is never the
 // only cue (page numbers + mistake dots + labels), which axe can't verify but the
 // design guarantees.
