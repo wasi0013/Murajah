@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   BookOpen,
+  Brain,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -156,6 +157,14 @@ function openMushaf() {
         @click="reader.nextPage()"
       >
         <Icon :icon="ChevronRight" :size="22" />
+      </button>
+
+      <button
+        class="icon-btn"
+        aria-label="Memorization progress"
+        @click="router.push('/progress')"
+      >
+        <Icon :icon="Brain" :size="20" />
       </button>
 
       <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">

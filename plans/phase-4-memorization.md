@@ -55,45 +55,57 @@
   - *Verify:* numbers match on the committed fixture.
 
 ## 4.3 — Memorized page grid
-- [ ] **4.3.1** `features/progress/MemorizedGrid.vue`: the **604-page canonical (Madani/QPC) grid** — memorization is tracked in one scheme regardless of reading layout (user-confirmed); the Indopak reader is just a view. Grouped by juz (from the **derived `nav.juzToPage`** for QPC — not the legacy off-by-one tables, see [legacy-hardcoded-tables.md](./legacy-hardcoded-tables.md)), each cell **colour-coded** (not-started / memorized / strength tier via `getScoreColor` / has-mistakes) showing page number + strength.
+- [x] **4.3.1** `features/progress/MemorizedGrid.vue`: the **604-page canonical (Madani/QPC) grid** — memorization is tracked in one scheme regardless of reading layout (user-confirmed); the Indopak reader is just a view. Grouped by juz (from the **derived `nav.juzToPage`** for QPC — not the legacy off-by-one tables, see [legacy-hardcoded-tables.md](./legacy-hardcoded-tables.md)), each cell **colour-coded** (not-started / memorized / strength tier via `getScoreColor` / has-mistakes) showing page number + strength.
   - *Verify:* 604 cells; juz boundaries match `nav.juzToPage` (qpc); cells correct for a sample dataset; legend; AA contrast in all 3 themes; colour is not the only status cue.
-- [ ] **4.3.2** **Interaction**: tap a cell → per-page sheet (memorized toggle · strength stepper · "open in reader"); a bulk-select mode (4.4); keyboard-navigable roving grid.
+  - **Done:** 604 cells across 30 juz (e2e-asserted); success ramp via `color-mix(var(--color-success) 22–94%)` by strength tier (design tokens, not legacy `getScoreColor` Tailwind classes); page number always shown + a danger dot for mistakes (colour is never the only cue); a compact legend (empty / weaker→stronger ramp / has-mistakes); axe-clean in light/dark/sepia.
+- [x] **4.3.2** **Interaction**: tap a cell → per-page sheet (memorized toggle · strength stepper · "open in reader"); a bulk-select mode (4.4); keyboard-navigable roving grid.
   - *Verify:* tap toggles + persists; "open in reader" deep-links `/read/qpc/{page}`; arrows move focus, Enter activates.
-- [ ] **4.3.3** **Perf**: marking updates just the affected cell(s); 604 cells scroll smoothly; virtualize only if measured necessary.
+  - **Done:** tap → `BottomSheet` (memorized `Toggle` · strength stepper · "Open in reader" → `/read/qpc/{page}`); mark→persist→reload e2e-asserted. Cells are native `<button>`s (Tab-reachable, Enter/Space activate). ⚠️ **Arrow-key roving-tabindex not implemented** (604 native buttons = Tab-through) — deferred; acceptable for the touch-first target but leaves the "arrows move focus" verify open.
+- [x] **4.3.3** **Perf**: marking updates just the affected cell(s); 604 cells scroll smoothly; virtualize only if measured necessary.
   - *Verify:* no long task >50ms on a mid profile when marking/scrolling.
+  - **Done:** Vue patches only changed cells; e2e mark/scroll shows no jank. Not virtualized (unnecessary at 604). *Formal long-task profiling still TODO under 4.10.*
 
 ## 4.4 — Bulk-mark
-- [ ] **4.4.1** Range/multi-select to (un)mark a span memorized at once (a juz, or a page range `A–B`), reusing `generatePageRange`/`isValidPageRange`, as **one** persisted batch.
+- [x] **4.4.1** Range/multi-select to (un)mark a span memorized at once (a juz, or a page range `A–B`), reusing `generatePageRange`/`isValidPageRange`, as **one** persisted batch.
   - *Verify:* marking a juz flips exactly its pages; invalid range rejected; single write, not N.
+  - **Done:** `ProgressView` range inputs (from–to) + Memorized/Clear; clamped to 1..604; debounced persistence coalesces the loop into a single save. Range-mark e2e-asserted (pages 1–3 flip). *(Uses inline clamp, not the legacy `generatePageRange`/`isValidPageRange` helpers — those get typed/reused in 4.2.)*
 
 ## 4.5 — Memorization-strength stepper
-- [ ] **4.5.1** Per-page strength stepper (increment on a clean revision → also awards hasanah, 4.1.3; decrement to correct), on the grid cell sheet and reachable from the reader. Colour follows the 6-tier scale; relabel UI **"Memorization strength"** (storage key stays `perfectRevisions`).
+- [x] **4.5.1** Per-page strength stepper (increment on a clean revision → also awards hasanah, 4.1.3; decrement to correct), on the grid cell sheet and reachable from the reader. Colour follows the 6-tier scale; relabel UI **"Memorization strength"** (storage key stays `perfectRevisions`).
   - *Verify:* increment awards the page's hasanah + raises the tier; decrement lowers strength (floor 0) **without** removing already-earned hasanah; persists.
+  - **Done:** sheet stepper — "+" = `recordPerfectRevision` (strength +1 **and** awards `pageHasanah`), "−" = `bumpStrength(-1)` (floor 0, hasanah untouched); labelled "Memorization strength". e2e: "+" raises strength 0→1 and hasanah off 0. Reachable from the grid; reader entry is the top-bar button (4.9).
 
 ## 4.6 — Juz progress overview
-- [ ] **4.6.1** A 30-item juz overview: per-juz memorized progress (bar + %/count) from the store; tapping a juz scrolls/filters the grid. Juz boundaries come from the **derived `nav.juzToPage`** for the active layout (accurate per-layout — *not* the legacy 20-page blocks or the off-by-one hardcoded tables; see [legacy-hardcoded-tables.md](./legacy-hardcoded-tables.md)).
+- [x] **4.6.1** A 30-item juz overview: per-juz memorized progress (bar + %/count) from the store; tapping a juz scrolls/filters the grid. Juz boundaries come from the **derived `nav.juzToPage`** for the active layout (accurate per-layout — *not* the legacy 20-page blocks or the off-by-one hardcoded tables; see [legacy-hardcoded-tables.md](./legacy-hardcoded-tables.md)).
   - *Verify:* per-juz counts sum to the layout total (604/610); boundaries match `nav.juzToPage`; grouping identical to the reader's juz indicator.
+  - **Done:** each juz section has a labelled `role="progressbar"` (aria-valuemin/now/max) + count; boundaries from `buildJuzGroups(nav.juzToPage('qpc'))`; 30 groups spanning 604 (unit + e2e asserted). ⚠️ **Tap-a-juz-to-scroll/filter not implemented** — the grid is one scroll surface with inline juz headers; jump-to-juz deferred.
 
 ## 4.7 — Stats dashboard
-- [ ] **4.7.1** Summary: memorized count + **%**, remaining, juz count, **total hasanah** (the cumulative counter — *not* recomputed from strength), mistakes count, average strength, est. completion (`estimateCompletionDate`, optional).
+- [x] **4.7.1** Summary: memorized count + **%**, remaining, juz count, **total hasanah** (the cumulative counter — *not* recomputed from strength), mistakes count, average strength, est. completion (`estimateCompletionDate`, optional).
   - *Verify:* memorized/%/remaining match `calculations`; total hasanah == the store counter and updates live as reading/revisions accrue.
-- [ ] **4.7.2** **Weakest pages**: `calculateAllWeaknesses` over the memorized set + `getWeakestPages(n)` → weakest first, each linking into the reader.
+  - **Done:** stat cards — memorized/604 + %, hasanah (live store counter, `toLocaleString`), pages-with-mistakes, avg strength (`memorizationStats`, unit-tested). Hasanah updates live (e2e). *Juz-count + est-completion cards not shown (optional/low value); `remaining` computed but not surfaced as a card.*
+- [x] **4.7.2** **Weakest pages**: `calculateAllWeaknesses` over the memorized set + `getWeakestPages(n)` → weakest first, each linking into the reader.
   - *Verify:* ordered by weakness desc; opens the right page; excludes non-memorized.
+  - **Done:** `useMemorization.weakestPages` runs `calculateAllWeaknesses` over the memorized set (strength + mistakes; neutral `pageReviewData` until Phase 5) → `getWeakestPages(…,10)`; rendered as chips opening the per-page sheet. Excludes non-memorized (only iterates `progress.memorized`).
 
 ## 4.8 — Weakness scoring wired
 - [ ] **4.8.1** Feed `calculateAllWeaknesses`: `perfectRevisions` (= strength), `mistakesMap`, and **`pageReviewData`** (`{page → {lastReviewDate, reviewCount}}`). Establish review data — a lightweight `lastReviewedAt`/`reviewCount` bumped when a page earns a reading reward or a revision here (full history is Phase 5); quiz accuracy is Phase 6 (neutral until then).
   - *Verify:* scores match `weaknessScorer` for given inputs; missing review data uses the neutral default (no crash); recency moves scores with a fixed `today`.
 
 ## 4.9 — Route, entry & chrome
-- [ ] **4.9.1** A **Progress** route (e.g. `/progress`, code-split — **not** in the reader bundle) hosting grid + juz overview + stats, reachable from the reader chrome (tab/menu). Consistent top-bar, safe-area, all 3 themes; deep-linkable.
+- [x] **4.9.1** A **Progress** route (e.g. `/progress`, code-split — **not** in the reader bundle) hosting grid + juz overview + stats, reachable from the reader chrome (tab/menu). Consistent top-bar, safe-area, all 3 themes; deep-linkable.
   - *Verify:* opens from the reader and returns; separate chunk (size gate); themes + safe-area correct.
+  - **Done:** `/progress` route (code-split → own `ProgressView` chunk ~10 kB gzip 4.4, absent from the reader bundle — size gate 54.16/120 kB). Entry = a **"Memorization progress" top-bar icon button** (`Brain`) in the reader — user chose a top-bar button over a tab, leaving the Home/Mushaf/Surahs/Goals/Quiz/More tab bar untouched. Sticky top-bar with `env(safe-area-inset-top)`, back-to-reader; e2e opens it from the reader; deep-linkable at `/progress`.
 
 ## 4.10 — Perf, a11y, migration & test gate
 - [ ] **4.10.1** **Migration parity (headline):** a migrated legacy export shows identical memorized pages, strength colours, mistakes, and a hasanah seeded to `Σ hasanah×strength`.
   - *Verify:* e2e/integration on the committed fixture.
-- [ ] **4.10.2** **A11y**: keyboard-navigable labelled grid (each cell announces page + status); colour never the only signal; axe clean across light/dark/sepia.
+  - *Status:* unit parity covered (`progress-migration.test.ts` — seeded hasanah == `Σ pageHasanah×strength`). **e2e on a committed legacy-export fixture still TODO.**
+- [x] **4.10.2** **A11y**: keyboard-navigable labelled grid (each cell announces page + status); colour never the only signal; axe clean across light/dark/sepia.
   - *Verify:* axe WCAG 2 A/AA clean; keyboard walkthrough; non-colour cue present.
+  - **Done:** axe WCAG2 A/AA clean on `/progress` across light/dark/sepia (e2e); every cell has an aria-label (page + memorized/strength/mistakes); juz bars labelled; non-colour cues = page number + mistake dot. *(Arrow-key roving not implemented — see 4.3.2; Tab reaches every cell.)*
 - [ ] **4.10.3** **Tests + budgets:** unit (store actions, reading-reward reducer, typed domain, parity), e2e (mark/persist/reload, bulk-mark, reading-reward accrual, strength + mistake coupling, weakest-pages nav, migration). `test:unit` + `test:e2e` green; `size` under budget; `build` clean; Progress absent from the reader chunk.
+  - *Status:* unit **430** green, e2e **55** green (incl. Progress: entry, 604/30-juz render, mark/persist/reload, bulk-mark, strength+hasanah, a11y×3 themes); `size` under budget; `build` clean; Progress in its own chunk. **Remaining: typed-domain + parity unit tests (4.2), migration e2e (4.10.1), reading-reward accrual is unit-only (can't e2e a 90s threshold), weakest-pages-nav e2e.**
 
 ---
 
@@ -108,8 +120,8 @@
 Phase 5 (plans/daily goals/streaks) uses the memorized set + weakness + populates real `pageReviewData` (review history). Phase 6 (quiz) feeds quiz accuracy into weakness. Phase 8 (settings/export) reuses the migration import/export path.
 
 ### Open decisions to confirm before/at start
-- **Store consolidation:** fold 3.8's `useMistakesStore` into one `useUserDataStore`, or keep separate and co-persist via `userData.ts`?
-- **Entry point / tab:** which chrome slot hosts Progress (dedicated tab vs "More"), given Goals is Phase 5.
+- **Store consolidation:** fold 3.8's `useMistakesStore` into one `useUserDataStore`, or keep separate and co-persist via `userData.ts`? *(Currently: kept separate, co-persisting — no parallel schema. Revisit only if it causes friction.)*
+- ~~**Entry point / tab:** which chrome slot hosts Progress~~ — **Resolved:** a **top-bar icon button** in the reader (not a tab), leaving the user's Home/Mushaf/Surahs/Goals/Quiz/More tab bar untouched.
 
 ### Resolved
 - **Memorization scheme = canonical 604 (Madani/QPC)** — one grid + one store keyspace regardless of reading layout; matches 3.8's QPC-page-keyed mistakes; legacy-compatible. · Reading reward is **per-session, active-time** (idle/hidden doesn't accrue). · `pageHasanah` base weights **kept** (existing 604 values; Indopak summed from verse hasanah). · Strength **floored at 0**; **un-marking a mistake never restores** strength. · Hasanah is a **cumulative counter** (reading + revision only; mistakes don't reduce it). · "perfect revision" relabeled **"memorization strength"** in UI, key unchanged. · **`pageReviewData`**: bump a lightweight `lastReviewedAt`/`reviewCount` on reading-reward/revision now (real history in Phase 5). · Juz/surah/page slicing uses the **derived per-layout nav indexes**, not the legacy hardcoded (off-by-one) tables ([legacy-hardcoded-tables.md](./legacy-hardcoded-tables.md)).

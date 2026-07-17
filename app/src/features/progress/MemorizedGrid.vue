@@ -11,14 +11,22 @@ import { juzProgress, type PageCell } from '@/core/memorization/progressView'
 const { juzGroups, cell, progress } = useMemorization()
 const emit = defineEmits<{ select: [page: number] }>()
 
+/** Success-ramp background for a strength tier (0…6): 22% → 94% mix. */
+function tierBg(tier: number): string {
+  return `color-mix(in oklab, var(--color-success) ${22 + tier * 12}%, var(--color-surface))`
+}
+
 function cellStyle(c: PageCell): Record<string, string> {
   if (!c.memorized) return {}
-  const pct = 22 + c.tier * 12 // 22% (tier 0) … 94% (tier 6)
   return {
-    background: `color-mix(in oklab, var(--color-success) ${pct}%, var(--color-surface))`,
+    background: tierBg(c.tier),
     color: c.tier >= 3 ? 'var(--color-on-status)' : 'var(--color-text)',
     borderColor: 'transparent',
   }
+}
+
+function rampStyle(tier: number): Record<string, string> {
+  return { background: tierBg(tier) }
 }
 
 function cellLabel(c: PageCell): string {
@@ -33,6 +41,23 @@ function cellLabel(c: PageCell): string {
 
 <template>
   <div class="grid-root">
+    <div class="legend" aria-hidden="true">
+      <span class="legend-item">
+        <span class="swatch swatch-empty" />
+        Not started
+      </span>
+      <span class="legend-item">
+        <span class="ramp">
+          <span v-for="t in 7" :key="t" class="ramp-step" :style="rampStyle(t - 1)" />
+        </span>
+        Weaker → stronger
+      </span>
+      <span class="legend-item">
+        <span class="swatch swatch-mistake"><span class="dot" /></span>
+        Has mistakes
+      </span>
+    </div>
+
     <section v-for="g in juzGroups" :key="g.juz" class="juz" :aria-label="`Juz ${g.juz}`">
       <header class="juz-head">
         <span class="juz-name">Juz {{ g.juz }}</span>
@@ -42,6 +67,8 @@ function cellLabel(c: PageCell): string {
         <span
           class="juz-bar"
           role="progressbar"
+          :aria-label="`Juz ${g.juz} memorized`"
+          :aria-valuemin="0"
           :aria-valuenow="juzProgress(g, progress.memorized).memorized"
           :aria-valuemax="g.pages.length"
         >
@@ -76,6 +103,52 @@ function cellLabel(c: PageCell): string {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+.swatch-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.swatch-mistake {
+  background: color-mix(in oklab, var(--color-success) 46%, var(--color-surface));
+}
+.swatch-mistake .dot {
+  position: absolute;
+  top: 1px;
+  inset-inline-end: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-danger);
+}
+.ramp {
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.ramp-step {
+  width: 0.6rem;
+  height: 1rem;
 }
 .juz {
   display: flex;
