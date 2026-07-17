@@ -19,6 +19,18 @@ import { getTodayDate } from './streaks'
 /** Overdue pages beyond which new memorization pauses until the backlog clears. */
 export const MAX_BACKLOG_BEFORE_PAUSE = 10
 
+/**
+ * Pages already finished today (from the day log). They stay in the day's list and
+ * count against its budgets — otherwise completing a page would drop it out of the
+ * queue (its schedule just moved) and free budget would pull a replacement in,
+ * turning the day into a treadmill that never finishes.
+ */
+export interface CompletedToday {
+  newMemorization?: number[]
+  revision?: number[]
+  weak?: number[]
+}
+
 export interface DailyTasksInput {
   /** Pages the plan maintains (canonical 604 scheme) — from `plan.scopePages`. */
   scopePages: number[]
@@ -35,6 +47,8 @@ export interface DailyTasksInput {
   /** Where new memorization is happening, or null when only maintaining. */
   newFront?: NewFront | null
   pace: PlanPace
+  /** What's already been finished today — keeps the day's list stable as it's worked. */
+  completedToday?: CompletedToday
   /** Override "now" for deterministic tests. */
   today?: Date
   /** Highest page the front may reach (defaults to the front layout's page count). */
@@ -78,6 +92,10 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
 
   const isOffDay = pace.offDays?.includes(today.getDay()) ?? false
 
+  const doneNew = input.completedToday?.newMemorization ?? []
+  const doneRevision = input.completedToday?.revision ?? []
+  const doneWeak = input.completedToday?.weak ?? []
+
   // Only memorized pages inside the scope are revisable.
   const candidates = scopePages.filter((p) => memorized.has(p))
 
@@ -92,8 +110,10 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
 
   // Due = scheduled on or before today. Most overdue first, then weakest, then in
   // mushaf order — so the longest-neglected page is always the first one recited.
+  const doneRevisionSet = new Set(doneRevision)
   const due = candidates
     .filter((p) => {
+      if (doneRevisionSet.has(p)) return false
       const next = reviewData.get(p)?.nextReviewDate
       return !!next && next <= todayStr
     })
@@ -108,32 +128,37 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
     })
 
   const backlogSize = due.length
-  const revisionBudget = Math.max(0, pace.revisionPagesPerDay)
-  const revision = due.slice(0, revisionBudget)
+  const revisionBudget = Math.max(0, pace.revisionPagesPerDay - doneRevision.length)
+  const picked = due.slice(0, revisionBudget)
 
   // Top up spare budget with pages that have never been reviewed at all — this is
   // what walks a fresh plan through its first cycle (no upfront seeding needed).
-  if (revision.length < revisionBudget) {
-    const scheduled = new Set(revision)
+  if (picked.length < revisionBudget) {
+    const scheduled = new Set([...picked, ...doneRevision])
     const neverReviewed = candidates.filter((p) => !scheduled.has(p) && !reviewData.has(p))
-    revision.push(...neverReviewed.slice(0, revisionBudget - revision.length))
+    picked.push(...neverReviewed.slice(0, revisionBudget - picked.length))
   }
+  // Finished pages lead the list; what's left follows in priority order.
+  const revision = [...doneRevision, ...picked]
 
   const pausedNewMemorization = isOffDay || backlogSize > MAX_BACKLOG_BEFORE_PAUSE
-  const newMemorization: number[] = []
-  if (!pausedNewMemorization && front && pace.newPagesPerDay > 0) {
+  const newBudget = Math.max(0, pace.newPagesPerDay - doneNew.length)
+  const newPicked: number[] = []
+  if (!pausedNewMemorization && front && newBudget > 0) {
     const max = input.maxPage ?? totalPagesForLayout(front.layout)
-    for (let p = front.nextPage; p <= max && newMemorization.length < pace.newPagesPerDay; p++) {
-      if (!memorized.has(p)) newMemorization.push(p)
+    for (let p = front.nextPage; p <= max && newPicked.length < newBudget; p++) {
+      if (!memorized.has(p)) newPicked.push(p)
     }
   }
+  const newMemorization = [...doneNew, ...newPicked]
 
-  const alreadyScheduled = [...new Set([...newMemorization, ...revision])]
-  const weakReinforcement = getWeakestPages(
+  const alreadyScheduled = [...new Set([...newMemorization, ...revision, ...doneWeak])]
+  const weakPicked = getWeakestPages(
     weakness,
-    Math.max(0, pace.weakPagesPerDay),
+    Math.max(0, pace.weakPagesPerDay - doneWeak.length),
     alreadyScheduled,
   ).filter((p) => (weakness.get(p) ?? 0) >= WEAK_THRESHOLD)
+  const weakReinforcement = [...doneWeak, ...weakPicked]
 
   return {
     newMemorization,

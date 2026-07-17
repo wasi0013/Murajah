@@ -96,12 +96,15 @@ export const useProgressStore = defineStore('progress', () => {
    *
    * This is the completion loop: reward, schedule, and weakness scoring all update
    * from this single action — no separate plan accounting.
+   *
+   * `today` is the **logical** day the review belongs to — pass the Today engine's
+   * clock so the schedule lands on the day the user is practising, not wall-clock now.
    */
-  function recordReview(page: number, rating: ReviewRating = 'perfect'): number {
+  function recordReview(page: number, rating: ReviewRating = 'perfect', today: Date = new Date()): number {
     if (!inRange(page)) return 0
     const prev = reviewData.get(page)
     const performance = ratingToPerformance(rating)
-    const step = calculateNextReview(prev, performance)
+    const step = calculateNextReview(prev, performance, { today })
     reviewData.set(
       page,
       normalizeSchedule({ ...prev, ...step, reviewCount: (prev?.reviewCount ?? 0) + 1 }),
