@@ -75,6 +75,10 @@ const audioPages = computed(() => [reader.page])
 const recordOpen = ref(false)
 const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
 
+// Live recitation (7.7) — lazy YouTube-embed overlay, opened from settings.
+const liveOpen = ref(false)
+const LiveStreamPlayer = defineAsyncComponent(() => import('@/features/audio/LiveStreamPlayer.vue'))
+
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
   { value: 'indopak', label: 'Indopak' },
@@ -225,9 +229,18 @@ function openMushaf() {
 
     <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="reader.page" />
 
+    <LiveStreamPlayer v-if="liveOpen" v-model:open="liveOpen" />
+
     <BottomSheet v-model:open="sheetOpen" label="Reader settings">
       <div class="settings">
         <h2 class="settings-title">Reader settings</h2>
+
+        <div class="row">
+          <span class="row-label">Live recitation</span>
+          <button class="live-btn" type="button" @click="sheetOpen = false; liveOpen = true">
+            Listen live
+          </button>
+        </div>
 
         <div class="row">
           <span class="row-label">Reading script</span>
@@ -416,6 +429,20 @@ function openMushaf() {
 .row-label {
   font-size: var(--text-sm);
   color: var(--color-text);
+}
+.live-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
 }
 .row-end {
   display: flex;
