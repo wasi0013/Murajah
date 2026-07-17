@@ -60,6 +60,51 @@ describe('progress store', () => {
     expect(p.strengthOf(1)).toBe(2)
   })
 
+  it('recordReview advances the SM-2 schedule and (on a pass) rewards in one write', () => {
+    const p = useProgressStore()
+    // Clean review: schedule advances, strength +1, hasanah += page weight.
+    expect(p.recordReview(1, 'perfect')).toBe(1) // page 1 weight = 1390
+    expect(p.hasanah).toBe(1390)
+    const first = p.reviewData.get(1)!
+    expect(first.reviewCount).toBe(1)
+    expect(first.consecutiveCorrect).toBe(1)
+    expect(first.nextReviewDate > first.lastReviewDate).toBe(true) // due date pushed out
+
+    // A second clean review pushes the due date further and streak climbs.
+    expect(p.recordReview(1, 'perfect')).toBe(2)
+    expect(p.hasanah).toBe(2780)
+    const second = p.reviewData.get(1)!
+    expect(second.reviewCount).toBe(2)
+    expect(second.consecutiveCorrect).toBe(2)
+    expect(second.nextReviewDate > first.nextReviewDate).toBe(true)
+  })
+
+  it('a needs_work review resets the interval + streak without touching reward', () => {
+    const p = useProgressStore()
+    p.recordReview(5, 'perfect') // strength 1, hasanah 1390, streak 1
+    p.recordReview(5, 'perfect') // strength 2, streak 2, interval grown
+    const hasanahBefore = p.hasanah
+    const strengthBefore = p.strengthOf(5)
+
+    // needs_work → schedule resets, but hasanah/strength are left to penalizeMistake.
+    expect(p.recordReview(5, 'needs_work')).toBe(strengthBefore)
+    expect(p.hasanah).toBe(hasanahBefore)
+    const after = p.reviewData.get(5)!
+    expect(after.interval).toBe(1)
+    expect(after.consecutiveCorrect).toBe(0)
+    expect(after.reviewCount).toBe(3) // still counts as a review
+  })
+
+  it('recordPerfectRevision is recordReview(page, "perfect")', () => {
+    const p = useProgressStore()
+    expect(p.recordPerfectRevision(1)).toBe(1)
+    expect(p.reviewData.get(1)?.consecutiveCorrect).toBe(1)
+    expect(p.hasanah).toBe(1390)
+    // out of range ignored
+    expect(p.recordReview(0)).toBe(0)
+    expect(p.recordReview(605)).toBe(0)
+  })
+
   it('penalizeMistake lowers strength (floor 0) but never hasanah', () => {
     const p = useProgressStore()
     p.recordPerfectRevision(1) // strength 1, hasanah 1390

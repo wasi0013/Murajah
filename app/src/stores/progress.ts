@@ -3,6 +3,12 @@ import { computed, reactive, ref } from 'vue'
 import type { ReviewSchedule, Progress } from '@/core/storage/userData'
 import { normalizeSchedule } from '@/core/storage/userData'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
+import {
+  calculateNextReview,
+  ratingToPerformance,
+  PASSING_THRESHOLD,
+  type ReviewRating,
+} from '@/core/memorization/reviewScheduler'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
 export const TOTAL_PAGES = 604
@@ -80,15 +86,40 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /**
-   * Record a clean recitation from memory: strength +1 **and** hasanah += that
-   * page's weight (the memorization reward), and mark the page reviewed today.
+   * Complete a scheduled revision of a page in **one** write: advance its SM-2
+   * schedule (interval / ease / nextReviewDate / consecutiveCorrect via
+   * {@link calculateNextReview}), bump recency (`lastReviewDate`, `reviewCount`),
+   * and — for a **passing** review — award that page's hasanah and raise strength
+   * (the memorization reward). A failing (`needs_work`) review resets the interval
+   * and streak but leaves hasanah and strength untouched (mistakes are penalised
+   * separately via `penalizeMistake`). Returns the page's strength afterwards.
+   *
+   * This is the completion loop: reward, schedule, and weakness scoring all update
+   * from this single action — no separate plan accounting.
+   */
+  function recordReview(page: number, rating: ReviewRating = 'perfect'): number {
+    if (!inRange(page)) return 0
+    const prev = reviewData.get(page)
+    const performance = ratingToPerformance(rating)
+    const step = calculateNextReview(prev, performance)
+    reviewData.set(
+      page,
+      normalizeSchedule({ ...prev, ...step, reviewCount: (prev?.reviewCount ?? 0) + 1 }),
+    )
+    if (performance >= PASSING_THRESHOLD) {
+      awardHasanah(getPageHasanah(page))
+      return bumpStrength(page, +1)
+    }
+    return strengthOf(page)
+  }
+
+  /**
+   * A clean recitation from memory — the common case. Thin alias over
+   * {@link recordReview} with a `'perfect'` rating (kept for call-site clarity).
    * Returns the new strength.
    */
   function recordPerfectRevision(page: number): number {
-    if (!inRange(page)) return 0
-    awardHasanah(getPageHasanah(page))
-    markReviewed(page)
-    return bumpStrength(page, +1)
+    return recordReview(page, 'perfect')
   }
 
   /** A mistake on a page: strength −1 (floor 0); hasanah untouched, never restored. */
@@ -130,6 +161,7 @@ export const useProgressStore = defineStore('progress', () => {
     bumpStrength,
     awardHasanah,
     markReviewed,
+    recordReview,
     recordPerfectRevision,
     penalizeMistake,
     setAll,
