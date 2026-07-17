@@ -48,6 +48,12 @@
     "gzip": true
   },
   {
+    "name": "Audio player (lazy, gzip)",
+    "path": ["dist/assets/AudioHost-*.js", "dist/assets/audio-*.js"],
+    "limit": "20 kB",
+    "gzip": true
+  },
+  {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
     "limit": "30 kB",

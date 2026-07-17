@@ -117,15 +117,23 @@ Audited in `QuranAudioPlayerComponent.js` (1842), `FloatingAudioPlayerComponent.
 - [ ] **7.8.4** Webview/iOS reality checks: `playsinline` honoured (no fullscreen takeover on iOS); audio survives reader↔mushaf↔quiz navigation (A5 regression); fallback URL swap fires on a forced primary 404 (A2 regression).
 
 ### Exit checklist
-- [ ] Audio absent from reader/mushaf initial bundles (size-limit proves it).
-- [ ] Verse **and** page grain both play, in **both** views; user's choice persists.
-- [ ] Mushaf 2-up spread plays **both** visible pages (the stated requirement).
-- [ ] Verse grain highlights + auto-scrolls the active ayah in the text reader.
-- [ ] AB-repeat, speed, repeat/spaced controls work; prefs persist.
-- [ ] Record→save→playback works (stubbed in CI); recordings in the shared DB.
-- [ ] Live stream opens with `hls.js` lazy-loaded; offline state is graceful.
-- [ ] No monolith, no snapshot subsystem, no HEAD-probe (A2–A5 gone by construction).
-- [ ] a11y clean, all three themes; reduced-motion respected.
+- [x] Audio absent from reader/mushaf initial bundles (size-limit: reader 55 kB unchanged; audio in its own 7 kB lazy chunk).
+- [x] Verse **and** page grain both play, in **both** views; user's choice persists (7.3).
+- [x] Mushaf 2-up spread plays **both** visible pages (`audioPagesFor` → `mushaf.visible`; unit-covered; e2e opens the player over the spread).
+- [x] Verse grain highlights + auto-scrolls the active ayah in the text reader (7.4; unit + e2e anchor check).
+- [x] AB-repeat, speed, repeat/spaced controls work; prefs persist (decision-7 reducer unit-tested; e2e drives A→B→loop through the real UI).
+- [x] Record→save→playback works (recorder + shared-DB storage unit-tested; e2e opens the panel; real capture is browser-only).
+- [x] Live stream opens (YouTube embed — see note; offline handled by YouTube's own player; e2e starts a channel).
+- [x] No monolith, no snapshot subsystem, no HEAD-probe (A2–A5 gone by construction).
+- [x] a11y clean, all three themes; reduced-motion respected (e2e axe on player + expanded tray × 3 themes).
+
+**Verification:** 689 unit + 106 e2e green, `vue-tsc` clean, `npm run build` clean, all size budgets held (reader/today/quiz routes, audio-lazy 7.15/20 kB, CSS 19.96/30 kB).
+
+### Implementation notes — deviations from the draft (as built)
+- **Live stream is a YouTube embed, not hls.js.** Checking the legacy before reusing it (per your mandate) surfaced a literal comment — *"HLS.js removed: switching to YouTube embed for live streams"* — so the real, current source is two YouTube live channels (Makkah/Ḥaram, Madinah/Nabawī). Followed that: no HLS dependency at all, a 2.3 kB lazy chunk. The roadmap's "HLS" line is stale.
+- **Verse-highlight e2e** asserts the `data-verse` anchors are present (the mapping is wired) rather than forcing audio to advance — which page/verse plays and whether the network serves it is non-deterministic in CI. The highlight logic itself is unit-proven (`reading-surface-highlight.test.ts`).
+- **Blob byte-persistence** is asserted via metadata + type in unit tests; fake-indexeddb + happy-dom serialise a Blob to a plain object (dropping bytes), so byte-level round-trip is a real-browser behaviour, not unit-forced.
+- **Real bug caught by e2e:** the mini-player docked at `z-index: 40`, below the sticky bottom tab bar (`--z-sticky: 100`), so the tab bar intercepted its controls on the reader — it would have been unusable. Fixed to `--z-dropdown` (above the tab bar, below sheets).
 
 ---
 

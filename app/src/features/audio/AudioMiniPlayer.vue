@@ -176,7 +176,9 @@ function fmt(s: number) {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  /* Above the sticky bottom tab bar (--z-sticky) so its controls are clickable;
+     below sheets (--z-sheet) so the reciter picker / dialogs overlay it. */
+  z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
