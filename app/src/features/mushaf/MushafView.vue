@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, ChevronLeft, ChevronRight, Search, ZoomOut } from 'lucide-vue-next'
+import { ArrowLeft, ChevronLeft, ChevronRight, Headphones, Search, ZoomOut } from 'lucide-vue-next'
 import { useMushafStore } from '@/stores/mushaf'
+import { useAudioStore } from '@/stores/audio'
 import { useMushafPage } from '@/composables/useMushafPage'
 import { useMushafImages } from '@/composables/useMushafImages'
 import { useMushafZoom } from '@/composables/useMushafZoom'
@@ -33,6 +34,12 @@ const SLIDE_MS = 280
 const store = useMushafStore()
 const router = useRouter()
 const nav = useMushafPage(store, router)
+
+// Recitation audio — lazy; the mushaf images are the standard 604 Madani/QPC pages,
+// so audio sources against layout 'qpc'. In a 2-up spread `store.visible` is both
+// pages, so the player naturally covers the whole spread (the user's requirement).
+const audio = useAudioStore()
+const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
 const img = useMushafImages(store)
 const zoom = useMushafZoom()
 const { jumpTo } = useMushafQuickJump(store)
@@ -325,6 +332,15 @@ function backToReader() {
       </button>
 
       <button
+        class="icon-btn"
+        :aria-pressed="audio.open"
+        aria-label="Recitation audio"
+        @click="audio.open = true"
+      >
+        <Icon :icon="Headphones" :size="20" />
+      </button>
+
+      <button
         v-if="zoom.zoomed.value"
         class="icon-btn"
         aria-label="Reset zoom"
@@ -381,6 +397,8 @@ function backToReader() {
     </div>
 
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
+
+    <AudioHost v-if="audio.open" view="mushaf" layout="qpc" :pages="store.visible" />
   </main>
 </template>
 
