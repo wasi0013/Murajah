@@ -109,8 +109,13 @@ They also each kept **their own per-page review data** — separate from the Pha
 - [ ] **5.5.2** *(stretch, optional)* Milestones (juz-complete / cycle-complete) + toast on completion — deferred from 5.1.3; not required for done.
 
 ## 5.6 — Streaks & history
-- [ ] **5.6.1** A compact **completion calendar / timeline** (last ~90 days from the day log): per-day completion state, current + longest streak. Reachable from Today. Token-driven, a11y-labelled (state not by colour alone).
+- [x] **5.6.1** A compact **completion calendar / timeline** (last ~90 days from the day log): per-day completion state, current + longest streak. Reachable from Today. Token-driven, a11y-labelled (state not by colour alone).
   - *Verify:* e2e — a seeded day-log renders the calendar with correct completed/missed days and streak counts.
+  - **Done:** `core/memorization/streaks.ts` gained `buildHistory(log, days, today)` → a **gapless** oldest-first run of `{ date, state, isToday }`, so the view never reasons about the log's holes (4 unit tests). `features/today/HistorySheet.vue` renders it as a real `<table>` — weeks down, weekdays across — reached by tapping the streak in Today's summary card. 22 e2e green.
+    - **Three states, not completed/missed.** A record only exists once something is recorded, so the log *can* distinguish a day worked-but-unfinished (`partial`) from one never opened (`none`). Both break a streak, but only one is the user's fault, and telling someone who did four of five pages that they "missed" the day is a lie the data doesn't support.
+    - **State is carried by shape as well as colour** — filled / ringed / faint — and every cell holds its own screen-reader text ("Jul 14: completed"). It's a table rather than a div grid so the calendar is navigable and announced instead of being a decorative colour wash.
+    - **Fixed a flaky a11y test** (~1 run in 3, all three themes): axe samples *computed* colours, so it caught the segmented control mid-`transition-colors` and reported a blend frame (`#7f899c` on `#272a33`) that the design never actually shows. Not a real contrast bug. `expectAxeClean` now awaits `document.getAnimations()` before sampling — deterministic, no magic sleep. Verified over 6 consecutive clean runs. **Any future axe assertion after an interaction needs this.**
+    - Test dates target `[data-date]` (following the existing `data-juz` precedent) rather than rendered date text: `Intl.DateTimeFormat` is locale-dependent and my first pass asserted "15 Jul" where the browser renders "Jul 15".
 
 ## 5.7 — Migration parity
 > Roadmap acceptance: "a plan created in legacy loads/advances in the new app." Because the model is deliberately unified, this is **data-preservation parity**, not byte-identical task generation.

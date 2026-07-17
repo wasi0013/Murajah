@@ -342,6 +342,64 @@ test('an abandoned edit leaves the live plan untouched', async ({ page }) => {
   await expect(section(page, 'Revision').locator('.row')).toHaveCount(3) // still 3
 })
 
+// —— History (5.6.1) ————————————————————————————————
+
+const history = (page: Page) => page.getByRole('dialog', { name: 'Practice history' })
+
+/** `YYYY-MM-DD` N days before the pinned Wednesday. */
+function before(n: number): string {
+  const d = new Date(WEDNESDAY)
+  d.setDate(d.getDate() - n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function dayRecord(date: string, completed: boolean, revision: number[] = []) {
+  return { date, completed, newMemorization: [], revision, weak: [], habits: [] }
+}
+
+test('the streak opens a history calendar of the seeded day log', async ({ page }) => {
+  // Three completed days ending yesterday, a partial day before them, and a gap.
+  const dayLog = {
+    [before(5)]: dayRecord(before(5), true, [1]),
+    [before(4)]: dayRecord(before(4), false, [1]), // worked, didn't finish
+    [before(3)]: dayRecord(before(3), true, [1]),
+    [before(2)]: dayRecord(before(2), true, [1]),
+    [before(1)]: dayRecord(before(1), true, [1]),
+  }
+  await open(page, { progress: PROGRESS, plan: plan(), dayLog })
+
+  await page.getByRole('button', { name: 'View your practice history' }).click()
+  await expect(history(page)).toBeVisible()
+
+  // Streak survives today being outstanding; the gap caps it at 3.
+  await expect(history(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('3')
+  await expect(history(page).locator('.stat', { hasText: 'Longest streak' }).locator('.stat-n')).toHaveText('3')
+  await expect(history(page).locator('.stat', { hasText: 'Days completed' }).locator('.stat-n')).toHaveText('4')
+
+  // 90 days rendered, with the right states in the right cells.
+  await expect(history(page).locator('td[data-date]')).toHaveCount(90)
+  await expect(history(page).locator('.cell-completed')).toHaveCount(4 + 1) // + legend swatch
+  await expect(history(page).locator('.cell-partial')).toHaveCount(1 + 1)
+  await expect(history(page).locator(`[data-date="${before(1)}"] .cell-completed`)).toBeAttached()
+  await expect(history(page).locator(`[data-date="${before(4)}"] .cell-partial`)).toBeAttached()
+  await expect(history(page).locator(`[data-date="${before(0)}"] .cell-today`)).toBeAttached()
+
+  // Each day's state is spelled out for screen readers — never colour alone.
+  await expect(history(page).locator(`[data-date="${before(1)}"]`)).toContainText('completed')
+  await expect(history(page).locator(`[data-date="${before(4)}"]`)).toContainText('partly done')
+  await expect(history(page).locator(`[data-date="${before(0)}"]`)).toContainText('nothing recorded')
+})
+
+test('history reflects work done in the session', async ({ page }) => {
+  await open(page, { progress: PROGRESS, plan: plan() })
+
+  await page.getByRole('button', { name: 'Page 1 recited cleanly' }).click() // 1 of 3
+  await page.getByRole('button', { name: 'View your practice history' }).click()
+
+  await expect(history(page).locator(`[data-date="${before(0)}"]`)).toContainText('partly done')
+  await expect(history(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('0')
+})
+
 // Today is the app's primary surface — it must be axe-clean in all three themes.
 // Colour is never the only cue: done rows carry a check glyph and the word "Done",
 // and the streak state is spelled out in text beside the flame.
@@ -364,7 +422,19 @@ for (const theme of themes) {
   })
 }
 
+/**
+ * Wait for every running transition to finish. Axe samples *computed* colours, so a
+ * control caught mid-`transition-colors` reports a blend frame that is not a state
+ * the design ever shows — a real source of flaky contrast failures.
+ */
+async function settle(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+  )
+}
+
 async function expectAxeClean(page: Page, label: string) {
+  await settle(page)
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(

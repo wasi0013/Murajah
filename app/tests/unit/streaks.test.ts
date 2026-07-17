@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  buildHistory,
   calculateStreak,
   getTodayDate,
   isNewDay,
@@ -88,6 +89,49 @@ describe('streaks — calculateStreak', () => {
     expect(r.currentStreak).toBe(4)
     expect(r.longestStreak).toBe(4)
     expect(r.lastCompletedDate).toBe(daysAgo(1))
+  })
+})
+
+describe('streaks — buildHistory', () => {
+  it('returns a gapless run of days ending today, oldest first', () => {
+    const h = buildHistory(new Map(), 5, TODAY)
+    expect(h).toHaveLength(5)
+    expect(h.map((d) => d.date)).toEqual([
+      daysAgo(4),
+      daysAgo(3),
+      daysAgo(2),
+      daysAgo(1),
+      daysAgo(0),
+    ])
+    expect(h.every((d) => d.state === 'none')).toBe(true)
+    expect(h.at(-1)!.isToday).toBe(true)
+    expect(h.filter((d) => d.isToday)).toHaveLength(1)
+  })
+
+  it('distinguishes a finished day from one worked but not finished', () => {
+    const done: DayRecord = { ...rec(daysAgo(2), true), revision: [1, 2] }
+    const started: DayRecord = { ...rec(daysAgo(1), false), revision: [1] } // 1 of 2 done
+    const log: DayLog = new Map([
+      [done.date, done],
+      [started.date, started],
+    ])
+
+    const byDate = new Map(buildHistory(log, 3, TODAY).map((d) => [d.date, d.state]))
+    expect(byDate.get(daysAgo(2))).toBe('completed')
+    expect(byDate.get(daysAgo(1))).toBe('partial') // worked on, not finished
+    expect(byDate.get(daysAgo(0))).toBe('none') // never opened
+  })
+
+  it('treats an empty record as no activity, not partial work', () => {
+    const log = new Map([[daysAgo(1), rec(daysAgo(1), false)]])
+    expect(buildHistory(log, 2, TODAY)[0].state).toBe('none')
+  })
+
+  it('ignores days older than the window', () => {
+    const log = new Map([[daysAgo(40), rec(daysAgo(40), true)]])
+    const h = buildHistory(log, 7, TODAY)
+    expect(h).toHaveLength(7)
+    expect(h.every((d) => d.state === 'none')).toBe(true)
   })
 })
 

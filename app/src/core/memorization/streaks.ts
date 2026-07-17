@@ -7,7 +7,7 @@
  * map. The legacy rotation/task-init/merge glue is dropped (superseded by the smart
  * Today queue); the standing-habit definitions survive as a small typed catalog.
  */
-import type { DayLog } from '@/core/storage/userData'
+import type { DayLog, DayRecord } from '@/core/storage/userData'
 
 /** Local calendar date as `YYYY-MM-DD`. */
 function fmt(d: Date): string {
@@ -100,6 +100,44 @@ export function calculateStreak(log: DayLog, today: Date = new Date()): StreakRe
     anchor = addDays(anchor, -1)
   }
   return { currentStreak, longestStreak, lastCompletedDate }
+}
+
+/** How a past day reads on the history calendar. */
+export type DayState = 'completed' | 'partial' | 'none'
+
+export interface HistoryDay {
+  date: string
+  state: DayState
+  isToday: boolean
+}
+
+/** Did anything at all get recorded that day? */
+function hasWork(r: DayRecord): boolean {
+  return (
+    r.newMemorization.length + r.revision.length + r.weak.length + r.habits.length > 0
+  )
+}
+
+/**
+ * The last `days` calendar days ending today, oldest first — every day present, so
+ * the caller can render a gapless grid without reasoning about the log's holes.
+ *
+ * Three states rather than completed/missed: a day the user worked but didn't finish
+ * is not the same as a day they never opened, and the log can tell them apart (a
+ * record only exists once something is recorded). Both break a streak; only one is
+ * the user's fault, and saying "missed" to someone who did four of five pages is a
+ * lie the data doesn't support.
+ */
+export function buildHistory(log: DayLog, days = 90, today: Date = new Date()): HistoryDay[] {
+  const todayStr = fmt(today)
+  const out: HistoryDay[] = []
+  for (let i = days - 1; i >= 0; i--) {
+    const date = addDays(todayStr, -i)
+    const rec = log.get(date)
+    const state: DayState = rec?.completed ? 'completed' : rec && hasWork(rec) ? 'partial' : 'none'
+    out.push({ date, state, isToday: date === todayStr })
+  }
+  return out
 }
 
 /**

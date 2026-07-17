@@ -18,6 +18,7 @@ import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import TaskRow from './TaskRow.vue'
 import PlanSetup from './PlanSetup.vue'
+import HistorySheet from './HistorySheet.vue'
 
 /**
  * Today — the merged practice loop and the app's primary surface. One adaptive
@@ -127,6 +128,7 @@ function createSmartPlan() {
 }
 
 const setupOpen = ref(false)
+const historyOpen = ref(false)
 </script>
 
 <template>
@@ -188,7 +190,13 @@ const setupOpen = ref(false)
             </span>
           </div>
 
-          <div class="streak" :class="{ 'streak-lit': streak.isTodayComplete.value }">
+          <button
+            class="streak"
+            type="button"
+            :class="{ 'streak-lit': streak.isTodayComplete.value }"
+            aria-label="View your practice history"
+            @click="historyOpen = true"
+          >
             <Icon :icon="Flame" :size="18" class="streak-icon" />
             <span class="streak-n">{{ streakLabel }}</span>
             <span class="streak-sub">
@@ -201,7 +209,7 @@ const setupOpen = ref(false)
               </template>
               <template v-else>Finish a day to start one</template>
             </span>
-          </div>
+          </button>
         </div>
       </section>
 
@@ -299,6 +307,7 @@ const setupOpen = ref(false)
     </template>
 
     <PlanSetup v-model:open="setupOpen" />
+    <HistorySheet v-model:open="historyOpen" />
   </main>
 </template>
 
@@ -407,6 +416,21 @@ const setupOpen = ref(false)
   align-items: center;
   gap: 0 0.4rem;
   min-width: 0;
+  padding: 0.25rem 0.4rem;
+  margin-inline-start: -0.4rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.streak:hover {
+  background: var(--color-elevated);
+}
+.streak:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .streak-icon {
   grid-row: span 2;
