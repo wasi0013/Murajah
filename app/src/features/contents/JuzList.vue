@@ -56,7 +56,7 @@ defineEmits<{ select: [juz: number]; listen: [juz: number] }>()
   padding: 0.6rem 0.5rem;
   border-radius: var(--radius-md);
   background: none;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
 }

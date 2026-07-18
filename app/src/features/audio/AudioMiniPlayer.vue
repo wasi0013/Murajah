@@ -220,7 +220,7 @@ function fmt(s: number) {
   font-size: var(--text-xs);
   color: var(--color-accent);
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 .grain {
@@ -311,7 +311,7 @@ function fmt(s: number) {
   color: var(--color-text-muted);
 }
 .more {
-  margin-left: 0.5rem;
+  margin-inline-start: 0.5rem;
 }
 .play {
   display: inline-flex;

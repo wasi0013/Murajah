@@ -85,7 +85,7 @@ const cells = computed<Cell[]>(() =>
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
 }

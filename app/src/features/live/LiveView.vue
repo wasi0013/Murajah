@@ -155,7 +155,7 @@ function back() {
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: border-color var(--duration-fast), background var(--duration-fast);
 }

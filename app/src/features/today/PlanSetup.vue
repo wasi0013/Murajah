@@ -327,8 +327,8 @@ function save() {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding-left: 0.75rem;
-  border-left: 2px solid var(--color-border);
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--color-border);
 }
 .sub-label {
   font-size: var(--text-sm);

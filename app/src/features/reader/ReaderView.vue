@@ -507,7 +507,7 @@ function openMushaf() {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--duration-fast), border-color var(--duration-fast);
 }
