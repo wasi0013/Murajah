@@ -28,12 +28,21 @@ export interface VerseReciter {
 export interface PageReciter {
   id: string
   name: string
+  /** Whether this reciter's page files are split per surah (Alafasy). */
+  multiPart: boolean
   /**
    * The audio file URL(s) for a QPC page, in reading order. Usually one; the
    * multi-part reciter (Alafasy) emits one file per surah that starts/continues
    * on the page.
    */
   pageUrls(page: number): string[]
+  /**
+   * The single file for one surah's audio on a page. Only meaningful for
+   * `multiPart` reciters (whose page files are surah-split); used by the Listen
+   * scope builder to pull just one surah's part from a shared page. Non-multi-part
+   * reciters return `null` (the whole page belongs to at most one surah anyway).
+   */
+  surahPartUrl(page: number, surah: number): string | null
 }
 
 /** The two playback grains the user chooses between. */

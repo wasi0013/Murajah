@@ -13,6 +13,7 @@
 
 import { DEFAULT_PAGE_RECITER, DEFAULT_VERSE_RECITER } from './defaults'
 import type { AudioUrls, PageReciter, VerseReciter } from './types'
+import { PAGE_COUNT_QPC, SURAH_PAGE_RANGES_QPC } from '@/core/quran/surahPages'
 
 export { DEFAULT_VERSE_RECITER, DEFAULT_PAGE_RECITER }
 
@@ -77,39 +78,6 @@ export const VERSE_RECITERS: VerseReciter[] = VERSE_RECITER_DEFS.map((def) => ({
 
 // —— Page mode ————————————————————————————————————————————————————————————
 
-/**
- * Surah page ranges for the QPC layout, `[startPage, endPage]` inclusive. Only the
- * multi-part reciter (Alafasy) needs these, to compute the per-surah file offset on
- * a page. Ported verbatim from the legacy `SURAH_PAGE_RANGES_QPC`.
- */
-const SURAH_PAGE_RANGES_QPC: Record<number, [number, number]> = {
-  1: [1, 1], 2: [2, 49], 3: [50, 76], 4: [77, 106], 5: [106, 127],
-  6: [128, 150], 7: [151, 176], 8: [177, 186], 9: [187, 207], 10: [208, 221],
-  11: [221, 235], 12: [235, 248], 13: [249, 255], 14: [255, 261], 15: [262, 267],
-  16: [267, 281], 17: [282, 293], 18: [293, 304], 19: [305, 312], 20: [312, 321],
-  21: [322, 331], 22: [332, 341], 23: [342, 349], 24: [350, 359], 25: [359, 366],
-  26: [367, 376], 27: [377, 385], 28: [385, 396], 29: [396, 404], 30: [404, 410],
-  31: [411, 414], 32: [415, 417], 33: [418, 427], 34: [428, 434], 35: [434, 440],
-  36: [440, 445], 37: [446, 452], 38: [453, 458], 39: [458, 467], 40: [467, 476],
-  41: [477, 482], 42: [483, 489], 43: [489, 495], 44: [496, 498], 45: [499, 502],
-  46: [502, 506], 47: [507, 510], 48: [511, 515], 49: [515, 517], 50: [518, 520],
-  51: [520, 523], 52: [523, 525], 53: [526, 528], 54: [528, 531], 55: [531, 534],
-  56: [534, 537], 57: [537, 541], 58: [542, 545], 59: [545, 548], 60: [549, 551],
-  61: [551, 552], 62: [553, 554], 63: [554, 555], 64: [556, 557], 65: [558, 559],
-  66: [560, 561], 67: [562, 564], 68: [564, 566], 69: [566, 568], 70: [568, 570],
-  71: [570, 571], 72: [572, 573], 73: [574, 575], 74: [575, 577], 75: [577, 578],
-  76: [578, 580], 77: [580, 581], 78: [582, 583], 79: [583, 584], 80: [585, 586],
-  81: [586, 586], 82: [587, 587], 83: [587, 589], 84: [589, 590], 85: [590, 590],
-  86: [591, 591], 87: [591, 592], 88: [592, 593], 89: [593, 594], 90: [594, 595],
-  91: [595, 595], 92: [595, 596], 93: [596, 596], 94: [596, 597], 95: [597, 597],
-  96: [597, 598], 97: [598, 598], 98: [598, 599], 99: [599, 599], 100: [599, 600],
-  101: [600, 600], 102: [600, 600], 103: [601, 601], 104: [601, 601], 105: [601, 601],
-  106: [602, 602], 107: [602, 602], 108: [602, 602], 109: [603, 603], 110: [603, 603],
-  111: [603, 603], 112: [604, 604], 113: [604, 604], 114: [604, 604],
-}
-
-const PAGE_COUNT_QPC = 604
-
 interface PageReciterDef {
   id: string
   name: string
@@ -135,14 +103,21 @@ const PAGE_RECITER_DEFS: PageReciterDef[] = [
 /** Alafasy's multi-part page files: one per surah present on the page. */
 const alafasyBase = 'https://wasi0013.github.io/VerseSplitterAI/examples/page_by_page/alafasy'
 
+/** Alafasy's file for one surah's audio on a page (the surah's part). */
+function alafasySurahPart(page: number, surah: number): string | null {
+  const range = SURAH_PAGE_RANGES_QPC[surah]
+  if (!range) return null
+  const [startPage, endPage] = range
+  if (page < startPage || page > endPage) return null
+  const offset = page - startPage
+  return `${alafasyBase}/page${pad3(page)}-${pad3(surah)}${pad3(offset)}.mp3`
+}
+
 function alafasyPageUrls(page: number): string[] {
   const urls: string[] = []
   for (let surah = 1; surah <= 114; surah++) {
-    const [startPage, endPage] = SURAH_PAGE_RANGES_QPC[surah]
-    if (startPage <= page && page <= endPage) {
-      const offset = page - startPage
-      urls.push(`${alafasyBase}/page${pad3(page)}-${pad3(surah)}${pad3(offset)}.mp3`)
-    }
+    const url = alafasySurahPart(page, surah)
+    if (url) urls.push(url)
   }
   return urls
 }
@@ -150,15 +125,35 @@ function alafasyPageUrls(page: number): string[] {
 export const PAGE_RECITERS: PageReciter[] = PAGE_RECITER_DEFS.map((def) => ({
   id: def.id,
   name: def.name,
+  multiPart: def.multiPart ?? false,
   pageUrls(page): string[] {
     if (page < 1 || page > PAGE_COUNT_QPC) return []
     if (def.multiPart) return alafasyPageUrls(page)
     return [`${def.baseUrl}/Page${pad3(page)}.mp3`]
   },
+  surahPartUrl(page, surah): string | null {
+    if (page < 1 || page > PAGE_COUNT_QPC) return null
+    if (def.multiPart) return alafasySurahPart(page, surah)
+    // Single-file reciters: the page file is the whole page, only meaningful when
+    // the page is wholly within the surah — the scope builder handles that case via
+    // pageUrls and never calls this, so return null to signal "not surah-split".
+    return null
+  },
 }))
 
 const verseById = new Map(VERSE_RECITERS.map((r) => [r.id, r]))
 const pageById = new Map(PAGE_RECITERS.map((r) => [r.id, r]))
+
+/**
+ * Reciters offered in Listen (Phase 8): page reciters that *also* have a per-ayah
+ * recording, so a surah plays in one voice — page files for whole pages, the same
+ * qari's verse audio at partial-page edges. Alafasy (surah-split page files) never
+ * needs the verse fallback but qualifies too. Page-only reciters (Husary, Juhaynee)
+ * are excluded from Listen; they stay available in the reader's page player.
+ */
+export const CURATED_LISTEN_RECITERS: PageReciter[] = PAGE_RECITERS.filter(
+  (r) => r.multiPart || verseById.has(r.id),
+)
 
 /** Look up a verse reciter by id, falling back to the default if unknown. */
 export function verseReciter(id: string): VerseReciter {

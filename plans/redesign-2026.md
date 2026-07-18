@@ -112,6 +112,9 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - [phase-3b-mushaf-image.md](./phase-3b-mushaf-image.md) — mushaf image view: WebP pages, single/2-up spread, zoom ✅
 - [phase-4-memorization.md](./phase-4-memorization.md) — memorization: page grid, juz progress, perfect-revisions, weakness, stats ✅
 - [phase-5-plans-goals.md](./phase-5-plans-goals.md) — unified daily practice: one adaptive plan (scope + pace + new front), smart SM-2/weakness scheduling, Today screen, streaks, migration
+- [phase-6-quiz.md](./phase-6-quiz.md) — quiz mode as a lazy, code-split route ✅
+- [phase-7-audio.md](./phase-7-audio.md) — recitation audio: single engine, verse/page grain, reciters, record, live embed ✅
+- [phase-8-navigation-listen.md](./phase-8-navigation-listen.md) — Contents browser (surah/juz/page index) + Listen (full-scope audio-only playback)
 - _(later phases granularized when reached)_
 
 **Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md)
@@ -179,13 +182,25 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - Heavy audio deps (HLS etc.) code-split and loaded only when audio is used.
 **Acceptance:** Audio route/libs absent from initial bundle; record→save→playback works in webview; AB-repeat preserved.
 
-### Phase 8 — Notes, settings, i18n & PWA polish
-- Markdown notes (lazy `marked`), settings, **export/import JSON** (verified round-trip against legacy exports).
-- i18n en/ar/bn with full RTL; language selection.
-- Service worker v2 (Workbox): precache app shell, runtime-cache page data/fonts, background update, install prompt, offline-download-manager UI.
+### Phase 8 — Navigation & Listen (redefined 2026-07-18) → [phase-8-navigation-listen.md](./phase-8-navigation-listen.md)
+
+Two beginner-friendly surfaces built on Phases 3 + 7, no new machinery:
+
+- **Contents browser** — the stubbed "Surahs" tab becomes a real, tappable index with **Surah | Juz | Page** lenses (over `NavIndex` + names), so newcomers navigate without knowing quick-jump syntax. The command palette stays as the power path.
+- **Listen** — a "More" entry + full-view route that plays a whole **surah / juz / entire Quran** through the **existing audio engine** from **page audio** (honouring the page-reciter preference + speed; no grain toggle). Juz/whole-Quran are page-aligned straight sequences; surahs reconstruct seamlessly — Alafasy via its surah-parts, other reciters via full pages + same-qari verse audio at the partial-page edges (curated single-voice reciter list). Reuses the Phase 7 mini-player; adds only a scope→playlist builder and a scope picker.
+- **Notes / journal is dropped** (no longer a requirement).
+
+**Acceptance:** Surahs tab navigates to any surah/juz/page (both layouts); Listen plays a full scope through the shared engine; reader/mushaf audio unregressed; initial bundles unchanged (both features code-split).
+
+### Phase 9 — Settings, i18n, export/import & PWA/offline
+
+- Settings, **export/import JSON** (verified round-trip against legacy exports); i18n en/ar/bn with full RTL and language selection.
+- Service worker v2 (Workbox): precache app shell, runtime-cache page data/fonts, background update, install prompt, offline-download-manager UI, caching.
+
 **Acceptance:** Full offline reading after first visit; legacy export imports without loss; Lighthouse PWA = installable; all three languages + RTL correct.
 
-### Phase 9 — Cutover & launch
+### Phase 10 — Cutover & launch
+
 - Per-screen flag flip to 100%; redirect legacy routes → new app; update Play Store webview target.
 - Delete `source/` monolith and dead assets; shrink repo (move 611MB raw PNGs out of git / to optimized pipeline output).
 - Final full-suite Lighthouse + Playwright run against §3 budgets; staged rollout with rollback plan.
