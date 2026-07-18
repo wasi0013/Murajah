@@ -4,7 +4,7 @@ import AudioMiniPlayer from './AudioMiniPlayer.vue'
 import ReciterPicker from './ReciterPicker.vue'
 import type { AudioView } from '@/core/audio/pages'
 import type { Layout } from '@/core/data/types'
-import { pageAudioAvailable } from '@/core/audio/pageMode'
+import { effectiveGrain as resolveGrain, pageAudioAvailable } from '@/core/audio/pageMode'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioPersistence } from '@/composables/useAudioPersistence'
@@ -30,9 +30,9 @@ onBeforeUnmount(() => prefs.dispose())
 const pickerOpen = ref(false)
 
 const pageAvailable = computed(() => pageAudioAvailable(props.layout))
-const effectiveGrain = computed<'verse' | 'page'>(() =>
-  store.grain === 'page' && pageAvailable.value ? 'page' : 'verse',
-)
+// What actually plays / is shown selected — page grain degrades to verse where
+// unavailable, so the toggle never claims a grain the engine won't use.
+const effectiveGrain = computed(() => resolveGrain(store.grain, props.layout))
 const reciterName = computed(() =>
   effectiveGrain.value === 'page'
     ? pageReciter(store.pageReciterId).name
@@ -59,6 +59,7 @@ function onClose() {
   <AudioMiniPlayer
     v-if="store.open"
     :page-available="pageAvailable"
+    :effective-grain="effectiveGrain"
     :reciter-name="reciterName"
     @start="onStart"
     @rebuild="onRebuild"

@@ -21,6 +21,7 @@ class FakeAudio extends EventTarget {
     this.paused = true
     this.dispatchEvent(new Event('pause'))
   })
+  load = vi.fn()
   constructor() {
     super()
     FakeAudio.instances.push(this)
@@ -63,6 +64,28 @@ describe('useAudioEngine wiring', () => {
     expect(store.index).toBe(0)
     expect(el().src).toBe('a.mp3')
     expect(el().play).toHaveBeenCalled()
+  })
+
+  it('switching the playlist swaps the source and calls load() (webview switch bug)', () => {
+    // Regression: setting .src alone left webviews playing the old buffered clip, so
+    // a grain/reciter switch appeared to do nothing. The engine must pause + load().
+    const engine = useAudioEngine()
+    engine.setPlaylistAndPlay([item('alafasy-page17.mp3')])
+    const a = el()
+    a.load.mockClear()
+    engine.setPlaylistAndPlay([item('shuraim-2-255.mp3', 'fallback.mp3', { surah: 2, ayah: 255, page: 42 })])
+    expect(a.src).toBe('shuraim-2-255.mp3')
+    expect(a.load).toHaveBeenCalled()
+    expect(a.pause).toHaveBeenCalled() // old clip stopped before the new one loads
+  })
+
+  it('an empty rebuild stops whatever was playing', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    engine.setPlaylistAndPlay([]) // e.g. scope yielded no verses
+    expect(store.isPlaying).toBe(false)
+    expect(el().pause).toHaveBeenCalled()
   })
 
   it('advances through the playlist on `ended` when autoplay-next is on', () => {

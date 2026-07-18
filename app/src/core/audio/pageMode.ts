@@ -11,10 +11,21 @@
  * behind this same gate, without touching the engine.
  */
 import type { Layout } from '@/core/data/types'
+import type { AudioGrain } from './types'
 
 /** Whether page-by-page audio is available in the given layout. */
 export function pageAudioAvailable(layout: Layout): boolean {
   return layout === 'qpc'
+}
+
+/**
+ * The grain that will actually play: page mode falls back to verse when the layout
+ * doesn't support it (decision 6). The single source of truth for this rule — the
+ * player, the orchestration, and the grain toggle all resolve through it so they
+ * can never disagree about what plays vs. what's shown selected.
+ */
+export function effectiveGrain(grain: AudioGrain, layout: Layout): AudioGrain {
+  return grain === 'page' && pageAudioAvailable(layout) ? 'page' : 'verse'
 }
 
 /** The hint shown when page mode is unavailable in the current layout. */

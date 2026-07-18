@@ -22,7 +22,12 @@ import { PAGE_MODE_UNAVAILABLE_HINT } from '@/core/audio/pageMode'
  * the expandable tray below. Docks above the bottom nav, thumb-zone actions, safe-
  * area aware. Reads playback state from the store; drives the engine directly.
  */
-const props = defineProps<{ pageAvailable: boolean; reciterName: string }>()
+const props = defineProps<{
+  pageAvailable: boolean
+  /** The grain that will actually play (page degrades to verse where unavailable). */
+  effectiveGrain: 'verse' | 'page'
+  reciterName: string
+}>()
 const emit = defineEmits<{ start: []; rebuild: []; openPicker: []; close: [] }>()
 
 const store = useAudioStore()
@@ -88,8 +93,8 @@ function fmt(s: number) {
           type="button"
           role="radio"
           class="grain-btn"
-          :class="{ on: store.grain === 'verse' }"
-          :aria-checked="store.grain === 'verse'"
+          :class="{ on: effectiveGrain === 'verse' }"
+          :aria-checked="effectiveGrain === 'verse'"
           @click="setGrain('verse')"
         >
           Verse
@@ -98,8 +103,8 @@ function fmt(s: number) {
           type="button"
           role="radio"
           class="grain-btn"
-          :class="{ on: store.grain === 'page' }"
-          :aria-checked="store.grain === 'page'"
+          :class="{ on: effectiveGrain === 'page' }"
+          :aria-checked="effectiveGrain === 'page'"
           :disabled="!pageAvailable"
           :title="pageAvailable ? undefined : PAGE_MODE_UNAVAILABLE_HINT"
           @click="setGrain('page')"

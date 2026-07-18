@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { audioPagesFor } from '@/core/audio/pages'
-import { pageAudioAvailable } from '@/core/audio/pageMode'
+import { pageAudioAvailable, effectiveGrain } from '@/core/audio/pageMode'
 
 describe('audioPagesFor', () => {
   it('text view plays the single reader page', () => {
@@ -25,5 +25,17 @@ describe('pageAudioAvailable', () => {
   it('is available for QPC, not Indopak (decision 6)', () => {
     expect(pageAudioAvailable('qpc')).toBe(true)
     expect(pageAudioAvailable('indopak')).toBe(false)
+  })
+})
+
+describe('effectiveGrain', () => {
+  it('keeps the chosen grain where it is available', () => {
+    expect(effectiveGrain('verse', 'qpc')).toBe('verse')
+    expect(effectiveGrain('page', 'qpc')).toBe('page')
+    expect(effectiveGrain('verse', 'indopak')).toBe('verse')
+  })
+
+  it('degrades page → verse in Indopak, so the toggle never claims an unusable grain', () => {
+    expect(effectiveGrain('page', 'indopak')).toBe('verse')
   })
 })

@@ -9,7 +9,7 @@
 import { getDataClient } from '@/core/data'
 import type { Layout } from '@/core/data/types'
 import type { AudioView } from '@/core/audio/pages'
-import { pageAudioAvailable } from '@/core/audio/pageMode'
+import { effectiveGrain } from '@/core/audio/pageMode'
 import { buildPagePlaylist, buildVersePlaylist } from '@/core/audio/playlist'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { versesForPages } from '@/core/audio/verses'
@@ -29,18 +29,13 @@ export function useQariPlayer() {
   const data = getDataClient()
   let lastCtx: QariContext | null = null
 
-  /** Whether page mode is usable in the given layout (else we fall back to verse). */
-  function effectiveGrain(layout: Layout) {
-    return store.grain === 'page' && pageAudioAvailable(layout) ? 'page' : 'verse'
-  }
-
   async function start(ctx: QariContext): Promise<void> {
     lastCtx = ctx
     store.open = true
     store.loading = true
     try {
       await data.init()
-      if (effectiveGrain(ctx.layout) === 'page') {
+      if (effectiveGrain(store.grain, ctx.layout) === 'page') {
         engine.setPlaylistAndPlay(buildPagePlaylist(ctx.pages, pageReciter(store.pageReciterId)))
       } else {
         const verses = await versesForPages(ctx.layout, ctx.pages, data)
@@ -61,5 +56,5 @@ export function useQariPlayer() {
     if (lastCtx) await start(lastCtx)
   }
 
-  return { start, restart, effectiveGrain }
+  return { start, restart }
 }

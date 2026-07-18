@@ -76,8 +76,14 @@ function createEngine(): AudioEngine {
     if (!item) return
     triedFallback = false
     const a = ensureEl()
+    // Pause + load() so switching source mid-playback reliably aborts the current
+    // media. Setting `.src` alone is not enough in webviews (Android) — the element
+    // keeps playing the already-buffered audio, so a grain/reciter switch appears to
+    // do nothing until the old clip ends.
+    a.pause()
     a.src = item.urls.primary
     a.playbackRate = store.speed
+    a.load()
     store.currentTime = 0
     store.duration = 0
     store.loading = true
@@ -115,6 +121,7 @@ function createEngine(): AudioEngine {
       triedFallback = true
       const a = ensureEl()
       a.src = item.urls.fallback
+      a.load()
       void a.play().catch(() => {})
       return
     }
@@ -131,12 +138,23 @@ function createEngine(): AudioEngine {
     el?.pause()
   }
 
+  /** Pause and rewind the element, clearing playback flags. */
+  function stopEl(): void {
+    if (el) {
+      el.pause()
+      el.currentTime = 0
+    }
+    store.currentTime = 0
+    store.isPlaying = false
+    store.loading = false
+  }
+
   return {
     setPlaylistAndPlay(items) {
       store.setPlaylist(items)
       store.ab = { ...AB_NONE }
       if (items.length) loadCurrent(true)
-      else store.isPlaying = false
+      else stopEl() // an empty rebuild must silence whatever was playing
     },
     play,
     pause,
@@ -150,12 +168,7 @@ function createEngine(): AudioEngine {
     prev() {
       if (store.hasPrev) applyAdvance({ index: store.index - 1 }, true)
     },
-    stop() {
-      el?.pause()
-      if (el) el.currentTime = 0
-      store.currentTime = 0
-      store.isPlaying = false
-    },
+    stop: stopEl,
     seekToFraction(fraction) {
       const a = ensureEl()
       if (store.duration > 0) a.currentTime = Math.max(0, Math.min(1, fraction)) * store.duration
