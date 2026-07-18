@@ -78,7 +78,7 @@ Six task groups is a lot for one phase. 9.1–9.3 are cohesive (all user-facing 
 - [x] **9.4.1** Settings route (`/settings`, reached from the reader's "More" sheet) owning the colour theme — the one pref with no in-context home. Theme is now persisted (prefs key `theme`) + hydrated on boot. *Reader script/text/tajweed/wbw/tafsir keep their in-reader "Reader settings" sheet, reciters the audio tray, and reduced-motion is handled at the OS level (`prefers-reduced-motion`) everywhere — so the global surface deliberately doesn't duplicate them.*
 - [x] **9.4.2** `core/storage/exportImport.ts` — serialize all user data (memorized, strength/perfectRevisions, mistakes, reviewData, plan, dayLog/streak, quiz, notes-if-any, settings) to a versioned JSON envelope; `import` validates + merges/replaces.
   - *Verify:* unit — round-trip (export→import) is identity; a **captured legacy export fixture** imports without loss (map legacy keys via `legacy-schema.md`); malformed/oversized input rejected with a clear error, never a partial write.
-- [ ] **9.4.3** Export/import UI in settings (download file / pick file), with a confirm before destructive replace and a success/failure toast.
+- [x] **9.4.3** Export/import UI in settings (download file / pick file), with a confirm before destructive replace and a success/failure toast. Import validates the file up front (via `backupFile.ts`) so junk never reaches the confirm, then reloads on success so every store rehydrates.
   - *Verify:* e2e — export downloads a file; importing it back restores state; importing junk shows an error and leaves data intact.
 
 ## 9.5 — i18n & RTL *(usual planning; surviving Phase 9 scope)*

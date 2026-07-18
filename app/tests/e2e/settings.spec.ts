@@ -38,6 +38,42 @@ test('the back button returns to the reader', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/)
 })
 
+test('export then import restores state, and junk is rejected', async ({ page }) => {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+  const html = page.locator('html')
+
+  // Establish a distinctive state (Dark theme) and export it to a file.
+  await page.getByRole('radio', { name: 'Dark' }).click()
+  await expect(html).toHaveAttribute('data-theme', 'dark')
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Export backup' }).click(),
+  ])
+  const file = await download.path()
+
+  // Move state away from the backup so a restore is observable.
+  await page.getByRole('radio', { name: 'Light' }).click()
+  await expect(html).toHaveAttribute('data-theme', 'light')
+
+  // Junk import: a clear error, no confirm dialog, and data left intact.
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'junk.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{not json'),
+  })
+  await expect(page.getByText('This file is not valid JSON.')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Import backup' })).toHaveCount(0)
+  await expect(html).toHaveAttribute('data-theme', 'light')
+
+  // Real import: confirm the replace, then the reload restores Dark.
+  await page.locator('input[type=file]').setInputFiles(file)
+  await page.getByRole('button', { name: 'Replace data' }).click()
+  await expect(html).toHaveAttribute('data-theme', 'dark', { timeout: 10_000 })
+})
+
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({
