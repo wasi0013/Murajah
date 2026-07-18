@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Download, Upload } from 'lucide-vue-next'
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
+import { useI18n } from '@/core/i18n'
+import { LOCALE_LIST, LOCALES, type Locale } from '@/core/i18n/types'
 import { exportUserData, importUserData, type ExportSnapshot } from '@/core/storage/exportImport'
 import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
 import { toast } from '@/composables/useToast'
@@ -13,24 +15,33 @@ import Modal from '@/components/Dialog.vue'
 
 /**
  * The app's settings surface, reached from the reader's "More" sheet. It owns
- * the preferences with no in-context home — the colour theme — and hosts data
- * backup: a lossless JSON export and an import that replaces the data it carries
- * (after a confirm), then reloads so every view rehydrates from the new data.
+ * the preferences with no in-context home — the colour theme and app language —
+ * and hosts data backup: a lossless JSON export and an import that replaces the
+ * data it carries (after a confirm), then reloads so every view rehydrates.
  */
 const router = useRouter()
 const settings = useSettingsStore()
+const { t, locale, setLocale } = useI18n()
 
-const themeOptions: { value: ThemeName; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'sepia', label: 'Sepia' },
-]
+const themeOptions = computed<{ value: ThemeName; label: string }[]>(() => [
+  { value: 'light', label: t('settings.appearance.light') },
+  { value: 'dark', label: t('settings.appearance.dark') },
+  { value: 'sepia', label: t('settings.appearance.sepia') },
+])
 
 // SegmentedControl is a two-way string model; funnel writes through setTheme so
 // the choice is applied to the document and persisted, not just held in the ref.
 const theme = computed<string>({
   get: () => settings.theme,
   set: (v) => settings.setTheme(v as ThemeName),
+})
+
+// Each language names itself (endonym) in the picker, regardless of active UI
+// language. Switching is async (the catalog lazy-loads) but the setter is sync.
+const languageOptions = LOCALE_LIST.map((l) => ({ value: l, label: LOCALES[l].native }))
+const language = computed<string>({
+  get: () => locale.value,
+  set: (v) => void setLocale(v as Locale),
 })
 
 // —— Data backup ————————————————————————————————————
@@ -42,9 +53,9 @@ const importing = ref(false)
 async function exportData() {
   try {
     downloadBackup(await exportUserData())
-    toast('Backup downloaded.', { variant: 'success' })
+    toast(t('settings.data.exported'), { variant: 'success' })
   } catch {
-    toast("Couldn't create a backup.", { variant: 'error' })
+    toast(t('settings.data.exportFailed'), { variant: 'error' })
   }
 }
 
@@ -63,7 +74,7 @@ async function onFileChosen(e: Event) {
     pending.value = await readBackupFile(file)
     confirmOpen.value = true
   } catch (err) {
-    toast(err instanceof Error ? err.message : 'This file is not a Murajah backup.', {
+    toast(err instanceof Error ? err.message : t('settings.data.notBackup'), {
       variant: 'error',
     })
   }
@@ -77,12 +88,12 @@ async function confirmImport() {
     await importUserData(snap)
     confirmOpen.value = false
     pending.value = null
-    toast('Backup restored — reloading…', { variant: 'success' })
+    toast(t('settings.data.restored'), { variant: 'success' })
     // Reload so every store rehydrates from the imported data (this view holds none).
     setTimeout(() => window.location.reload(), 600)
   } catch {
     importing.value = false
-    toast("Couldn't restore this backup.", { variant: 'error' })
+    toast(t('settings.data.restoreFailed'), { variant: 'error' })
   }
 }
 
@@ -95,35 +106,54 @@ function cancelImport() {
 <template>
   <main class="settings-view">
     <header class="topbar">
-      <button class="icon-btn" type="button" aria-label="Back to reader" @click="router.push('/')">
+      <button
+        class="icon-btn"
+        type="button"
+        :aria-label="t('settings.backToReader')"
+        @click="router.push('/')"
+      >
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
-      <h1 class="title">Settings</h1>
+      <h1 class="title">{{ t('settings.title') }}</h1>
     </header>
 
-    <section class="section" aria-label="Appearance">
-      <h2 class="section-title">Appearance</h2>
+    <section class="section" :aria-label="t('settings.appearance.title')">
+      <h2 class="section-title">{{ t('settings.appearance.title') }}</h2>
       <div class="row">
-        <span class="row-label">Theme</span>
-        <SegmentedControl v-model="theme" :options="themeOptions" label="Colour theme" />
+        <span class="row-label">{{ t('settings.appearance.theme') }}</span>
+        <SegmentedControl
+          v-model="theme"
+          :options="themeOptions"
+          :label="t('settings.appearance.themeLabel')"
+        />
       </div>
-      <p class="hint">Sepia is easier on the eyes for long reading sessions.</p>
+      <p class="hint">{{ t('settings.appearance.hint') }}</p>
     </section>
 
-    <section class="section" aria-label="Your data">
-      <h2 class="section-title">Your data</h2>
-      <p class="lead">
-        Everything is stored on this device. Export a backup to move to another device or keep a
-        safety copy; importing replaces the data the file contains.
-      </p>
+    <section class="section" :aria-label="t('settings.language.title')">
+      <h2 class="section-title">{{ t('settings.language.title') }}</h2>
+      <div class="row">
+        <span class="row-label">{{ t('settings.language.label') }}</span>
+        <SegmentedControl
+          v-model="language"
+          :options="languageOptions"
+          :label="t('settings.language.label')"
+        />
+      </div>
+      <p class="hint">{{ t('settings.language.hint') }}</p>
+    </section>
+
+    <section class="section" :aria-label="t('settings.data.title')">
+      <h2 class="section-title">{{ t('settings.data.title') }}</h2>
+      <p class="lead">{{ t('settings.data.lead') }}</p>
       <div class="actions">
         <Button variant="secondary" @click="exportData">
           <Icon :icon="Download" :size="18" />
-          Export backup
+          {{ t('settings.data.export') }}
         </Button>
         <Button variant="secondary" @click="pickFile">
           <Icon :icon="Upload" :size="18" />
-          Import backup
+          {{ t('settings.data.import') }}
         </Button>
       </div>
       <input
@@ -137,15 +167,16 @@ function cancelImport() {
       />
     </section>
 
-    <Modal v-model:open="confirmOpen" label="Import backup">
-      <h3 class="modal-title">Import this backup?</h3>
-      <p class="modal-body">
-        This replaces the data the file contains — memorization, mistakes, your plan, and settings —
-        on this device. It can't be undone.
-      </p>
+    <Modal v-model:open="confirmOpen" :label="t('settings.data.import')">
+      <h3 class="modal-title">{{ t('settings.data.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('settings.data.confirmBody') }}</p>
       <div class="modal-actions">
-        <Button variant="ghost" :disabled="importing" @click="cancelImport">Cancel</Button>
-        <Button variant="danger" :loading="importing" @click="confirmImport">Replace data</Button>
+        <Button variant="ghost" :disabled="importing" @click="cancelImport">
+          {{ t('common.cancel') }}
+        </Button>
+        <Button variant="danger" :loading="importing" @click="confirmImport">
+          {{ t('settings.data.replace') }}
+        </Button>
       </div>
     </Modal>
   </main>

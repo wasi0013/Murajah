@@ -74,6 +74,28 @@ test('export then import restores state, and junk is rejected', async ({ page })
   await expect(html).toHaveAttribute('data-theme', 'dark', { timeout: 10_000 })
 })
 
+test('choosing Arabic flips the document to RTL and persists', async ({ page }) => {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+  const html = page.locator('html')
+  await expect(html).toHaveAttribute('dir', 'ltr')
+
+  await page.getByRole('radio', { name: 'العربية' }).click()
+  await expect(html).toHaveAttribute('dir', 'rtl')
+  await expect(html).toHaveAttribute('lang', 'ar')
+  // The interface re-renders in Arabic without a reload.
+  await expect(page.getByRole('heading', { name: 'الإعدادات', level: 1 })).toBeVisible()
+
+  // The choice survives a reload (loaded from IndexedDB before paint).
+  await page.reload()
+  await expect(html).toHaveAttribute('dir', 'rtl')
+  await expect(page.getByRole('heading', { name: 'الإعدادات', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+})
+
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({

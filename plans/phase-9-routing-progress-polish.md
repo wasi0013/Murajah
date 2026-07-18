@@ -84,7 +84,7 @@ Six task groups is a lot for one phase. 9.1–9.3 are cohesive (all user-facing 
 ## 9.5 — i18n & RTL *(usual planning; surviving Phase 9 scope)*
 > English / Arabic / Bengali with correct RTL — the legacy app shipped all three and the subcontinent user base needs Bengali first-class (§4).
 
-- [ ] **9.5.1** i18n runtime (lightweight; reuse legacy `en.json`/`ar.json`/`bn.json` message catalogs from `source/resources/data/i18n/`, ported + trimmed to the new UI's strings). Language selection persisted; lazy-load non-default catalogs.
+- [x] **9.5.1** i18n runtime (lightweight, native — no `vue-i18n`). `core/i18n/`: pure `resolveMessage`/`interpolate` (dot-path + `{name}`), reactive singleton `t`/`locale`/`dir`/`setLocale`/`hydrateLocale` (`core/i18n/index.ts`), `en` in the initial bundle, `ar`/`bn` lazy chunks (verified 1.7K/2.2K). Locale persisted to the prefs KV (key `locale`), hydrated in App.vue; `<html lang/dir>` painted on switch. First localized surface: SettingsView (+ Language picker); catalogs seeded with the settings strings in en/ar/bn. Tests: `i18n-translate` (9), `i18n-runtime` (7), settings e2e Arabic→RTL persists. *Remaining string surfaces are 9.5.3.*
 - [ ] **9.5.2** RTL: `dir` driven by locale; audit every feature surface (reader chrome, Today, Progress tabs, Contents, Listen, settings) for logical-property correctness (the codebase already uses `margin-inline`/`padding-inline` — verify no physical-direction leaks).
   - *Verify:* e2e — switch to Arabic → `dir="rtl"`, mirrored layout, no clipped/overlapping chrome; themed a11y scan per locale.
 - [ ] **9.5.3** Externalise the remaining hardcoded UI strings introduced in Phases 3–9 into the catalogs.
