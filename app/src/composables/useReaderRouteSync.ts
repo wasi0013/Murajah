@@ -1,25 +1,57 @@
 import { watch } from 'vue'
 import type { Router, RouteLocationNormalizedLoaded } from 'vue-router'
 import type { useReaderStore } from '@/stores/reader'
-import { parseReaderRoute, readerStateToRoute } from '@/core/navigation/readerRoute'
+import { parseReaderRoute, readerStateToRoute, type FriendlyTarget } from '@/core/navigation/readerRoute'
 
 type ReaderStore = ReturnType<typeof useReaderStore>
 
 /**
- * Two-way bind the reader store and the `/read/:layout/:page` route:
- *  - store → URL: page/layout changes `push` (so browser back/forward pages),
- *    toggle-only changes `replace` (history isn't spammed);
- *  - URL → store: back/forward + deep-links apply to the store.
- * Loops are broken structurally — each side skips when the target already equals
- * the current location, so no re-entrancy flag is needed. Reads the reactive
- * route from `router.currentRoute`, so it works with or without a component.
+ * Result of resolving the current URL as a *friendly* reader route (Phase 9.1):
+ *  - `undefined` — not a friendly route (a canonical `/read/:layout/:page` or `/`);
+ *  - `'pending'` — friendly, but the nav index hasn't loaded yet;
+ *  - `null`      — friendly but names something invalid (surah > 114, bad slug);
+ *  - a target    — resolved to a page (+ optional verse to scroll to).
  */
-export function useReaderRouteSync(reader: ReaderStore, router: Router) {
+export type FriendlyResolution = FriendlyTarget | null | 'pending' | undefined
+
+export interface ReaderRouteSyncOptions {
+  /** Resolve the current route as a friendly reader URL (see {@link FriendlyResolution}). */
+  resolveFriendly?: (route: RouteLocationNormalizedLoaded) => FriendlyResolution
+}
+
+/**
+ * Two-way bind the reader store and the reader URLs:
+ *  - the canonical `/read/:layout/:page` form (layout + toggles, fully shareable);
+ *  - the friendly forms `/:surah`, `/:surah/:ayah`, `/page/:page`, `/:slug` (9.1),
+ *    which carry only *where* — script + toggles come from the store.
+ *
+ * store → URL: page/layout changes `push`, toggle-only changes `replace`. A friendly
+ * URL that still names the current page is left **sticky** (kept in the bar) — it only
+ * normalises to `/read/…` once the reader moves off that page. URL → store applies
+ * deep-links + back/forward. Loops are broken structurally (each side skips when the
+ * target already equals the current location); no re-entrancy flag needed.
+ */
+export function useReaderRouteSync(
+  reader: ReaderStore,
+  router: Router,
+  opts: ReaderRouteSyncOptions = {},
+) {
   const route = (): RouteLocationNormalizedLoaded => router.currentRoute.value
 
   /** Apply the current URL to the store (deep-link / back-forward restore). */
   function applyRoute(): void {
     const r = route()
+    const friendly = opts.resolveFriendly?.(r)
+    if (friendly === 'pending') return // nav not ready — ReaderView re-applies once it loads
+    if (friendly === null) {
+      void router.replace({ name: 'home' }).catch(() => {}) // named something that doesn't exist
+      return
+    }
+    if (friendly) {
+      reader.goToPage(friendly.page)
+      reader.setFocusVerse(friendly.ayah ?? null)
+      return
+    }
     reader.restore(parseReaderRoute(r.params, r.query))
   }
 
@@ -29,6 +61,12 @@ export function useReaderRouteSync(reader: ReaderStore, router: Router) {
       return { layout, page, tajweed, wbw, tafsir }
     },
     (curr) => {
+      // Keep a friendly URL in the bar while it still names the current page, and
+      // don't clobber it during the nav-not-ready window (9.1, decision 3).
+      const friendly = opts.resolveFriendly?.(route())
+      if (friendly === 'pending') return
+      if (friendly && friendly.page === curr.page) return
+
       const target = readerStateToRoute(curr)
       if (routeMatches(route(), target)) return
       const r = route()

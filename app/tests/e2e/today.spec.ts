@@ -159,7 +159,7 @@ test('a task deep-links into the reader', async ({ page }) => {
   await expect(ring(page)).toHaveText('0/3', { timeout: 10_000 })
 
   await page.getByRole('button', { name: 'Open page 2 in the reader' }).click()
-  await expect(page).toHaveURL(/\/read\/qpc\/2$/)
+  await expect(page).toHaveURL(/\/page\/2$/)
 })
 
 test('new memorization renders its own section and walks the front forward', async ({ page }) => {

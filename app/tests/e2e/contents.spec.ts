@@ -5,8 +5,8 @@ test('Surah lens navigates to a surah’s page', async ({ page }) => {
   const furqan = page.getByRole('button', { name: /^Al-Furqan/ })
   await expect(furqan).toBeVisible({ timeout: 10_000 })
   await furqan.click()
-  // Al-Furqan (surah 25) starts on QPC page 359.
-  await expect(page).toHaveURL(/\/read\/qpc\/359(\?|$)/)
+  // Al-Furqan is surah 25 — the friendly URL /25 (reader resolves it to a page).
+  await expect(page).toHaveURL(/\/25$/)
 })
 
 test('Juz lens navigates to a juz’s page', async ({ page }) => {
@@ -15,13 +15,13 @@ test('Juz lens navigates to a juz’s page', async ({ page }) => {
   const juz30 = page.getByRole('button', { name: /^Juz 30/ })
   await expect(juz30).toBeVisible({ timeout: 10_000 })
   await juz30.click()
-  // Juz 30 opens on QPC page 582.
-  await expect(page).toHaveURL(/\/read\/qpc\/582(\?|$)/)
+  // Juz 30 opens on QPC page 582 (page-form friendly URL).
+  await expect(page).toHaveURL(/\/page\/582$/)
 })
 
 test('Page lens navigates to a page', async ({ page }) => {
   await page.goto('/contents')
   await page.getByRole('radio', { name: 'Page' }).click()
   await page.getByRole('button', { name: 'Page 42', exact: true }).click()
-  await expect(page).toHaveURL(/\/read\/qpc\/42(\?|$)/)
+  await expect(page).toHaveURL(/\/page\/42$/)
 })

@@ -114,7 +114,8 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - [phase-5-plans-goals.md](./phase-5-plans-goals.md) — unified daily practice: one adaptive plan (scope + pace + new front), smart SM-2/weakness scheduling, Today screen, streaks, migration
 - [phase-6-quiz.md](./phase-6-quiz.md) — quiz mode as a lazy, code-split route ✅
 - [phase-7-audio.md](./phase-7-audio.md) — recitation audio: single engine, verse/page grain, reciters, record, live embed ✅
-- [phase-8-navigation-listen.md](./phase-8-navigation-listen.md) — Contents browser (surah/juz/page index) + Listen (full-scope audio-only playback)
+- [phase-8-navigation-listen.md](./phase-8-navigation-listen.md) — Contents browser (surah/juz/page index) + Listen (full-scope audio-only playback) ✅
+- [phase-9-routing-progress-polish.md](./phase-9-routing-progress-polish.md) — friendly URLs (`/1`…/114, `/page/N`, `/mushaf/N`) + analytics port (Juz/Page progress + Completion Estimate) + Today fixes; then settings/export-import, i18n/RTL, PWA/offline
 - _(later phases granularized when reached)_
 
 **Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md)
@@ -192,12 +193,17 @@ Two beginner-friendly surfaces built on Phases 3 + 7, no new machinery:
 
 **Acceptance:** Surahs tab navigates to any surah/juz/page (both layouts); Listen plays a full scope through the shared engine; reader/mushaf audio unregressed; initial bundles unchanged (both features code-split).
 
-### Phase 9 — Settings, i18n, export/import & PWA/offline
+### Phase 9 — Routing, progress analytics & practice polish (reshaped 2026-07-18) → [phase-9-routing-progress-polish.md](./phase-9-routing-progress-polish.md)
 
-- Settings, **export/import JSON** (verified round-trip against legacy exports); i18n en/ar/bn with full RTL and language selection.
-- Service worker v2 (Workbox): precache app shell, runtime-cache page data/fonts, background update, install prompt, offline-download-manager UI, caching.
+Three product-owner-directed improvements ahead of the original platform scope:
 
-**Acceptance:** Full offline reading after first visit; legacy export imports without loss; Lighthouse PWA = installable; all three languages + RTL correct.
+- **Friendly, desktop-usable URLs** — `/1`…`/114` open a surah in the reader (user's own script), `/page/:page` a page, `/mushaf/:page` the image view; `/read/:layout/:page` stays as the exact-state share link. One extended resolver, one reader component, no logic fork.
+- **Analytics port** — the popular legacy **Juz Progress** grid, **Page-by-Page** revision heatmap, and **Completion Estimate** (estimated finish date + days remaining) return, as tabs on the existing `/progress` surface, over the new stores.
+- **Today fixes** — the broken "Memorizing new pages?" toggle (never raised the daily new-page budget), an obvious plan-settings **gear** by the streak (distinct from reader settings), and dropping the redundant per-front script toggle (use the reader's default script).
+
+Then the **surviving original scope**: settings + **export/import JSON** (round-trip vs legacy exports), i18n **en/ar/bn** with full RTL, and service worker v2 (Workbox) — precache shell, runtime-cache page data/fonts, offline-download-manager UI, install prompt. Large enough that the platform half may split into **Phase 9b**.
+
+**Acceptance:** friendly URLs resolve (word-routes unshadowed); analytics match legacy on migrated data with no fabricated/NaN values; new-memorization toggle reliably schedules pages; then — full offline reading after first visit, legacy export imports without loss, Lighthouse PWA installable, all three languages + RTL correct.
 
 ### Phase 10 — Cutover & launch
 

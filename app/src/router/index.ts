@@ -76,6 +76,36 @@ const routes: RouteRecordRaw[] = [
     name: 'gallery',
     component: () => import('@/features/gallery/GalleryView.vue'),
   },
+
+  // —— Friendly reader URLs (Phase 9.1) ————————————————————————————
+  // Human-typable entry points, all rendered by the reader. Personal prefs
+  // (script + toggles) come from the store, not the URL (see readerRoute.ts).
+  // Regex-disjoint from the static word-routes above (which win by specificity)
+  // and from each other (\d vs [a-z]), so none can shadow another.
+  {
+    // A page in the text reader, user's own script — /page/50.
+    path: '/page/:page(\\d+)',
+    name: 'read-page',
+    component: () => import('@/features/reader/ReaderView.vue'),
+  },
+  {
+    // A surah + ayah — /2/255 scrolls to Ayat al-Kursi.
+    path: '/:surah(\\d{1,3})/:ayah(\\d+)',
+    name: 'read-ayah',
+    component: () => import('@/features/reader/ReaderView.vue'),
+  },
+  {
+    // A surah by number — /1 → Al-Fatihah, /114 → An-Nas.
+    path: '/:surah(\\d{1,3})',
+    name: 'read-surah',
+    component: () => import('@/features/reader/ReaderView.vue'),
+  },
+  {
+    // A surah by name-slug — /al-fatihah, /an-nas (desktop/shareable).
+    path: '/:slug([a-z][a-z0-9-]*)',
+    name: 'read-slug',
+    component: () => import('@/features/reader/ReaderView.vue'),
+  },
 ]
 
 export const router = createRouter({
@@ -84,7 +114,7 @@ export const router = createRouter({
 })
 
 // Gate the reader behind the feature flag; when off, show the disabled placeholder.
-const READER_ROUTES = new Set(['home', 'reader'])
+const READER_ROUTES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
 router.beforeEach((to) => {
   if (READER_ROUTES.has(String(to.name)) && !readerEnabled()) {
     return { name: 'reader-disabled' }

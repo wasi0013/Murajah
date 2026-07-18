@@ -1,0 +1,121 @@
+# Phase 9 — Routing, progress analytics & practice polish · DRAFT
+
+**Parent:** [redesign-2026.md](./redesign-2026.md) §5 (Phase 9, reshaped — see note below) · **Prereqs:** Phase 3 (reader route, `reader` store, `core/navigation/*`), Phase 3b (mushaf route), Phase 4 (memorization grid + `progress` store: `memorized`, `strength`, `reviewData`), Phase 5 (unified `plan` store, `useToday`, `useStreak`, `PlanSetup`), Phase 8 (Contents browser, `NavIndex` navigation helpers) complete. **Goal:** three product-owner-directed improvements — (1) a **human-friendly, desktop-usable URL scheme** (`/1`…`/114` surahs, `/page/N`, `/mushaf/N`); (2) a **bug-free port of the legacy analytics page** (Juz Progress, Page-by-Page, Completion Estimate) into the progress surface; (3) **practice-loop fixes** on Today (obvious settings entry, the broken new-memorization toggle, and dropping the redundant script toggle) — followed by the remaining originally-scoped Phase 9 work (settings + export/import, i18n/RTL, PWA/offline) drafted in the usual granular form.
+
+> Status: **IN PROGRESS** — 9.1 (routing) landed. Product-owner answers baked in: keep `/25` sticky (decision 3), no new settings (decision 5), **9.4–9.6 deferred to Phase 9b**, slug routes shipped now. Written 2026-07-18 from the product-owner directive. Tasks 9.1–9.3 are the concrete directives and are detailed to build-ready depth; 9.4–9.6 carry the surviving Phase 9 scope and are drafted one level lighter (granularised further when reached). **This phase is large** — see "Sizing" below; splitting 9.4–9.6 into a Phase 9b is a live option.
+
+## Roadmap change this phase encodes
+
+`redesign-2026.md` §5 currently lists Phase 9 as "Settings, i18n, export/import & PWA/offline." Per the product-owner directive (2026-07-18), Phase 9 gains three higher-priority tasks **ahead** of that scope:
+
+- **9.1 Routing redesign** — new, was not previously planned.
+- **9.2 Analytics port** — restores popular legacy features (Completion Estimate, Juz/Page progress) that the Phase 4 rebuild left out.
+- **9.3 Today fixes** — corrects three defects introduced in the Phase 5 practice loop.
+- The **original** Phase 9 scope (settings polish + export/import, i18n/RTL, PWA/service-worker/offline) becomes **9.4–9.6**, unchanged in intent.
+
+The master roadmap §5 Phase 9 entry + granular-task-file link are updated to point here. This is the one structural decision; everything else is additive.
+
+## Sizing
+
+Six task groups is a lot for one phase. 9.1–9.3 are cohesive (all user-facing product fixes) and should ship together as the "polish" milestone. 9.4–9.6 are the "platform" milestone (offline/i18n/data-portability) and could split into **Phase 9b** if 9.1–9.3 take the phase's budget. Each task group below is independently shippable and independently tested; none blocks another except where noted (9.2 completion-estimate reads the pace surfaced by 9.3).
+
+---
+
+## Decisions (proposed — confirm before building)
+
+1. **Surah-first friendly URLs, page under `/page/`.** `/1`…`/114` = surah (the natural mental model users share: "read An-Nas"); pages live under `/page/:page` to remove the `/1` surah-vs-page ambiguity (114 surahs vs 604 pages). Mushaf stays `/mushaf/:page`.
+2. **Friendly routes carry only *where*, not *how*.** `/:surah` and `/page/:page` render in the viewer's **own persisted** script (layout) + toggles (tajweed/wbw/tafsir) — matching the existing `readerRoute.ts` philosophy that personal prefs aren't in shareable URLs. The explicit `/read/:layout/:page` form is **kept** as the exact-state canonical/"copy link" URL. Query overrides (`?tajweed=0`) still layer on top for precise links.
+3. **One reader component owns all reader URLs.** `ReaderView` already backs `/` and `/read/:layout/:page`; it also backs `/:surah`, `/:surah/:ayah`, and `/page/:page`. A single extended resolver in `core/navigation/readerRoute.ts` turns whichever params/query are present into a target `{ page, ayah? }` + toggle overrides. No new view, no logic fork.
+4. **Analytics ports into the existing `/progress` surface as tabs**, not a new route — the legacy app had one "Analytics" screen and users associate these charts with progress. `ProgressView` gains a segmented **Overview | Juz | Pages** (Overview = today's stats+grid; Juz = juz-progress + completion estimate; Pages = per-page revision heatmap).
+5. **Completion Estimate uses the plan's new-memorization pace.** Legacy used a standalone `pagesPerDay` setting; the new app's equivalent is `plan.pace.newPagesPerDay` while a new front is active. When there's no active front (hafiz / new-memorization off) or pace is 0, the estimate reads **"—" with a one-line prompt** ("Set a daily new-page goal to see an estimate") rather than showing a fake date. No new setting introduced.
+6. **Today's plan-settings entry becomes an obvious gear**, distinct from the reader's own settings icon, placed on the summary card next to the streak — not only the top-bar slider that reads as "reader settings."
+7. **Memorization uses the reader's default script; the per-front script toggle is removed** from PlanSetup. New-memorization pages are tracked in the canonical 604 scheme regardless; the front's `layout` is taken from the `reader` store's persisted `layout`.
+
+---
+
+## 9.1 — Routing redesign (`router/index.ts` + `core/navigation/readerRoute.ts`)
+> Human-friendly, desktop-typable URLs over the existing reader. Pure mapping stays unit-testable; the router just wires it. SPA fallback already serves `index.html` for any path (`public/_redirects`), so new client routes need no host config.
+
+- [x] **9.1.1** Extend the pure resolver. In `readerRoute.ts` add `surah`/`ayah` to `ReaderRouteState` and a `resolveReaderTarget(params, query, nav) → { page, ayah? }` that maps: `surah` (1–114) → `nav.surahToPage[surah]` (+ `ayah` → `nav.ayahToPage["s:a"]` when present); else `page` param direct; else `/read/:layout/:page`. Layout + toggles come from params/query when explicit, otherwise the caller applies store defaults. Validate surah ∈ 1–114 and page ∈ 1–pageCount; invalid → `null` (caller redirects home).
+  - *Verify:* unit — `resolveReaderTarget({surah:'1'}, {}, nav)` → page 1; `{surah:'114'}` → An-Nas' page; `{surah:'25',ayah:'20'}` resolves to Al-Furqan's page containing 25:20; `{surah:'115'}`/`{surah:'0'}` → null; `/page/5` → page 5; existing `parseReaderRoute`/`readerStateToRoute` behaviour unchanged (regression).
+- [x] **9.1.2** Register the routes, ordering-safe. Add, **after** all static word-routes (`/today`, `/quiz`, `/contents`, `/listen`, `/live`, `/progress`, `/mushaf`, `/gallery`, `/disabled`) so they can't be shadowed: `{ path:'/page/:page(\\d+)', name:'read-page' }`, `{ path:'/:surah(\\d{1,3})', name:'read-surah' }`, `{ path:'/:surah(\\d{1,3})/:ayah(\\d+)', name:'read-ayah' }` — all pointing at `ReaderView`. Keep `/`, `/read/:layout/:page`, `/mushaf/:page?` as-is. The `\d{1,3}` constraint means `/today` etc. never match the surah param.
+  - *Verify:* e2e — `goto('/2')` lands on the reader at Al-Baqarah's first page; `goto('/114')` → An-Nas; `goto('/page/50')` → page 50; `goto('/today')` still renders Today (not swallowed by the surah route); `goto('/999')` redirects home.
+- [x] **9.1.3** `ReaderView` consumes the resolver. On mount + on `route` change, once `NavIndex` is loaded, call `resolveReaderTarget`; apply persisted layout/toggles from the `reader` store unless the URL is the explicit `/read/:layout/:page` form or carries query overrides. Surah/ayah URLs **stay** as typed (nicer to share); the view scrolls to the target page/ayah without rewriting the path. Guard the async nav-not-ready window (don't jump to page 1 then correct).
+  - *Verify:* e2e — `/25` shows Al-Furqan in the user's persisted script (flip script pref, reload `/25`, script persists); `/read/indopak/5` forces Indopak regardless of pref; deep-link `/2/255` scrolls Ayat al-Kursi into view.
+- [x] **9.1.4** Centralise link-building; migrate call sites. Add `readerLink({surah|page, ayah?})` and `mushafLink(page)` helpers (thin wrappers returning router location objects) in `core/navigation/`. Replace the scattered `router.push({ name:'reader', params:{ layout:'qpc', page }})` in `ProgressView`, `TodayView`, `ContentsView`, `SurahList`/`JuzList`, and the Listen cross-link with the helpers. Contents surah rows → `readerLink({surah})` (friendly URL); page rows → `readerLink({page})`.
+  - *Verify:* unit — `readerLink({surah:1})` → `/1`; `readerLink({page:5})` → `/page/5`. e2e — Contents → tap a surah → URL is `/<n>`; existing Contents/Today/Progress navigation still reaches the reader (no regression in phase-8 e2e).
+- [x] **9.1.5** *(stretch)* Named-slug routes for desktop/SEO: `/al-fatihah`, `/an-nas` via a transliteration→surah slug map (derived from `SURAH_NAMES`, no new data). Redirect slug → canonical surah URL, or render directly. **Deferred unless cheap** — numeric routes satisfy the directive; note as a follow-up.
+
+## 9.2 — Progress analytics port (`features/progress/`)
+> Restore the popular legacy Analytics: **Juz Progress** grid, **Completion Estimate**, **Page-by-Page** revision heatmap. Pure, data-driven components over `progress.memorized` + `progress.strength` + nav `juzToPage`. Legacy algorithms live in `source/index.html` (`juzMemorizedCount`, `getJuzGradientStyle`, `daysRemaining`/`estimateCompletionDate`, `pageDotsVisualization`/`getPageDotColor`) — port the math, restyle to design tokens.
+
+- [ ] **9.2.1** Tab shell. Add a `SegmentedControl` **Overview | Juz | Pages** to `ProgressView` (Overview = the current stats + bulk-mark + `MemorizedGrid` + weakest, unchanged). Juz-range math: reuse `juzPageRanges(juzToPage, 604)` from `planBuilder.ts` (already derived, not the legacy off-by-one tables). Requires the QPC `NavIndex` — hydrate it in `ProgressView.onMounted` (mirror ContentsView).
+  - *Verify:* e2e — `/progress` shows three tabs; Overview is the default and matches today's screen; switching tabs reveals each panel.
+- [ ] **9.2.2** `JuzProgressGrid.vue` — 30 cells, one per juz. `juzMemorized(j)/juzTotal(j)` from memorized ∩ juz range: full ⇒ success fill; partial ⇒ split gradient (`--color-success` up to `%`, `--color-warn` after — token version of the legacy green/yellow split); none ⇒ muted. Tap a cell → `readerLink` to that juz's first page. Legend: Completed · Partial · Not started. Contrast-checked in all three themes (the Phase 8 Madani-badge lesson — verify gradient text/labels clear AA).
+  - *Verify:* unit — `juzMemorized` counts only in-range memorized pages; a juz with all pages → 'complete', some → 'partial' with correct %, none → 'empty'. e2e — themed a11y scan (light/dark/sepia), no serious/critical.
+- [ ] **9.2.3** Completion Estimate card (Juz tab). `remaining = 604 - memorized.size`; `pace = plan.newFront ? plan.pace.newPagesPerDay : 0`; `daysRemaining = pace > 0 ? ceil(remaining / pace) : null`; `completionDate = daysRemaining ? addDays(today, daysRemaining) : null`. Render date + days-remaining + the sentence ("At N pages/day you'll finish in ~D days"). When `pace===0` or `remaining===0`, show the "set a daily new-page goal" prompt / a "Complete 🎉" state instead of a fabricated date (decision 5). Put the pure math in `core/memorization/completion.ts` with tests.
+  - *Verify:* unit — `remaining=100, pace=2` → 50 days + correct date; `pace=0` → null (prompt shown); `remaining=0` → complete state. e2e — with an active front + memorized pages, the card shows a real date and day count.
+- [ ] **9.2.4** `PageDotsGrid.vue` (Pages tab) — 30 juz boxes, each a grid of page dots colored by **revision strength** (`progress.strength.get(page)`, the ported `perfectRevisions`): 0 ⇒ muted; 1→40+ ⇒ light→dark success ramp (token-based `color-mix` steps replacing the legacy hardcoded rgb interpolation). Tap a dot → `readerLink({page})`. Title/aria per dot ("Page N — K revisions"). 604 dots is fine as plain DOM (measure; the memorized grid already renders 604) — no virtualization unless it janks.
+  - *Verify:* unit — dot color bucket for strength 0 / 1 / 20 / 40 / 100 maps to the expected ramp step; box P groups exactly its juz's pages. e2e — Pages tab renders 30 boxes; tapping a dot opens that page in the reader; themed a11y scan clean.
+- [ ] **9.2.5** Guard the "no data" states — a user with 0 memorized pages sees encouraging empty states on all three tabs, not blank grids or `NaN%`/`Infinity` days.
+  - *Verify:* unit — completion math with `memorized.size===0` doesn't divide-by-zero; e2e — fresh profile shows empty-state copy.
+
+## 9.3 — Today / practice-loop fixes (`features/today/`, `stores/plan`, `core/memorization`)
+> Three defects in the Phase 5 loop. Fix the visible one (new-memorization toggle) with a test that would have caught it; make plan settings discoverable; drop the redundant script toggle.
+
+- [ ] **9.3.1** **Bug: enabling "Memorizing new pages?" produces no new-memorization tasks.** Root cause (confirmed by reading the code): `PlanSetup`'s `addNew` setter sets `draft.newFront` but never raises `pace.newPagesPerDay`; for any plan where the smart builder set `newPagesPerDay: 0` (hafiz, or backlog-boosted `mixed` — see `planBuilder.ts` L192-207), `generateDailyTasks` computes `newBudget = max(0, 0 - done) = 0` (`dailyTasks.ts` L145) and emits **no** new pages even though a front exists. Fix: when `addNew` toggles **on** and `pace.newPagesPerDay === 0`, default it to `1` (and surface the "New pages" number input, already `v-if="draft.newFront"`, so the user can adjust). Leave the value alone when toggling off.
+  - *Verify:* unit (new) — `generateDailyTasks` with a front + `newPagesPerDay:0` yields `[]` (documents the trap); with the PlanSetup fix path (`newFront` set, `newPagesPerDay:1`) yields the front's page. Component/e2e — open plan setup on a hafiz-shaped profile, toggle new memorization on, save → Today shows a "New memorization" section with a page.
+  - *Secondary causes to note in the panel (not bugs — keep the existing notices):* an off day and a `backlogSize > 10` legitimately pause new memorization (`pausedNewMemorization`); Today already renders explanatory notices for both. Confirm the notice shows when the toggle is on but paused, so "nothing appeared" is never silent.
+- [ ] **9.3.2** **Obvious plan-settings gear.** Add a distinct gear/`Settings` icon (not the top-bar `SlidersHorizontal`, which reads as reader settings) to the summary card, to the right of the streak label ("No streak yet" / "N days"), opening the same `PlanSetup` sheet (`setupOpen = true`). Keep the top-bar entry too, or replace it — decide during build; the gear-by-streak is the directive. Accessible label "Edit your plan"; 44px hit target; doesn't disturb the streak button's own tap target (they're separate controls).
+  - *Verify:* e2e — a gear next to the streak opens the plan sheet; screen-reader label present; both the gear and the streak-history button remain independently clickable.
+- [ ] **9.3.3** **Drop the per-front script toggle; use the reader default.** Remove the `Script` `SegmentedControl` + `frontLayout` from `PlanSetup` (decision 7). `addNew`/`suggestedFront` set the front's `layout` from the `reader` store's persisted `layout` instead of hardcoded `'qpc'`. Memorization tracking stays in the canonical 604 scheme (unchanged) — only the front's display layout follows the reader.
+  - *Verify:* unit — enabling `addNew` while the reader pref is `indopak` yields `newFront.layout === 'indopak'`; the "Script" control is gone from the sheet. e2e — plan setup no longer shows a Uthmani/Indopak choice under new memorization.
+- [ ] **9.3.4** Regression sweep — the Phase 5 plan/today/streak unit + e2e suites stay green; the new-memorization fix adds the missing coverage that let the bug ship.
+
+## 9.4 — Settings & data portability (export / import) *(usual planning; surviving Phase 9 scope)*
+> A real settings surface + lossless JSON export/import verified against **legacy** exports (data-safety is the §6 cross-cutting rule — no cutover without round-trip proof).
+
+- [ ] **9.4.1** Settings route/sheet: consolidate the scattered prefs (theme light/dark/sepia, reading script default, text size, tajweed/wbw/tafsir defaults, reciter defaults, reduced-motion) into one discoverable surface. Read/write the existing stores; no new persistence model.
+- [ ] **9.4.2** `core/storage/exportImport.ts` — serialize all user data (memorized, strength/perfectRevisions, mistakes, reviewData, plan, dayLog/streak, quiz, notes-if-any, settings) to a versioned JSON envelope; `import` validates + merges/replaces.
+  - *Verify:* unit — round-trip (export→import) is identity; a **captured legacy export fixture** imports without loss (map legacy keys via `legacy-schema.md`); malformed/oversized input rejected with a clear error, never a partial write.
+- [ ] **9.4.3** Export/import UI in settings (download file / pick file), with a confirm before destructive replace and a success/failure toast.
+  - *Verify:* e2e — export downloads a file; importing it back restores state; importing junk shows an error and leaves data intact.
+
+## 9.5 — i18n & RTL *(usual planning; surviving Phase 9 scope)*
+> English / Arabic / Bengali with correct RTL — the legacy app shipped all three and the subcontinent user base needs Bengali first-class (§4).
+
+- [ ] **9.5.1** i18n runtime (lightweight; reuse legacy `en.json`/`ar.json`/`bn.json` message catalogs from `source/resources/data/i18n/`, ported + trimmed to the new UI's strings). Language selection persisted; lazy-load non-default catalogs.
+- [ ] **9.5.2** RTL: `dir` driven by locale; audit every feature surface (reader chrome, Today, Progress tabs, Contents, Listen, settings) for logical-property correctness (the codebase already uses `margin-inline`/`padding-inline` — verify no physical-direction leaks).
+  - *Verify:* e2e — switch to Arabic → `dir="rtl"`, mirrored layout, no clipped/overlapping chrome; themed a11y scan per locale.
+- [ ] **9.5.3** Externalise the remaining hardcoded UI strings introduced in Phases 3–9 into the catalogs.
+
+## 9.6 — PWA / service worker / offline *(usual planning; surviving Phase 9 scope)*
+> Offline reading after first visit; installable. Held from earlier phases by design (§8 note). Uses `vite-plugin-pwa` (Workbox) already in the stack.
+
+- [ ] **9.6.1** Service worker v2: precache the app shell; runtime-cache page data chunks + per-page fonts (stale-while-revalidate); versioned, with background update + an "update available" prompt.
+- [ ] **9.6.2** Offline-download-manager UI: opt-in, size-shown, resumable pack of optimized page data/fonts (mushaf images opt-in separately, size shown — they're excluded from the default pack per §4.1). Core download manager exists from Phase 1; this is its surface.
+- [ ] **9.6.3** Install prompt + PWA manifest polish (icons already in `public/`).
+  - *Verify:* Lighthouse PWA = installable; after one online visit, full reading works offline (throttle to offline in e2e/Lighthouse); cached-asset budgets respected.
+
+---
+
+## Exit checklist (Phase 9 — polish milestone 9.1–9.3)
+- [ ] `/1`…`/114`, `/page/:page`, `/:surah/:ayah`, `/mushaf/:page` all resolve; `/read/:layout/:page` kept as the exact-state link; word-routes unshadowed; internal navigation goes through `readerLink`/`mushafLink`.
+- [ ] Progress shows Overview | Juz | Pages; Juz grid + Completion Estimate + Page heatmap match legacy behaviour on migrated data; no `NaN`/`Infinity`/fabricated dates; themed a11y clean.
+- [ ] Enabling new memorization reliably produces new-memorization tasks (with the regression test that was missing); plan settings reachable via an obvious gear by the streak; no script toggle in plan setup (reader default used).
+- [ ] `vue-tsc` clean; unit + e2e green; size budgets held (progress/settings are lazy chunks; reader initial bundle unchanged); no Phase 3/4/5/7/8 regression.
+
+## Exit checklist (Phase 9 — platform milestone 9.4–9.6, or Phase 9b if split)
+- [ ] Lossless export/import incl. a legacy-export fixture round-trip; settings consolidated.
+- [ ] en/ar/bn with correct RTL across all surfaces; themed a11y per locale.
+- [ ] Installable PWA; full offline reading after first visit; caching budgets respected.
+
+## Open questions for the product owner
+1. **Surah URL canonical form** — keep `/25` in the address bar (shareable "read Al-Furqan"), or normalize to `/page/{firstPage}`? Draft assumes **keep `/25`** (decision 3).
+>> yes keep 
+2. **Completion Estimate pace source** — reuse `plan.pace.newPagesPerDay` (decision 5), or add a dedicated "pages/day goal" setting independent of the plan? Draft avoids a new setting.
+>> avoid new settings
+1. **Split point** — ship 9.1–9.3 as Phase 9 and defer 9.4–9.6 to **Phase 9b**, or keep all six in one phase?
+>> defer
+1. **Slug routes (9.1.5)** — wanted now, or a later polish?
+>> Now

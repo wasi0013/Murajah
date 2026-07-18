@@ -6,6 +6,7 @@ import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { TOTAL_PAGES } from '@/stores/progress'
+import { readerLink } from '@/core/navigation/readerLinks'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -43,7 +44,7 @@ function openPage(page: number) {
   selectedPage.value = page
 }
 function openInReader(page: number) {
-  void router.push({ name: 'reader', params: { layout: 'qpc', page: String(page) } })
+  void router.push(readerLink({ page }))
 }
 
 // —— Bulk range mark ————————————————————————————————

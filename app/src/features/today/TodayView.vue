@@ -15,6 +15,7 @@ import { useDayLogPersistence } from '@/composables/useDayLogPersistence'
 import { useQuizPersistence } from '@/composables/useQuizPersistence'
 import { useMilestones } from '@/composables/useMilestones'
 import { juzForPage } from '@/core/navigation/juz'
+import { readerLink } from '@/core/navigation/readerLinks'
 import { toast } from '@/composables/useToast'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -79,7 +80,7 @@ function metaFor(page: number): string | undefined {
 }
 
 function openInReader(page: number) {
-  void router.push({ name: 'reader', params: { layout: 'qpc', page: String(page) } })
+  void router.push(readerLink({ page }))
 }
 
 const streakLabel = computed(() => {

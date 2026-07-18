@@ -43,5 +43,7 @@ export function useReaderLocation(
     return surah != null ? surahNames.value[String(surah)] : undefined
   })
 
-  return { juz, surahName }
+  // `nav` is exposed so the reader can resolve friendly URLs (/:surah, /:slug) to a
+  // page for the active layout without loading the index a second time (9.1).
+  return { juz, surahName, nav }
 }

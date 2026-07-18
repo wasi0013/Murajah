@@ -29,6 +29,27 @@ function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+/** URL slug for a surah name: "Al-Ma'idah" → "al-maidah", "Ali 'Imran" → "ali-imran". */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** The canonical URL slug for surah `n` (1–114), e.g. `surahSlug(1)` → "al-fatihah". */
+export function surahSlug(n: number): string | undefined {
+  return n >= 1 && n <= SURAH_NAMES.length ? slugify(SURAH_NAMES[n - 1]) : undefined
+}
+
+const slugToSurah = new Map(SURAH_NAMES.map((name, i) => [slugify(name), i + 1]))
+
+/** Resolve a URL slug back to a surah number (exact slug match), or `undefined`. */
+export function surahForSlug(slug: string): number | undefined {
+  return slugToSurah.get(slug.toLowerCase())
+}
+
 /**
  * Find a surah number (1–114) whose name matches the query. An exact match (on
  * the name, with or without its `Al-/An-/…` article) wins over a prefix match,

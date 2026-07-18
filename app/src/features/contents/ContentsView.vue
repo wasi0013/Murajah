@@ -8,6 +8,7 @@ import SurahList from './SurahList.vue'
 import JuzList from './JuzList.vue'
 import PageList from './PageList.vue'
 import { juzRows, surahRows, type JuzRow, type SurahRow } from '@/core/navigation/contents'
+import { readerLink } from '@/core/navigation/readerLinks'
 import { getDataClient } from '@/core/data'
 import type { NavIndex } from '@/core/data/types'
 import { useReaderStore } from '@/stores/reader'
@@ -50,11 +51,11 @@ onMounted(async () => {
 })
 
 function toPage(page: number) {
-  void router.push({ name: 'reader', params: { layout, page: String(page) } })
+  void router.push(readerLink({ page }))
 }
+// Surahs get their friendly `/25` URL; the reader resolves it for the active layout.
 function onSurah(surah: number) {
-  const page = nav?.surahToPage[String(surah)]
-  if (page) toPage(page)
+  void router.push(readerLink({ surah }))
 }
 function onJuz(juz: number) {
   const page = nav?.juzToPage[String(juz)]

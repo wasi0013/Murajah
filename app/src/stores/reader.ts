@@ -52,6 +52,10 @@ export const useReaderStore = defineStore('reader', () => {
   const textSizeStep = ref(DEFAULT_SIZE_STEP)
   const mode = ref<ReaderMode>('read')
 
+  // Transient (never persisted/serialized): the `"s:a"` a deep-link asked to scroll
+  // to (e.g. /2/255). Cleared once the user pages away so it can't re-fire.
+  const focusVerse = ref<string | null>(null)
+
   const pageCount = computed(() => pageCounts.value[layout.value])
   const readingWidth = computed(() => READING_WIDTHS[textSizeStep.value])
   /** Indopak has no tajweed font — the surface only honours tajweed on QPC. */
@@ -67,10 +71,17 @@ export const useReaderStore = defineStore('reader', () => {
     page.value = clamp(Math.trunc(n) || 1, 1, pageCount.value)
   }
   function nextPage() {
+    focusVerse.value = null
     goToPage(page.value + 1)
   }
   function prevPage() {
+    focusVerse.value = null
     goToPage(page.value - 1)
+  }
+
+  /** Ask the surface to scroll a `"s:a"` into view (a deep-linked ayah). */
+  function setFocusVerse(key: string | null) {
+    focusVerse.value = key
   }
 
   /**
@@ -152,6 +163,7 @@ export const useReaderStore = defineStore('reader', () => {
     tafsirLang,
     textSizeStep,
     mode,
+    focusVerse,
     // derived
     pageCount,
     readingWidth,
@@ -170,6 +182,7 @@ export const useReaderStore = defineStore('reader', () => {
     setTafsirLang,
     setMode,
     toggleMode,
+    setFocusVerse,
     snapshot,
     restore,
   }

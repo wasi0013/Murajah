@@ -129,10 +129,10 @@ test('a weakest-page chip opens that page and deep-links into the reader', async
   await expect(chip).toBeVisible()
   await chip.click()
 
-  // Opens the per-page sheet, whose "Open in reader" deep-links /read/qpc/2.
+  // Opens the per-page sheet, whose "Open in reader" deep-links /page/2.
   await expect(page.getByRole('dialog', { name: 'Page 2' })).toBeVisible()
   await page.getByRole('button', { name: 'Open in reader' }).click()
-  await expect(page).toHaveURL(/\/read\/qpc\/2$/)
+  await expect(page).toHaveURL(/\/page\/2$/)
 })
 
 // The progress chrome must be axe-clean in all three themes. Colour is never the

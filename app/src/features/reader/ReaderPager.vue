@@ -43,11 +43,14 @@ const mistakes = useMistakes(reader)
 onMounted(() => void mistakes.hydrate())
 onBeforeUnmount(() => mistakes.dispose())
 
-// The ayah currently being recited (verse grain) — highlighted on the surface.
+// The verse to highlight/scroll: the recited ayah (verse grain) when audio is
+// playing, otherwise a deep-linked ayah (/2/255 → reader.focusVerse, Phase 9.1).
 const audio = useAudioStore()
 const activeVerseKey = computed(() =>
-  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : null,
+  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : reader.focusVerse,
 )
+// A deep-link should scroll into view even if the user turned audio auto-scroll off.
+const surfaceAutoScroll = computed(() => (audio.activeVerse ? audio.autoScroll : true))
 
 // Paging or switching layout dismisses an open analysis.
 watch(
@@ -209,7 +212,7 @@ function snapBack() {
             :word-states="offset === 0 ? wordStates : undefined"
             :mistake-ids="mistakes.store.mistakeIds"
             :active-verse="offset === 0 ? activeVerseKey : null"
-            :auto-scroll="audio.autoScroll"
+            :auto-scroll="surfaceAutoScroll"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />

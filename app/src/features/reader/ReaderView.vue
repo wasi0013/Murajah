@@ -18,10 +18,13 @@ import {
   Search,
   SlidersHorizontal,
 } from 'lucide-vue-next'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useAudioStore } from '@/stores/audio'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
-import { useReaderRouteSync } from '@/composables/useReaderRouteSync'
+import { resolveReaderTarget } from '@/core/navigation/readerRoute'
+import { mushafLink } from '@/core/navigation/readerLinks'
+import { useReaderRouteSync, type FriendlyResolution } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
@@ -53,10 +56,32 @@ import CommandPalette from '@/components/CommandPalette.vue'
 const reader = useReaderStore()
 const router = useRouter()
 
-const sync = useReaderRouteSync(reader, router)
 const persistence = useReaderPersistence(reader)
 const progressPersistence = useProgressPersistence()
-const { juz, surahName } = useReaderLocation(reader)
+// `nav` (per active layout) resolves friendly URLs (/:surah, /page/:page, /:slug).
+const { juz, surahName, nav } = useReaderLocation(reader)
+
+const FRIENDLY_ROUTES = new Set(['read-surah', 'read-ayah', 'read-page', 'read-slug'])
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
+
+/** Resolve the current URL as a friendly reader route (used both directions by the sync). */
+function resolveFriendly(r: RouteLocationNormalizedLoaded): FriendlyResolution {
+  if (!FRIENDLY_ROUTES.has(String(r.name))) return undefined
+  if (!nav.value) return 'pending'
+  return resolveReaderTarget(
+    {
+      surah: first(r.params.surah),
+      ayah: first(r.params.ayah),
+      page: first(r.params.page),
+      slug: first(r.params.slug),
+    },
+    nav.value,
+  )
+}
+
+const sync = useReaderRouteSync(reader, router, { resolveFriendly })
+// Re-apply once nav finishes loading, so a friendly deep-link that was 'pending' resolves.
+watch(nav, () => sync.applyRoute())
 const { switchTo } = useLayoutSwitch(reader)
 const study = useVerseStudy(reader)
 const { jumpTo } = useQuickJump(reader)
@@ -70,9 +95,10 @@ useReadingReward(madaniPage, getPageHasanah)
 const audio = useAudioStore()
 const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
 const audioPages = computed(() => [reader.page])
-// The recited ayah (verse grain) — highlighted + scrolled to in the tafsir surface.
+// The recited ayah (verse grain), or a deep-linked ayah (/2/255) — highlighted +
+// scrolled to in the tafsir surface.
 const activeVerseKey = computed(() =>
-  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : null,
+  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : reader.focusVerse,
 )
 
 // Record-your-recitation (7.6) — lazy panel, opened from the mic control.
@@ -142,10 +168,7 @@ const canNext = computed(() => reader.page < reader.pageCount)
  * mushaf restores its own last page instead of landing on a mismatched one.
  */
 function openMushaf() {
-  void router.push({
-    name: 'mushaf',
-    params: reader.layout === 'qpc' ? { page: String(reader.page) } : {},
-  })
+  void router.push(reader.layout === 'qpc' ? mushafLink(reader.page) : { name: 'mushaf' })
 }
 </script>
 

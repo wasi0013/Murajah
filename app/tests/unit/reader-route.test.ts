@@ -98,6 +98,29 @@ describe('useReaderRouteSync', () => {
     sync.dispose()
   })
 
+  it('a friendly URL resolves to a page and stays sticky in the bar', async () => {
+    // /read/:surah friendly route — the resolver maps surah 25 → page 359.
+    router.addRoute({ path: '/:surah(\\d{1,3})', name: 'read-surah', component: { template: '<div/>' } })
+    await router.push('/25')
+    const reader = useReaderStore()
+    reader.configure({ qpc: 604 })
+    const resolveFriendly = (r: (typeof router)['currentRoute']['value']) =>
+      r.name === 'read-surah' ? { page: 359 } : undefined
+    const sync = useReaderRouteSync(reader, router, { resolveFriendly })
+
+    sync.applyRoute()
+    await flush()
+    expect(reader.page).toBe(359)
+    // The friendly URL is kept — not rewritten to /read/qpc/359.
+    expect(router.currentRoute.value.fullPath).toBe('/25')
+
+    // Paging off that page normalises to the canonical form.
+    reader.nextPage()
+    await flush()
+    expect(router.currentRoute.value.fullPath).toBe('/read/qpc/360')
+    sync.dispose()
+  })
+
   it('browser back/forward moves the reader (URL → store)', async () => {
     const reader = useReaderStore()
     const sync = useReaderRouteSync(reader, router)

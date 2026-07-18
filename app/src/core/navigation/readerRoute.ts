@@ -1,4 +1,6 @@
-import type { Layout } from '@/core/data/types'
+import type { Layout, NavIndex } from '@/core/data/types'
+import { resolveJump } from './resolveJump'
+import { surahForSlug } from './surahNames'
 
 /**
  * Pure mapping between the reader's URL and its view state — no router here, so
@@ -54,6 +56,61 @@ export function parseReaderRoute(params: RouteParams, query: RouteQuery = {}): R
   if (f !== undefined) state.tafsir = f
 
   return state
+}
+
+/**
+ * The location a *friendly* reader URL points to (`/:surah`, `/:surah/:ayah`,
+ * `/page/:page`, or a name-slug), resolved to a page for the given layout's nav
+ * index. `ayah` is the `"s:a"` key to scroll to when the URL named a verse.
+ */
+export interface FriendlyTarget {
+  page: number
+  ayah?: string
+}
+
+/** Raw single-segment params a friendly reader route can carry (any subset). */
+export interface FriendlyRouteInput {
+  surah?: string | number
+  ayah?: string | number
+  page?: string | number
+  slug?: string
+}
+
+const MAX_SURAH = 114
+
+function toInt(v: string | number | undefined): number | undefined {
+  if (v == null || v === '') return undefined
+  const n = Math.trunc(Number(v))
+  return Number.isFinite(n) ? n : undefined
+}
+
+/**
+ * Resolve a friendly reader URL to a page (+ optional verse to focus), using the
+ * layout's nav index. Returns `null` when the URL names something that doesn't
+ * exist (surah > 114, unknown slug, unresolved ayah) so the caller can redirect
+ * home. Pure — reuses the same {@link resolveJump} the quick-jump palette uses.
+ */
+export function resolveReaderTarget(
+  input: FriendlyRouteInput,
+  nav: NavIndex,
+): FriendlyTarget | null {
+  const surah = input.slug != null ? surahForSlug(input.slug) : toInt(input.surah)
+  const ayah = toInt(input.ayah)
+  const page = toInt(input.page)
+
+  if (surah != null) {
+    if (surah < 1 || surah > MAX_SURAH) return null
+    if (ayah != null) {
+      const p = resolveJump(nav, { type: 'ayah', surah, ayah })
+      return p != null ? { page: p, ayah: `${surah}:${ayah}` } : null
+    }
+    const p = resolveJump(nav, { type: 'surah', surah })
+    return p != null ? { page: p } : null
+  }
+  if (page != null) {
+    return page >= 1 ? { page } : null
+  }
+  return null
 }
 
 /** Build the `{ params, query }` for a reader state (omitting default toggles). */
