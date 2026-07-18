@@ -1,6 +1,13 @@
 import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+/** Let the segmented-control transition finish so axe samples resting colours. */
+async function settle(page: Page) {
+  await page.evaluate(async () => {
+    await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)))
+  })
+}
+
 // Memorization progress view (Phase 4). Reached from the reader top bar; renders
 // the canonical 604-page grid grouped into 30 juz, with a per-page sheet to mark
 // memorized and record clean revisions (which award hasanah). Data persists to
@@ -135,6 +142,27 @@ test('a weakest-page chip opens that page and deep-links into the reader', async
   await expect(page).toHaveURL(/\/page\/2$/)
 })
 
+// —— Analytics tabs (Phase 9.2) ————————————————————————————————————
+test('the Juz and Pages tabs render the ported analytics', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Juz Progress: 30 cells + a completion estimate. With no plan there's no pace,
+  // so it prompts for a goal rather than inventing a date.
+  await page.getByRole('radio', { name: 'Juz', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Juz 1:/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Juz 30:/ })).toBeVisible()
+  await expect(page.getByText(/Set a daily new-page goal/)).toBeVisible()
+
+  // Page-by-page heatmap: 604 dots grouped into 30 juz boxes; a dot deep-links.
+  await page.getByRole('radio', { name: 'Pages', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Page 1 — not started' })).toBeVisible()
+  await page.getByRole('button', { name: 'Page 42 — not started' }).click()
+  await expect(page).toHaveURL(/\/page\/42$/)
+})
+
 // The progress chrome must be axe-clean in all three themes. Colour is never the
 // only cue (page numbers + mistake dots + labels), which axe can't verify but the
 // design guarantees.
@@ -148,12 +176,18 @@ for (const theme of themes) {
       timeout: 10_000,
     })
 
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
-    const serious = results.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical',
-    )
-    expect(serious, JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length })))).toEqual(
-      [],
-    )
+    // Scan all three lenses — the Juz gradient + page-dot ramp are the contrast risk.
+    for (const lens of ['Juz', 'Pages', 'Overview'] as const) {
+      await page.getByRole('radio', { name: lens, exact: true }).click()
+      await settle(page)
+      const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+      const serious = results.violations.filter(
+        (v) => v.impact === 'serious' || v.impact === 'critical',
+      )
+      expect(
+        serious,
+        `${theme}/${lens}: ${JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length })))}`,
+      ).toEqual([])
+    }
   })
 }
