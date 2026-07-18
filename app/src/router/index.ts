@@ -50,6 +50,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/progress/ProgressView.vue'),
   },
   {
+    // Live recitation (Makkah / Madinah YouTube embeds). A full view reached from
+    // the "More" tab. Code-split → never in the reader bundle.
+    path: '/live',
+    name: 'live',
+    component: () => import('@/features/live/LiveView.vue'),
+  },
+  {
     // Design gallery (dev/design tool). Code-split → never in the reader bundle.
     path: '/gallery',
     name: 'gallery',

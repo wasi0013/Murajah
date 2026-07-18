@@ -14,6 +14,7 @@ import {
   Menu,
   Mic,
   Palette,
+  Radio,
   Search,
   SlidersHorizontal,
 } from 'lucide-vue-next'
@@ -70,14 +71,17 @@ useReadingReward(madaniPage, getPageHasanah)
 const audio = useAudioStore()
 const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
 const audioPages = computed(() => [reader.page])
+// The recited ayah (verse grain) — highlighted + scrolled to in the tafsir surface.
+const activeVerseKey = computed(() =>
+  audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : null,
+)
 
 // Record-your-recitation (7.6) — lazy panel, opened from the mic control.
 const recordOpen = ref(false)
 const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
 
-// Live recitation (7.7) — lazy YouTube-embed overlay, opened from settings.
-const liveOpen = ref(false)
-const LiveStreamPlayer = defineAsyncComponent(() => import('@/features/audio/LiveStreamPlayer.vue'))
+// The "More" tab opens a small menu sheet (live recitation, and room to grow).
+const moreOpen = ref(false)
 
 const layoutOptions = [
   { value: 'qpc', label: 'Uthmani' },
@@ -114,6 +118,7 @@ watch(activeTab, (v) => {
   if (v === 'mushaf') openMushaf()
   else if (v === 'today') void router.push({ name: 'today' })
   else if (v === 'quiz') void router.push({ name: 'quiz' })
+  else if (v === 'more') moreOpen.value = true
   else toast('Coming in a later phase', { variant: 'info' })
   activeTab.value = 'home'
 })
@@ -210,14 +215,19 @@ function openMushaf() {
       </button>
     </header>
 
-    <ReaderPager class="reader-surface" />
+    <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
+         it off brings the normal layout (and its options) back. -->
+    <ReaderPager v-if="!reader.tafsir" class="reader-surface" />
 
     <TafsirPanel
-      v-if="reader.tafsir"
+      v-else
+      class="reader-surface"
       :entries="study.entries.value"
       :font-family="study.fontFamily.value"
       :tafsir="study.tafsir.value"
       :loading="study.loading.value"
+      :active-verse="activeVerseKey"
+      :auto-scroll="audio.autoScroll"
       @expand="study.expandTafsir($event)"
     />
 
@@ -229,18 +239,26 @@ function openMushaf() {
 
     <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="reader.page" />
 
-    <LiveStreamPlayer v-if="liveOpen" v-model:open="liveOpen" />
+    <BottomSheet v-model:open="moreOpen" label="More">
+      <div class="more-menu">
+        <h2 class="settings-title">More</h2>
+        <button
+          class="more-item"
+          type="button"
+          @click="moreOpen = false; router.push({ name: 'live' })"
+        >
+          <Icon :icon="Radio" :size="18" />
+          <span class="more-label">
+            <span class="more-name">Live recitation</span>
+            <span class="more-sub">Makkah &amp; Madinah live streams</span>
+          </span>
+        </button>
+      </div>
+    </BottomSheet>
 
     <BottomSheet v-model:open="sheetOpen" label="Reader settings">
       <div class="settings">
         <h2 class="settings-title">Reader settings</h2>
-
-        <div class="row">
-          <span class="row-label">Live recitation</span>
-          <button class="live-btn" type="button" @click="sheetOpen = false; liveOpen = true">
-            Listen live
-          </button>
-        </div>
 
         <div class="row">
           <span class="row-label">Reading script</span>
@@ -252,7 +270,7 @@ function openMushaf() {
           />
         </div>
 
-        <div class="row">
+        <div v-if="!reader.tafsir" class="row">
           <label class="row-label" for="size-slider">Page width</label>
           <Slider
             id="size-slider"
@@ -265,7 +283,7 @@ function openMushaf() {
           />
         </div>
 
-        <div v-if="reader.layout === 'qpc'" class="row">
+        <div v-if="!reader.tafsir && reader.layout === 'qpc'" class="row">
           <span class="row-label">Tajweed colours</span>
           <div class="row-end">
             <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" label="Tajweed legend">
@@ -284,7 +302,7 @@ function openMushaf() {
           </div>
         </div>
 
-        <div class="row">
+        <div v-if="!reader.tafsir" class="row">
           <span class="row-label">Word-by-word</span>
           <div class="row-end">
             <SegmentedControl
@@ -311,7 +329,7 @@ function openMushaf() {
           />
         </div>
 
-        <div class="row">
+        <div v-if="!reader.tafsir" class="row">
           <span class="row-label">Tap mode</span>
           <SegmentedControl
             :model-value="reader.mode"
@@ -430,19 +448,45 @@ function openMushaf() {
   font-size: var(--text-sm);
   color: var(--color-text);
 }
-.live-btn {
-  display: inline-flex;
+.more-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+.more-item {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 2.25rem;
-  padding: 0 0.9rem;
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  color: var(--color-accent);
-  font-size: var(--text-sm);
-  font-weight: 700;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
   cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.more-item:hover {
+  background: var(--color-elevated);
+  border-color: var(--color-accent);
+}
+.more-item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.more-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.more-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.more-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 .row-end {
   display: flex;

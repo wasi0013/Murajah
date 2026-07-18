@@ -438,6 +438,7 @@ export interface StoredAudioPrefs {
   verseReciterId?: string
   pageReciterId?: string
   speed?: number
+  autoScroll?: boolean
 }
 
 /** Load persisted audio prefs (empty object if none / on error). */
@@ -461,6 +462,7 @@ export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
       verseReciterId: prefs.verseReciterId,
       pageReciterId: prefs.pageReciterId,
       speed: prefs.speed,
+      autoScroll: prefs.autoScroll,
     }
     tx.objectStore(STORE).put(plain, AUDIO_KEY)
     await txDone(tx)

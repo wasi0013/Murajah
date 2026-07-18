@@ -135,6 +135,18 @@ Audited in `QuranAudioPlayerComponent.js` (1842), `FloatingAudioPlayerComponent.
 - **Blob byte-persistence** is asserted via metadata + type in unit tests; fake-indexeddb + happy-dom serialise a Blob to a plain object (dropping bytes), so byte-level round-trip is a real-browser behaviour, not unit-forced.
 - **Real bug caught by e2e:** the mini-player docked at `z-index: 40`, below the sticky bottom tab bar (`--z-sticky: 100`), so the tab bar intercepted its controls on the reader — it would have been unusable. Fixed to `--z-dropdown` (above the tab bar, below sheets).
 
+### Post-review UX pass (as built)
+
+Seven small changes after first use:
+
+1. **Tafsir Arabic** is right-aligned (was centred) — reads as scripture, not a caption.
+2. **Player follows the page.** `AudioHost` watches the visible page(s); while playing, turning the page stops the old page and starts the new one (verse *and* page grain). Guarded on `isPlaying`, so merely opening/pausing the player never yanks the page along.
+3. **Auto-scroll toggle** in the player's advanced tray (`store.autoScroll`, persisted). Gates the recited-ayah scroll in both the mushaf reader and the tafsir surface.
+4. **Tafsir replaces the mushaf** (was shown beneath it). When Tafsir & translations is on, the 15-line pager is hidden and the study surface is the reading view; the normal-layout-only settings (page width, tajweed, word-by-word, tap mode) hide with it and return when it's off.
+5. **Tafsir auto-scroll + highlight.** The study surface now highlights the recited ayah and scrolls it into view (offscreen-only, reduced-motion aware), gated by the auto-scroll toggle — mirroring the mushaf reader.
+6. **Subtler playing highlight.** Softened from an 18% accent wash + 2 px solid bar to a ~9% wash + hairline (45% accent) rule; the tafsir card uses a 7% wash + start-edge accent bar. Cue still isn't colour-only.
+7. **Live recitation is a full route** (`/live`, like the mushaf), reached from the **More** tab's menu rather than buried in the settings drawer. `LiveStreamPlayer.vue` (BottomSheet) was deleted for `features/live/LiveView.vue`.
+
 ---
 
 ## Deferred / open (noted, not blocking)

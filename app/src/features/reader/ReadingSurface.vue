@@ -29,6 +29,8 @@ const props = defineProps<{
   wbwLang?: string
   /** The ayah currently being recited, as `"surah:ayah"` — highlighted + scrolled to. */
   activeVerse?: string | null
+  /** Follow the recited ayah by scrolling it into view (audio player preference). */
+  autoScroll?: boolean
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -132,7 +134,7 @@ watch(
 watch(
   () => props.activeVerse,
   (key) => {
-    if (!key) return
+    if (!key || props.autoScroll === false) return
     void nextTick(() => {
       const root = surfaceEl.value
       const el = root?.querySelector<HTMLElement>(`.word[data-verse="${key}"]`)
@@ -284,11 +286,11 @@ watch(
   background: var(--color-elevated);
   box-shadow: 0 0 0 1px var(--color-border);
 }
-/* The ayah being recited (7.4): a warm wash plus a baseline rule, so the cue
-   isn't carried by colour alone. */
+/* The ayah being recited (7.4): a soft accent wash plus a hairline baseline rule,
+   so the cue is subtle yet not carried by colour alone. */
 .state-playing {
-  background: color-mix(in oklab, var(--color-accent) 18%, transparent);
-  box-shadow: inset 0 -2px 0 0 var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 9%, transparent);
+  box-shadow: inset 0 -1.5px 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent);
   border-radius: var(--radius-sm);
 }
 </style>

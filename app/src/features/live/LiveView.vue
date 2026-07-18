@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Radio, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { ArrowLeft, Radio, X } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
-import BottomSheet from '@/components/BottomSheet.vue'
 
 /**
- * Live-stream embed (7.7). The legacy migrated off hls.js to YouTube live embeds
- * ("HLS.js removed: switching to YouTube embed") — so, per decision 5 (keep legacy
- * sources), this embeds the same two channels. The iframe is created only when a
- * channel is selected, so nothing loads until the user asks for a stream. Lazy-
- * imported, so it's absent from every initial bundle.
+ * Live-recitation full view (7.7) — a standalone route (like the mushaf), reached
+ * from the "More" tab rather than buried in a settings drawer. The legacy migrated
+ * off hls.js to YouTube live embeds ("HLS.js removed: switching to YouTube embed"),
+ * so per decision 5 (keep legacy sources) this embeds the same two channels. The
+ * iframe is created only once a channel is selected, so nothing loads until asked.
+ * Code-split → never in any initial bundle.
  */
-const open = defineModel<boolean>('open', { default: false })
+const router = useRouter()
 
 // Channel ids from the legacy live config (Makkah Haramain / Madinah Sunnah feeds).
 const CHANNELS: { id: 'quran' | 'sunnah'; label: string; sub: string; youtubeChannel: string }[] = [
@@ -28,16 +29,25 @@ function embedUrl(channel: string) {
 function selectChannel(id: 'quran' | 'sunnah') {
   active.value = active.value === id ? null : id
 }
+
+function back() {
+  void router.push({ name: 'home' })
+}
 </script>
 
 <template>
-  <BottomSheet v-model:open="open" label="Live recitation">
-    <div class="live">
-      <div class="head">
-        <Icon :icon="Radio" :size="18" class="head-icon" />
-        <h2 class="title">Live recitation</h2>
+  <main class="live">
+    <header class="topbar">
+      <button class="icon-btn" aria-label="Back to reader" @click="back">
+        <Icon :icon="ArrowLeft" :size="20" />
+      </button>
+      <div class="title-wrap">
+        <Icon :icon="Radio" :size="18" class="title-icon" />
+        <h1 class="title">Live recitation</h1>
       </div>
+    </header>
 
+    <div class="body">
       <div class="channels" role="group" aria-label="Live channels">
         <button
           v-for="c in CHANNELS"
@@ -69,28 +79,68 @@ function selectChannel(id: 'quran' | 'sunnah') {
       </div>
       <p v-else class="hint">Choose a masjid to start the live stream.</p>
     </div>
-  </BottomSheet>
+  </main>
 </template>
 
 <style scoped>
 .live {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 100dvh;
+  background: var(--color-bg);
 }
-.head {
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
-.head-icon {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+.icon-btn:hover {
+  background: var(--color-elevated);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.title-icon {
   color: var(--color-accent);
 }
 .title {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--color-text);
+}
+.body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 46rem;
+  margin-inline: auto;
+  padding: 1rem clamp(0.75rem, 4vw, 1.5rem) calc(1.5rem + env(safe-area-inset-bottom));
 }
 .channels {
   display: grid;
@@ -101,7 +151,7 @@ function selectChannel(id: 'quran' | 'sunnah') {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  padding: 0.75rem;
+  padding: 0.85rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -112,6 +162,10 @@ function selectChannel(id: 'quran' | 'sunnah') {
 .channel.on {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+}
+.channel:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .channel-label {
   font-size: var(--text-base);
@@ -125,7 +179,7 @@ function selectChannel(id: 'quran' | 'sunnah') {
 .frame {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 .frame iframe {
   width: 100%;

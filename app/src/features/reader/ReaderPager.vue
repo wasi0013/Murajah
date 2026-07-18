@@ -209,6 +209,7 @@ function snapBack() {
             :word-states="offset === 0 ? wordStates : undefined"
             :mistake-ids="mistakes.store.mistakeIds"
             :active-verse="offset === 0 ? activeVerseKey : null"
+            :auto-scroll="audio.autoScroll"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />

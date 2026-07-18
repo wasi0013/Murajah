@@ -36,6 +36,7 @@ describe('useAudioPersistence', () => {
     store.grain = 'page'
     store.verseReciterId = 'luhaidan'
     store.speed = 0.75
+    store.autoScroll = false
     await tick(360) // past the 300ms debounce
     p.dispose()
 
@@ -46,6 +47,7 @@ describe('useAudioPersistence', () => {
     expect(store2.grain).toBe('page')
     expect(store2.verseReciterId).toBe('luhaidan')
     expect(store2.speed).toBe(0.75)
+    expect(store2.autoScroll).toBe(false)
   })
 
   it('ignores an unknown reciter id and an invalid speed on hydrate', async () => {

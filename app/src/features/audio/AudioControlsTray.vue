@@ -133,6 +133,10 @@ function toggleSpaced() {
         <input type="checkbox" v-model="store.loopPlaylist" />
         <span>Loop list</span>
       </label>
+      <label class="switch">
+        <input type="checkbox" v-model="store.autoScroll" />
+        <span>Auto-scroll</span>
+      </label>
     </section>
   </div>
 </template>
@@ -257,7 +261,8 @@ function toggleSpaced() {
 }
 .toggles {
   flex-direction: row;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
   padding-top: 0.15rem;
 }
 .switch {

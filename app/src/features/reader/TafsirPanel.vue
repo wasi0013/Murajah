@@ -1,22 +1,50 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import { BookOpen, Copy } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { toast } from '@/composables/useToast'
 import type { VerseStudy } from '@/composables/useVerseStudy'
 
 /**
- * Verse-study panel beneath the mushaf — one card per ayah with the Arabic, the
- * English (Saheeh) and Bengali (Zakaria) translations with attributions, and an
- * expandable Arabic tafsir (loaded on demand). Never touches the 15-line mushaf
- * above. Tafsir HTML is trusted build-time data.
+ * Verse-study surface — one card per ayah with the Arabic, the English (Saheeh)
+ * and Bengali (Zakaria) translations with attributions, and an expandable Arabic
+ * tafsir (loaded on demand). When tafsir is on this replaces the mushaf as the
+ * reading surface. The recited ayah is highlighted and (when auto-scroll is on)
+ * scrolled into view, mirroring the mushaf reader. Tafsir HTML is trusted
+ * build-time data.
  */
 const props = defineProps<{
   entries: VerseStudy[]
   fontFamily: string
   tafsir: Record<string, string>
   loading: boolean
+  /** The ayah currently being recited, as `"surah:ayah"` — highlighted + scrolled to. */
+  activeVerse?: string | null
+  /** Follow the recited ayah by scrolling it into view (audio player preference). */
+  autoScroll?: boolean
 }>()
 const emit = defineEmits<{ expand: [verse: string] }>()
+
+// Auto-scroll the recited ayah into view. Only when it's offscreen, so we never
+// fight the reader's own scroll; honours reduced-motion and the auto-scroll pref.
+const rootEl = ref<HTMLElement>()
+watch(
+  () => props.activeVerse,
+  (verse) => {
+    if (!verse || props.autoScroll === false) return
+    void nextTick(() => {
+      const el = rootEl.value?.querySelector<HTMLElement>(`.verse[data-verse="${verse}"]`)
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const offscreen = rect.top < 0 || rect.bottom > window.innerHeight
+      if (!offscreen) return
+      const reduce =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+    })
+  },
+)
 
 function onToggle(verse: string, e: Event) {
   if ((e.target as HTMLDetailsElement).open) emit('expand', verse)
@@ -34,11 +62,17 @@ async function copy(v: VerseStudy) {
 </script>
 
 <template>
-  <section class="study" aria-label="Verse study">
+  <section ref="rootEl" class="study" aria-label="Verse study">
     <p v-if="loading && entries.length === 0" class="state">Loading…</p>
     <p v-else-if="entries.length === 0" class="state">No verses for this page.</p>
 
-    <article v-for="e in entries" :key="e.verse" class="verse">
+    <article
+      v-for="e in entries"
+      :key="e.verse"
+      class="verse"
+      :class="{ 'is-playing': activeVerse === e.verse }"
+      :data-verse="e.verse"
+    >
       <header class="vhead">
         <span class="badge">{{ e.verse }}</span>
         <button class="icon-btn" :aria-label="`Copy verse ${e.verse}`" @click="copy(e)">
@@ -84,8 +118,8 @@ async function copy(v: VerseStudy) {
 .study {
   max-width: 46rem;
   margin-inline: auto;
-  padding: 0.5rem clamp(0.75rem, 4vw, 1.5rem) 2rem;
-  border-top: 1px solid var(--color-border);
+  width: 100%;
+  padding: 0.75rem clamp(0.75rem, 4vw, 1.5rem) 2rem;
   background: var(--color-bg);
 }
 .state {
@@ -96,9 +130,19 @@ async function copy(v: VerseStudy) {
 .verse {
   padding: 1.25rem 0;
   border-bottom: 1px solid color-mix(in oklab, var(--color-border) 60%, transparent);
+  scroll-margin-block: 4rem;
 }
 .verse:last-child {
   border-bottom: none;
+}
+/* The ayah being recited: a soft accent wash with a hairline start-edge rule —
+   subtle, and not carried by colour alone. Bled slightly past the text column. */
+.verse.is-playing {
+  background: color-mix(in oklab, var(--color-accent) 7%, transparent);
+  box-shadow: inset 3px 0 0 0 color-mix(in oklab, var(--color-accent) 55%, transparent);
+  border-radius: var(--radius-md);
+  padding-inline: clamp(0.5rem, 3vw, 1rem);
+  margin-inline: clamp(-1rem, -3vw, -0.5rem);
 }
 .vhead {
   display: flex;
@@ -130,7 +174,7 @@ async function copy(v: VerseStudy) {
 .arabic {
   font-size: 1.75rem;
   line-height: 2.1;
-  text-align: center;
+  text-align: right;
   color: var(--color-text);
   margin-bottom: 1rem;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AudioMiniPlayer from './AudioMiniPlayer.vue'
 import ReciterPicker from './ReciterPicker.vue'
 import type { AudioView } from '@/core/audio/pages'
@@ -42,6 +42,16 @@ const reciterName = computed(() =>
 function ctx() {
   return { view: props.view, layout: props.layout, pages: props.pages }
 }
+
+// Follow the reader: when the visible page(s) change while audio is playing, stop
+// the old page and immediately start the new one (verse or page grain alike). Only
+// while playing — merely opening the player or pausing never yanks the page along.
+watch(
+  () => props.pages.join(','),
+  () => {
+    if (store.isPlaying) void player.start(ctx())
+  },
+)
 
 function onStart() {
   void player.start(ctx())

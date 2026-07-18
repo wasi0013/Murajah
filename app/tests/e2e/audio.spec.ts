@@ -80,10 +80,11 @@ test('record panel opens with a record control', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Record page/ })).toBeVisible()
 })
 
-test('live recitation opens and a channel starts the embed', async ({ page }) => {
+test('live recitation opens as a full view from More and a channel starts the embed', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Reader settings' }).click()
-  await page.getByRole('button', { name: 'Listen live' }).click()
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('button', { name: /Live recitation/ }).click()
+  await expect(page).toHaveURL(/\/live$/)
   await page.getByRole('button', { name: /Makkah Live/ }).click()
   await expect(page.locator('iframe[title="Live recitation stream"]')).toBeVisible()
 })

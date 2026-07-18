@@ -36,11 +36,17 @@ test('not-yet-built tabs show a coming-soon toast and keep Home active', async (
   const home = page.getByRole('button', { name: 'Home', exact: true })
   await expect(home).toHaveAttribute('aria-current', 'page')
 
-  // "More" is still unbuilt. (Earlier examples — Goals→Today, then Quiz — both
+  // "Surahs" is still unbuilt. (Earlier examples — Goals→Today, then Quiz — both
   // navigate for real now; see today.spec.ts and quiz.spec.ts.)
-  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('button', { name: 'Surahs' }).click()
   await expect(page.getByText('Coming in a later phase')).toBeVisible()
   await expect(home).toHaveAttribute('aria-current', 'page') // still Home
+})
+
+test('the More tab opens a menu with the live recitation entry', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'More' }).click()
+  await expect(page.getByRole('button', { name: /Live recitation/ })).toBeVisible()
 })
 
 test('reader feature flag off shows the disabled placeholder', async ({ page }) => {

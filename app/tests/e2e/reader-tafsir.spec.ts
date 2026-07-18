@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openSettings, closeSettings } from './helpers'
 
-test('verse-study panel: translations upfront, Arabic tafsir on demand, mushaf untouched', async ({
+test('verse-study surface: translations upfront, Arabic tafsir on demand, replaces the mushaf', async ({
   page,
 }) => {
   const tafReqs: string[] = []
@@ -37,10 +37,12 @@ test('verse-study panel: translations upfront, Arabic tafsir on demand, mushaf u
   await expect(first.locator('.tafsir-html')).toBeVisible({ timeout: 10_000 })
   expect(tafReqs.some((u) => u.endsWith('/data/tafsir/ar/2.json'))).toBe(true)
 
-  // The 15-line mushaf above is untouched.
-  await expect(page.locator('.col[aria-hidden="false"] .surface .word').first()).not.toBeEmpty()
+  // Tafsir replaces the mushaf as the reading surface — the 15-line pager is gone.
+  await expect(page.locator('.surface')).toHaveCount(0)
 
+  // Turning it off brings the mushaf back and removes the study surface.
   await openSettings(page)
   await page.getByRole('switch', { name: 'Tafsir and translations' }).click()
   await expect(page.locator('.study')).toHaveCount(0)
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 })

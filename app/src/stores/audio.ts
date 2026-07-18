@@ -22,6 +22,8 @@ export const useAudioStore = defineStore('audio', () => {
   const spaced = ref(false)
   const autoNext = ref(true)
   const loopPlaylist = ref(false)
+  /** Follow the recited ayah/page: scroll it into view in the reader + tafsir. */
+  const autoScroll = ref(true)
 
   // —— Transient playback ———————————————————————————————————————————————
   /** Shallow: items are replaced wholesale, never mutated in place. */
@@ -69,6 +71,7 @@ export const useAudioStore = defineStore('audio', () => {
     spaced,
     autoNext,
     loopPlaylist,
+    autoScroll,
     // playback
     playlist,
     index,
