@@ -107,6 +107,15 @@ test('the Today tab in the reader opens the practice loop', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible()
 })
 
+test('the top-bar back button returns to the reader', async ({ page }) => {
+  await page.goto('/today')
+  await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+  await page.getByRole('button', { name: 'Back to reader' }).click()
+  await expect(page).toHaveURL(/\/$/)
+})
+
 test('with a plan and memorized pages, Today renders the revision queue', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan() })
 

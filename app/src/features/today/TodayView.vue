@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Flame, GraduationCap, Settings, Sparkles } from 'lucide-vue-next'
+import { ArrowLeft, Flame, GraduationCap, Settings, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
@@ -83,6 +83,11 @@ function openInReader(page: number) {
   void router.push(readerLink({ page }))
 }
 
+/** Today is a standalone route reached from the reader; the top bar returns there. */
+function back() {
+  void router.push({ name: 'home' })
+}
+
 const streakLabel = computed(() => {
   const n = streak.currentStreak.value
   if (n === 0) return 'No streak yet'
@@ -146,6 +151,9 @@ const historyOpen = ref(false)
 <template>
   <main class="today">
     <header class="topbar">
+      <button class="icon-btn" type="button" aria-label="Back to reader" @click="back">
+        <Icon :icon="ArrowLeft" :size="20" />
+      </button>
       <div class="head">
         <h1 class="title">Today</h1>
         <p class="date">{{ dateLabel }}</p>
@@ -347,11 +355,28 @@ const historyOpen = ref(false)
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
   padding: calc(0.6rem + env(safe-area-inset-top)) 1rem 0.6rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--color-elevated);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .title {
   font-size: var(--text-lg);
