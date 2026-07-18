@@ -71,6 +71,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/listen/ListenView.vue'),
   },
   {
+    // App settings (theme, data backup). Reached from the "More" tab. Code-split
+    // → never in the reader bundle.
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/features/settings/SettingsView.vue'),
+  },
+  {
     // Design gallery (dev/design tool). Code-split → never in the reader bundle.
     path: '/gallery',
     name: 'gallery',

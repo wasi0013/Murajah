@@ -6,8 +6,8 @@ import ToastContainer from '@/components/ToastContainer.vue'
 const settings = useSettingsStore()
 
 onMounted(() => {
-  // Apply the persisted/default theme to the document root.
-  settings.setTheme(settings.theme)
+  // Load and apply the saved theme (falls back to the default) before paint.
+  void settings.hydrate()
 })
 </script>
 

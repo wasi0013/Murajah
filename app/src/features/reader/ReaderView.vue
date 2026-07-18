@@ -16,6 +16,7 @@ import {
   Palette,
   Radio,
   Search,
+  Settings,
   SlidersHorizontal,
 } from 'lucide-vue-next'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
@@ -283,6 +284,17 @@ function openMushaf() {
           <span class="more-label">
             <span class="more-name">Live recitation</span>
             <span class="more-sub">Makkah &amp; Madinah live streams</span>
+          </span>
+        </button>
+        <button
+          class="more-item"
+          type="button"
+          @click="moreOpen = false; router.push({ name: 'settings' })"
+        >
+          <Icon :icon="Settings" :size="18" />
+          <span class="more-label">
+            <span class="more-name">Settings</span>
+            <span class="more-sub">Theme &amp; data backup</span>
           </span>
         </button>
       </div>
