@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Flame, GraduationCap, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
+import { Flame, GraduationCap, Settings, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
@@ -150,14 +150,6 @@ const historyOpen = ref(false)
         <h1 class="title">Today</h1>
         <p class="date">{{ dateLabel }}</p>
       </div>
-      <button
-        v-if="today.hasPlan.value"
-        class="icon-btn"
-        aria-label="Edit your plan"
-        @click="setupOpen = true"
-      >
-        <Icon :icon="SlidersHorizontal" :size="20" />
-      </button>
     </header>
 
     <section v-if="!today.hasPlan.value" class="empty">
@@ -221,6 +213,15 @@ const historyOpen = ref(false)
               </template>
               <template v-else>Finish a day to start one</template>
             </span>
+          </button>
+
+          <button
+            class="settings-gear"
+            type="button"
+            aria-label="Edit your plan"
+            @click="setupOpen = true"
+          >
+            <Icon :icon="Settings" :size="20" />
           </button>
         </div>
       </section>
@@ -360,19 +361,23 @@ const historyOpen = ref(false)
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
-.icon-btn {
+.settings-gear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.25rem;
-  width: 2.25rem;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
   border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.settings-gear:hover {
+  background: var(--color-elevated);
   color: var(--color-text);
 }
-.icon-btn:hover {
-  background: var(--color-elevated);
-}
-.icon-btn:focus-visible {
+.settings-gear:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }

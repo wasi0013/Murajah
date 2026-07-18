@@ -427,6 +427,33 @@ test('editing the pace re-generates the queue and persists', async ({ page }) =>
   await expect(section(page, 'Revision').locator('.row')).toHaveCount(1, { timeout: 10_000 })
 })
 
+test('enabling new memorization schedules a page even from a zero-pace plan', async ({ page }) => {
+  // The seeded plan has no new front and 0 new pages/day — the exact shape that
+  // made the toggle look like it did nothing (9.3.1 regression).
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('heading', { name: 'New memorization' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Edit your plan' }).click()
+  await sheet(page).getByRole('switch', { name: 'Memorizing new pages?' }).click()
+  // Turning it on must give it a daily budget — the "New pages" field shows 1.
+  await expect(sheet(page).getByRole('spinbutton', { name: 'New pages' })).toHaveValue('1')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+
+  // The section now renders with the next un-memorized page (memorized 1–3 → 4).
+  await expect(section(page, 'New memorization').locator('.row')).toHaveCount(1)
+  await expect(page.getByRole('button', { name: 'Open page 4 in the reader' })).toBeVisible()
+})
+
+test('plan setup no longer offers a script choice for new memorization', async ({ page }) => {
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await page.getByRole('button', { name: 'Edit your plan' }).click()
+  await sheet(page).getByRole('switch', { name: 'Memorizing new pages?' }).click()
+  await expect(sheet(page).getByLabel('Start at page')).toBeVisible()
+  // The Uthmani/Indopak segmented control is gone — the reader's script is used (9.3.3).
+  await expect(sheet(page).getByRole('radio', { name: 'Uthmani' })).toHaveCount(0)
+})
+
 test('an abandoned edit leaves the live plan untouched', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan() })
   await expect(section(page, 'Revision').locator('.row')).toHaveCount(3)

@@ -4,10 +4,10 @@ import { Sparkles } from 'lucide-vue-next'
 import { usePlanStore } from '@/stores/plan'
 import { useProgressStore } from '@/stores/progress'
 import { useMistakesStore } from '@/stores/mistakes'
+import { useReaderStore } from '@/stores/reader'
 import { generateSmartPlan, totalPagesForLayout } from '@/core/memorization/planBuilder'
 import { getTodayDate, HABIT_CATALOG } from '@/core/memorization/streaks'
 import { serializePlan, type PlanConfig } from '@/core/storage/userData'
-import type { Layout } from '@/core/data/types'
 import BottomSheet from '@/components/BottomSheet.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -27,6 +27,7 @@ const open = defineModel<boolean>('open', { default: false })
 const plan = usePlanStore()
 const progress = useProgressStore()
 const mistakes = useMistakesStore()
+const reader = useReaderStore()
 
 const WEEKDAYS = [
   { value: 0, label: 'Sun' },
@@ -41,10 +42,6 @@ const WEEKDAYS = [
 const scopeOptions = [
   { value: 'all-memorized', label: 'All I know' },
   { value: 'juz', label: 'Pick juz' },
-]
-const layoutOptions = [
-  { value: 'qpc', label: 'Uthmani' },
-  { value: 'indopak', label: 'Indopak' },
 ]
 
 /** A plain starting point for someone setting up by hand. */
@@ -102,14 +99,15 @@ function toggleJuz(j: number) {
 const addNew = computed<boolean>({
   get: () => draft.value.newFront !== null,
   set: (on) => {
-    draft.value.newFront = on ? { layout: 'qpc', nextPage: suggestedFront() } : null
-  },
-})
-
-const frontLayout = computed<string>({
-  get: () => draft.value.newFront?.layout ?? 'qpc',
-  set: (l) => {
-    if (draft.value.newFront) draft.value.newFront.layout = l as Layout
+    if (!on) {
+      draft.value.newFront = null
+      return
+    }
+    // New memorization uses the reader's default script (decision 7). Turning it on
+    // must also give it a daily budget — a front with 0 new pages/day schedules
+    // nothing, which is why the toggle used to look like it did nothing (9.3.1).
+    draft.value.newFront = { layout: reader.layout, nextPage: suggestedFront() }
+    if (draft.value.pace.newPagesPerDay < 1) draft.value.pace.newPagesPerDay = 1
   },
 })
 
@@ -209,10 +207,6 @@ function save() {
               class="num"
             />
           </label>
-          <div class="row">
-            <span class="sub-label">Script</span>
-            <SegmentedControl v-model="frontLayout" :options="layoutOptions" label="Script" />
-          </div>
         </div>
       </section>
 
