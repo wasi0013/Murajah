@@ -32,7 +32,6 @@ import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
 import { useVerseStudy } from '@/composables/useVerseStudy'
 import { useQuickJump } from '@/composables/useQuickJump'
-import { toast } from '@/composables/useToast'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
 import Slider from '@/components/Slider.vue'
@@ -110,16 +109,15 @@ const paletteOpen = ref(false)
 const legendOpen = ref(false)
 const activeTab = ref('home')
 
-// "Home" is this text reader; "Mushaf" opens the scan surface; "Today" the daily
-// practice loop. The rest arrive in later phases — selecting a not-yet-built tab
-// toasts and snaps back to Home.
+// "Home" is this text reader; "Mushaf" opens the scan surface; "Surahs" the
+// contents browser; "Today" the daily practice loop; "More" a small menu sheet.
 watch(activeTab, (v) => {
   if (v === 'home') return
   if (v === 'mushaf') openMushaf()
+  else if (v === 'surahs') void router.push({ name: 'contents' })
   else if (v === 'today') void router.push({ name: 'today' })
   else if (v === 'quiz') void router.push({ name: 'quiz' })
   else if (v === 'more') moreOpen.value = true
-  else toast('Coming in a later phase', { variant: 'info' })
   activeTab.value = 'home'
 })
 

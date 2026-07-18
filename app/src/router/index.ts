@@ -50,6 +50,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/progress/ProgressView.vue'),
   },
   {
+    // Contents browser (surah / juz / page index) — the "Surahs" tab. A tappable,
+    // beginner-friendly index over the nav data. Code-split → never in the reader bundle.
+    path: '/contents',
+    name: 'contents',
+    component: () => import('@/features/contents/ContentsView.vue'),
+  },
+  {
     // Live recitation (Makkah / Madinah YouTube embeds). A full view reached from
     // the "More" tab. Code-split → never in the reader bundle.
     path: '/live',

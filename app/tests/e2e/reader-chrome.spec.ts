@@ -29,18 +29,13 @@ test('quick-jump resolves ayah / surah name / page to the right page', async ({ 
   await expect(page).toHaveURL(/\/read\/qpc\/300(\?|$)/) // unchanged
 })
 
-test('not-yet-built tabs show a coming-soon toast and keep Home active', async ({ page }) => {
+test('the Surahs tab opens the Contents browser', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
 
-  const home = page.getByRole('button', { name: 'Home', exact: true })
-  await expect(home).toHaveAttribute('aria-current', 'page')
-
-  // "Surahs" is still unbuilt. (Earlier examples — Goals→Today, then Quiz — both
-  // navigate for real now; see today.spec.ts and quiz.spec.ts.)
   await page.getByRole('button', { name: 'Surahs' }).click()
-  await expect(page.getByText('Coming in a later phase')).toBeVisible()
-  await expect(home).toHaveAttribute('aria-current', 'page') // still Home
+  await expect(page).toHaveURL(/\/contents/)
+  await expect(page.getByRole('button', { name: /Al-Fatihah/ })).toBeVisible({ timeout: 10_000 })
 })
 
 test('the More tab opens a menu with the live recitation entry', async ({ page }) => {
