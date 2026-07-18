@@ -4,6 +4,7 @@ import { useDayLogStore } from '@/stores/dayLog'
 import { useStreak } from '@/composables/useStreak'
 import { useLocalDay } from '@/composables/useLocalDay'
 import { buildHistory, type HistoryDay } from '@/core/memorization/streaks'
+import { useI18n } from '@/core/i18n'
 import BottomSheet from '@/components/BottomSheet.vue'
 
 /**
@@ -19,7 +20,10 @@ const open = defineModel<boolean>('open', { default: false })
 const props = defineProps<{ today?: Ref<Date> }>()
 
 const DAYS = 90
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+
+const { t } = useI18n()
+const weekdays = computed(() => WEEKDAY_KEYS.map((key) => t(`common.weekdays.${key}`)))
 
 const dayLog = useDayLogStore()
 const today = props.today ?? useLocalDay()
@@ -43,46 +47,43 @@ const weeks = computed<Array<Array<HistoryDay | null>>>(() => {
 
 const completedCount = computed(() => days.value.filter((d) => d.state === 'completed').length)
 
-const STATE_TEXT: Record<HistoryDay['state'], string> = {
-  completed: 'completed',
-  partial: 'partly done',
-  none: 'nothing recorded',
-}
-
 const fmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' })
 function label(d: HistoryDay): string {
-  return `${fmt.format(new Date(`${d.date}T00:00:00`))}: ${STATE_TEXT[d.state]}`
+  return t('history.dayLabel', {
+    date: fmt.format(new Date(`${d.date}T00:00:00`)),
+    state: t(`history.state.${d.state}`),
+  })
 }
 </script>
 
 <template>
-  <BottomSheet v-model:open="open" label="Practice history">
+  <BottomSheet v-model:open="open" :label="t('history.title')">
     <div class="history">
-      <h2 class="history-title">Practice history</h2>
+      <h2 class="history-title">{{ t('history.title') }}</h2>
 
       <div class="stats">
         <div class="stat">
           <span class="stat-n">{{ streak.currentStreak.value }}</span>
-          <span class="stat-l">Current streak</span>
+          <span class="stat-l">{{ t('history.current') }}</span>
         </div>
         <div class="stat">
           <span class="stat-n">{{ streak.longestStreak.value }}</span>
-          <span class="stat-l">Longest streak</span>
+          <span class="stat-l">{{ t('history.longest') }}</span>
         </div>
         <div class="stat">
           <span class="stat-n">{{ completedCount }}</span>
-          <span class="stat-l">Days completed</span>
+          <span class="stat-l">{{ t('history.daysDone') }}</span>
         </div>
       </div>
 
       <div class="cal-wrap">
         <table class="cal">
           <caption class="sr-only">
-            The last {{ DAYS }} days — {{ completedCount }} completed
+            {{ t('history.lastDaysSr', { n: DAYS, done: completedCount }) }}
           </caption>
           <thead>
             <tr>
-              <th v-for="w in WEEKDAYS" :key="w" scope="col">
+              <th v-for="w in weekdays" :key="w" scope="col">
                 <span aria-hidden="true">{{ w.charAt(0) }}</span>
                 <span class="sr-only">{{ w }}</span>
               </th>
@@ -106,9 +107,9 @@ function label(d: HistoryDay): string {
       </div>
 
       <ul class="legend">
-        <li><span class="cell cell-completed" aria-hidden="true" /> Completed</li>
-        <li><span class="cell cell-partial" aria-hidden="true" /> Partly done</li>
-        <li><span class="cell cell-none" aria-hidden="true" /> Nothing recorded</li>
+        <li><span class="cell cell-completed" aria-hidden="true" /> {{ t('history.legendCompleted') }}</li>
+        <li><span class="cell cell-partial" aria-hidden="true" /> {{ t('history.legendPartial') }}</li>
+        <li><span class="cell cell-none" aria-hidden="true" /> {{ t('history.legendNone') }}</li>
       </ul>
     </div>
   </BottomSheet>

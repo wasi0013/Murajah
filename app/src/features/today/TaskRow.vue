@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Check, ChevronRight } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * One page task in Today's queue: open it in the reader, then record how it went.
@@ -28,9 +31,9 @@ defineEmits<{ open: []; clean: []; mistake: [] }>()
 
 <template>
   <li class="row" :class="{ 'row-done': done }">
-    <button class="open" type="button" :aria-label="`Open page ${page} in the reader`" @click="$emit('open')">
+    <button class="open" type="button" :aria-label="t('task.open', { page })" @click="$emit('open')">
       <span class="page">
-        <span class="page-n">Page {{ page }}</span>
+        <span class="page-n">{{ t('common.page', { n: page }) }}</span>
         <span v-if="meta" class="page-meta">{{ meta }}</span>
       </span>
       <Icon :icon="ChevronRight" :size="16" class="open-chevron" />
@@ -38,20 +41,20 @@ defineEmits<{ open: []; clean: []; mistake: [] }>()
 
     <div v-if="done" class="state">
       <Icon :icon="Check" :size="14" />
-      <span>Done</span>
+      <span>{{ t('common.done') }}</span>
     </div>
 
     <div v-else class="actions">
       <template v-if="gradable">
-        <button class="act act-clean" type="button" :aria-label="`Page ${page} recited cleanly`" @click="$emit('clean')">
-          Clean
+        <button class="act act-clean" type="button" :aria-label="t('task.cleanAria', { page })" @click="$emit('clean')">
+          {{ t('task.clean') }}
         </button>
-        <button class="act act-shaky" type="button" :aria-label="`Page ${page} needed work`" @click="$emit('mistake')">
-          Shaky
+        <button class="act act-shaky" type="button" :aria-label="t('task.shakyAria', { page })" @click="$emit('mistake')">
+          {{ t('task.shaky') }}
         </button>
       </template>
-      <button v-else class="act act-clean" type="button" :aria-label="`Mark page ${page} ${doneLabel ?? 'done'}`" @click="$emit('clean')">
-        {{ doneLabel ?? 'Done' }}
+      <button v-else class="act act-clean" type="button" :aria-label="t('task.markAria', { page, label: doneLabel ?? t('common.done') })" @click="$emit('clean')">
+        {{ doneLabel ?? t('common.done') }}
       </button>
     </div>
   </li>

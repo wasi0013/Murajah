@@ -17,6 +17,7 @@ import { useMilestones } from '@/composables/useMilestones'
 import { juzForPage } from '@/core/navigation/juz'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { toast } from '@/composables/useToast'
+import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import TaskRow from './TaskRow.vue'
@@ -37,6 +38,7 @@ const progress = useProgressStore()
 const mistakes = useMistakesStore()
 const today = useToday()
 const streak = useStreak()
+const { t, locale } = useI18n()
 
 const planPersistence = usePlanPersistence()
 const progressPersistence = useProgressPersistence()
@@ -66,7 +68,7 @@ onBeforeUnmount(() => {
 })
 
 const dateLabel = computed(() =>
-  new Date(`${today.date.value}T00:00:00`).toLocaleDateString(undefined, {
+  new Date(`${today.date.value}T00:00:00`).toLocaleDateString(locale.value, {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
@@ -76,7 +78,7 @@ const dateLabel = computed(() =>
 /** Juz context for a page — omitted rather than guessed if nav hasn't loaded. */
 function metaFor(page: number): string | undefined {
   const j = juzForPage(plan.juzToPage, page)
-  return j ? `Juz ${j}` : undefined
+  return j ? t('common.juz', { n: j }) : undefined
 }
 
 function openInReader(page: number) {
@@ -90,8 +92,8 @@ function back() {
 
 const streakLabel = computed(() => {
   const n = streak.currentStreak.value
-  if (n === 0) return 'No streak yet'
-  return `${n} day${n === 1 ? '' : 's'}`
+  if (n === 0) return t('today.streak.none')
+  return n === 1 ? t('today.streak.dayOne') : t('today.streak.dayOther', { n })
 })
 
 /** The ring's `r` makes its circumference exactly 100, so the dash *is* the percent. */
@@ -102,7 +104,7 @@ function onHabit(id: string, done: boolean) {
 }
 
 function openQuiz() {
-  toast('Quiz arrives in a later phase', { variant: 'info' })
+  toast(t('today.quizLater'), { variant: 'info' })
 }
 
 // —— First run ————————————————————————————————————
@@ -131,17 +133,17 @@ const smartSummary = computed(() => {
   if (!s) return ''
   const { pace } = s.config
   const parts: string[] = []
-  if (s.config.scope.kind === 'juz') parts.push('Start with Juz 30')
-  else parts.push(`Maintain your ${s.analysis.totalMemorized} memorized pages`)
-  if (pace.revisionPagesPerDay > 0) parts.push(`revise ${pace.revisionPagesPerDay} a day`)
-  if (pace.newPagesPerDay > 0) parts.push(`memorize ${pace.newPagesPerDay} new`)
+  if (s.config.scope.kind === 'juz') parts.push(t('today.smart.startJuz30'))
+  else parts.push(t('today.smart.maintain', { n: s.analysis.totalMemorized }))
+  if (pace.revisionPagesPerDay > 0) parts.push(t('today.smart.revise', { n: pace.revisionPagesPerDay }))
+  if (pace.newPagesPerDay > 0) parts.push(t('today.smart.memorize', { n: pace.newPagesPerDay }))
   return `${parts.join(' · ')}.`
 })
 
 function createSmartPlan() {
   if (!smart.value) return
   plan.create(smart.value.config)
-  toast('Your plan is ready — you can change it any time', { variant: 'success' })
+  toast(t('today.planReady'), { variant: 'success' })
 }
 
 const setupOpen = ref(false)
@@ -151,35 +153,32 @@ const historyOpen = ref(false)
 <template>
   <main class="today">
     <header class="topbar">
-      <button class="icon-btn" type="button" aria-label="Back to reader" @click="back">
+      <button class="icon-btn" type="button" :aria-label="t('common.backToReader')" @click="back">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
       <div class="head">
-        <h1 class="title">Today</h1>
+        <h1 class="title">{{ t('today.title') }}</h1>
         <p class="date">{{ dateLabel }}</p>
       </div>
     </header>
 
     <section v-if="!today.hasPlan.value" class="empty">
       <Icon :icon="Sparkles" :size="28" class="empty-icon" />
-      <h2 class="empty-title">Set up your practice</h2>
-      <p class="empty-body">
-        Today builds one adaptive queue from what you already know — what to revise, what's
-        gone weak, and what to memorize next.
-      </p>
+      <h2 class="empty-title">{{ t('today.empty.title') }}</h2>
+      <p class="empty-body">{{ t('today.empty.body') }}</p>
       <p v-if="smartSummary" class="empty-summary">{{ smartSummary }}</p>
       <div class="empty-actions">
         <button class="cta" type="button" :disabled="!smart" @click="createSmartPlan">
-          {{ smart ? 'Create my plan' : 'Preparing…' }}
+          {{ smart ? t('today.empty.create') : t('today.empty.preparing') }}
         </button>
         <button class="cta cta-ghost" type="button" @click="setupOpen = true">
-          Set it up myself
+          {{ t('today.empty.manual') }}
         </button>
       </div>
     </section>
 
     <template v-else>
-      <section class="section" aria-label="Today's progress">
+      <section class="section" :aria-label="t('today.title')">
         <div class="summary">
           <div class="ring-wrap">
             <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
@@ -197,8 +196,13 @@ const historyOpen = ref(false)
               }}<span class="ring-of">/{{ today.totalTasks.value }}</span>
             </span>
             <span class="sr-only">
-              {{ today.completedTasks.value }} of {{ today.totalTasks.value }} tasks done —
-              {{ today.completionPercentage.value }}%
+              {{
+                t('today.tasksSr', {
+                  done: today.completedTasks.value,
+                  total: today.totalTasks.value,
+                  percent: today.completionPercentage.value,
+                })
+              }}
             </span>
           </div>
 
@@ -206,7 +210,7 @@ const historyOpen = ref(false)
             class="streak"
             type="button"
             :class="{ 'streak-lit': streak.isTodayComplete.value }"
-            aria-label="View your practice history"
+            :aria-label="t('today.viewHistory')"
             @click="historyOpen = true"
           >
             <Icon :icon="Flame" :size="18" class="streak-icon" />
@@ -214,19 +218,19 @@ const historyOpen = ref(false)
             <!-- Nudge before celebration: a run that's about to break needs the
                  day finishing, not congratulating. -->
             <span class="streak-sub">
-              <template v-if="streak.isAtRisk.value">Finish today to keep it</template>
-              <template v-else-if="streak.isPersonalBest.value">Your best run yet</template>
+              <template v-if="streak.isAtRisk.value">{{ t('today.streak.atRisk') }}</template>
+              <template v-else-if="streak.isPersonalBest.value">{{ t('today.streak.best') }}</template>
               <template v-else-if="streak.longestStreak.value > 0">
-                Best: {{ streak.longestStreak.value }}
+                {{ t('today.streak.bestN', { n: streak.longestStreak.value }) }}
               </template>
-              <template v-else>Finish a day to start one</template>
+              <template v-else>{{ t('today.streak.start') }}</template>
             </span>
           </button>
 
           <button
             class="settings-gear"
             type="button"
-            aria-label="Edit your plan"
+            :aria-label="t('today.editPlan')"
             @click="setupOpen = true"
           >
             <Icon :icon="Settings" :size="20" />
@@ -234,16 +238,14 @@ const historyOpen = ref(false)
         </div>
       </section>
 
-      <p v-if="today.isOffDay.value" class="notice">
-        Rest day — no new memorization. Revision still keeps what you have.
-      </p>
+      <p v-if="today.isOffDay.value" class="notice">{{ t('today.offDay') }}</p>
 
       <p v-else-if="today.tasks.value?.metadata.pausedNewMemorization" class="notice">
-        New memorization is paused while you clear the revision backlog.
+        {{ t('today.paused') }}
       </p>
 
       <section v-if="today.newMemorization.value.length" class="section" aria-labelledby="s-new">
-        <h2 id="s-new" class="section-title">New memorization</h2>
+        <h2 id="s-new" class="section-title">{{ t('today.sections.new') }}</h2>
         <ul class="rows">
           <TaskRow
             v-for="p in today.newMemorization.value"
@@ -251,7 +253,7 @@ const historyOpen = ref(false)
             :page="p"
             :meta="metaFor(p)"
             :done="today.isDone('newMemorization', p)"
-            done-label="Memorized"
+            :done-label="t('task.memorized')"
             @open="openInReader(p)"
             @clean="today.complete('newMemorization', p)"
           />
@@ -259,7 +261,7 @@ const historyOpen = ref(false)
       </section>
 
       <section v-if="today.revision.value.length" class="section" aria-labelledby="s-rev">
-        <h2 id="s-rev" class="section-title">Revision</h2>
+        <h2 id="s-rev" class="section-title">{{ t('today.sections.revision') }}</h2>
         <ul class="rows">
           <TaskRow
             v-for="p in today.revision.value"
@@ -276,7 +278,7 @@ const historyOpen = ref(false)
       </section>
 
       <section v-if="today.weakReinforcement.value.length" class="section" aria-labelledby="s-weak">
-        <h2 id="s-weak" class="section-title">Needs reinforcement</h2>
+        <h2 id="s-weak" class="section-title">{{ t('today.sections.weak') }}</h2>
         <ul class="rows">
           <TaskRow
             v-for="p in today.weakReinforcement.value"
@@ -293,7 +295,7 @@ const historyOpen = ref(false)
       </section>
 
       <section v-if="today.habits.value.length" class="section" aria-labelledby="s-habits">
-        <h2 id="s-habits" class="section-title">Habits</h2>
+        <h2 id="s-habits" class="section-title">{{ t('today.sections.habits') }}</h2>
         <ul class="rows">
           <li v-for="h in today.habits.value" :key="h.id" class="habit">
             <span class="habit-text">
@@ -304,7 +306,7 @@ const historyOpen = ref(false)
               v-if="h.wiresTo === 'quiz'"
               class="habit-link"
               type="button"
-              aria-label="Open the quiz"
+              :aria-label="t('today.openQuiz')"
               @click="openQuiz"
             >
               <Icon :icon="GraduationCap" :size="16" />
@@ -318,13 +320,9 @@ const historyOpen = ref(false)
         </ul>
       </section>
 
-      <p v-if="today.totalTasks.value === 0" class="notice">
-        Nothing scheduled today. Mark pages memorized to build your revision queue.
-      </p>
+      <p v-if="today.totalTasks.value === 0" class="notice">{{ t('today.nothing') }}</p>
 
-      <p v-else-if="today.allDone.value" class="done-note">
-        Today is complete. May Allah accept it from you.
-      </p>
+      <p v-else-if="today.allDone.value" class="done-note">{{ t('today.allDone') }}</p>
     </template>
 
     <PlanSetup v-model:open="setupOpen" />

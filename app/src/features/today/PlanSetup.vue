@@ -8,6 +8,7 @@ import { useReaderStore } from '@/stores/reader'
 import { generateSmartPlan, totalPagesForLayout } from '@/core/memorization/planBuilder'
 import { getTodayDate, HABIT_CATALOG } from '@/core/memorization/streaks'
 import { serializePlan, type PlanConfig } from '@/core/storage/userData'
+import { useI18n } from '@/core/i18n'
 import BottomSheet from '@/components/BottomSheet.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -28,21 +29,18 @@ const plan = usePlanStore()
 const progress = useProgressStore()
 const mistakes = useMistakesStore()
 const reader = useReaderStore()
+const { t } = useI18n()
 
-const WEEKDAYS = [
-  { value: 0, label: 'Sun' },
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-]
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+// Reactive so labels re-render when the locale changes while the sheet is open.
+const weekdays = computed(() =>
+  WEEKDAY_KEYS.map((key, value) => ({ value, label: t(`common.weekdays.${key}`) })),
+)
 
-const scopeOptions = [
-  { value: 'all-memorized', label: 'All I know' },
-  { value: 'juz', label: 'Pick juz' },
-]
+const scopeOptions = computed(() => [
+  { value: 'all-memorized', label: t('plan.scopeAll') },
+  { value: 'juz', label: t('plan.scopeJuz') },
+])
 
 /** A plain starting point for someone setting up by hand. */
 function blankPlan(): PlanConfig {
@@ -152,10 +150,10 @@ function save() {
 </script>
 
 <template>
-  <BottomSheet v-model:open="open" label="Your plan">
+  <BottomSheet v-model:open="open" :label="t('plan.title')">
     <div class="setup">
       <div class="head">
-        <h2 class="setup-title">Your plan</h2>
+        <h2 class="setup-title">{{ t('plan.title') }}</h2>
         <button
           class="smart"
           type="button"
@@ -163,16 +161,16 @@ function save() {
           @click="applySmartDefaults"
         >
           <Icon :icon="Sparkles" :size="14" />
-          <span>Smart defaults</span>
+          <span>{{ t('plan.smartDefaults') }}</span>
         </button>
       </div>
 
       <section class="field">
-        <span class="field-label" id="f-scope">What are you maintaining?</span>
+        <span class="field-label" id="f-scope">{{ t('plan.scopeQ') }}</span>
         <SegmentedControl
           v-model="scopeKind"
           :options="scopeOptions"
-          label="What are you maintaining?"
+          :label="t('plan.scopeQ')"
         />
         <div v-if="scopeKind === 'juz'" class="juz-grid" role="group" aria-labelledby="f-scope">
           <button
@@ -182,23 +180,23 @@ function save() {
             class="juz"
             :class="{ 'juz-on': selectedJuz.includes(j) }"
             :aria-pressed="selectedJuz.includes(j)"
-            :aria-label="`Juz ${j}`"
+            :aria-label="t('common.juz', { n: j })"
             @click="toggleJuz(j)"
           >
             {{ j }}
           </button>
         </div>
-        <p v-if="invalid" class="error">Pick at least one juz to maintain.</p>
+        <p v-if="invalid" class="error">{{ t('plan.scopeError') }}</p>
       </section>
 
       <section class="field">
         <div class="row">
-          <span class="field-label">Memorizing new pages?</span>
-          <Toggle v-model="addNew" label="Memorizing new pages?" />
+          <span class="field-label">{{ t('plan.newQ') }}</span>
+          <Toggle v-model="addNew" :label="t('plan.newQ')" />
         </div>
         <div v-if="draft.newFront" class="sub">
           <label class="row">
-            <span class="sub-label">Start at page</span>
+            <span class="sub-label">{{ t('plan.startAt') }}</span>
             <input
               v-model.number="draft.newFront.nextPage"
               type="number"
@@ -211,9 +209,9 @@ function save() {
       </section>
 
       <section class="field">
-        <span class="field-label">How much a day?</span>
+        <span class="field-label">{{ t('plan.paceQ') }}</span>
         <label class="row">
-          <span class="sub-label">Pages to revise</span>
+          <span class="sub-label">{{ t('plan.pagesRevise') }}</span>
           <input
             v-model.number="draft.pace.revisionPagesPerDay"
             type="number"
@@ -223,27 +221,27 @@ function save() {
           />
         </label>
         <label v-if="draft.newFront" class="row">
-          <span class="sub-label">New pages</span>
+          <span class="sub-label">{{ t('plan.newPages') }}</span>
           <input v-model.number="draft.pace.newPagesPerDay" type="number" min="0" max="10" class="num" />
         </label>
         <label class="row">
-          <span class="sub-label">Weak pages to reinforce</span>
+          <span class="sub-label">{{ t('plan.weakPages') }}</span>
           <input v-model.number="draft.pace.weakPagesPerDay" type="number" min="0" max="10" class="num" />
         </label>
       </section>
 
       <section class="field">
-        <span class="field-label" id="f-off">Rest days</span>
-        <p class="hint">New memorization pauses; revision carries on — hifz fades on days off too.</p>
+        <span class="field-label" id="f-off">{{ t('plan.restDays') }}</span>
+        <p class="hint">{{ t('plan.restHint') }}</p>
         <div class="days" role="group" aria-labelledby="f-off">
           <button
-            v-for="d in WEEKDAYS"
+            v-for="d in weekdays"
             :key="d.value"
             type="button"
             class="day"
             :class="{ 'day-on': draft.pace.offDays.includes(d.value) }"
             :aria-pressed="draft.pace.offDays.includes(d.value)"
-            :aria-label="`Rest on ${d.label}`"
+            :aria-label="t('plan.restOn', { day: d.label })"
             @click="toggleOffDay(d.value)"
           >
             {{ d.label }}
@@ -252,7 +250,7 @@ function save() {
       </section>
 
       <section class="field">
-        <span class="field-label">Daily habits</span>
+        <span class="field-label">{{ t('plan.habitsQ') }}</span>
         <label v-for="h in HABIT_CATALOG" :key="h.id" class="row">
           <span class="sub-label">{{ h.name }}</span>
           <Toggle
@@ -264,7 +262,7 @@ function save() {
       </section>
 
       <button class="save" type="button" :disabled="invalid" @click="save">
-        {{ plan.hasPlan ? 'Save changes' : 'Create plan' }}
+        {{ plan.hasPlan ? t('plan.save') : t('plan.createPlan') }}
       </button>
     </div>
   </BottomSheet>

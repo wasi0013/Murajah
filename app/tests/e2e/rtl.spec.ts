@@ -31,6 +31,16 @@ test('RTL direction carries across navigation to the reader and progress', async
   await expect(html).toHaveAttribute('dir', 'rtl')
 })
 
+test('Today externalises its chrome — the set-up heading is Arabic under ar', async ({ page }) => {
+  await switchToArabic(page)
+  await page.goto('/today')
+  // No plan yet, so the empty-state call to action shows; its heading proves the
+  // Today surface reads from the catalog rather than a hardcoded English string.
+  await expect(page.getByRole('heading', { name: 'جهّز جلستك', level: 2 })).toBeVisible({
+    timeout: 10_000,
+  })
+})
+
 test('progress surface has no serious a11y violations in RTL', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/progress')

@@ -109,7 +109,7 @@ function cancelImport() {
       <button
         class="icon-btn"
         type="button"
-        :aria-label="t('settings.backToReader')"
+        :aria-label="t('common.backToReader')"
         @click="router.push('/')"
       >
         <Icon :icon="ArrowLeft" :size="20" />
