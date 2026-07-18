@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   VERSE_RECITERS,
   PAGE_RECITERS,
+  CURATED_LISTEN_RECITERS,
   verseReciter,
   pageReciter,
+  listenReciter,
   DEFAULT_VERSE_RECITER,
   DEFAULT_PAGE_RECITER,
 } from '@/core/audio/reciters'
@@ -77,5 +79,27 @@ describe('reciter lookup', () => {
   it('falls back to the default for an unknown id', () => {
     expect(verseReciter('nope').id).toBe(DEFAULT_VERSE_RECITER)
     expect(pageReciter('nope').id).toBe(DEFAULT_PAGE_RECITER)
+  })
+})
+
+describe('CURATED_LISTEN_RECITERS (single-voice set for Listen)', () => {
+  it('includes Alafasy and excludes the page-only reciters (Husary, Juhaynee)', () => {
+    const ids = CURATED_LISTEN_RECITERS.map((r) => r.id)
+    expect(ids).toContain('alafasy')
+    expect(ids).not.toContain('husary')
+    expect(ids).not.toContain('juhaynee')
+  })
+
+  it('every curated reciter is either multi-part or has a matching per-ayah recording', () => {
+    const verseIds = new Set(VERSE_RECITERS.map((r) => r.id))
+    for (const r of CURATED_LISTEN_RECITERS) {
+      expect(r.multiPart || verseIds.has(r.id)).toBe(true)
+    }
+  })
+
+  it('listenReciter keeps a curated stored pick, else falls back to Alafasy', () => {
+    expect(listenReciter('shuraim').id).toBe('shuraim') // curated → kept
+    expect(listenReciter('husary').id).toBe(DEFAULT_PAGE_RECITER) // page-only → Alafasy
+    expect(listenReciter('nope').id).toBe(DEFAULT_PAGE_RECITER)
   })
 })

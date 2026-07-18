@@ -54,6 +54,22 @@
     "gzip": true
   },
   {
+    "name": "Contents browser (lazy, gzip)",
+    "path": [
+      "dist/assets/ContentsView-*.js",
+      "dist/assets/contents-*.js",
+      "dist/assets/surahPages-*.js"
+    ],
+    "limit": "10 kB",
+    "gzip": true
+  },
+  {
+    "name": "Listen view (lazy, gzip)",
+    "path": ["dist/assets/ListenView-*.js"],
+    "limit": "8 kB",
+    "gzip": true
+  },
+  {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
     "limit": "30 kB",

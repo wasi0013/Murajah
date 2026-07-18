@@ -155,6 +155,18 @@ export const CURATED_LISTEN_RECITERS: PageReciter[] = PAGE_RECITERS.filter(
   (r) => r.multiPart || verseById.has(r.id),
 )
 
+const curatedById = new Map(CURATED_LISTEN_RECITERS.map((r) => [r.id, r]))
+
+/**
+ * The page reciter Listen should use for a stored preference: the stored one when
+ * it's in the curated single-voice set, otherwise the default (Alafasy). Never
+ * mutates the stored preference — Listen just plays with a curated voice when the
+ * reader's pick (e.g. Husary) has no per-ayah recording for boundary pages.
+ */
+export function listenReciter(id: string): PageReciter {
+  return curatedById.get(id) ?? pageById.get(DEFAULT_PAGE_RECITER)!
+}
+
 /** Look up a verse reciter by id, falling back to the default if unknown. */
 export function verseReciter(id: string): VerseReciter {
   return verseById.get(id) ?? verseById.get(DEFAULT_VERSE_RECITER)!

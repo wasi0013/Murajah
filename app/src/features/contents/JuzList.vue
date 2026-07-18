@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { Headphones } from 'lucide-vue-next'
+import Icon from '@/components/Icon.vue'
 import type { JuzRow } from '@/core/navigation/contents'
 
-// Presentational juz index. Emits the chosen juz number.
-defineProps<{ rows: JuzRow[] }>()
-defineEmits<{ select: [juz: number] }>()
+// Presentational juz index. Emits the chosen juz number. With `showListen`, each
+// row also offers a headphones shortcut that deep-links into Listen (emits `listen`).
+defineProps<{ rows: JuzRow[]; showListen?: boolean }>()
+defineEmits<{ select: [juz: number]; listen: [juz: number] }>()
 </script>
 
 <template>
   <ul class="list" role="list">
-    <li v-for="r in rows" :key="r.juz">
+    <li v-for="r in rows" :key="r.juz" class="row-wrap">
       <button type="button" class="row" @click="$emit('select', r.juz)">
         <span class="num" aria-hidden="true">{{ r.juz }}</span>
         <span class="main">
@@ -20,6 +23,15 @@ defineEmits<{ select: [juz: number] }>()
           </span>
         </span>
       </button>
+      <button
+        v-if="showListen"
+        type="button"
+        class="listen-btn"
+        :aria-label="`Listen to Juz ${r.juz}`"
+        @click="$emit('listen', r.juz)"
+      >
+        <Icon :icon="Headphones" :size="18" />
+      </button>
     </li>
   </ul>
 </template>
@@ -30,11 +42,17 @@ defineEmits<{ select: [juz: number] }>()
   flex-direction: column;
   gap: 2px;
 }
+.row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
 .row {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 0.6rem 0.5rem;
   border-radius: var(--radius-md);
   background: none;
@@ -80,5 +98,24 @@ defineEmits<{ select: [juz: number] }>()
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+}
+.listen-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.listen-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+}
+.listen-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 </style>

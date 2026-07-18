@@ -243,6 +243,17 @@ function openMushaf() {
         <button
           class="more-item"
           type="button"
+          @click="moreOpen = false; router.push({ name: 'listen' })"
+        >
+          <Icon :icon="Headphones" :size="18" />
+          <span class="more-label">
+            <span class="more-name">Listen</span>
+            <span class="more-sub">Play a full surah, juz, or the whole Quran</span>
+          </span>
+        </button>
+        <button
+          class="more-item"
+          type="button"
           @click="moreOpen = false; router.push({ name: 'live' })"
         >
           <Icon :icon="Radio" :size="18" />

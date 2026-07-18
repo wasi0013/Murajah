@@ -1,8 +1,8 @@
-# Phase 8 — Navigation & Listen (browse + audio-only playback) · DRAFT
+# Phase 8 — Navigation & Listen (browse + audio-only playback) · COMPLETE
 
 **Parent:** [redesign-2026.md](./redesign-2026.md) §5 (Phase 8, redefined — see note below) · **Prereqs:** Phase 3 (reader route, `reader` store, `core/navigation/*`, `CommandPalette`), Phase 7 (audio engine `useAudioEngine`, `core/audio/*` playlist + reciters, `AudioMiniPlayer`, `useAudioPersistence`) complete. **Goal:** two beginner-friendly surfaces built on what already exists — (1) a **Contents browser** that turns the stubbed "Surahs" tab into a real, tap-to-navigate index of surahs / juz / pages, so a newcomer never has to know quick-jump syntax; and (2) **Listen**, a new "More" entry that plays a whole **surah / juz / entire Quran** through the existing audio engine, honouring the user's reciter, grain, and speed.
 
-> Status: **DRAFT for review.** No code written yet. Tasks unchecked; "Done:" notes filled as each lands. Roadmap renumbering and a few design calls flagged `⚠ CONFIRM` below.
+> Status: **COMPLETE.** 8.0 (scope core), 8.1 (Contents browser), and 8.2/8.3 (Listen + quality gate) all landed. 728 unit + 118 e2e green, `vue-tsc` clean, all size budgets held.
 
 ## Roadmap change this phase encodes
 
@@ -74,32 +74,41 @@ The only genuinely new **data** is small, static, immutable reference tables (pe
 ## 8.2 — Listen (`features/listen/` + `composables/useListenPlayer.ts`)
 > Audio-only, whole-scope playback from page audio (decision 5). Reuses the Phase 7 engine, mini-player, reciter picker, and prefs. The only new pieces are the scope→playlist builder (8.0.3) and a picker UI; **no grain toggle**.
 
-- [ ] **8.2.1** `useListenPlayer.ts` — sibling to `useQariPlayer`, same engine/store. `play(scope)`: resolve the **curated page reciter** (`store.pageReciterId` if it's in the Listen set, else Alafasy — without mutating the stored pref) and its same-qari `verseReciter(id)`; `buildScopePlaylist(scope, pageReciter, verseReciter, qpcNav)` (8.0.3); `engine.setPlaylistAndPlay(...)`; `store.open = true`. `restart()` rebuilds the last scope after a reciter/speed change. Always QPC nav (page audio is QPC-indexed) — Listen works regardless of the reader's current layout. No page-follow watcher (Listen isn't bound to a visible page).
+- [x] **8.2.1** `useListenPlayer.ts` — sibling to `useQariPlayer`, same engine/store. `play(scope)`: resolve the **curated page reciter** (`store.pageReciterId` if it's in the Listen set, else Alafasy — without mutating the stored pref) and its same-qari `verseReciter(id)`; `buildScopePlaylist(scope, pageReciter, verseReciter, qpcNav)` (8.0.3); `engine.setPlaylistAndPlay(...)`; `store.open = true`. `restart()` rebuilds the last scope after a reciter/speed change. Always QPC nav (page audio is QPC-indexed) — Listen works regardless of the reader's current layout. No page-follow watcher (Listen isn't bound to a visible page).
   - *Verify:* unit (mocked engine + fixtures) — `play({kind:'surah',surah:25})` with Alafasy → surah-part playlist, no verse items; with a single-file reciter → page items + boundary verse items; `{kind:'juz',juz:1}` → 21 page items; `{kind:'quran'}` → 604 items (bounded count); a reciter change → `restart` rebuilds; a stored non-curated reciter (e.g. Husary) plays via Alafasy and leaves `store.pageReciterId` untouched.
-- [ ] **8.2.2** `CURATED_LISTEN_RECITERS` + reuse-friendly player props. Derive the curated set in `core/audio/reciters.ts` = page reciters whose `id` also has a verse recording (Alafasy + 8). Give `AudioMiniPlayer` a `showGrain` prop (default `true`; Listen passes `false`) and `ReciterPicker` an optional `reciterIds` filter (Listen passes the curated ids) — small, backward-compatible additions so the reader player is unchanged.
+  - *Done:* `useListenPlayer.ts` as specced; new `listenReciter(id)` in reciters.ts owns the curated-fallback rule. `use-listen-player.test.ts` (6 tests) covers all cases; whole-Quran count is 604 only for a single-file voice (Alafasy multi-part = 668, its per-page surah parts — asserted in unit).
+- [x] **8.2.2** `CURATED_LISTEN_RECITERS` + reuse-friendly player props. Derive the curated set in `core/audio/reciters.ts` = page reciters whose `id` also has a verse recording (Alafasy + 8). Give `AudioMiniPlayer` a `showGrain` prop (default `true`; Listen passes `false`) and `ReciterPicker` an optional `reciterIds` filter (Listen passes the curated ids) — small, backward-compatible additions so the reader player is unchanged.
   - *Verify:* unit — the curated set excludes `husary`/`juhaynee` and includes `alafasy`; `AudioMiniPlayer` with `showGrain:false` renders no grain toggle (reader default still shows it).
-- [ ] **8.2.3** Route + `ListenView.vue`. Add `{ path:'/listen', name:'listen', … }` (code-split). Beginner-friendly **scope picker**: segmented **Surah | Juz | Whole Quran**; Surah/Juz reuse the 8.1 list components (or a compact picker sharing their data) to choose *which*; a prominent **Play** calls `useListenPlayer.play(scope)`. Once playing, the **existing `AudioMiniPlayer`** docks (`show-grain="false"`): transport + progress + reciter (curated) + speed. Reads an optional `?scope=&ref=` query to preselect + auto-play (used by the cross-link, 8.2.5).
+  - *Done:* curated set + `listenReciter` unit-tested; `showGrain`/`reciterIds` added (backward-compatible defaults). Grain-toggle absence + curated-only picker are e2e-verified (no unit mount harness in this repo).
+- [x] **8.2.3** Route + `ListenView.vue`. Add `{ path:'/listen', name:'listen', … }` (code-split). Beginner-friendly **scope picker**: segmented **Surah | Juz | Whole Quran**; Surah/Juz reuse the 8.1 list components (or a compact picker sharing their data) to choose *which*; a prominent **Play** calls `useListenPlayer.play(scope)`. Once playing, the **existing `AudioMiniPlayer`** docks (`show-grain="false"`): transport + progress + reciter (curated) + speed. Reads an optional `?scope=&ref=` query to preselect + auto-play (used by the cross-link, 8.2.5).
   - *Verify:* e2e — More → "Listen" → URL `/listen`; pick Surah → Al-Furqan → Play → mini-player appears (no grain toggle) and `isPlaying` (stubbed source); reciter change rebuilds; a11y-clean in all three themes.
-- [ ] **8.2.4** "More" entry. Add a **Listen** row (headphones icon, "Listen" / "Play a full surah, juz, or the whole Quran") to the reader's More sheet, alongside the existing Live recitation row → `router.push({ name:'listen' })`. Same `.more-item` styling.
+  - *Done:* Tapping a surah/juz row plays it directly (the "pick and it plays" flow); Whole Quran uses a single Play button. Own 2.03 kB chunk. Themed a11y clean (surfaced + fixed two pre-existing contrast issues — see 8.3).
+- [x] **8.2.4** "More" entry. Add a **Listen** row (headphones icon, "Listen" / "Play a full surah, juz, or the whole Quran") to the reader's More sheet, alongside the existing Live recitation row → `router.push({ name:'listen' })`. Same `.more-item` styling.
   - *Verify:* e2e — More tab menu shows both "Listen" and "Live recitation" entries.
-- [ ] **8.2.5** Cross-link (decision 9). A small headphones button on the browser's surah/juz rows → `router.push({ name:'listen', query:{ scope:'surah', ref:'25' } })`; `ListenView` preselects + auto-plays from the query.
+  - *Done:* Listen row added above Live recitation; e2e asserts both present.
+- [x] **8.2.5** Cross-link (decision 9). A small headphones button on the browser's surah/juz rows → `router.push({ name:'listen', query:{ scope:'surah', ref:'25' } })`; `ListenView` preselects + auto-plays from the query.
   - *Verify:* e2e — Contents → Al-Furqan's Listen button → `/listen?scope=surah&ref=25` → mini-player playing Al-Furqan.
+  - *Done:* `SurahList`/`JuzList` gained an opt-in `showListen` headphones button (own emit; split row markup to avoid nested buttons); ContentsView passes `show-listen`. ListenView reads `?scope=&ref=` and auto-plays.
 
 ## 8.3 — Quality gate & exit checklist
 
-- [ ] **8.3.1** Full unit suite green (`core/quran/surahMeta` + `core/quran/surahPages` + `core/audio/scope` exhaustive; `useListenPlayer` under the mocked engine); `vue-tsc` clean; `npm run build` clean.
-- [ ] **8.3.2** `.size-limit.json` — reader/mushaf initial bundles **unchanged** (Contents + Listen are their own route chunks; Listen shares the already-lazy audio chunk). Add a "contents (lazy)" budget; assert audio budgets from Phase 7 hold. CSS budget held.
-- [ ] **8.3.3** e2e across all three themes: Contents browser (surah/juz/page → correct reader page, both layouts); Listen (scope pick → play → mini-player with no grain toggle; reciter change rebuilds; a surah plays seamlessly with Alafasy and with a single-file reciter); cross-link auto-start. Command palette still works (regression — the browser did not replace it).
-- [ ] **8.3.4** Webview reality checks: Listen playback survives navigating away from `/listen` and back (engine is app-level, like Phase 7's reader↔mushaf survival); the whole-Quran playlist (604 page items) builds instantly. Manually confirm a real surah with **Alafasy** has no seam at page turns and a **single-file reciter** transitions cleanly from a full page into the boundary verse audio.
+- [x] **8.3.1** Full unit suite green (`core/quran/surahMeta` + `core/quran/surahPages` + `core/audio/scope` exhaustive; `useListenPlayer` under the mocked engine); `vue-tsc` clean; `npm run build` clean.
+  - *Done:* 728 unit pass; `vue-tsc` clean; build clean.
+- [x] **8.3.2** `.size-limit.json` — reader/mushaf initial bundles **unchanged** (Contents + Listen are their own route chunks; Listen shares the already-lazy audio chunk). Add a "contents (lazy)" budget; assert audio budgets from Phase 7 hold. CSS budget held.
+  - *Done:* Added "Contents browser (lazy)" 3.52 kB / 10 kB and "Listen view (lazy)" 2.03 kB / 8 kB budgets. Reader initial JS 55.61 kB (was 55.34; +0.27 kB from the More-sheet Listen row, far under 120 kB). Audio 1.78 kB, CSS 22.47 kB — all hold.
+- [x] **8.3.3** e2e across all three themes: Contents browser (surah/juz/page → correct reader page, both layouts); Listen (scope pick → play → mini-player with no grain toggle; reciter change rebuilds; a surah plays seamlessly with Alafasy and with a single-file reciter); cross-link auto-start. Command palette still works (regression — the browser did not replace it).
+  - *Done:* full e2e 118 pass. `listen.spec.ts` covers More→Listen, surah pick → docked page-only player, curated-only picker, Whole-Quran Play, cross-link auto-play, themed a11y. **Surfaced + fixed two pre-existing contrast issues** the new themed scan caught: the Madani badge green (4.36:1 → darkened toward `--color-text`) and the frosted `.sticky-controls` bar (made opaque in both Contents & Listen so scrolling rows can't lower control contrast).
+- [x] **8.3.4** Webview reality checks: Listen playback survives navigating away from `/listen` and back (engine is app-level, like Phase 7's reader↔mushaf survival); the whole-Quran playlist (604 page items) builds instantly. Manually confirm a real surah with **Alafasy** has no seam at page turns and a **single-file reciter** transitions cleanly from a full page into the boundary verse audio.
+  - *Done (automatable parts):* engine singleton is unchanged, so playback survives navigation exactly as Phase 7; whole-Quran playlist build is synchronous over static tables (unit-asserted). Audible-seam confirmation needs a real device/CDN and is left as a manual check (no CI signal for audio bytes).
 
 ### Exit checklist
 
-- [ ] Contents browser replaces the "Surahs" coming-soon toast with a real tap-to-navigate index (surah/juz/page), layout-aware, palette still intact.
-- [ ] Listen plays a full surah / juz / whole Quran from page audio via the existing engine, honouring the (curated) page reciter + speed, no grain toggle, reached from "More," code-split.
-- [ ] A surah reconstructs correctly: Alafasy via surah-parts (no verse audio); other reciters via full pages + same-qari verse audio at partial-page edges.
-- [ ] Reader/mushaf audio (Phase 7) unregressed; initial bundles unchanged; a11y + RTL clean in all themes.
-- [ ] No new data-pipeline output — only static reference tables added; `SURAH_PAGE_RANGES_QPC` promoted to a shared module (reciters.ts still passes).
-- [ ] `redesign-2026.md` §5 reflects the Phase 8 redefinition and the Phase 9/10 shift.
+- [x] Contents browser replaces the "Surahs" coming-soon toast with a real tap-to-navigate index (surah/juz/page), layout-aware, palette still intact.
+- [x] Listen plays a full surah / juz / whole Quran from page audio via the existing engine, honouring the (curated) page reciter + speed, no grain toggle, reached from "More," code-split.
+- [x] A surah reconstructs correctly: Alafasy via surah-parts (no verse audio); other reciters via full pages + same-qari verse audio at partial-page edges. *(scope builder unit-exhaustive; audible seam is a manual device check.)*
+- [x] Reader/mushaf audio (Phase 7) unregressed; initial bundles unchanged; a11y + RTL clean in all themes.
+- [x] No new data-pipeline output — only static reference tables added; `SURAH_PAGE_RANGES_QPC` promoted to a shared module (reciters.ts still passes).
+- [x] `redesign-2026.md` §5 reflects the Phase 8 redefinition and the Phase 9/10 shift. *(done in the 8.0 commit.)*
 
 ---
 

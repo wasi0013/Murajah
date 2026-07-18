@@ -22,12 +22,17 @@ import { PAGE_MODE_UNAVAILABLE_HINT } from '@/core/audio/pageMode'
  * the expandable tray below. Docks above the bottom nav, thumb-zone actions, safe-
  * area aware. Reads playback state from the store; drives the engine directly.
  */
-const props = defineProps<{
-  pageAvailable: boolean
-  /** The grain that will actually play (page degrades to verse where unavailable). */
-  effectiveGrain: 'verse' | 'page'
-  reciterName: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    pageAvailable: boolean
+    /** The grain that will actually play (page degrades to verse where unavailable). */
+    effectiveGrain: 'verse' | 'page'
+    reciterName: string
+    /** The reader shows a verse/page grain toggle; Listen (page-only) hides it. */
+    showGrain?: boolean
+  }>(),
+  { showGrain: true },
+)
 const emit = defineEmits<{ start: []; rebuild: []; openPicker: []; close: [] }>()
 
 const store = useAudioStore()
@@ -88,7 +93,7 @@ function fmt(s: number) {
         </button>
       </div>
 
-      <div class="grain" role="radiogroup" aria-label="Playback grain">
+      <div v-if="showGrain" class="grain" role="radiogroup" aria-label="Playback grain">
         <button
           type="button"
           role="radio"

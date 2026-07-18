@@ -60,6 +60,12 @@ function onJuz(juz: number) {
   const page = nav?.juzToPage[String(juz)]
   if (page) toPage(page)
 }
+function listenSurah(surah: number) {
+  void router.push({ name: 'listen', query: { scope: 'surah', ref: String(surah) } })
+}
+function listenJuz(juz: number) {
+  void router.push({ name: 'listen', query: { scope: 'juz', ref: String(juz) } })
+}
 </script>
 
 <template>
@@ -81,8 +87,8 @@ function onJuz(juz: number) {
     <div class="body">
       <p v-if="loading" class="hint">Loading…</p>
       <template v-else>
-        <SurahList v-if="lens === 'surah'" :rows="surahs" @select="onSurah" />
-        <JuzList v-else-if="lens === 'juz'" :rows="juzz" @select="onJuz" />
+        <SurahList v-if="lens === 'surah'" :rows="surahs" show-listen @select="onSurah" @listen="listenSurah" />
+        <JuzList v-else-if="lens === 'juz'" :rows="juzz" show-listen @select="onJuz" @listen="listenJuz" />
         <PageList v-else :page-count="pageCount" @select="toPage" />
       </template>
     </div>
@@ -146,8 +152,9 @@ function onJuz(juz: number) {
   display: flex;
   justify-content: center;
   padding: 0.6rem 0.75rem;
-  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  backdrop-filter: blur(8px);
+  /* Opaque so rows scrolling underneath never reduce the control's text contrast. */
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 .body {
   flex: 1 0 auto;

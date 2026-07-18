@@ -12,12 +12,19 @@ import { useAudioStore } from '@/stores/audio'
  * asks the host to rebuild playback so the change is heard immediately.
  */
 const open = defineModel<boolean>('open', { default: false })
-const props = defineProps<{ grain: 'verse' | 'page' }>()
+const props = defineProps<{
+  grain: 'verse' | 'page'
+  /** Restrict the list to these reciter ids (Listen passes its curated set). */
+  reciterIds?: string[]
+}>()
 const emit = defineEmits<{ change: [] }>()
 
 const store = useAudioStore()
 
-const reciters = computed(() => (props.grain === 'page' ? PAGE_RECITERS : VERSE_RECITERS))
+const reciters = computed(() => {
+  const all = props.grain === 'page' ? PAGE_RECITERS : VERSE_RECITERS
+  return props.reciterIds ? all.filter((r) => props.reciterIds!.includes(r.id)) : all
+})
 const selectedId = computed(() =>
   props.grain === 'page' ? store.pageReciterId : store.verseReciterId,
 )

@@ -35,7 +35,7 @@ test('the Surahs tab opens the Contents browser', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Surahs' }).click()
   await expect(page).toHaveURL(/\/contents/)
-  await expect(page.getByRole('button', { name: /Al-Fatihah/ })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: /^Al-Fatihah/ })).toBeVisible({ timeout: 10_000 })
 })
 
 test('the More tab opens a menu with the live recitation entry', async ({ page }) => {

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('Surah lens navigates to a surah’s page', async ({ page }) => {
   await page.goto('/contents')
-  const furqan = page.getByRole('button', { name: /Al-Furqan/ })
+  const furqan = page.getByRole('button', { name: /^Al-Furqan/ })
   await expect(furqan).toBeVisible({ timeout: 10_000 })
   await furqan.click()
   // Al-Furqan (surah 25) starts on QPC page 359.
@@ -12,7 +12,7 @@ test('Surah lens navigates to a surah’s page', async ({ page }) => {
 test('Juz lens navigates to a juz’s page', async ({ page }) => {
   await page.goto('/contents')
   await page.getByRole('radio', { name: 'Juz' }).click()
-  const juz30 = page.getByRole('button', { name: /Juz 30/ })
+  const juz30 = page.getByRole('button', { name: /^Juz 30/ })
   await expect(juz30).toBeVisible({ timeout: 10_000 })
   await juz30.click()
   // Juz 30 opens on QPC page 582.

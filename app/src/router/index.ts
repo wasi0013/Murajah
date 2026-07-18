@@ -64,6 +64,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/live/LiveView.vue'),
   },
   {
+    // Listen — audio-only whole-scope playback (a surah / juz / the whole Quran).
+    // Reached from the "More" tab; reuses the audio engine + mini-player. Code-split.
+    path: '/listen',
+    name: 'listen',
+    component: () => import('@/features/listen/ListenView.vue'),
+  },
+  {
     // Design gallery (dev/design tool). Code-split → never in the reader bundle.
     path: '/gallery',
     name: 'gallery',
