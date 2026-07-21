@@ -2,6 +2,9 @@
 import { Headphones } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import type { SurahRow } from '@/core/navigation/contents'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 // Presentational surah index. Emits the chosen surah number; the view resolves it
 // to a page and navigates (keeps navigation in one place, and lets Listen reuse
@@ -19,9 +22,9 @@ defineEmits<{ select: [surah: number]; listen: [surah: number] }>()
         <span class="main">
           <span class="translit">{{ r.translit }}</span>
           <span class="meta">
-            {{ r.ayahs }} {{ r.ayahs === 1 ? 'ayah' : 'ayahs' }}
+            {{ t(r.ayahs === 1 ? 'surahList.ayahOne' : 'surahList.ayahOther', { n: r.ayahs }) }}
             <span class="dot" aria-hidden="true">·</span>
-            <span class="place" :class="r.place">{{ r.place === 'makki' ? 'Makki' : 'Madani' }}</span>
+            <span class="place" :class="r.place">{{ r.place === 'makki' ? t('surahList.makki') : t('surahList.madani') }}</span>
           </span>
         </span>
         <span class="arabic" dir="rtl">{{ r.arabic }}</span>
@@ -30,7 +33,7 @@ defineEmits<{ select: [surah: number]; listen: [surah: number] }>()
         v-if="showListen"
         type="button"
         class="listen-btn"
-        :aria-label="`Listen to ${r.translit}`"
+        :aria-label="t('surahList.listen', { name: r.translit })"
         @click="$emit('listen', r.surah)"
       >
         <Icon :icon="Headphones" :size="18" />

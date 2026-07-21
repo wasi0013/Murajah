@@ -1,21 +1,24 @@
 <script setup lang="ts">
+import { useI18n } from '@/core/i18n'
+
 // Presentational page jumper: a scannable grid of page-number chips. Emits the
 // chosen page. Static DOM (no per-chip reactivity), so the full 604-chip grid
 // renders without jank.
 const props = defineProps<{ pageCount: number }>()
 defineEmits<{ select: [page: number] }>()
 
+const { t } = useI18n()
 const pages = Array.from({ length: props.pageCount }, (_, i) => i + 1)
 </script>
 
 <template>
-  <div class="grid" role="group" aria-label="Pages">
+  <div class="grid" role="group" :aria-label="t('contents.tabs.page')">
     <button
       v-for="p in pages"
       :key="p"
       type="button"
       class="chip"
-      :aria-label="`Page ${p}`"
+      :aria-label="t('common.page', { n: p })"
       @click="$emit('select', p)"
     >
       {{ p }}

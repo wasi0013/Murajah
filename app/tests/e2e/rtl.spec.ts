@@ -23,7 +23,7 @@ test('RTL direction carries across navigation to the reader and progress', async
 
   await page.goto('/progress')
   await expect(html).toHaveAttribute('dir', 'rtl')
-  await expect(page.getByRole('heading', { name: 'Memorization', level: 1 })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'الحفظ', level: 1 })).toBeVisible({
     timeout: 10_000,
   })
 
@@ -44,7 +44,7 @@ test('Today externalises its chrome — the set-up heading is Arabic under ar', 
 test('progress surface has no serious a11y violations in RTL', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/progress')
-  await expect(page.getByRole('heading', { name: 'Memorization', level: 1 })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'الحفظ', level: 1 })).toBeVisible({
     timeout: 10_000,
   })
   await page.waitForTimeout(300)

@@ -10,6 +10,7 @@ import { usePlanStore } from '@/stores/plan'
 import { TOTAL_PAGES } from '@/stores/progress'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { estimateCompletion } from '@/core/memorization/completion'
+import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -31,13 +32,14 @@ const plan = usePlanStore()
 const persistence = useProgressPersistence(progress)
 const mistakesPersistence = useMistakesPersistence()
 const planPersistence = usePlanPersistence()
+const { t, locale } = useI18n()
 
 const tab = ref<'overview' | 'juz' | 'pages'>('overview')
-const tabOptions = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'juz', label: 'Juz' },
-  { value: 'pages', label: 'Pages' },
-]
+const tabOptions = computed(() => [
+  { value: 'overview', label: t('progress.tabs.overview') },
+  { value: 'juz', label: t('progress.tabs.juz') },
+  { value: 'pages', label: t('progress.tabs.pages') },
+])
 
 // Completion estimate uses the plan's new-memorization pace, and only when a new
 // front is active — otherwise there's no honest projection (decision 5).
@@ -48,7 +50,7 @@ const completion = computed(() => {
 const completionDateLabel = computed(() => {
   const d = completion.value.completionDate
   return d
-    ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, {
+    ? new Date(`${d}T00:00:00`).toLocaleDateString(locale.value, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -97,117 +99,122 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
 <template>
   <main class="progress">
     <header class="topbar">
-      <button class="icon-btn" aria-label="Back to reader" @click="router.push('/')">
+      <button class="icon-btn" :aria-label="t('common.backToReader')" @click="router.push('/')">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
-      <h1 class="title">Memorization</h1>
+      <h1 class="title">{{ t('progress.title') }}</h1>
     </header>
 
     <div class="tabs">
-      <SegmentedControl v-model="tab" :options="tabOptions" label="Progress view" />
+      <SegmentedControl v-model="tab" :options="tabOptions" :label="t('progress.view')" />
     </div>
 
     <template v-if="tab === 'overview'">
-    <section class="stats" aria-label="Summary">
+    <section class="stats" :aria-label="t('progress.summaryAria')">
       <div class="stat">
         <span class="stat-n">{{ stats.memorizedCount }}<span class="stat-of">/{{ stats.totalPages }}</span></span>
-        <span class="stat-l">Pages · {{ stats.percent }}%</span>
+        <span class="stat-l">{{ t('progress.stats.pagesPercent', { percent: stats.percent }) }}</span>
       </div>
       <div class="stat">
         <span class="stat-n">{{ hasanahFmt }}</span>
-        <span class="stat-l">Hasanah</span>
+        <span class="stat-l">{{ t('progress.stats.hasanah') }}</span>
       </div>
       <div class="stat">
         <span class="stat-n">{{ stats.mistakePages }}</span>
-        <span class="stat-l">Pages with mistakes</span>
+        <span class="stat-l">{{ t('progress.stats.mistakePages') }}</span>
       </div>
       <div class="stat">
         <span class="stat-n">{{ stats.averageStrength }}</span>
-        <span class="stat-l">Avg. strength</span>
+        <span class="stat-l">{{ t('progress.stats.avgStrength') }}</span>
       </div>
     </section>
 
-    <section class="bulk" aria-label="Bulk mark pages">
-      <span class="bulk-label">Mark pages</span>
-      <input v-model.number="rangeStart" type="number" min="1" :max="TOTAL_PAGES" aria-label="From page" class="num" />
+    <section class="bulk" :aria-label="t('progress.bulk.aria')">
+      <span class="bulk-label">{{ t('progress.bulk.label') }}</span>
+      <input v-model.number="rangeStart" type="number" min="1" :max="TOTAL_PAGES" :aria-label="t('progress.bulk.from')" class="num" />
       <span aria-hidden="true">–</span>
-      <input v-model.number="rangeEnd" type="number" min="1" :max="TOTAL_PAGES" aria-label="To page" class="num" />
-      <button class="btn" @click="bulkMark(true)">Memorized</button>
-      <button class="btn btn-ghost" @click="bulkMark(false)">Clear</button>
+      <input v-model.number="rangeEnd" type="number" min="1" :max="TOTAL_PAGES" :aria-label="t('progress.bulk.to')" class="num" />
+      <button class="btn" @click="bulkMark(true)">{{ t('progress.bulk.memorized') }}</button>
+      <button class="btn btn-ghost" @click="bulkMark(false)">{{ t('progress.bulk.clear') }}</button>
     </section>
 
     <MemorizedGrid @select="openPage" />
 
-    <section v-if="weakestPages.length" class="weakest" aria-label="Weakest pages">
-      <h2 class="section-title">Needs review</h2>
+    <section v-if="weakestPages.length" class="weakest" :aria-label="t('progress.weakestAria')">
+      <h2 class="section-title">{{ t('progress.needsReview') }}</h2>
       <div class="chips">
         <button v-for="p in weakestPages" :key="p" class="chip" @click="openPage(p)">
-          Page {{ p }}
+          {{ t('common.page', { n: p }) }}
         </button>
       </div>
     </section>
     </template>
 
-    <section v-else-if="tab === 'juz'" class="panel" aria-label="Juz progress">
-      <p v-if="!juzGroups.length" class="loading-hint">Loading…</p>
+    <section v-else-if="tab === 'juz'" class="panel" :aria-label="t('progress.juzAria')">
+      <p v-if="!juzGroups.length" class="loading-hint">{{ t('common.loading') }}</p>
       <template v-else>
         <JuzProgressGrid :groups="juzGroups" :memorized="progress.memorized" @select="openInReader" />
 
-        <div class="estimate" aria-label="Completion estimate">
-          <h2 class="section-title">Completion estimate</h2>
+        <div class="estimate" :aria-label="t('progress.estimate.aria')">
+          <h2 class="section-title">{{ t('progress.estimate.title') }}</h2>
           <template v-if="completion.complete">
-            <p class="estimate-done">All {{ stats.totalPages }} pages memorized — may Allah accept it. 🎉</p>
+            <p class="estimate-done">{{ t('progress.estimate.doneAll', { n: stats.totalPages }) }}</p>
           </template>
           <template v-else-if="completion.daysRemaining !== null">
             <div class="estimate-cards">
               <div class="est-card">
-                <span class="est-label">Estimated completion</span>
+                <span class="est-label">{{ t('progress.estimate.date') }}</span>
                 <span class="est-value">{{ completionDateLabel }}</span>
               </div>
               <div class="est-card">
-                <span class="est-label">Days remaining</span>
+                <span class="est-label">{{ t('progress.estimate.daysRemaining') }}</span>
                 <span class="est-value">{{ completion.daysRemaining }}</span>
               </div>
             </div>
             <p class="estimate-note">
-              At {{ completion.pace }} new page{{ completion.pace === 1 ? '' : 's' }} a day, you'll
-              finish memorizing in about {{ completion.daysRemaining }} days.
+              {{
+                t(completion.pace === 1 ? 'progress.estimate.noteOne' : 'progress.estimate.noteOther', {
+                  pace: completion.pace,
+                  days: completion.daysRemaining,
+                })
+              }}
             </p>
           </template>
-          <p v-else class="estimate-note">
-            Set a daily new-page goal in your plan to see an estimated completion date.
-          </p>
+          <p v-else class="estimate-note">{{ t('progress.estimate.hint') }}</p>
         </div>
       </template>
     </section>
 
-    <section v-else class="panel" aria-label="Page by page">
-      <p v-if="!juzGroups.length" class="loading-hint">Loading…</p>
+    <section v-else class="panel" :aria-label="t('progress.pagesAria')">
+      <p v-if="!juzGroups.length" class="loading-hint">{{ t('common.loading') }}</p>
       <template v-else>
-        <p class="panel-lead">Each dot is a page; greener dots have more clean revisions.</p>
+        <p class="panel-lead">{{ t('progress.pagesLead') }}</p>
         <PageDotsGrid :groups="juzGroups" :strength="progress.strength" @select="openInReader" />
       </template>
     </section>
 
-    <BottomSheet v-model:open="sheetOpen" :label="selectedPage ? `Page ${selectedPage}` : 'Page'">
+    <BottomSheet
+      v-model:open="sheetOpen"
+      :label="selectedPage ? t('common.page', { n: selectedPage }) : t('common.pageWord')"
+    >
       <div v-if="selectedPage" class="sheet">
-        <h2 class="sheet-title">Page {{ selectedPage }}</h2>
+        <h2 class="sheet-title">{{ t('common.page', { n: selectedPage }) }}</h2>
 
         <div class="row">
-          <span>Memorized</span>
+          <span>{{ t('progress.sheet.memorized') }}</span>
           <Toggle
             :model-value="progress.isMemorized(selectedPage)"
-            label="Memorized"
+            :label="t('progress.sheet.memorized')"
             @update:model-value="progress.toggleMemorized(selectedPage)"
           />
         </div>
 
         <div class="row">
-          <span>Memorization strength</span>
+          <span>{{ t('progress.sheet.strength') }}</span>
           <div class="stepper">
             <button
               class="step"
-              aria-label="Decrease strength"
+              :aria-label="t('progress.sheet.decrease')"
               @click="progress.bumpStrength(selectedPage, -1)"
             >
               <Icon :icon="Minus" :size="16" />
@@ -215,18 +222,18 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
             <span class="step-val">{{ progress.strengthOf(selectedPage) }}</span>
             <button
               class="step"
-              aria-label="Record a clean revision"
+              :aria-label="t('progress.sheet.recordClean')"
               @click="progress.recordPerfectRevision(selectedPage)"
             >
               <Icon :icon="Plus" :size="16" />
             </button>
           </div>
         </div>
-        <p class="hint">“+” records a clean recitation from memory (awards hasanah).</p>
+        <p class="hint">{{ t('progress.sheet.hint') }}</p>
 
         <button class="open-reader" @click="openInReader(selectedPage)">
           <Icon :icon="BookOpen" :size="16" />
-          <span>Open in reader</span>
+          <span>{{ t('progress.sheet.openReader') }}</span>
         </button>
       </div>
     </BottomSheet>

@@ -3,6 +3,9 @@ import { nextTick, ref } from 'vue'
 import { useMemorization } from '@/composables/useMemorization'
 import { TOTAL_PAGES } from '@/stores/progress'
 import { juzProgress, type PageCell } from '@/core/memorization/progressView'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * The canonical 604-page memorization grid, grouped by juz. Each cell is colour-
@@ -86,24 +89,23 @@ function rampStyle(tier: number): Record<string, string> {
 }
 
 function cellLabel(c: PageCell): string {
-  const parts = [`Page ${c.page}`]
-  if (c.memorized) parts.push('memorized')
-  else parts.push('not memorized')
-  if (c.strength > 0) parts.push(`strength ${c.strength}`)
-  if (c.mistakes > 0) parts.push(`${c.mistakes} mistakes`)
+  const parts = [t('common.page', { n: c.page })]
+  parts.push(c.memorized ? t('grid.cell.memorized') : t('grid.cell.notMemorized'))
+  if (c.strength > 0) parts.push(t('grid.cell.strength', { n: c.strength }))
+  if (c.mistakes > 0) parts.push(t('grid.cell.mistakes', { n: c.mistakes }))
   return parts.join(', ')
 }
 </script>
 
 <template>
   <div ref="gridRoot" class="grid-root" @keydown="onKeydown">
-    <nav class="juz-jump" aria-label="Jump to juz">
+    <nav class="juz-jump" :aria-label="t('grid.jumpAria')">
       <button
         v-for="g in juzGroups"
         :key="g.juz"
         type="button"
         class="juz-chip"
-        :aria-label="`Jump to juz ${g.juz}`"
+        :aria-label="t('grid.jumpTo', { n: g.juz })"
         @click="jumpToJuz(g.juz, g.startPage)"
       >
         {{ g.juz }}
@@ -113,17 +115,17 @@ function cellLabel(c: PageCell): string {
     <div class="legend" aria-hidden="true">
       <span class="legend-item">
         <span class="swatch swatch-empty" />
-        Not started
+        {{ t('common.notStarted') }}
       </span>
       <span class="legend-item">
         <span class="ramp">
-          <span v-for="t in 7" :key="t" class="ramp-step" :style="rampStyle(t - 1)" />
+          <span v-for="step in 7" :key="step" class="ramp-step" :style="rampStyle(step - 1)" />
         </span>
-        Weaker → stronger
+        {{ t('grid.legendRamp') }}
       </span>
       <span class="legend-item">
         <span class="swatch swatch-mistake"><span class="dot" /></span>
-        Has mistakes
+        {{ t('grid.legendMistakes') }}
       </span>
     </div>
 
@@ -132,17 +134,17 @@ function cellLabel(c: PageCell): string {
       :key="g.juz"
       class="juz"
       :data-juz="g.juz"
-      :aria-label="`Juz ${g.juz}`"
+      :aria-label="t('common.juz', { n: g.juz })"
     >
       <header class="juz-head">
-        <span class="juz-name">Juz {{ g.juz }}</span>
+        <span class="juz-name">{{ t('common.juz', { n: g.juz }) }}</span>
         <span class="juz-count">
           {{ juzProgress(g, progress.memorized).memorized }}/{{ g.pages.length }}
         </span>
         <span
           class="juz-bar"
           role="progressbar"
-          :aria-label="`Juz ${g.juz} memorized`"
+          :aria-label="t('grid.juzMemorized', { n: g.juz })"
           :aria-valuemin="0"
           :aria-valuenow="juzProgress(g, progress.memorized).memorized"
           :aria-valuemax="g.pages.length"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, ListOrdered } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
@@ -12,6 +12,7 @@ import { readerLink } from '@/core/navigation/readerLinks'
 import { getDataClient } from '@/core/data'
 import type { NavIndex } from '@/core/data/types'
 import { useReaderStore } from '@/stores/reader'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Contents browser (8.1) — the beginner-friendly index behind the "Surahs" tab.
@@ -22,17 +23,18 @@ import { useReaderStore } from '@/stores/reader'
 const router = useRouter()
 const reader = useReaderStore()
 const data = getDataClient()
+const { t } = useI18n()
 
 // Capture the layout once; navigation + page ranges use it (QPC vs Indopak page
 // numbers differ), while juz opening-surahs come from the layout-independent QPC index.
 const layout = reader.layout
 
 const lens = ref<'surah' | 'juz' | 'page'>('surah')
-const lensOptions = [
-  { value: 'surah', label: 'Surah' },
-  { value: 'juz', label: 'Juz' },
-  { value: 'page', label: 'Page' },
-]
+const lensOptions = computed(() => [
+  { value: 'surah', label: t('contents.tabs.surah') },
+  { value: 'juz', label: t('contents.tabs.juz') },
+  { value: 'page', label: t('contents.tabs.page') },
+])
 
 const surahs = ref<SurahRow[]>([])
 const juzz = ref<JuzRow[]>([])
@@ -72,21 +74,21 @@ function listenJuz(juz: number) {
 <template>
   <main class="contents">
     <header class="topbar">
-      <button class="icon-btn" aria-label="Back to reader" @click="router.push({ name: 'home' })">
+      <button class="icon-btn" :aria-label="t('common.backToReader')" @click="router.push({ name: 'home' })">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
       <div class="title-wrap">
         <Icon :icon="ListOrdered" :size="18" class="title-icon" />
-        <h1 class="title">Browse</h1>
+        <h1 class="title">{{ t('contents.title') }}</h1>
       </div>
     </header>
 
     <div class="sticky-controls">
-      <SegmentedControl v-model="lens" :options="lensOptions" label="Browse by" class="segment" />
+      <SegmentedControl v-model="lens" :options="lensOptions" :label="t('contents.browseBy')" class="segment" />
     </div>
 
     <div class="body">
-      <p v-if="loading" class="hint">Loading…</p>
+      <p v-if="loading" class="hint">{{ t('common.loading') }}</p>
       <template v-else>
         <SurahList v-if="lens === 'surah'" :rows="surahs" show-listen @select="onSurah" @listen="listenSurah" />
         <JuzList v-else-if="lens === 'juz'" :rows="juzz" show-listen @select="onJuz" @listen="listenJuz" />

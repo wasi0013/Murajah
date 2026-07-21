@@ -2,6 +2,9 @@
 import { Headphones } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import type { JuzRow } from '@/core/navigation/contents'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 // Presentational juz index. Emits the chosen juz number. With `showListen`, each
 // row also offers a headphones shortcut that deep-links into Listen (emits `listen`).
@@ -15,11 +18,11 @@ defineEmits<{ select: [juz: number]; listen: [juz: number] }>()
       <button type="button" class="row" @click="$emit('select', r.juz)">
         <span class="num" aria-hidden="true">{{ r.juz }}</span>
         <span class="main">
-          <span class="name">Juz {{ r.juz }}</span>
+          <span class="name">{{ t('common.juz', { n: r.juz }) }}</span>
           <span class="meta">
             {{ r.startSurahName }}
             <span class="dot" aria-hidden="true">·</span>
-            pages {{ r.startPage }}–{{ r.endPage }}
+            {{ t('juzList.pages', { start: r.startPage, end: r.endPage }) }}
           </span>
         </span>
       </button>
@@ -27,7 +30,7 @@ defineEmits<{ select: [juz: number]; listen: [juz: number] }>()
         v-if="showListen"
         type="button"
         class="listen-btn"
-        :aria-label="`Listen to Juz ${r.juz}`"
+        :aria-label="t('juzList.listen', { n: r.juz })"
         @click="$emit('listen', r.juz)"
       >
         <Icon :icon="Headphones" :size="18" />

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { strengthTier, type JuzGroup } from '@/core/memorization/progressView'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * Page-by-Page revision heatmap (9.2) — 30 juz boxes, each a grid of page dots
@@ -14,8 +17,10 @@ const emit = defineEmits<{ select: [page: number] }>()
 function tier(page: number, strength: Map<number, number>): number {
   return strengthTier(strength.get(page) ?? 0)
 }
-function label(page: number, t: number): string {
-  return t === 0 ? `Page ${page} — not started` : `Page ${page} — ${t} revision${t === 1 ? '' : 's'}`
+function label(page: number, tier: number): string {
+  if (tier === 0) return t('heatmap.labelNotStarted', { page })
+  if (tier === 1) return t('heatmap.labelOne', { page })
+  return t('heatmap.labelOther', { page, n: tier })
 }
 </script>
 
@@ -23,7 +28,7 @@ function label(page: number, t: number): string {
   <div class="page-dots">
     <div class="boxes">
       <section v-for="g in groups" :key="g.juz" class="box">
-        <h3 class="box-title">Juz {{ g.juz }}</h3>
+        <h3 class="box-title">{{ t('common.juz', { n: g.juz }) }}</h3>
         <div class="dots">
           <button
             v-for="p in g.pages"
@@ -40,9 +45,9 @@ function label(page: number, t: number): string {
     </div>
 
     <p class="legend">
-      <span class="leg"><span class="dot tier-0" aria-hidden="true"></span>Not started</span>
-      <span class="leg"><span class="dot tier-1" aria-hidden="true"></span>1 revision</span>
-      <span class="leg"><span class="dot tier-4" aria-hidden="true"></span>4+ revisions</span>
+      <span class="leg"><span class="dot tier-0" aria-hidden="true"></span>{{ t('common.notStarted') }}</span>
+      <span class="leg"><span class="dot tier-1" aria-hidden="true"></span>{{ t('heatmap.revisionOne') }}</span>
+      <span class="leg"><span class="dot tier-4" aria-hidden="true"></span>{{ t('heatmap.revisionsMany') }}</span>
     </p>
   </div>
 </template>

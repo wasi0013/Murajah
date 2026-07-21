@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { juzProgress, type JuzGroup } from '@/core/memorization/progressView'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * Juz Progress (9.2) — 30 cells, one per juz, showing how much of each is
@@ -46,12 +49,12 @@ const cells = computed<Cell[]>(() =>
           type="button"
           class="cell"
           :class="`is-${c.status}`"
-          :aria-label="`Juz ${c.juz}: ${c.done} of ${c.total} pages memorized`"
+          :aria-label="t('juzGrid.cellAria', { juz: c.juz, done: c.done, total: c.total })"
           @click="emit('select', c.startPage)"
         >
           <span class="head">
             <span class="dot" aria-hidden="true"></span>
-            <span class="juz-n">Juz {{ c.juz }}</span>
+            <span class="juz-n">{{ t('common.juz', { n: c.juz }) }}</span>
           </span>
           <span class="track" aria-hidden="true">
             <span class="fill" :style="{ width: `${c.percent}%` }"></span>
@@ -62,9 +65,9 @@ const cells = computed<Cell[]>(() =>
     </ul>
 
     <p class="legend">
-      <span class="leg"><span class="dot is-complete" aria-hidden="true"></span>Completed</span>
-      <span class="leg"><span class="dot is-partial" aria-hidden="true"></span>Partial</span>
-      <span class="leg"><span class="dot is-empty" aria-hidden="true"></span>Not started</span>
+      <span class="leg"><span class="dot is-complete" aria-hidden="true"></span>{{ t('juzGrid.legendCompleted') }}</span>
+      <span class="leg"><span class="dot is-partial" aria-hidden="true"></span>{{ t('juzGrid.legendPartial') }}</span>
+      <span class="leg"><span class="dot is-empty" aria-hidden="true"></span>{{ t('common.notStarted') }}</span>
     </p>
   </div>
 </template>
