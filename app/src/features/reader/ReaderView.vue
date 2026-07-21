@@ -47,6 +47,9 @@ import TajweedLegend from '@/components/TajweedLegend.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * Reader shell: a top bar (quick-jump + settings), the paged reading surface,
@@ -109,27 +112,28 @@ const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/Recor
 // The "More" tab opens a small menu sheet (live recitation, and room to grow).
 const moreOpen = ref(false)
 
-const layoutOptions = [
-  { value: 'qpc', label: 'Uthmani' },
-  { value: 'indopak', label: 'Indopak' },
-]
+const layoutOptions = computed(() => [
+  { value: 'qpc', label: t('reader.uthmani') },
+  { value: 'indopak', label: t('reader.indopak') },
+])
+// Word-by-word target languages carry their own endonyms, not UI copy — left literal.
 const wbwLangOptions = [
   { value: 'en', label: 'EN' },
   { value: 'bn', label: 'বাংলা' },
 ]
-const modeOptions = [
-  { value: 'read', label: 'Read' },
-  { value: 'mark-mistake', label: 'Mark' },
-]
+const modeOptions = computed(() => [
+  { value: 'read', label: t('reader.read') },
+  { value: 'mark-mistake', label: t('reader.mark') },
+])
 // "Goals" and "Plans" are one surface now — Today (Phase 5).
-const tabs = [
-  { value: 'home', label: 'Home', icon: Home },
-  { value: 'mushaf', label: 'Mushaf', icon: BookOpen },
-  { value: 'surahs', label: 'Surahs', icon: ListOrdered },
-  { value: 'today', label: 'Today', icon: CalendarCheck },
-  { value: 'quiz', label: 'Quiz', icon: GraduationCap },
-  { value: 'more', label: 'More', icon: Menu },
-]
+const tabs = computed(() => [
+  { value: 'home', label: t('reader.tabs.home'), icon: Home },
+  { value: 'mushaf', label: t('reader.tabs.mushaf'), icon: BookOpen },
+  { value: 'surahs', label: t('reader.tabs.surahs'), icon: ListOrdered },
+  { value: 'today', label: t('reader.tabs.today'), icon: CalendarCheck },
+  { value: 'quiz', label: t('reader.tabs.quiz'), icon: GraduationCap },
+  { value: 'more', label: t('reader.tabs.more'), icon: Menu },
+])
 
 const sheetOpen = ref(false)
 const paletteOpen = ref(false)
@@ -179,18 +183,18 @@ function openMushaf() {
       <button
         class="icon-btn"
         :disabled="!canPrev"
-        aria-label="Previous page"
+        :aria-label="t('reader.prevPage')"
         @click="reader.prevPage()"
       >
         <Icon :icon="ChevronLeft" :size="22" />
       </button>
 
-      <button class="jump" aria-label="Go to page, ayah or surah" @click="paletteOpen = true">
+      <button class="jump" :aria-label="t('reader.jump')" @click="paletteOpen = true">
         <Icon :icon="Search" :size="16" />
         <span class="indicator">
-          <span class="page-n">Page {{ reader.page }} / {{ reader.pageCount }}</span>
+          <span class="page-n">{{ t('common.page', { n: reader.page }) }} / {{ reader.pageCount }}</span>
           <span v-if="juz || surahName" class="page-meta">
-            <template v-if="juz">Juz {{ juz }}</template>
+            <template v-if="juz">{{ t('common.juz', { n: juz }) }}</template>
             <template v-if="juz && surahName"> · </template>
             <bdi v-if="surahName" lang="ar">{{ surahName }}</bdi>
           </span>
@@ -200,7 +204,7 @@ function openMushaf() {
       <button
         class="icon-btn"
         :disabled="!canNext"
-        aria-label="Next page"
+        :aria-label="t('reader.nextPage')"
         @click="reader.nextPage()"
       >
         <Icon :icon="ChevronRight" :size="22" />
@@ -208,7 +212,7 @@ function openMushaf() {
 
       <button
         class="icon-btn"
-        aria-label="Memorization progress"
+        :aria-label="t('reader.progress')"
         @click="router.push('/progress')"
       >
         <Icon :icon="Brain" :size="20" />
@@ -217,7 +221,7 @@ function openMushaf() {
       <button
         class="icon-btn"
         :aria-pressed="audio.open"
-        aria-label="Recitation audio"
+        :aria-label="t('reader.audio')"
         @click="audio.open = true"
       >
         <Icon :icon="Headphones" :size="20" />
@@ -226,13 +230,13 @@ function openMushaf() {
       <button
         class="icon-btn"
         :aria-pressed="recordOpen"
-        aria-label="Record your recitation"
+        :aria-label="t('reader.record')"
         @click="recordOpen = true"
       >
         <Icon :icon="Mic" :size="20" />
       </button>
 
-      <button class="icon-btn" aria-label="Reader settings" @click="sheetOpen = true">
+      <button class="icon-btn" :aria-label="t('reader.settings')" @click="sheetOpen = true">
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
     </header>
@@ -261,9 +265,9 @@ function openMushaf() {
 
     <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="reader.page" />
 
-    <BottomSheet v-model:open="moreOpen" label="More">
+    <BottomSheet v-model:open="moreOpen" :label="t('reader.tabs.more')">
       <div class="more-menu">
-        <h2 class="settings-title">More</h2>
+        <h2 class="settings-title">{{ t('reader.tabs.more') }}</h2>
         <button
           class="more-item"
           type="button"
@@ -271,8 +275,8 @@ function openMushaf() {
         >
           <Icon :icon="Headphones" :size="18" />
           <span class="more-label">
-            <span class="more-name">Listen</span>
-            <span class="more-sub">Play a full surah, juz, or the whole Quran</span>
+            <span class="more-name">{{ t('reader.moreListen') }}</span>
+            <span class="more-sub">{{ t('reader.moreListenSub') }}</span>
           </span>
         </button>
         <button
@@ -282,8 +286,8 @@ function openMushaf() {
         >
           <Icon :icon="Radio" :size="18" />
           <span class="more-label">
-            <span class="more-name">Live recitation</span>
-            <span class="more-sub">Makkah &amp; Madinah live streams</span>
+            <span class="more-name">{{ t('reader.moreLive') }}</span>
+            <span class="more-sub">{{ t('reader.moreLiveSub') }}</span>
           </span>
         </button>
         <button
@@ -293,46 +297,46 @@ function openMushaf() {
         >
           <Icon :icon="Settings" :size="18" />
           <span class="more-label">
-            <span class="more-name">Settings</span>
-            <span class="more-sub">Theme &amp; data backup</span>
+            <span class="more-name">{{ t('reader.moreSettings') }}</span>
+            <span class="more-sub">{{ t('reader.moreSettingsSub') }}</span>
           </span>
         </button>
       </div>
     </BottomSheet>
 
-    <BottomSheet v-model:open="sheetOpen" label="Reader settings">
+    <BottomSheet v-model:open="sheetOpen" :label="t('reader.settings')">
       <div class="settings">
-        <h2 class="settings-title">Reader settings</h2>
+        <h2 class="settings-title">{{ t('reader.settings') }}</h2>
 
         <div class="row">
-          <span class="row-label">Reading script</span>
+          <span class="row-label">{{ t('reader.script') }}</span>
           <SegmentedControl
             :model-value="reader.layout"
             :options="layoutOptions"
-            label="Reading script"
+            :label="t('reader.script')"
             @update:model-value="switchTo($event as Layout)"
           />
         </div>
 
         <div v-if="!reader.tafsir" class="row">
-          <label class="row-label" for="size-slider">Page width</label>
+          <label class="row-label" for="size-slider">{{ t('reader.width') }}</label>
           <Slider
             id="size-slider"
             :model-value="reader.textSizeStep"
             :min="0"
             :max="maxStep"
             :step="1"
-            label="Page width"
+            :label="t('reader.width')"
             @update:model-value="reader.setTextSizeStep($event)"
           />
         </div>
 
         <div v-if="!reader.tafsir && reader.layout === 'qpc'" class="row">
-          <span class="row-label">Tajweed colours</span>
+          <span class="row-label">{{ t('reader.tajweed') }}</span>
           <div class="row-end">
-            <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" label="Tajweed legend">
+            <Popover v-if="reader.tajweedActive" v-model:open="legendOpen" :label="t('reader.tajweedLegend')">
               <template #trigger>
-                <button type="button" class="legend-btn" aria-label="Tajweed legend">
+                <button type="button" class="legend-btn" :aria-label="t('reader.tajweedLegend')">
                   <Icon :icon="Palette" :size="16" />
                 </button>
               </template>
@@ -340,45 +344,45 @@ function openMushaf() {
             </Popover>
             <Toggle
               :model-value="reader.tajweed"
-              label="Tajweed colours"
+              :label="t('reader.tajweed')"
               @update:model-value="reader.toggleTajweed()"
             />
           </div>
         </div>
 
         <div v-if="!reader.tafsir" class="row">
-          <span class="row-label">Word-by-word</span>
+          <span class="row-label">{{ t('reader.wbw') }}</span>
           <div class="row-end">
             <SegmentedControl
               v-if="reader.wbw"
               :model-value="reader.wbwLang"
               :options="wbwLangOptions"
-              label="Translation language"
+              :label="t('reader.wbwLang')"
               @update:model-value="reader.setWbwLang($event as WbwLang)"
             />
             <Toggle
               :model-value="reader.wbw"
-              label="Word-by-word translation"
+              :label="t('reader.wbwToggle')"
               @update:model-value="reader.toggleWbw()"
             />
           </div>
         </div>
 
         <div class="row">
-          <span class="row-label">Tafsir &amp; translations</span>
+          <span class="row-label">{{ t('reader.tafsir') }}</span>
           <Toggle
             :model-value="reader.tafsir"
-            label="Tafsir and translations"
+            :label="t('reader.tafsirToggle')"
             @update:model-value="reader.toggleTafsir()"
           />
         </div>
 
         <div v-if="!reader.tafsir" class="row">
-          <span class="row-label">Tap mode</span>
+          <span class="row-label">{{ t('reader.tapMode') }}</span>
           <SegmentedControl
             :model-value="reader.mode"
             :options="modeOptions"
-            label="Tap mode"
+            :label="t('reader.tapMode')"
             @update:model-value="reader.setMode($event as ReaderMode)"
           />
         </div>

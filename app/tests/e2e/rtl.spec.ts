@@ -29,6 +29,11 @@ test('RTL direction carries across navigation to the reader and progress', async
 
   await page.goto('/')
   await expect(html).toHaveAttribute('dir', 'rtl')
+  // The reader top bar reads its labels from the catalog, so its controls carry
+  // Arabic accessible names once ar is active.
+  await expect(page.getByRole('button', { name: 'إعدادات القارئ' })).toBeVisible({
+    timeout: 10_000,
+  })
 })
 
 test('Today externalises its chrome — the set-up heading is Arabic under ar', async ({ page }) => {

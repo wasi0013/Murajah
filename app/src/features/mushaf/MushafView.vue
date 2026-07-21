@@ -18,6 +18,7 @@ import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
 import Icon from '@/components/Icon.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Standalone mushaf scan surface (code-split — never in the reader bundle). One
@@ -31,6 +32,7 @@ const RTL = true
 const OFFSETS = [1, 0, -1] as const // DOM order L→R: next, current, prev
 const SLIDE_MS = 280
 
+const { t } = useI18n()
 const store = useMushafStore()
 const router = useRouter()
 const nav = useMushafPage(store, router)
@@ -57,7 +59,9 @@ const paletteOpen = ref(false)
 // Indicator: "Page N" or "Pages R–L", plus juz · surah.
 const pageLabel = computed(() => {
   const v = store.visible
-  return v.length === 2 ? `Pages ${v[0]}–${v[1]}` : `Page ${v[0]}`
+  return v.length === 2
+    ? t('common.pages', { start: v[0], end: v[1] })
+    : t('common.page', { n: v[0] })
 })
 
 // —— Width-driven spread mode ————————————————————————————————
@@ -298,24 +302,24 @@ function backToReader() {
 <template>
   <main class="mushaf">
     <header class="topbar">
-      <button class="icon-btn" aria-label="Back to reader" @click="backToReader">
+      <button class="icon-btn" :aria-label="t('common.backToReader')" @click="backToReader">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
       <button
         class="icon-btn"
         :disabled="!store.canPrev"
-        aria-label="Previous page"
+        :aria-label="t('reader.prevPage')"
         @click="store.canPrev && step(-1)"
       >
         <Icon :icon="ChevronLeft" :size="22" />
       </button>
 
-      <button class="jump" aria-label="Go to page, ayah or surah" @click="paletteOpen = true">
+      <button class="jump" :aria-label="t('reader.jump')" @click="paletteOpen = true">
         <Icon :icon="Search" :size="16" />
         <span class="indicator">
           <span class="page-n">{{ pageLabel }} / {{ store.pageCount }}</span>
           <span v-if="juz || surahName" class="page-meta">
-            <template v-if="juz">Juz {{ juz }}</template>
+            <template v-if="juz">{{ t('common.juz', { n: juz }) }}</template>
             <template v-if="juz && surahName"> · </template>
             <bdi v-if="surahName" lang="ar">{{ surahName }}</bdi>
           </span>
@@ -325,7 +329,7 @@ function backToReader() {
       <button
         class="icon-btn"
         :disabled="!store.canNext"
-        aria-label="Next page"
+        :aria-label="t('reader.nextPage')"
         @click="store.canNext && step(1)"
       >
         <Icon :icon="ChevronRight" :size="22" />
@@ -334,7 +338,7 @@ function backToReader() {
       <button
         class="icon-btn"
         :aria-pressed="audio.open"
-        aria-label="Recitation audio"
+        :aria-label="t('reader.audio')"
         @click="audio.open = true"
       >
         <Icon :icon="Headphones" :size="20" />
@@ -343,7 +347,7 @@ function backToReader() {
       <button
         v-if="zoom.zoomed.value"
         class="icon-btn"
-        aria-label="Reset zoom"
+        :aria-label="t('reader.resetZoom')"
         @click="zoom.reset()"
       >
         <Icon :icon="ZoomOut" :size="20" />
@@ -377,7 +381,7 @@ function backToReader() {
                 v-if="img.entry(p)?.status === 'ready'"
                 class="page-img"
                 :src="img.entry(p)!.url"
-                :alt="`Mushaf page ${p}`"
+                :alt="t('reader.mushafPageAlt', { page: p })"
                 draggable="false"
               />
               <button
@@ -385,9 +389,9 @@ function backToReader() {
                 class="page-error"
                 @click="img.retry(p)"
               >
-                Couldn’t load page {{ p }}. Tap to retry.
+                {{ t('reader.pageError', { page: p }) }}
               </button>
-              <div v-else class="page-skel" role="status" :aria-label="`Loading page ${p}`">
+              <div v-else class="page-skel" role="status" :aria-label="t('reader.loadingPage', { page: p })">
                 <Skeleton width="100%" height="100%" rounded="md" />
               </div>
             </div>
