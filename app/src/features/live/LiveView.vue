@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Radio, X } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /**
  * Live-recitation full view (7.7) — a standalone route (like the mushaf), reached
@@ -15,9 +18,10 @@ import Icon from '@/components/Icon.vue'
 const router = useRouter()
 
 // Channel ids from the legacy live config (Makkah Haramain / Madinah Sunnah feeds).
-const CHANNELS: { id: 'quran' | 'sunnah'; label: string; sub: string; youtubeChannel: string }[] = [
-  { id: 'quran', label: 'Makkah Live', sub: 'Al-Masjid al-Ḥarām', youtubeChannel: 'UCos52azQNBgW63_9uDJoPDA' },
-  { id: 'sunnah', label: 'Madinah Live', sub: 'Al-Masjid an-Nabawī', youtubeChannel: 'UCROKYPep-UuODNwyipe6JMw' },
+// Labels resolve through the catalog; only the stable youtube channel id lives here.
+const CHANNELS: { id: 'quran' | 'sunnah'; labelKey: string; subKey: string; youtubeChannel: string }[] = [
+  { id: 'quran', labelKey: 'live.makkah', subKey: 'live.makkahSub', youtubeChannel: 'UCos52azQNBgW63_9uDJoPDA' },
+  { id: 'sunnah', labelKey: 'live.madinah', subKey: 'live.madinahSub', youtubeChannel: 'UCROKYPep-UuODNwyipe6JMw' },
 ]
 
 const active = ref<'quran' | 'sunnah' | null>(null)
@@ -38,17 +42,17 @@ function back() {
 <template>
   <main class="live">
     <header class="topbar">
-      <button class="icon-btn" aria-label="Back to reader" @click="back">
+      <button class="icon-btn" :aria-label="t('common.backToReader')" @click="back">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
       <div class="title-wrap">
         <Icon :icon="Radio" :size="18" class="title-icon" />
-        <h1 class="title">Live recitation</h1>
+        <h1 class="title">{{ t('live.title') }}</h1>
       </div>
     </header>
 
     <div class="body">
-      <div class="channels" role="group" aria-label="Live channels">
+      <div class="channels" role="group" :aria-label="t('live.channelsAria')">
         <button
           v-for="c in CHANNELS"
           :key="c.id"
@@ -58,8 +62,8 @@ function back() {
           :aria-pressed="active === c.id"
           @click="selectChannel(c.id)"
         >
-          <span class="channel-label">{{ c.label }}</span>
-          <span class="channel-sub" dir="auto">{{ c.sub }}</span>
+          <span class="channel-label">{{ t(c.labelKey) }}</span>
+          <span class="channel-sub" dir="auto">{{ t(c.subKey) }}</span>
         </button>
       </div>
 
@@ -67,17 +71,17 @@ function back() {
         <iframe
           :key="active"
           :src="embedUrl(CHANNELS.find((c) => c.id === active)!.youtubeChannel)"
-          title="Live recitation stream"
+          :title="t('live.streamTitle')"
           allow="autoplay; encrypted-media; picture-in-picture"
           allowfullscreen
           loading="lazy"
         />
         <button type="button" class="stop" @click="active = null">
           <Icon :icon="X" :size="16" />
-          <span>Stop stream</span>
+          <span>{{ t('live.stop') }}</span>
         </button>
       </div>
-      <p v-else class="hint">Choose a masjid to start the live stream.</p>
+      <p v-else class="hint">{{ t('live.choose') }}</p>
     </div>
   </main>
 </template>

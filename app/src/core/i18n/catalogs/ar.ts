@@ -276,6 +276,28 @@ const ar: Messages = {
     moreSettings: 'الإعدادات',
     moreSettingsSub: 'المظهر والنسخ الاحتياطي',
   },
+  listen: {
+    title: 'استماع',
+    scopeAria: 'استمع إلى',
+    scopeSurah: 'سورة',
+    scopeJuz: 'جزء',
+    scopeQuran: 'المصحف كاملاً',
+    leadQuran: 'استمع إلى المصحف كاملاً، صفحة بصفحة.',
+    leadSurah: 'اختر سورة لتُتلى من أولها إلى آخرها.',
+    leadJuz: 'اختر جزءًا ليُتلى من أوله إلى آخره.',
+    playQuran: 'استمع إلى المصحف كاملاً',
+  },
+  live: {
+    title: 'بث مباشر',
+    channelsAria: 'القنوات المباشرة',
+    makkah: 'مكة مباشر',
+    makkahSub: 'المسجد الحرام',
+    madinah: 'المدينة مباشر',
+    madinahSub: 'المسجد النبوي',
+    streamTitle: 'بث التلاوة المباشر',
+    stop: 'إيقاف البث',
+    choose: 'اختر مسجدًا لبدء البث المباشر.',
+  },
 }
 
 export default ar

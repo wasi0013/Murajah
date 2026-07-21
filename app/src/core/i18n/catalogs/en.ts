@@ -278,6 +278,28 @@ const en: Messages = {
     moreSettings: 'Settings',
     moreSettingsSub: 'Theme & data backup',
   },
+  listen: {
+    title: 'Listen',
+    scopeAria: 'Listen to',
+    scopeSurah: 'Surah',
+    scopeJuz: 'Juz',
+    scopeQuran: 'Whole Quran',
+    leadQuran: 'Play the entire Quran, page by page.',
+    leadSurah: 'Pick a surah and it plays end to end.',
+    leadJuz: 'Pick a juz and it plays end to end.',
+    playQuran: 'Play the whole Quran',
+  },
+  live: {
+    title: 'Live recitation',
+    channelsAria: 'Live channels',
+    makkah: 'Makkah Live',
+    makkahSub: 'Al-Masjid al-Ḥarām',
+    madinah: 'Madinah Live',
+    madinahSub: 'Al-Masjid an-Nabawī',
+    streamTitle: 'Live recitation stream',
+    stop: 'Stop stream',
+    choose: 'Choose a masjid to start the live stream.',
+  },
 }
 
 export default en

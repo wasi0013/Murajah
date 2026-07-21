@@ -276,6 +276,28 @@ const bn: Messages = {
     moreSettings: 'সেটিংস',
     moreSettingsSub: 'থিম ও ডেটা ব্যাকআপ',
   },
+  listen: {
+    title: 'শুনুন',
+    scopeAria: 'যা শুনবেন',
+    scopeSurah: 'সূরা',
+    scopeJuz: 'পারা',
+    scopeQuran: 'সম্পূর্ণ কুরআন',
+    leadQuran: 'সম্পূর্ণ কুরআন পৃষ্ঠায় পৃষ্ঠায় শুনুন।',
+    leadSurah: 'একটি সূরা বেছে নিন, শুরু থেকে শেষ পর্যন্ত বাজবে।',
+    leadJuz: 'একটি পারা বেছে নিন, শুরু থেকে শেষ পর্যন্ত বাজবে।',
+    playQuran: 'সম্পূর্ণ কুরআন শুনুন',
+  },
+  live: {
+    title: 'সরাসরি তিলাওয়াত',
+    channelsAria: 'সরাসরি চ্যানেল',
+    makkah: 'মক্কা সরাসরি',
+    makkahSub: 'মসজিদুল হারাম',
+    madinah: 'মদিনা সরাসরি',
+    madinahSub: 'মসজিদে নববি',
+    streamTitle: 'সরাসরি তিলাওয়াত স্ট্রিম',
+    stop: 'স্ট্রিম বন্ধ করুন',
+    choose: 'সরাসরি স্ট্রিম শুরু করতে একটি মসজিদ বেছে নিন।',
+  },
 }
 
 export default bn

@@ -16,6 +16,7 @@ import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioPersistence } from '@/composables/useAudioPersistence'
 import { useListenPlayer } from '@/composables/useListenPlayer'
 import { useAudioStore } from '@/stores/audio'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Listen (8.2) — audio-only, whole-scope playback. Pick a surah, a juz, or the
@@ -24,6 +25,7 @@ import { useAudioStore } from '@/stores/audio'
  * mini-player (grain toggle hidden — Listen is page-only). A `?scope=&ref=` query
  * pre-selects and auto-plays, powering the browse → listen cross-link.
  */
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const data = getDataClient()
@@ -33,11 +35,15 @@ const listen = useListenPlayer()
 const prefs = useAudioPersistence(store)
 
 const scope = ref<'surah' | 'juz' | 'quran'>('surah')
-const scopeOptions = [
-  { value: 'surah', label: 'Surah' },
-  { value: 'juz', label: 'Juz' },
-  { value: 'quran', label: 'Whole Quran' },
-]
+const scopeOptions = computed(() => [
+  { value: 'surah', label: t('listen.scopeSurah') },
+  { value: 'juz', label: t('listen.scopeJuz') },
+  { value: 'quran', label: t('listen.scopeQuran') },
+])
+const leadText = computed(() => {
+  if (scope.value === 'quran') return t('listen.leadQuran')
+  return scope.value === 'surah' ? t('listen.leadSurah') : t('listen.leadJuz')
+})
 
 const surahs = ref<SurahRow[]>([])
 const juzz = ref<JuzRow[]>([])
@@ -95,34 +101,28 @@ onBeforeUnmount(() => prefs.dispose())
 <template>
   <main class="listen">
     <header class="topbar">
-      <button class="icon-btn" aria-label="Back" @click="router.push({ name: 'home' })">
+      <button class="icon-btn" :aria-label="t('common.back')" @click="router.push({ name: 'home' })">
         <Icon :icon="ArrowLeft" :size="20" />
       </button>
       <div class="title-wrap">
         <Icon :icon="Headphones" :size="18" class="title-icon" />
-        <h1 class="title">Listen</h1>
+        <h1 class="title">{{ t('listen.title') }}</h1>
       </div>
     </header>
 
     <div class="sticky-controls">
-      <SegmentedControl v-model="scope" :options="scopeOptions" label="Listen to" class="segment" />
+      <SegmentedControl v-model="scope" :options="scopeOptions" :label="t('listen.scopeAria')" class="segment" />
     </div>
 
     <div class="body" :class="{ docked: store.open }">
-      <p v-if="loading" class="hint">Loading…</p>
+      <p v-if="loading" class="hint">{{ t('common.loading') }}</p>
       <template v-else>
-        <p class="lead">
-          {{
-            scope === 'quran'
-              ? 'Play the entire Quran, page by page.'
-              : `Pick a ${scope} and it plays end to end.`
-          }}
-        </p>
+        <p class="lead">{{ leadText }}</p>
         <SurahList v-if="scope === 'surah'" :rows="surahs" @select="playSurah" />
         <JuzList v-else-if="scope === 'juz'" :rows="juzz" @select="playJuz" />
         <button v-else type="button" class="play-quran" @click="playQuran">
           <Icon :icon="Play" :size="22" />
-          <span>Play the whole Quran</span>
+          <span>{{ t('listen.playQuran') }}</span>
         </button>
       </template>
     </div>
