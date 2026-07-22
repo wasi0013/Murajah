@@ -23,13 +23,15 @@ test('tajweed toggle swaps the QPC font without reflowing the page', async ({ pa
   await expect(page).toHaveURL(/tajweed=0/)
 
   // Same content → the word count is unchanged (the real no-reflow guarantee).
-  // Page height may shift a little: the tajweed/uthmani per-page fonts have
-  // marginally different metrics, which scale-to-fill reflects (< ~6%).
+  // Page height may shift: the tajweed/uthmani per-page fonts have marginally
+  // different metrics, and since every line now shares one page-wide fit factor
+  // (so all 15 lines stay the same size), a metric change scales the page as a
+  // whole rather than averaging out per line — a small one-time shift (< ~12%).
   expect(await page.locator('.col[aria-hidden="false"] .surface .word').count()).toBe(wordsBefore)
   const heightAfter = await page
     .locator('.col[aria-hidden="false"] .surface')
     .evaluate((el) => Math.round(el.getBoundingClientRect().height))
-  expect(Math.abs(heightAfter - heightBefore)).toBeLessThan(heightBefore * 0.06)
+  expect(Math.abs(heightAfter - heightBefore)).toBeLessThan(heightBefore * 0.12)
 })
 
 test('tajweed legend opens from the settings sheet and lists the rules', async ({ page }) => {
