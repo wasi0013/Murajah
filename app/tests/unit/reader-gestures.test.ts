@@ -1,36 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
 import { keyToPageDelta } from '@/core/reader/keyboard'
 import { juzForPage, surahForPage } from '@/core/navigation/juz'
-
-describe('resolveSwipe (RTL page turns)', () => {
-  const wide = { width: 400, velocityX: 0 }
-
-  it('below the distance/velocity threshold snaps back', () => {
-    expect(resolveSwipe({ deltaX: 40, ...wide, rtl: true })).toBe(0)
-    expect(resolveSwipe({ deltaX: -40, ...wide, rtl: true })).toBe(0)
-  })
-
-  it('RTL: rightward drag = next, leftward = previous', () => {
-    expect(resolveSwipe({ deltaX: 150, ...wide, rtl: true })).toBe(1) // drag right → next
-    expect(resolveSwipe({ deltaX: -150, ...wide, rtl: true })).toBe(-1) // drag left → prev
-  })
-
-  it('LTR mirrors RTL', () => {
-    expect(resolveSwipe({ deltaX: 150, ...wide, rtl: false })).toBe(-1)
-    expect(resolveSwipe({ deltaX: -150, ...wide, rtl: false })).toBe(1)
-  })
-
-  it('a fast flick commits even on a short drag (velocity)', () => {
-    expect(resolveSwipe({ deltaX: 20, velocityX: 1.2, width: 400, rtl: true })).toBe(1)
-    expect(resolveSwipe({ deltaX: -20, velocityX: -1.2, width: 400, rtl: true })).toBe(-1)
-  })
-
-  it('dampens the drag offset only at an edge', () => {
-    expect(dampenIfAtEdge(100, false)).toBe(100)
-    expect(dampenIfAtEdge(100, true)).toBe(35)
-  })
-})
 
 describe('keyToPageDelta (RTL-aware)', () => {
   it('mirrors arrows in RTL, keeps PageUp/Down semantic', () => {

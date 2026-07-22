@@ -12,9 +12,7 @@ import { useMushafLocation } from '@/composables/useMushafLocation'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
-import { pageStep, visiblePages } from '@/core/mushaf/spread'
 import { keyToPageDelta } from '@/core/reader/keyboard'
-import { resolveSwipe, dampenIfAtEdge } from '@/core/reader/swipe'
 import Icon from '@/components/Icon.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
@@ -23,14 +21,12 @@ import { useI18n } from '@/core/i18n'
 /**
  * Standalone mushaf scan surface (code-split — never in the reader bundle). One
  * page on mobile, an RTL 2-up spread on desktop (composed from two adjacent
- * single-page images). RTL swipe + keyboard paging steps whole spreads on
- * desktop; pinch / double-tap zoom is available but not required to read. Page
- * boxes are aspect-ratio-reserved from the manifest so images load with no CLS.
+ * single-page images). Paging is by the top-bar arrows and the keyboard — there
+ * is no swipe (it was clumsy on touch); pinch / double-tap zoom stay. Page boxes
+ * are aspect-ratio-reserved from the manifest so images load with no CLS.
  */
 const SPREAD_MIN_WIDTH = 820 // px — at/above this, show the 2-up spread
-const RTL = true
-const OFFSETS = [1, 0, -1] as const // DOM order L→R: next, current, prev
-const SLIDE_MS = 280
+const RTL = true // reading direction for keyboard paging
 
 const { t } = useI18n()
 const store = useMushafStore()
@@ -50,9 +46,6 @@ const { juz, surahName } = useMushafLocation(store)
 // Reading-time hasanah (mushaf pages are already the canonical 604 scheme).
 const progressPersistence = useProgressPersistence()
 useReadingReward(() => store.page, getPageHasanah)
-
-const reduceMotion =
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const paletteOpen = ref(false)
 
@@ -80,44 +73,15 @@ function onMqChange(e: MediaQueryListEvent) {
   applySpread(e.matches)
 }
 
-// —— Carousel + gesture state ————————————————————————————————
+// —— Zoom gesture state (pinch / pan / double-tap) ————————————————
 const viewport = ref<HTMLElement>()
-const centerIndex = ref(1)
-const dragPx = ref(0)
-const transition = ref(false)
-const dragging = ref(false)
 
-const trackStyle = computed(() => ({
-  transform: `translateX(calc(${-centerIndex.value * 100}% + ${dragPx.value}px))`,
-  transition: transition.value ? `transform ${SLIDE_MS}ms var(--ease-emphasized)` : 'none',
-}))
-
-/** Anchor page for a slide column; equals the current page at the edges. */
-function anchorFor(offset: number): number {
-  if (offset === 0) return store.page
-  return pageStep(store.page, offset as 1 | -1, store.pageCount, store.spread)
-}
-/** A neighbour slide is real only when it moves off the current page. */
-function hasSlide(offset: number): boolean {
-  return offset === 0 || anchorFor(offset) !== store.page
-}
-function slidePages(offset: number): number[] {
-  return visiblePages(anchorFor(offset), store.pageCount, store.spread)
-}
-
-// —— Pointer routing: pinch (2 fingers) / pan (zoomed) / paging (fit) ——
+// —— Pointer routing: pinch (2 fingers) / pan (zoomed) / tap (double-tap zoom) ——
 const pointers = new Map<number, { x: number; y: number }>()
-type Mode = 'none' | 'paging' | 'pan' | 'pinch' | 'tap'
+type Mode = 'none' | 'pan' | 'pinch' | 'tap'
 let mode: Mode = 'none'
-// Reserve the screen edges for the browser's own back/forward swipe so paging
-// never collides with the OS gesture; interior drags page as normal.
-const EDGE_GUTTER = 24
-let startX = 0
-let startY = 0
 let lastX = 0
 let lastY = 0
-let lastT = 0
-let edgeStart = false
 let pinchStartDist = 0
 let pinchStartScale = 1
 let lastTapT = 0
@@ -137,25 +101,16 @@ function onPointerDown(e: PointerEvent) {
     pinchStartDist = dist(a, b) || 1
     pinchStartScale = zoom.scale.value
     mode = 'pinch'
-    dragging.value = false
-    dragPx.value = 0
     // A real gesture — capture so both fingers keep tracking off-element.
     viewport.value?.setPointerCapture(e.pointerId)
     return
   }
-  startX = lastX = e.clientX
-  startY = lastY = e.clientY
-  lastT = e.timeStamp
-  transition.value = false
-  const box = viewport.value?.getBoundingClientRect()
-  const localX = box ? e.clientX - box.left : e.clientX
-  const width = box?.width ?? window.innerWidth
-  edgeStart = localX <= EDGE_GUTTER || localX >= width - EDGE_GUTTER
-  mode = zoom.zoomed.value ? 'pan' : 'tap' // becomes 'paging' past the drag threshold
-  // Capture only when a gesture is already committed (panning a zoomed page).
-  // A plain tap must NOT capture, or the pointer is stolen from buttons layered
-  // on the viewport (the "tap to retry" control never fired). Paging captures
-  // later, once the drag threshold is crossed (see onPointerMove).
+  lastX = e.clientX
+  lastY = e.clientY
+  mode = zoom.zoomed.value ? 'pan' : 'tap'
+  // Capture only when a gesture is already committed (panning a zoomed page). A
+  // plain tap must NOT capture, or the pointer is stolen from buttons layered on
+  // the viewport (the "tap to retry" control never fired).
   if (mode === 'pan') viewport.value?.setPointerCapture(e.pointerId)
 }
 
@@ -175,23 +130,7 @@ function onPointerMove(e: PointerEvent) {
     zoom.panBy(e.clientX - lastX, e.clientY - lastY, rect())
     lastX = e.clientX
     lastY = e.clientY
-    return
   }
-  // Potential paging drag (fit-width only).
-  const dx = e.clientX - startX
-  const dy = e.clientY - startY
-  if (mode === 'tap') {
-    // Ignore edge-gutter starts (OS gesture) and vertical-dominant moves (scroll).
-    if (edgeStart) return
-    if (Math.abs(dx) < 8 || Math.abs(dx) <= Math.abs(dy)) return
-    mode = 'paging'
-    dragging.value = true
-    viewport.value?.setPointerCapture(e.pointerId) // now it's a real drag — capture
-  }
-  lastX = e.clientX
-  lastT = e.timeStamp
-  const atEdge = dx > 0 ? !store.canNext : !store.canPrev
-  dragPx.value = dampenIfAtEdge(dx, atEdge)
 }
 
 function onPointerUp(e: PointerEvent, canceled = false) {
@@ -215,19 +154,6 @@ function onPointerUp(e: PointerEvent, canceled = false) {
     mode = 'none'
     return
   }
-  if (mode === 'paging' && dragging.value) {
-    dragging.value = false
-    const deltaX = e.clientX - startX
-    const dt = Math.max(1, e.timeStamp - lastT)
-    const velocityX = (e.clientX - lastX) / dt
-    const width = viewport.value?.clientWidth ?? window.innerWidth
-    const delta = resolveSwipe({ deltaX, velocityX, width, rtl: RTL })
-    if (delta > 0 && store.canNext) commit(1)
-    else if (delta < 0 && store.canPrev) commit(-1)
-    else snapBack()
-    mode = 'none'
-    return
-  }
   // A tap that never dragged: double-tap toggles zoom. A scroll the browser took
   // over (pointercancel) is not a tap, so it never triggers zoom.
   if (mode === 'tap' && p && !canceled) {
@@ -244,36 +170,9 @@ function onPointerUp(e: PointerEvent, canceled = false) {
   mode = 'none'
 }
 
-/** Slide to the neighbour, then swap the page and re-centre silently. */
-function commit(delta: -1 | 1) {
-  if (reduceMotion) {
-    dragPx.value = 0
-    step(delta)
-    return
-  }
-  const idx = OFFSETS.indexOf(delta)
-  transition.value = true
-  dragPx.value = 0
-  centerIndex.value = idx
-  window.setTimeout(() => {
-    transition.value = false
-    step(delta)
-    centerIndex.value = 1
-  }, SLIDE_MS)
-}
 function step(delta: -1 | 1) {
   if (delta === 1) store.next()
   else store.prev()
-}
-function snapBack() {
-  if (reduceMotion) {
-    dragPx.value = 0
-    return
-  }
-  transition.value = true
-  dragPx.value = 0
-  centerIndex.value = 1
-  window.setTimeout(() => (transition.value = false), SLIDE_MS)
 }
 
 // —— Keyboard paging (RTL-aware) + Escape to unzoom ————————————
@@ -292,13 +191,10 @@ function onKeydown(e: KeyboardEvent) {
   if (delta === 1 ? store.canNext : store.canPrev) step(delta)
 }
 
-// Reset zoom + any in-flight drag whenever the page changes.
+// Reset zoom whenever the page changes.
 watch(
   () => store.page,
-  () => {
-    zoom.reset()
-    dragPx.value = 0
-  },
+  () => zoom.reset(),
 )
 
 onMounted(async () => {
@@ -377,45 +273,40 @@ function backToReader() {
     <div
       ref="viewport"
       class="viewport"
-      :class="{ dragging, zoomed: zoom.zoomed.value }"
+      :class="{ zoomed: zoom.zoomed.value }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp($event)"
       @pointercancel="onPointerUp($event, true)"
     >
-      <div class="track" :style="trackStyle">
-        <div v-for="offset in OFFSETS" :key="offset" class="slide" :aria-hidden="offset !== 0">
-          <div
-            v-if="hasSlide(offset)"
-            class="spread"
-            :class="{ 'is-spread': slidePages(offset).length === 2 }"
-            :style="offset === 0 ? zoom.transformStyle.value : undefined"
+      <div
+        class="spread"
+        :class="{ 'is-spread': store.visible.length === 2 }"
+        :style="zoom.transformStyle.value"
+      >
+        <div
+          v-for="p in store.visible"
+          :key="p"
+          class="page-box"
+          :style="{ aspectRatio: String(img.aspectRatio.value) }"
+        >
+          <img
+            v-if="img.entry(p)?.status === 'ready'"
+            class="page-img"
+            :src="img.entry(p)!.url"
+            :alt="t('reader.mushafPageAlt', { page: p })"
+            draggable="false"
+            @error="img.markError(p)"
+          />
+          <button
+            v-else-if="img.entry(p)?.status === 'error'"
+            class="page-error"
+            @click="img.retry(p)"
           >
-            <div
-              v-for="p in slidePages(offset)"
-              :key="p"
-              class="page-box"
-              :style="{ aspectRatio: String(img.aspectRatio.value) }"
-            >
-              <img
-                v-if="img.entry(p)?.status === 'ready'"
-                class="page-img"
-                :src="img.entry(p)!.url"
-                :alt="t('reader.mushafPageAlt', { page: p })"
-                draggable="false"
-                @error="img.markError(p)"
-              />
-              <button
-                v-else-if="img.entry(p)?.status === 'error'"
-                class="page-error"
-                @click="img.retry(p)"
-              >
-                {{ t('reader.pageError', { page: p }) }}
-              </button>
-              <div v-else class="page-skel" role="status" :aria-label="t('reader.loadingPage', { page: p })">
-                <Skeleton width="100%" height="100%" rounded="md" />
-              </div>
-            </div>
+            {{ t('reader.pageError', { page: p }) }}
+          </button>
+          <div v-else class="page-skel" role="status" :aria-label="t('reader.loadingPage', { page: p })">
+            <Skeleton width="100%" height="100%" rounded="md" />
           </div>
         </div>
       </div>
@@ -508,29 +399,16 @@ function backToReader() {
   flex: 1 0 auto;
   overflow: hidden;
   width: 100%;
-  /* We own the horizontal axis for paging; allow vertical scroll otherwise. */
-  touch-action: pan-y;
-}
-.viewport.dragging {
-  user-select: none;
-  cursor: grabbing;
-}
-.viewport.zoomed {
-  touch-action: none;
-  cursor: grab;
-}
-.track {
-  display: flex;
-  height: 100%;
-  will-change: transform;
-}
-.slide {
-  flex: 0 0 100%;
-  min-width: 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 0.5rem;
+  /* Allow vertical scroll for tall pages; custom pinch/pan handles zoom. */
+  touch-action: pan-y;
+}
+.viewport.zoomed {
+  touch-action: none;
+  cursor: grab;
 }
 .spread {
   display: flex;
