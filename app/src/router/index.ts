@@ -1,5 +1,7 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized, type RouteRecordRaw } from 'vue-router'
 import { readerEnabled } from '@/core/flags'
+import { toast } from '@/composables/useToast'
+import { t } from '@/core/i18n'
 
 // Routes are lazy-loaded (code-split) so each feature ships its own chunk
 // and never bloats the initial reader bundle. See plans/redesign-2026.md §3.
@@ -128,5 +130,51 @@ router.beforeEach((to) => {
   }
   if (to.name === 'reader-disabled' && readerEnabled()) {
     return { name: 'home' }
+  }
+})
+
+// Every route is a lazy chunk, so a navigation can fail if its chunk doesn't
+// load — a flaky connection, a dev server reached over the LAN, or a stale deploy
+// where the hashed chunk no longer exists. Without a handler Vue Router just
+// rejects the `push` and the tap looks dead. Recover a chunk-load failure with a
+// one-shot full navigation to the target (fetches the chunk fresh); anything else
+// (or a repeat failure) surfaces a toast instead of failing silently.
+const CHUNK_LOAD_ERROR =
+  /dynamically imported module|Loading( CSS)? chunk|Importing a module script failed|Failed to fetch/i
+
+function fullPathOf(to?: RouteLocationNormalized): string | undefined {
+  return to && to.fullPath ? to.fullPath : undefined
+}
+
+router.onError((error: unknown, to?: RouteLocationNormalized) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const target = fullPathOf(to)
+
+  if (CHUNK_LOAD_ERROR.test(message) && target) {
+    // Guard against a reload loop when the chunk is genuinely gone.
+    let alreadyReloaded = false
+    try {
+      alreadyReloaded = sessionStorage.getItem('murajah:reload-target') === target
+      sessionStorage.setItem('murajah:reload-target', target)
+    } catch {
+      /* storage unavailable — fall through to the toast */
+    }
+    if (!alreadyReloaded) {
+      window.location.assign(target)
+      return
+    }
+  }
+
+  console.error('[router] navigation failed:', error)
+  toast(t('common.navError'), { variant: 'error' })
+})
+
+// A navigation completed, so clear the one-shot reload guard — a *future* chunk
+// failure on the same path should be allowed to recover again.
+router.afterEach(() => {
+  try {
+    sessionStorage.removeItem('murajah:reload-target')
+  } catch {
+    /* storage unavailable — nothing to clear */
   }
 })

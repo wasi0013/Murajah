@@ -10,6 +10,7 @@ const ar: Messages = {
     language: 'اللغة',
     loading: 'جارٍ التحميل…',
     backToReader: 'العودة إلى القارئ',
+    navError: 'تعذّر فتح تلك الصفحة. حاول مرة أخرى.',
     notStarted: 'لم يبدأ',
     page: 'صفحة {n}',
     pages: 'الصفحات {start}–{end}',

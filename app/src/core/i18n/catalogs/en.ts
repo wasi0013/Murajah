@@ -12,6 +12,7 @@ const en: Messages = {
     language: 'Language',
     loading: 'Loading…',
     backToReader: 'Back to reader',
+    navError: 'Couldn’t open that page. Please try again.',
     notStarted: 'Not started',
     page: 'Page {n}',
     pages: 'Pages {start}–{end}',

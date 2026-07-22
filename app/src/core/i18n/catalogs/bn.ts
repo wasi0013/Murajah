@@ -10,6 +10,7 @@ const bn: Messages = {
     language: 'ভাষা',
     loading: 'লোড হচ্ছে…',
     backToReader: 'রিডারে ফিরুন',
+    navError: 'সেই পৃষ্ঠাটি খোলা যায়নি। আবার চেষ্টা করুন।',
     notStarted: 'শুরু হয়নি',
     page: 'পৃষ্ঠা {n}',
     pages: 'পৃষ্ঠা {start}–{end}',
