@@ -27,7 +27,7 @@ defineEmits<{ select: [surah: number]; listen: [surah: number] }>()
             <span class="place" :class="r.place">{{ r.place === 'makki' ? t('surahList.makki') : t('surahList.madani') }}</span>
           </span>
         </span>
-        <span class="arabic" dir="rtl">{{ r.arabic }}</span>
+        <span class="arabic" dir="rtl" lang="ar">{{ r.arabic }}</span>
       </button>
       <button
         v-if="showListen"

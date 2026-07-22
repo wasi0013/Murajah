@@ -98,7 +98,10 @@ const ar: Messages = {
         description: 'اتلُ صفحة محفوظة عشوائية عن ظهر قلب وتحقّق من الأخطاء.',
       },
     },
-    openQuiz: 'افتح الاختبار',
+    quickTest: {
+      openAria: 'ابدأ اختبارًا سريعًا',
+      empty: 'علّم بعض الصفحات كمحفوظة أولًا',
+    },
     listen: {
       title: 'استمع',
       tabsAria: 'اختر ما تشغّله',
@@ -110,7 +113,6 @@ const ar: Messages = {
     },
     nothing: 'لا شيء مجدول اليوم. علّم صفحات كمحفوظة لبناء قائمة مراجعتك.',
     allDone: 'اكتمل اليوم. تقبّل الله منك.',
-    quizLater: 'الاختبار سيأتي في مرحلة لاحقة',
     planReady: 'خطتك جاهزة — يمكنك تغييرها في أي وقت',
     smart: {
       startJuz30: 'ابدأ بالجزء 30',
@@ -259,10 +261,15 @@ const ar: Messages = {
   reader: {
     prevPage: 'الصفحة السابقة',
     nextPage: 'الصفحة التالية',
+    pageNavAria: 'التنقل بين الصفحات',
+    goToPrevPage: 'الانتقال إلى الصفحة السابقة',
+    goToNextPage: 'الانتقال إلى الصفحة التالية',
     jump: 'انتقل إلى صفحة أو آية أو سورة',
     progress: 'تقدّم الحفظ',
     audio: 'تلاوة صوتية',
     record: 'سجّل تلاوتك',
+    quickTestCountdownAria: 'سيبدأ التسجيل خلال {n}',
+    quickTestGetReady: 'استعدّ للتلاوة',
     settings: 'إعدادات القارئ',
     resetZoom: 'إعادة ضبط التكبير',
     mushafPageAlt: 'صفحة المصحف {page}',

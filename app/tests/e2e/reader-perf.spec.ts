@@ -58,7 +58,7 @@ test('page turns work under prefers-reduced-motion', async ({ page }) => {
   await page.goto('/read/qpc/10')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
-  await page.getByRole('button', { name: 'Next page' }).click()
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page).toHaveURL(/\/read\/qpc\/11/)
   await expect(page.getByText('Page 11 / 604')).toBeVisible()
 })

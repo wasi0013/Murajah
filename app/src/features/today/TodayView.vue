@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Flame, GraduationCap, Headphones, Settings, Sparkles } from 'lucide-vue-next'
+import { ArrowLeft, Flame, Headphones, Settings, Shuffle, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
 import { useProgressStore } from '@/stores/progress'
 import { useMistakesStore } from '@/stores/mistakes'
 import { useAudioStore } from '@/stores/audio'
+import { useRecorderStore } from '@/stores/recorder'
 import { generateSmartPlan } from '@/core/memorization/planBuilder'
 import { usePlanPersistence } from '@/composables/usePlanPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
@@ -40,6 +41,7 @@ const plan = usePlanStore()
 const progress = useProgressStore()
 const mistakes = useMistakesStore()
 const audio = useAudioStore()
+const recorder = useRecorderStore()
 const today = useToday()
 const streak = useStreak()
 const { t, locale } = useI18n()
@@ -110,8 +112,20 @@ function onHabit(id: string, done: boolean) {
   today.toggleHabit(id, done)
 }
 
-function openQuiz() {
-  toast(t('today.quizLater'), { variant: 'info' })
+/**
+ * Quick test: pick a random memorized page and jump to it, handing the reader
+ * the target via `recorder.pendingPage` — it runs the countdown-then-record flow
+ * once it lands there (see ReaderView's watcher on `reader.page`).
+ */
+function startQuickTest() {
+  const pages = [...progress.memorized]
+  if (pages.length === 0) {
+    toast(t('today.quickTest.empty'), { variant: 'info' })
+    return
+  }
+  const page = pages[Math.floor(Math.random() * pages.length)]!
+  recorder.pendingPage = page
+  void router.push(readerLink({ page }))
 }
 
 const showVersesOfDay = computed(() => plan.config?.habits.includes('recite-ayahs') ?? false)
@@ -337,13 +351,13 @@ const historyOpen = ref(false)
               <span class="habit-desc">{{ t(h.descriptionKey) }}</span>
             </span>
             <button
-              v-if="h.wiresTo === 'quiz'"
+              v-if="h.wiresTo === 'record'"
               class="habit-link"
               type="button"
-              :aria-label="t('today.openQuiz')"
-              @click="openQuiz"
+              :aria-label="t('today.quickTest.openAria')"
+              @click="startQuickTest"
             >
-              <Icon :icon="GraduationCap" :size="16" />
+              <Icon :icon="Shuffle" :size="16" />
             </button>
             <button
               v-else-if="h.wiresTo === 'audio'"

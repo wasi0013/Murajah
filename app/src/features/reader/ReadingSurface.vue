@@ -46,6 +46,17 @@ const metrics = computed(() =>
 // `--tajweed-glyph-filter`); the ordinary glyph fonts already track `color`.
 const isTajweedFont = computed(() => props.fontFamily.startsWith('tj-'))
 
+/**
+ * Legacy-parity surah header: the "SurahNames" font (design/tokens.css) maps
+ * this exact zero-padded "NNNsurah" sequence — via the browser's default
+ * `liga` OpenType feature — to one of 114 bespoke calligraphic header glyphs.
+ * It isn't literal text a reader could select/copy, so the visible span is
+ * `aria-hidden` and paired with the real name for assistive tech below.
+ */
+function surahNameGlyph(surah: number | '' | undefined): string {
+  return surah ? `${String(surah).padStart(3, '0')}surah` : ''
+}
+
 interface RenderLine {
   type: string
   centered: boolean
@@ -186,7 +197,8 @@ watch(
   >
     <template v-for="(line, i) in lines" :key="i">
       <div v-if="line.type === 'surah_name'" class="line line-surah">
-        {{ surahNames?.[String(line.surah)] ?? 'سورة' }}
+        <span class="surah-name-glyph" aria-hidden="true">{{ surahNameGlyph(line.surah) }}</span>
+        <span class="sr-only">{{ surahNames?.[String(line.surah)] ?? '' }}</span>
       </div>
       <div v-else-if="line.type === 'basmallah'" class="line line-basmala">﷽</div>
       <div v-else class="line line-ayah" :class="{ wbw }">
@@ -251,10 +263,22 @@ watch(
 }
 .line-surah {
   justify-content: center;
-  color: var(--color-accent);
-  font-size: 0.7em;
   padding: 0.75rem 0;
-  font-family: var(--font-arabic);
+}
+.surah-name-glyph {
+  color: var(--color-accent);
+  font-size: 1.7em;
+  font-family: 'SurahNames', var(--font-arabic);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .line-basmala {
   justify-content: center;

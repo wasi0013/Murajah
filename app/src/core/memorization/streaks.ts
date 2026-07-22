@@ -142,8 +142,9 @@ export function buildHistory(log: DayLog, days = 90, today: Date = new Date()): 
 
 /**
  * A standing-habit task the user can enable alongside the adaptive plan. `wiresTo`
- * marks a habit whose full behaviour lands in a later phase (until then it's a
- * manual check): `quiz` → Phase 6, `audio` → Phase 7.
+ * marks a habit with a dedicated action button wired to a feature: `record`
+ * opens the quick-test flow (a random memorized page, then record-yourself);
+ * `audio` opens the verses-of-day player.
  *
  * `nameKey`/`descriptionKey` are i18n catalog keys, not display text — this is a
  * plain data module (no Vue context), so translation happens at render time via
@@ -155,7 +156,7 @@ export interface HabitDef {
   id: string
   nameKey: string
   descriptionKey: string
-  wiresTo?: 'quiz' | 'audio'
+  wiresTo?: 'record' | 'audio'
 }
 
 /** The available standing habits (opt-in via the plan's `habits` list). */
@@ -170,7 +171,7 @@ export const HABIT_CATALOG: readonly HabitDef[] = [
     id: 'quick-test',
     nameKey: 'today.habits.quickTest.name',
     descriptionKey: 'today.habits.quickTest.description',
-    wiresTo: 'quiz',
+    wiresTo: 'record',
   },
 ] as const
 

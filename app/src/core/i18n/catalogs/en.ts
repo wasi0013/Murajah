@@ -100,7 +100,10 @@ const en: Messages = {
         description: 'Recite a random memorized page from memory and check for mistakes.',
       },
     },
-    openQuiz: 'Open the quiz',
+    quickTest: {
+      openAria: 'Start a quick test',
+      empty: 'Mark some pages as memorized first',
+    },
     listen: {
       title: 'Listen along',
       tabsAria: 'Choose what to play',
@@ -112,7 +115,6 @@ const en: Messages = {
     },
     nothing: 'Nothing scheduled today. Mark pages memorized to build your revision queue.',
     allDone: 'Today is complete. May Allah accept it from you.',
-    quizLater: 'Quiz arrives in a later phase',
     planReady: 'Your plan is ready — you can change it any time',
     smart: {
       startJuz30: 'Start with Juz 30',
@@ -261,10 +263,15 @@ const en: Messages = {
   reader: {
     prevPage: 'Previous page',
     nextPage: 'Next page',
+    pageNavAria: 'Page navigation',
+    goToPrevPage: 'Go to previous page',
+    goToNextPage: 'Go to next page',
     jump: 'Go to page, ayah or surah',
     progress: 'Memorization progress',
     audio: 'Recitation audio',
     record: 'Record your recitation',
+    quickTestCountdownAria: 'Recording starts in {n}',
+    quickTestGetReady: 'Get ready to recite',
     settings: 'Reader settings',
     resetZoom: 'Reset zoom',
     mushafPageAlt: 'Mushaf page {page}',

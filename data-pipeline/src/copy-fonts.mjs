@@ -39,6 +39,11 @@ export function copyFonts() {
   const tajweed = copyDir(`${SOURCE_FONTS}/tajweed`, `${outFonts}/tajweed`, isWoff2)
   const indopak = copyDir(`${SOURCE_FONTS}/indopak`, `${outFonts}/indopak`, isWoff2)
 
+  // Single static asset (not per-page generated): the ornamental surah-header
+  // glyph font, referenced directly by design/tokens.css `@font-face`.
+  mkdirSync(outFonts, { recursive: true })
+  copyFileSync(`${SOURCE_FONTS}/surah_names.woff2`, `${outFonts}/surah-names.woff2`)
+
   const manifest = {
     // Per-page glyph fonts: family is fixed, the woff2 URL varies by page.
     qpc: { family: 'QPCPage', pathTemplate: 'fonts/qpc-v2/p{page}.woff2', pages: 604 },

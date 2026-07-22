@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, ChevronLeft, ChevronRight, Headphones, Search, ZoomOut } from 'lucide-vue-next'
+import { ArrowLeft, ChevronLeft, ChevronRight, Headphones, Mic, Search, ZoomOut } from 'lucide-vue-next'
 import { useMushafStore } from '@/stores/mushaf'
 import { useAudioStore } from '@/stores/audio'
+import { useRecorderStore } from '@/stores/recorder'
 import { useMushafPage } from '@/composables/useMushafPage'
 import { useMushafImages } from '@/composables/useMushafImages'
 import { useMushafZoom } from '@/composables/useMushafZoom'
@@ -38,6 +39,13 @@ const nav = useMushafPage(store, router)
 // pages, so the player naturally covers the whole spread (the user's requirement).
 const audio = useAudioStore()
 const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
+
+// Record-your-recitation (7.6), mirroring the text reader's mic control — the
+// page blurs while `recorder.active` so a recall test can't be read off the scan.
+const recordOpen = ref(false)
+const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
+const recorder = useRecorderStore()
+
 const img = useMushafImages(store)
 const zoom = useMushafZoom()
 const { jumpTo } = useMushafQuickJump(store)
@@ -261,6 +269,15 @@ function backToReader() {
       </button>
 
       <button
+        class="icon-btn"
+        :aria-pressed="recordOpen"
+        :aria-label="t('reader.record')"
+        @click="recordOpen = true"
+      >
+        <Icon :icon="Mic" :size="20" />
+      </button>
+
+      <button
         v-if="zoom.zoomed.value"
         class="icon-btn"
         :aria-label="t('reader.resetZoom')"
@@ -273,7 +290,7 @@ function backToReader() {
     <div
       ref="viewport"
       class="viewport"
-      :class="{ zoomed: zoom.zoomed.value }"
+      :class="{ zoomed: zoom.zoomed.value, blurred: recorder.active }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp($event)"
@@ -315,6 +332,8 @@ function backToReader() {
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
     <AudioHost v-if="audio.open" view="mushaf" layout="qpc" :pages="store.visible" />
+
+    <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="store.page" />
   </main>
 </template>
 
@@ -405,10 +424,21 @@ function backToReader() {
   padding: 0.5rem;
   /* Allow vertical scroll for tall pages; custom pinch/pan handles zoom. */
   touch-action: pan-y;
+  filter: blur(0);
+  transition: filter var(--duration-base) var(--ease-emphasized);
 }
 .viewport.zoomed {
   touch-action: none;
   cursor: grab;
+}
+.viewport.blurred {
+  filter: blur(10px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewport {
+    transition: none;
+  }
 }
 .spread {
   display: flex;

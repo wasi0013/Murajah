@@ -38,6 +38,6 @@ test('paging dismisses an open morphology popup', async ({ page }) => {
   await page.locator('.surface .word').first().click()
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeVisible({ timeout: 10_000 })
 
-  await page.getByRole('button', { name: 'Next page' }).click()
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeHidden()
 })

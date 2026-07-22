@@ -18,7 +18,7 @@ test('reader renders a single page and pages forward', async ({ page }) => {
   await expect(page.getByText('Page 1 / 604')).toBeVisible()
 
   // Next advances the page + reflects in the URL (route sync).
-  await page.getByRole('button', { name: 'Next page' }).click()
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page.getByText('Page 2 / 604')).toBeVisible()
   await expect(page).toHaveURL(/\/read\/qpc\/2/)
   await expect(page.locator('.surface .word').first()).not.toBeEmpty()

@@ -8,6 +8,22 @@
  */
 
 /* ---------------------------------------------------------------- *
+ * Surah-name header font (legacy parity) — an ornamental, per-surah glyph
+ * font: feeding it the zero-padded trigger text "NNNsurah" (e.g. "001surah")
+ * makes the browser's default `liga` OpenType feature substitute one of 114
+ * bespoke calligraphic surah-header glyphs (see ReadingSurface.vue). Plain
+ * glyf outlines (no COLR/CPAL), so it tracks `color` like normal text — no
+ * per-theme correction needed, unlike the tajweed glyph font.
+ * ---------------------------------------------------------------- */
+@font-face {
+  font-family: 'SurahNames';
+  src: url('/fonts/surah-names.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------- *
  * Theme-independent scales
  * ---------------------------------------------------------------- */
 :root {

@@ -21,6 +21,7 @@ import {
 } from 'lucide-vue-next'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useAudioStore } from '@/stores/audio'
+import { useRecorderStore } from '@/stores/recorder'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { resolveReaderTarget } from '@/core/navigation/readerRoute'
@@ -38,6 +39,7 @@ import { useVerseStudy } from '@/composables/useVerseStudy'
 import { useQuickJump } from '@/composables/useQuickJump'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
+import RecordCountdown from './RecordCountdown.vue'
 import Slider from '@/components/Slider.vue'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
@@ -105,9 +107,34 @@ const activeVerseKey = computed(() =>
   audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : reader.focusVerse,
 )
 
-// Record-your-recitation (7.6) — lazy panel, opened from the mic control.
+// Record-your-recitation (7.6) — lazy panel, opened from the mic control. The
+// reading surface blurs while `recorder.active`, so a recall test can't be read
+// off the page while it's being recited into the mic.
 const recordOpen = ref(false)
+const recordAutoStart = ref(false)
 const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
+const recorder = useRecorderStore()
+
+// Today's quick-test habit sends a random memorized page here (recorder.pendingPage)
+// and pushes the URL; once the reader actually lands on that page, run the
+// countdown then open the panel pre-armed to start recording itself.
+const quickTestCountdown = ref(false)
+watch(
+  () => reader.page,
+  (page) => {
+    if (recorder.consumePending(page)) quickTestCountdown.value = true
+  },
+  { immediate: true },
+)
+function onQuickTestCountdownDone() {
+  quickTestCountdown.value = false
+  recordAutoStart.value = true
+  recordOpen.value = true
+}
+function openRecordManually() {
+  recordAutoStart.value = false
+  recordOpen.value = true
+}
 
 // The "More" tab opens a small menu sheet (live recitation, and room to grow).
 const moreOpen = ref(false)
@@ -235,7 +262,7 @@ function openMushaf() {
         class="icon-btn"
         :aria-pressed="recordOpen"
         :aria-label="t('reader.record')"
-        @click="recordOpen = true"
+        @click="openRecordManually"
       >
         <Icon :icon="Mic" :size="20" />
       </button>
@@ -247,11 +274,12 @@ function openMushaf() {
 
     <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
          it off brings the normal layout (and its options) back. -->
-    <ReaderPager v-if="!reader.tafsir" class="reader-surface" />
+    <ReaderPager v-if="!reader.tafsir" class="reader-surface" :class="{ blurred: recorder.active }" />
 
     <TafsirPanel
       v-else
       class="reader-surface"
+      :class="{ blurred: recorder.active }"
       :entries="study.entries.value"
       :font-family="study.fontFamily.value"
       :tafsir="study.tafsir.value"
@@ -267,7 +295,14 @@ function openMushaf() {
 
     <AudioHost v-if="audio.open" view="text" :layout="reader.layout" :pages="audioPages" />
 
-    <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="reader.page" />
+    <RecordingPanel
+      v-if="recordOpen"
+      v-model:open="recordOpen"
+      :page="reader.page"
+      :auto-start="recordAutoStart"
+    />
+
+    <RecordCountdown v-if="quickTestCountdown" :seconds="5" @done="onQuickTestCountdownDone" />
 
     <BottomSheet v-model:open="moreOpen" :label="t('reader.tabs.more')">
       <div class="more-menu">
@@ -404,6 +439,17 @@ function openMushaf() {
 }
 .reader-surface {
   flex: 1 0 auto;
+  filter: blur(0);
+  transition: filter var(--duration-base) var(--ease-emphasized);
+}
+.reader-surface.blurred {
+  filter: blur(10px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-surface {
+    transition: none;
+  }
 }
 .topbar {
   position: sticky;

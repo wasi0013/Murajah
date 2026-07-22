@@ -6,16 +6,19 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import { AudioRecorder, toRecording } from '@/core/audio/recorder'
 import { useRecordingsStore } from '@/stores/recordings'
 import { useRecordingsPersistence } from '@/composables/useRecordingsPersistence'
+import { useRecorderStore } from '@/stores/recorder'
 import { useI18n } from '@/core/i18n'
 
 /**
  * Record-a-page panel (7.6.3): a mic button to capture your own recitation of the
  * current page, and a playlist of saved recordings with playback + delete. Own
  * `<audio>` for playback (isolated from the Qari engine); blob URLs are created on
- * play and revoked on stop / switch / unmount.
+ * play and revoked on stop / switch / unmount. `autoStart` skips the manual tap —
+ * used by Today's quick-test flow, which starts recording right after its own
+ * countdown overlay.
  */
 const open = defineModel<boolean>('open', { default: false })
-const props = defineProps<{ page: number }>()
+const props = defineProps<{ page: number; autoStart?: boolean }>()
 
 const store = useRecordingsStore()
 const persistence = useRecordingsPersistence(store)
@@ -28,6 +31,8 @@ const recorder = new AudioRecorder()
 const recording = ref(false)
 const busy = ref(false)
 const error = ref('')
+// Read by the reading surface behind this sheet, to blur the page while live.
+const session = useRecorderStore()
 
 const audioEl = ref<HTMLAudioElement>()
 const playingId = ref<string | null>(null)
@@ -42,6 +47,7 @@ async function toggleRecord() {
       store.add(toRecording(result, props.page))
     } finally {
       recording.value = false
+      session.active = false
       busy.value = false
     }
     return
@@ -49,6 +55,7 @@ async function toggleRecord() {
   try {
     await recorder.start()
     recording.value = true
+    session.active = true
   } catch {
     error.value = t('audio.micDenied')
   }
@@ -92,9 +99,14 @@ function fmtDate(iso: string) {
 
 const empty = computed(() => store.items.length === 0)
 
+onMounted(() => {
+  if (props.autoStart && supported) void toggleRecord()
+})
+
 onBeforeUnmount(() => {
   stopPlayback()
   recorder.cancel()
+  session.active = false
 })
 </script>
 

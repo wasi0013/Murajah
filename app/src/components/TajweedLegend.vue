@@ -24,7 +24,7 @@ const { t } = useI18n()
         :style="{ background: `var(--tajweed-${r.key})` }"
         aria-hidden="true"
       />
-      <span dir="rtl" style="font-family: var(--font-arabic)">{{ r.ar }}</span>
+      <span dir="rtl" lang="ar" style="font-family: var(--font-arabic)">{{ r.ar }}</span>
       <span class="text-text-muted">{{ r.en }}</span>
     </li>
   </ul>

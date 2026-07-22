@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { useMorphology } from '@/composables/useMorphology'
@@ -9,6 +10,8 @@ import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
+import Icon from '@/components/Icon.vue'
+import { useI18n } from '@/core/i18n'
 
 // Code-split: the popup + its data stay out of the initial reader bundle.
 const MorphologyPopup = defineAsyncComponent(() => import('./MorphologyPopup.vue'))
@@ -21,8 +24,14 @@ const MorphologyPopup = defineAsyncComponent(() => import('./MorphologyPopup.vue
  * turn shows without a fetch. A tap opens word morphology (read mode) or toggles
  * a mistake (mark mode); a scroll is never mistaken for a tap.
  */
+const { t } = useI18n()
 const reader = useReaderStore()
 const pages = useReaderPages(reader)
+
+// Mirrors the top-bar prev/next (ReaderView.vue) — a second, larger pair at the
+// foot of the page, for reaching a page turn without scrolling back to the top.
+const canPrev = computed(() => reader.page > 1)
+const canNext = computed(() => reader.page < reader.pageCount)
 
 const {
   open: morphOpen,
@@ -146,6 +155,27 @@ function handleTap(e: PointerEvent) {
       <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
     </div>
 
+    <nav class="page-nav" :aria-label="t('reader.pageNavAria')">
+      <button
+        type="button"
+        class="page-nav-btn"
+        :disabled="!canPrev"
+        @click="reader.prevPage()"
+      >
+        <Icon :icon="ChevronLeft" :size="20" />
+        <span>{{ t('reader.goToPrevPage') }}</span>
+      </button>
+      <button
+        type="button"
+        class="page-nav-btn"
+        :disabled="!canNext"
+        @click="reader.nextPage()"
+      >
+        <span>{{ t('reader.goToNextPage') }}</span>
+        <Icon :icon="ChevronRight" :size="20" />
+      </button>
+    </nav>
+
     <MorphologyPopup
       v-if="morphOpen"
       :anchor="morphAnchor"
@@ -170,5 +200,39 @@ function handleTap(e: PointerEvent) {
 }
 .page-skeleton > * {
   max-width: 40ch;
+}
+.page-nav {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 43rem;
+  margin-inline: auto;
+  padding: 0.5rem 1rem 1.5rem;
+}
+.page-nav-btn {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.page-nav-btn:hover:not(:disabled) {
+  background: var(--color-elevated);
+  border-color: var(--color-accent);
+}
+.page-nav-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.page-nav-btn:disabled {
+  opacity: 0.4;
 }
 </style>

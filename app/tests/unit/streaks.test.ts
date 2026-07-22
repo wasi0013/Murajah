@@ -147,7 +147,7 @@ describe('streaks — date helpers', () => {
 describe('streaks — habit catalog', () => {
   it('exposes standing habits with stable ids', () => {
     expect(getHabit('recite-ayahs')?.nameKey).toBe('today.habits.reciteAyahs.name')
-    expect(getHabit('quick-test')?.wiresTo).toBe('quiz')
+    expect(getHabit('quick-test')?.wiresTo).toBe('record')
     expect(getHabit('nope')).toBeUndefined()
     expect(HABIT_CATALOG.every((h) => h.id && h.nameKey && h.descriptionKey)).toBe(true)
   })

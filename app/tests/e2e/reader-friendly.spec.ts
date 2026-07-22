@@ -42,7 +42,7 @@ test('/:surah/:ayah lands on the ayah’s page with the verse present', async ({
 test('paging off a surah URL normalises to the canonical form', async ({ page }) => {
   await page.goto('/2')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
-  await page.getByRole('button', { name: 'Next page' }).click()
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page).toHaveURL(/\/read\/qpc\/3$/)
 })
 
