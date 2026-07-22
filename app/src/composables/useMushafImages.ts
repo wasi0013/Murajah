@@ -13,6 +13,13 @@ interface Entry {
 
 /** Default page aspect until the manifest loads — reserves the box (no CLS). */
 const DEFAULT_ASPECT = 678 / 966
+/** Wait for paging to settle before loading, so a fast swipe doesn't fire (and
+ * fail) fetches for pages flashed past — only the page you land on is loaded. */
+const SETTLE_MS = 120
+/** Transient fetch failures (common on a fast mobile swipe) auto-retry a few
+ * times before the manual "tap to retry" is ever shown. */
+const MAX_AUTO_RETRIES = 2
+const RETRY_BACKOFF_MS = 400
 
 /**
  * Loads mushaf page images for the store's visible page(s) as object URLs, keeps
@@ -26,6 +33,8 @@ export function useMushafImages(store: MushafStore) {
   const entries = reactive(new Map<number, Entry>())
   const ready = ref(false)
   const aspect = ref(DEFAULT_ASPECT)
+  const retryTimers = new Set<ReturnType<typeof setTimeout>>()
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
 
   const initPromise = client
     .init()
@@ -66,6 +75,23 @@ export function useMushafImages(store: MushafStore) {
     entries.set(page, { status: 'error' })
   }
 
+  /**
+   * Load a page and, on a transient failure, auto-retry (force-refetch) a couple
+   * of times with a short backoff before leaving it in the error state. Retries
+   * stop once the page scrolls out of the retained window, so a fast swipe never
+   * keeps retrying pages the reader has already left.
+   */
+  async function ensureWithRetry(page: number, attempt = 0): Promise<void> {
+    await ensure(page, attempt > 0 ? { reload: true } : undefined)
+    if (entries.get(page)?.status !== 'error') return
+    if (attempt >= MAX_AUTO_RETRIES || !retained().has(page)) return
+    const timer = setTimeout(() => {
+      retryTimers.delete(timer)
+      if (retained().has(page)) void ensureWithRetry(page, attempt + 1)
+    }, RETRY_BACKOFF_MS * (attempt + 1))
+    retryTimers.add(timer)
+  }
+
   function retained(): Set<number> {
     const keep = new Set<number>(store.visible)
     for (const p of prefetchPages(store.page, store.pageCount, store.spread)) keep.add(p)
@@ -85,16 +111,23 @@ export function useMushafImages(store: MushafStore) {
 
   function refresh(): void {
     if (!ready.value) return
-    for (const p of store.visible) void ensure(p)
-    // Neighbours are only warmed into the cache (no object URL yet) — cheap, and
-    // the object URL is minted from the cached Blob the moment the page shows.
+    // Warm neighbours + free memory immediately (cheap, cached, errors swallowed).
     client.prefetch(prefetchPages(store.page, store.pageCount, store.spread))
     prune()
+    // Debounce the visible-page load: during a fast swipe the page changes faster
+    // than SETTLE_MS, so only the page the reader settles on is fetched.
+    clearTimeout(settleTimer)
+    settleTimer = setTimeout(() => {
+      for (const p of store.visible) void ensureWithRetry(p)
+    }, SETTLE_MS)
   }
 
   watch(() => [store.page, store.spread], refresh, { flush: 'post' })
 
   onUnmounted(() => {
+    clearTimeout(settleTimer)
+    for (const timer of retryTimers) clearTimeout(timer)
+    retryTimers.clear()
     for (const e of entries.values()) if (e.url) URL.revokeObjectURL(e.url)
     entries.clear()
   })
