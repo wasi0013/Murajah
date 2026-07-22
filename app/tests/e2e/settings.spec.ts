@@ -24,6 +24,9 @@ test('choosing a theme paints the document and persists across reload', async ({
   await page.getByRole('radio', { name: 'Dark' }).click()
   await expect(html).toHaveAttribute('data-theme', 'dark')
 
+  // The pref write is fire-and-forget; let it commit before reload aborts the
+  // pending IndexedDB transaction (else the restore reads the old value).
+  await page.waitForTimeout(300)
   await page.reload()
   await expect(html).toHaveAttribute('data-theme', 'dark')
   await expect(page.getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'true')
@@ -89,6 +92,7 @@ test('choosing Arabic flips the document to RTL and persists', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'الإعدادات', level: 1 })).toBeVisible()
 
   // The choice survives a reload (loaded from IndexedDB before paint).
+  await page.waitForTimeout(300) // let the fire-and-forget pref write commit
   await page.reload()
   await expect(html).toHaveAttribute('dir', 'rtl')
   await expect(page.getByRole('heading', { name: 'الإعدادات', level: 1 })).toBeVisible({
