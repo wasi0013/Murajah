@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { BookOpen, Copy } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { toast } from '@/composables/useToast'
@@ -24,6 +24,10 @@ const props = defineProps<{
   autoScroll?: boolean
 }>()
 const emit = defineEmits<{ expand: [verse: string] }>()
+
+// tj-p{n} is the COLR/CPAL tajweed font (baked-in colour, not `currentColor`);
+// see ReadingSurface.vue for the fuller explanation of the dark-theme fix.
+const isTajweedFont = computed(() => props.fontFamily.startsWith('tj-'))
 
 // Auto-scroll the recited ayah into view. Only when it's offscreen, so we never
 // fight the reader's own scroll; honours reduced-motion and the auto-scroll pref.
@@ -80,7 +84,13 @@ async function copy(v: VerseStudy) {
         </button>
       </header>
 
-      <p class="arabic" dir="rtl" lang="ar" :style="{ fontFamily: `'${fontFamily}', serif` }">
+      <p
+        class="arabic"
+        :class="{ 'tajweed-glyphs': isTajweedFont }"
+        dir="rtl"
+        lang="ar"
+        :style="{ fontFamily: `'${fontFamily}', serif` }"
+      >
         {{ e.arabic }}
       </p>
 
@@ -177,6 +187,9 @@ async function copy(v: VerseStudy) {
   text-align: right;
   color: var(--color-text);
   margin-bottom: 1rem;
+}
+.arabic.tajweed-glyphs {
+  filter: var(--tajweed-glyph-filter, none);
 }
 .tr {
   margin-top: 0.85rem;

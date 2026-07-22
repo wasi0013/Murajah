@@ -10,11 +10,18 @@ interface Option {
 
 const model = defineModel<string>({ required: true })
 const props = defineProps<{ options: Option[]; label?: string }>()
+// `update:modelValue` (driving `model`) is a plain ref write — Vue skips it when
+// the value doesn't change, e.g. re-picking the option that's already active. A
+// caller that needs to know about *every* pick (not just ones that change the
+// value) — Today's player re-triggering playback on a re-tap — listens to this
+// instead.
+const emit = defineEmits<{ select: [value: string] }>()
 
 const group = ref<HTMLElement>()
 
 function select(value: string) {
   model.value = value
+  emit('select', value)
 }
 
 function onKey(e: KeyboardEvent, index: number) {
@@ -24,7 +31,7 @@ function onKey(e: KeyboardEvent, index: number) {
   else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + n) % n
   else return
   e.preventDefault()
-  model.value = props.options[next].value
+  select(props.options[next].value)
   nextTick(() => {
     group.value?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
   })

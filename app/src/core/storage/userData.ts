@@ -1,4 +1,5 @@
 import type { Layout } from '@/core/data/types'
+import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
 import { idbGet, openDb, txDone } from './idb'
 
 /**
@@ -18,6 +19,7 @@ const DAYLOG_KEY = 'dayLog'
 const QUIZ_KEY = 'quiz'
 const AUDIO_KEY = 'audio'
 const RECORDINGS_KEY = 'recordings'
+const HABIT_VERSES_KEY = 'habitVerses'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -474,8 +476,7 @@ export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
 /**
  * Own-recitation recordings (Phase 7.6). Stored as a plain array under one key in
  * the shared app DB — **not** a separate database (the legacy separate DB was the
- * iOS-contention source, bug A5/B5). Blobs are structured-cloneable, so they persist
- * directly; we rebuild the surrounding array/objects to stay proxy-safe.
+ * iOS-contention source, bug A5/B5).
  */
 export interface StoredRecording {
   id: string
@@ -486,31 +487,103 @@ export interface StoredRecording {
   recordedAt: string
 }
 
+/**
+ * On-disk shape: audio bytes as an `ArrayBuffer`, not a `Blob`. Storing a `Blob`
+ * directly (the original approach — they're structured-cloneable in principle)
+ * throws in some engines, e.g. WebKit: "Error preparing Blob/File data to be
+ * stored in object store" — which `saveRecordings`'s best-effort catch swallowed
+ * silently, so every recording vanished on next launch with no error anywhere.
+ * An `ArrayBuffer` round-trips on every engine; a `Blob` is reconstructed from
+ * it (+ `mimeType`) on load, so callers still see `StoredRecording.blob` as before.
+ */
+interface RecordingOnDisk {
+  id: string
+  pageNumber: number
+  data: ArrayBuffer
+  mimeType: string
+  duration: number
+  recordedAt: string
+}
+
 /** Load persisted recordings (empty array if none / on error). */
 export async function loadRecordings(): Promise<StoredRecording[]> {
   try {
     const tx = (await db()).transaction(STORE, 'readonly')
-    const stored = await idbGet<StoredRecording[]>(tx.objectStore(STORE), RECORDINGS_KEY)
+    const stored = await idbGet<(RecordingOnDisk | StoredRecording)[]>(
+      tx.objectStore(STORE),
+      RECORDINGS_KEY,
+    )
     await txDone(tx)
-    return Array.isArray(stored) ? stored : []
-  } catch {
+    if (!Array.isArray(stored)) return []
+    // Records saved before this fix are still `{ blob }` (Chromium only — it's
+    // the one engine the direct-Blob approach actually worked on) and pass
+    // through unchanged; new records are `{ data }` and get a Blob rebuilt.
+    return stored.map((r) =>
+      'data' in r
+        ? {
+            id: r.id,
+            pageNumber: r.pageNumber,
+            blob: new Blob([r.data], { type: r.mimeType }),
+            mimeType: r.mimeType,
+            duration: r.duration,
+            recordedAt: r.recordedAt,
+          }
+        : r,
+    )
+  } catch (err) {
+    console.error('loadRecordings failed', err)
     return []
   }
 }
 
-/** Persist recordings (best-effort). Rebuilds plain objects around the blobs. */
+/** Persist recordings (best-effort). Converts each blob to bytes — see `RecordingOnDisk`. */
 export async function saveRecordings(recordings: readonly StoredRecording[]): Promise<void> {
   try {
-    const plain = recordings.map((r) => ({
-      id: r.id,
-      pageNumber: r.pageNumber,
-      blob: r.blob,
-      mimeType: r.mimeType,
-      duration: r.duration,
-      recordedAt: r.recordedAt,
-    }))
+    const plain: RecordingOnDisk[] = await Promise.all(
+      recordings.map(async (r) => ({
+        id: r.id,
+        pageNumber: r.pageNumber,
+        data: await r.blob.arrayBuffer(),
+        mimeType: r.mimeType,
+        duration: r.duration,
+        recordedAt: r.recordedAt,
+      })),
+    )
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(plain, RECORDINGS_KEY)
+    await txDone(tx)
+  } catch (err) {
+    console.error('saveRecordings failed', err)
+  }
+}
+
+/**
+ * The "recite 10 verses" habit builder's cursor through the 6236-verse cycle
+ * (`core/quran/habitVerses.ts`). A single flat record, same shape as audio prefs.
+ */
+export type StoredHabitVerseCursor = HabitVerseCursor
+
+/** Load the persisted cursor (the initial (never-started) cursor if none / on error). */
+export async function loadHabitVerseCursor(): Promise<StoredHabitVerseCursor> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredHabitVerseCursor>(tx.objectStore(STORE), HABIT_VERSES_KEY)
+    await txDone(tx)
+    return stored ?? { ...INITIAL_HABIT_VERSE_CURSOR }
+  } catch {
+    return { ...INITIAL_HABIT_VERSE_CURSOR }
+  }
+}
+
+/** Persist the cursor (best-effort). */
+export async function saveHabitVerseCursor(cursor: StoredHabitVerseCursor): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const plain: StoredHabitVerseCursor = {
+      completedThrough: cursor.completedThrough,
+      lastAdvanceDate: cursor.lastAdvanceDate,
+    }
+    tx.objectStore(STORE).put(plain, HABIT_VERSES_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */

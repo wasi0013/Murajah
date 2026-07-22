@@ -91,6 +91,14 @@
   --tajweed-ikhfa: #3b74d6;
   --tajweed-madd: #b4791f;
 
+  /* The tajweed glyph font (tj-p{n}) is a COLR/CPAL colour font: its base,
+     non-rule-colored strokes are baked-in near-black, matching a printed page
+     on a light background — CSS `color` can't repaint them. On a dark surface
+     that base ink is unreadable, so dark theme inverts+hue-rotates the
+     rendered glyphs (a lightness flip that leaves the rule colours roughly
+     hued the same); light/sepia backgrounds need no correction. */
+  --tajweed-glyph-filter: none;
+
   --shadow-sm: 0 1px 2px rgba(20, 30, 24, 0.06);
   --shadow-md: 0 4px 12px -4px rgba(20, 30, 24, 0.12);
   --shadow-lg: 0 12px 28px -10px rgba(20, 30, 24, 0.18);
@@ -121,6 +129,8 @@
   --tajweed-qalqalah: #ec7a74;
   --tajweed-ikhfa: #6f9ff0;
   --tajweed-madd: #e0b45f;
+
+  --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 6px 16px -6px rgba(0, 0, 0, 0.55);
@@ -180,6 +190,7 @@
     --tajweed-qalqalah: #ec7a74;
     --tajweed-ikhfa: #6f9ff0;
     --tajweed-madd: #e0b45f;
+    --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 6px 16px -6px rgba(0, 0, 0, 0.55);
     --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.65);

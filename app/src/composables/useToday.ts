@@ -5,10 +5,14 @@ import { usePlanStore } from '@/stores/plan'
 import { useMistakesStore } from '@/stores/mistakes'
 import { useQuizStore } from '@/stores/quiz'
 import { useDayLogStore, type DaySection } from '@/stores/dayLog'
+import { useHabitVersesStore } from '@/stores/habitVerses'
 import { generateDailyTasks } from '@/core/memorization/dailyTasks'
 import { advanceMemorizationPage } from '@/core/memorization/planBuilder'
 import { getHabit, getTodayDate, type HabitDef } from '@/core/memorization/streaks'
 import type { ReviewRating } from '@/core/memorization/reviewScheduler'
+
+/** The one habit whose checkbox also drives the habit-builder verse cursor. */
+const RECITE_AYAHS_HABIT = 'recite-ayahs'
 
 export interface UseTodayOptions {
   /** The clock. Defaults to the shared local-day clock; inject a ref in tests. */
@@ -30,6 +34,7 @@ export function useToday(opts: UseTodayOptions = {}) {
   const mistakes = useMistakesStore()
   const quiz = useQuizStore()
   const dayLog = useDayLogStore()
+  const habitVerses = useHabitVersesStore()
 
   // Rolls at local midnight, shared with `useStreak` — so a session left open
   // overnight regenerates the queue for the new day instead of stalling on
@@ -69,6 +74,8 @@ export function useToday(opts: UseTodayOptions = {}) {
   const habits = computed<HabitDef[]>(() =>
     (plan.config?.habits ?? []).map(getHabit).filter((h): h is HabitDef => !!h),
   )
+  /** The habit builder's 10 verses for today — stable for the day, see `versesOfDay`. */
+  const versesOfDay = computed(() => habitVerses.versesForDate(date.value))
 
   const isDone = (section: DaySection, page: number) => dayLog.isPageDone(date.value, section, page)
   const isHabitDone = (habitId: string) => dayLog.isHabitDone(date.value, habitId)
@@ -139,9 +146,18 @@ export function useToday(opts: UseTodayOptions = {}) {
    * un-checking one costs nothing. (Page tasks have no un-check: a recall is a real
    * event. The reward is paid, the SM-2 schedule has moved, and hasanah is monotonic
    * by design — so "undo" can't be honoured, only faked.)
+   *
+   * `recite-ayahs` is the one exception with a side effect: checking it advances
+   * the habit-builder's verse cursor by today's 10 (so tomorrow picks up where
+   * today left off); un-checking it the same day rolls that advance back — see
+   * `core/quran/habitVerses`.
    */
   function toggleHabit(habitId: string, done = !isHabitDone(habitId)): boolean {
     const changed = dayLog.setHabitDone(date.value, habitId, done)
+    if (changed && habitId === RECITE_AYAHS_HABIT) {
+      if (done) habitVerses.advance(date.value)
+      else habitVerses.rollback(date.value)
+    }
     syncCompleted()
     return changed
   }
@@ -155,6 +171,7 @@ export function useToday(opts: UseTodayOptions = {}) {
     revision,
     weakReinforcement,
     habits,
+    versesOfDay,
     isDone,
     isHabitDone,
     totalTasks,

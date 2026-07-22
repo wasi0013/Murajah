@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Flame, GraduationCap, Settings, Sparkles } from 'lucide-vue-next'
+import { ArrowLeft, Flame, GraduationCap, Headphones, Settings, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
 import { useProgressStore } from '@/stores/progress'
 import { useMistakesStore } from '@/stores/mistakes'
+import { useAudioStore } from '@/stores/audio'
 import { generateSmartPlan } from '@/core/memorization/planBuilder'
 import { usePlanPersistence } from '@/composables/usePlanPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { useDayLogPersistence } from '@/composables/useDayLogPersistence'
 import { useQuizPersistence } from '@/composables/useQuizPersistence'
+import { useHabitVersesPersistence } from '@/composables/useHabitVersesPersistence'
 import { useMilestones } from '@/composables/useMilestones'
 import { juzForPage } from '@/core/navigation/juz'
 import { readerLink } from '@/core/navigation/readerLinks'
@@ -23,6 +25,7 @@ import Toggle from '@/components/Toggle.vue'
 import TaskRow from './TaskRow.vue'
 import PlanSetup from './PlanSetup.vue'
 import HistorySheet from './HistorySheet.vue'
+import TodayAudioPlayer from './TodayAudioPlayer.vue'
 
 /**
  * Today — the merged practice loop and the app's primary surface. One adaptive
@@ -36,6 +39,7 @@ const router = useRouter()
 const plan = usePlanStore()
 const progress = useProgressStore()
 const mistakes = useMistakesStore()
+const audio = useAudioStore()
 const today = useToday()
 const streak = useStreak()
 const { t, locale } = useI18n()
@@ -45,12 +49,14 @@ const progressPersistence = useProgressPersistence()
 const mistakesPersistence = useMistakesPersistence()
 const dayLogPersistence = useDayLogPersistence()
 const quizPersistence = useQuizPersistence()
+const habitVersesPersistence = useHabitVersesPersistence()
 const milestones = useMilestones()
 
 onMounted(() => {
   void mistakesPersistence.hydrate() // mistakes feed weakness scoring
   void quizPersistence.hydrate() // quiz accuracy also feeds weakness scoring
   void dayLogPersistence.hydrate() // the streak and today's checked state
+  void habitVersesPersistence.hydrate() // the habit builder's verse cursor
   // Milestones celebrate what's crossed from here on, so they can only be armed once
   // the plan (with the nav index) and progress are in. Arming against a half-loaded
   // set of memorized pages would congratulate the user for the rest of them arriving.
@@ -64,6 +70,7 @@ onBeforeUnmount(() => {
   mistakesPersistence.dispose()
   dayLogPersistence.dispose()
   quizPersistence.dispose()
+  habitVersesPersistence.dispose()
   milestones.dispose()
 })
 
@@ -105,6 +112,14 @@ function onHabit(id: string, done: boolean) {
 
 function openQuiz() {
   toast(t('today.quizLater'), { variant: 'info' })
+}
+
+const showVersesOfDay = computed(() => plan.config?.habits.includes('recite-ayahs') ?? false)
+const audioPlayerRef = ref<InstanceType<typeof TodayAudioPlayer> | null>(null)
+
+function openAudioVerses() {
+  audioPlayerRef.value?.selectTab('versesOfDay')
+  audioPlayerRef.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 // —— First run ————————————————————————————————————
@@ -151,7 +166,7 @@ const historyOpen = ref(false)
 </script>
 
 <template>
-  <main class="today">
+  <main class="today" :class="{ 'audio-docked': audio.open }">
     <header class="topbar">
       <button class="icon-btn" type="button" :aria-label="t('common.backToReader')" @click="back">
         <Icon :icon="ArrowLeft" :size="20" />
@@ -244,6 +259,25 @@ const historyOpen = ref(false)
         {{ t('today.paused') }}
       </p>
 
+      <section
+        v-if="
+          today.newMemorization.value.length ||
+          today.revision.value.length ||
+          today.weakReinforcement.value.length ||
+          showVersesOfDay
+        "
+        class="section"
+      >
+        <TodayAudioPlayer
+          ref="audioPlayerRef"
+          :new-pages="today.newMemorization.value"
+          :revision-pages="today.revision.value"
+          :weak-pages="today.weakReinforcement.value"
+          :show-verses-of-day="showVersesOfDay"
+          :verses-of-day="today.versesOfDay.value"
+        />
+      </section>
+
       <section v-if="today.newMemorization.value.length" class="section" aria-labelledby="s-new">
         <h2 id="s-new" class="section-title">{{ t('today.sections.new') }}</h2>
         <ul class="rows">
@@ -311,6 +345,15 @@ const historyOpen = ref(false)
             >
               <Icon :icon="GraduationCap" :size="16" />
             </button>
+            <button
+              v-else-if="h.wiresTo === 'audio'"
+              class="habit-link"
+              type="button"
+              :aria-label="t('today.listen.openAria')"
+              @click="openAudioVerses"
+            >
+              <Icon :icon="Headphones" :size="16" />
+            </button>
             <Toggle
               :model-value="today.isHabitDone(h.id)"
               :label="t(h.nameKey)"
@@ -336,6 +379,10 @@ const historyOpen = ref(false)
   background: var(--color-bg);
   color: var(--color-text);
   padding-bottom: 3rem;
+}
+/* Keep the last rows clear of the docked mini-player. */
+.today.audio-docked {
+  padding-bottom: 12rem;
 }
 .sr-only {
   position: absolute;

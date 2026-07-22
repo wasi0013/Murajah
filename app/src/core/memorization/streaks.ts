@@ -164,6 +164,7 @@ export const HABIT_CATALOG: readonly HabitDef[] = [
     id: 'recite-ayahs',
     nameKey: 'today.habits.reciteAyahs.name',
     descriptionKey: 'today.habits.reciteAyahs.description',
+    wiresTo: 'audio',
   },
   {
     id: 'quick-test',

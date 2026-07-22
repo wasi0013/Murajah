@@ -23,7 +23,7 @@ function rec(id: string, page: number, at: string): Recording {
 }
 
 describe('recordings storage', () => {
-  it('round-trips a recording (metadata + blob) through IndexedDB', async () => {
+  it('round-trips a recording (metadata + audio bytes) through IndexedDB', async () => {
     await saveRecordings([rec('a', 42, '2026-07-18T10:00:00Z')])
     const loaded = await loadRecordings()
     expect(loaded).toHaveLength(1)
@@ -33,9 +33,45 @@ describe('recordings storage', () => {
       mimeType: 'audio/webm',
       recordedAt: '2026-07-18T10:00:00Z',
     })
-    // The blob is persisted with its type. (fake-indexeddb + happy-dom serialise the
-    // Blob to a plain object, dropping the byte data; real browsers store Blobs
-    // intact — byte-level persistence is exercised by the e2e record→play flow.)
+    // Stored as an ArrayBuffer, not the Blob itself — some engines (WebKit) throw
+    // storing a Blob via structured clone, which silently discarded every
+    // recording on the next persist. Assert the bytes actually survive the trip.
+    await expect(loaded[0].blob.text()).resolves.toBe('audio-a')
+  })
+
+  it('reads a pre-fix record stored as a raw blob (old on-disk shape)', async () => {
+    // Before the ArrayBuffer fix, `saveRecordings` stored `{ blob }` directly.
+    // Those existing rows must still load instead of vanishing on upgrade.
+    const legacy = [
+      {
+        id: 'legacy',
+        pageNumber: 7,
+        blob: new Blob(['legacy-audio'], { type: 'audio/webm' }),
+        mimeType: 'audio/webm',
+        duration: 1000,
+        recordedAt: '2026-06-01T00:00:00Z',
+      },
+    ]
+    await saveRecordings([]) // opens the DB/store
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('murajah-userdata', 1)
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('data', 'readwrite')
+      tx.objectStore('data').put(legacy, 'recordings')
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+
+    const loaded = await loadRecordings()
+    expect(loaded).toHaveLength(1)
+    // The old shape (`{ blob }`) must pass through unchanged, not get dropped for
+    // lacking `data`. (Byte-level fidelity of a *stored* Blob isn't checkable here
+    // — see the round-trip test above; fake-indexeddb + happy-dom don't preserve
+    // Blob bytes through structured clone the way real engines do.)
+    expect(loaded[0]).toMatchObject({ id: 'legacy', pageNumber: 7, mimeType: 'audio/webm' })
     expect(loaded[0].blob).toBeDefined()
   })
 

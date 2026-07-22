@@ -22,11 +22,25 @@ export function useMushafPage(store: MushafStore, router: Router) {
   const route = () => router.currentRoute.value
   const routePage = (): number | undefined => {
     const raw = route().params.page
-    const n = Number(Array.isArray(raw) ? raw[0] : raw)
+    const s = Array.isArray(raw) ? raw[0] : raw
+    // The `:page` param is optional (`/mushaf` with none matches too), and Vue
+    // Router represents "absent" as `''`, not `undefined`. `Number('')` is `0`
+    // (not `NaN`), so without this guard an absent page reads as page 0 —
+    // which then clamps to page 1, masking the last-read-page restore below.
+    if (!s) return undefined
+    const n = Number(s)
     return Number.isFinite(n) ? n : undefined
   }
 
   async function hydrate(): Promise<void> {
+    // A deep-linked URL (e.g. /mushaf/50) wins outright. Restoring the saved page
+    // first would briefly set the store to the *old* page, which the store→URL
+    // watcher below immediately pushes to the address bar — clobbering the
+    // deep link before applyRoute() ever runs (and, on a slow connection,
+    // aborting the in-flight image fetch for the requested page, surfacing a
+    // spurious "tap to retry"). Skip the restore entirely when the URL already
+    // names a page; applyRoute() (called right after) is then the sole source.
+    if (routePage() !== undefined) return
     const saved = await getPref<{ page: number }>(PREF_KEY)
     if (saved) store.restore(saved)
   }

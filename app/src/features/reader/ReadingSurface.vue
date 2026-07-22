@@ -40,6 +40,12 @@ const metrics = computed(() =>
     : { lineHeight: 'var(--qpc-line-height)', letterSpacing: 'var(--qpc-tracking)' },
 )
 
+// The tajweed glyph font resolves to family `tj-p{n}` (vs. plain `qpc-p{n}`) —
+// see core/fonts/fontPaths.ts. Its base ink is a COLR/CPAL-baked colour, not
+// `currentColor`, so it needs the dark-theme correction (design/tokens.css
+// `--tajweed-glyph-filter`); the ordinary glyph fonts already track `color`.
+const isTajweedFont = computed(() => props.fontFamily.startsWith('tj-'))
+
 interface RenderLine {
   type: string
   centered: boolean
@@ -197,7 +203,7 @@ watch(
           :data-id="w.id"
           :data-verse="`${w.surah}:${w.ayah}`"
         >
-          <span class="arabic">{{ w.text }}</span>
+          <span class="arabic" :class="{ 'tajweed-glyphs': isTajweedFont }">{{ w.text }}</span>
           <span v-if="wbw" class="gloss" dir="ltr" :lang="wbwLang">{{
             translations?.[w.location] ?? ''
           }}</span>
@@ -265,6 +271,9 @@ watch(
    Keep the word + its mark on one line so the mark never wraps into the gap. */
 .arabic {
   white-space: nowrap;
+}
+.arabic.tajweed-glyphs {
+  filter: var(--tajweed-glyph-filter, none);
 }
 .word.wbw {
   display: inline-flex;

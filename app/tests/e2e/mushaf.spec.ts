@@ -78,6 +78,33 @@ test.describe('mushaf image surface', () => {
     expect(hits.length).toBe(1) // still one — served from cache
   })
 
+  test('a deep link wins over a previously-saved page (desktop and mobile)', async ({ page }) => {
+    // Read page 5 first so it persists as the "last read" mushaf page.
+    await page.setViewportSize(PHONE)
+    await page.goto('/mushaf/5')
+    await expect(page.getByText('Page 5 / 604')).toBeVisible()
+
+    // A fresh visit to a different page via URL must land on — and stay on —
+    // that page, not silently snap back to the saved one.
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/mushaf/50')
+    await expect(page.getByText('Pages 49–50 / 604')).toBeVisible()
+    await page.waitForTimeout(500) // give any stray redirect a chance to fire
+    await expect(page).toHaveURL(/\/mushaf\/50$/)
+    await expect(page.locator('.page-error')).toHaveCount(0)
+  })
+
+  test('visiting /mushaf with no page restores the last-read page', async ({ page }) => {
+    await page.setViewportSize(PHONE)
+    await page.goto('/mushaf/50')
+    await expect(page.getByText('Page 50 / 604')).toBeVisible()
+    await page.waitForTimeout(500) // let the debounced pref write land
+
+    await page.goto('/mushaf')
+    await expect(page.getByText('Page 50 / 604')).toBeVisible()
+    await expect(page).toHaveURL(/\/mushaf\/50$/)
+  })
+
   test('entry point: open from the reader and return', async ({ page }) => {
     await page.setViewportSize(PHONE)
     await page.goto('/read/qpc/5')
