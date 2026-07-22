@@ -59,6 +59,19 @@ describe('useAudioPersistence', () => {
     expect(store.speed).toBe(before.speed) // unchanged — speed not allowed
   })
 
+  it('round-trips the last-listened scope', async () => {
+    const store = useAudioStore()
+    const p = useAudioPersistence(store)
+    store.lastListenScope = { kind: 'surah', surah: 25 }
+    await tick(360)
+    p.dispose()
+
+    setActivePinia(createPinia())
+    const store2 = useAudioStore()
+    await useAudioPersistence(store2).hydrate()
+    expect(store2.lastListenScope).toEqual({ kind: 'surah', surah: 25 })
+  })
+
   it('never persists transient playback state', async () => {
     const store = useAudioStore()
     const p = useAudioPersistence(store)

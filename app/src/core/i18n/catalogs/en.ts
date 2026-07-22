@@ -319,6 +319,7 @@ const en: Messages = {
     leadSurah: 'Pick a surah and it plays end to end.',
     leadJuz: 'Pick a juz and it plays end to end.',
     playQuran: 'Play the whole Quran',
+    continueTitle: 'Continue listening',
   },
   live: {
     title: 'Live recitation',
@@ -330,6 +331,7 @@ const en: Messages = {
     streamTitle: 'Live recitation stream',
     stop: 'Stop stream',
     choose: 'Choose a masjid to start the live stream.',
+    resumeTitle: 'Resume watching',
   },
   quiz: {
     title: 'Quiz',

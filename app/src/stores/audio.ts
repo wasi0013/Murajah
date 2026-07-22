@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { AB_NONE, abRegion, type AbState } from '@/core/audio/abRepeat'
 import { DEFAULT_PAGE_RECITER, DEFAULT_VERSE_RECITER } from '@/core/audio/defaults'
 import type { PlaylistItem } from '@/core/audio/playlist'
+import type { PlaybackScope } from '@/core/audio/scope'
 import type { AudioGrain } from '@/core/audio/types'
 
 /**
@@ -24,6 +25,8 @@ export const useAudioStore = defineStore('audio', () => {
   const loopPlaylist = ref(false)
   /** Follow the recited ayah/page: scroll it into view in the reader + tafsir. */
   const autoScroll = ref(true)
+  /** Bookmark of the last scope Listen played — powers its "continue" shortcut. */
+  const lastListenScope = ref<PlaybackScope | null>(null)
 
   // —— Transient playback ———————————————————————————————————————————————
   /** Shallow: items are replaced wholesale, never mutated in place. */
@@ -72,6 +75,7 @@ export const useAudioStore = defineStore('audio', () => {
     autoNext,
     loopPlaylist,
     autoScroll,
+    lastListenScope,
     // playback
     playlist,
     index,

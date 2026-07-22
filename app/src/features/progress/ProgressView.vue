@@ -131,11 +131,29 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
 
     <section class="bulk" :aria-label="t('progress.bulk.aria')">
       <span class="bulk-label">{{ t('progress.bulk.label') }}</span>
-      <input v-model.number="rangeStart" type="number" min="1" :max="TOTAL_PAGES" :aria-label="t('progress.bulk.from')" class="num" />
-      <span aria-hidden="true">–</span>
-      <input v-model.number="rangeEnd" type="number" min="1" :max="TOTAL_PAGES" :aria-label="t('progress.bulk.to')" class="num" />
-      <button class="btn" @click="bulkMark(true)">{{ t('progress.bulk.memorized') }}</button>
-      <button class="btn btn-ghost" @click="bulkMark(false)">{{ t('progress.bulk.clear') }}</button>
+      <div class="range-pill">
+        <input
+          v-model.number="rangeStart"
+          type="number"
+          min="1"
+          :max="TOTAL_PAGES"
+          :aria-label="t('progress.bulk.from')"
+          class="range-input"
+        />
+        <span class="range-dash" aria-hidden="true">–</span>
+        <input
+          v-model.number="rangeEnd"
+          type="number"
+          min="1"
+          :max="TOTAL_PAGES"
+          :aria-label="t('progress.bulk.to')"
+          class="range-input"
+        />
+      </div>
+      <div class="bulk-actions">
+        <button class="btn" @click="bulkMark(true)">{{ t('progress.bulk.memorized') }}</button>
+        <button class="btn btn-ghost" @click="bulkMark(false)">{{ t('progress.bulk.clear') }}</button>
+      </div>
     </section>
 
     <MemorizedGrid @select="openPage" />
@@ -378,33 +396,54 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
 }
 .bulk {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
   max-width: 46rem;
   margin: 1rem auto 0;
-  padding: 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 .bulk-label {
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
+  font-weight: 600;
+  color: var(--color-text);
 }
-.num {
-  width: 4.5rem;
-  height: 2.25rem;
-  padding: 0 0.5rem;
+.range-pill {
+  display: flex;
+  align-items: center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+.range-input {
+  width: 4rem;
+  height: 2.75rem;
+  padding: 0 0.25rem;
+  border: none;
+  background: transparent;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
-.num:focus-visible {
+.range-input:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
+}
+.range-dash {
+  color: var(--color-text-muted);
+}
+.bulk-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
 }
 .btn {
-  height: 2.25rem;
+  height: 2.5rem;
+  flex: 1;
   padding: 0 0.9rem;
   border-radius: var(--radius-md);
   background: var(--color-accent);
@@ -413,7 +452,7 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
   font-weight: 500;
 }
 .btn-ghost {
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-text);
   border: 1px solid var(--color-border);
 }

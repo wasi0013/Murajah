@@ -53,6 +53,20 @@ const pickerOpen = ref(false)
 const curatedIds = CURATED_LISTEN_RECITERS.map((r) => r.id)
 const reciterName = computed(() => listenReciter(store.pageReciterId).name)
 
+// "Continue listening" (redesign 2026 P3.1) — a bookmark of the last scope
+// played, shown only while nothing is currently playing (once the mini-player
+// is open it already shows what's on, so the card would just be noise).
+const continueLabel = computed(() => {
+  const s = store.lastListenScope
+  if (!s) return ''
+  if (s.kind === 'surah') return surahs.value.find((r) => r.surah === s.surah)?.translit ?? ''
+  if (s.kind === 'juz') return t('common.juz', { n: s.juz })
+  return t('listen.scopeQuran')
+})
+function playContinue() {
+  if (store.lastListenScope) void listen.play(store.lastListenScope)
+}
+
 onMounted(async () => {
   await prefs.hydrate()
   await data.init()
@@ -117,6 +131,19 @@ onBeforeUnmount(() => prefs.dispose())
     <div class="body" :class="{ docked: store.open }">
       <p v-if="loading" class="hint">{{ t('common.loading') }}</p>
       <template v-else>
+        <button
+          v-if="continueLabel && !store.open"
+          type="button"
+          class="continue-card"
+          @click="playContinue"
+        >
+          <Icon :icon="Play" :size="18" class="continue-icon" />
+          <span class="continue-text">
+            <span class="continue-title">{{ t('listen.continueTitle') }}</span>
+            <span class="continue-scope">{{ continueLabel }}</span>
+          </span>
+        </button>
+
         <p class="lead">{{ leadText }}</p>
         <SurahList v-if="scope === 'surah'" :rows="surahs" @select="playSurah" />
         <JuzList v-else-if="scope === 'juz'" :rows="juzz" @select="playJuz" />
@@ -229,6 +256,50 @@ onBeforeUnmount(() => prefs.dispose())
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   padding: 0.25rem 0.5rem 0.75rem;
+}
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.continue-card:hover {
+  background: var(--color-elevated);
+  border-color: var(--color-accent);
+}
+.continue-card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.continue-icon {
+  flex: none;
+  color: var(--color-accent);
+}
+.continue-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.continue-title {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.continue-scope {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hint {
   font-size: var(--text-sm);

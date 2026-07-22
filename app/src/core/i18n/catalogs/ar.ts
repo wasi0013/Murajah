@@ -317,6 +317,7 @@ const ar: Messages = {
     leadSurah: 'اختر سورة لتُتلى من أولها إلى آخرها.',
     leadJuz: 'اختر جزءًا ليُتلى من أوله إلى آخره.',
     playQuran: 'استمع إلى المصحف كاملاً',
+    continueTitle: 'تابع الاستماع',
   },
   live: {
     title: 'بث مباشر',
@@ -328,6 +329,7 @@ const ar: Messages = {
     streamTitle: 'بث التلاوة المباشر',
     stop: 'إيقاف البث',
     choose: 'اختر مسجدًا لبدء البث المباشر.',
+    resumeTitle: 'متابعة المشاهدة',
   },
   quiz: {
     title: 'اختبار',

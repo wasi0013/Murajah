@@ -26,15 +26,34 @@ export function useAudioPersistence(store = useAudioStore()) {
     }
     if (typeof prefs.speed === 'number' && SPEEDS.has(prefs.speed)) store.speed = prefs.speed
     if (typeof prefs.autoScroll === 'boolean') store.autoScroll = prefs.autoScroll
+    if (prefs.lastListenScope) store.lastListenScope = prefs.lastListenScope
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined
   const stop = watch(
-    () => [store.grain, store.verseReciterId, store.pageReciterId, store.speed, store.autoScroll] as const,
-    ([grain, verseReciterId, pageReciterId, speed, autoScroll]) => {
+    () =>
+      [
+        store.grain,
+        store.verseReciterId,
+        store.pageReciterId,
+        store.speed,
+        store.autoScroll,
+        store.lastListenScope,
+      ] as const,
+    ([grain, verseReciterId, pageReciterId, speed, autoScroll, lastListenScope]) => {
       clearTimeout(timer)
       timer = setTimeout(
-        () => void saveAudioPrefs({ grain, verseReciterId, pageReciterId, speed, autoScroll }),
+        () =>
+          void saveAudioPrefs({
+            grain,
+            verseReciterId,
+            pageReciterId,
+            speed,
+            autoScroll,
+            // Spread to a plain object — like the wrapper itself, proxy-safe for
+            // structured clone (IndexedDB can choke silently on a reactive Proxy).
+            lastListenScope: lastListenScope ? { ...lastListenScope } : undefined,
+          }),
         DEBOUNCE_MS,
       )
     },

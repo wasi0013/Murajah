@@ -109,7 +109,7 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
       </Button>
     </header>
 
-    <main class="mx-auto grid max-w-4xl gap-12 px-5 py-10">
+    <main class="mx-auto grid grid-cols-1 max-w-4xl gap-12 px-5 py-10">
       <!-- Colors -->
       <section class="grid gap-4">
         <h2 class="text-xl font-semibold">Color roles</h2>
@@ -321,7 +321,7 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           </label>
         </div>
         <TajweedLegend v-if="surfaceTajweed" />
-        <div class="mx-auto w-full max-w-md rounded-xl border border-border bg-surface p-3 shadow-sm">
+        <div class="mx-auto w-full max-w-md overflow-x-auto rounded-xl border border-border bg-surface p-3 shadow-sm">
           <ReadingSurface
             v-if="page1"
             :page="page1"

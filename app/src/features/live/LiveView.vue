@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Radio, X } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
+import { loadLivePrefs, saveLivePrefs } from '@/core/storage/userData'
 import { useI18n } from '@/core/i18n'
 
 const { t } = useI18n()
@@ -25,6 +26,19 @@ const CHANNELS: { id: 'quran' | 'sunnah'; labelKey: string; subKey: string; yout
 ]
 
 const active = ref<'quran' | 'sunnah' | null>(null)
+// Remembered from a past visit (redesign 2026 P3.1) — offers a one-tap resume
+// instead of always opening as a blank picker. Never auto-plays: the iframe
+// still only appears once a channel is actually selected.
+const lastChannel = ref<'quran' | 'sunnah' | null>(null)
+const lastChannelLabel = computed(() => {
+  const c = CHANNELS.find((c) => c.id === lastChannel.value)
+  return c ? t(c.labelKey) : ''
+})
+
+onMounted(async () => {
+  const prefs = await loadLivePrefs()
+  if (prefs.lastChannel) lastChannel.value = prefs.lastChannel
+})
 
 function embedUrl(channel: string) {
   return `https://www.youtube.com/embed/live_stream?channel=${channel}&autoplay=1`
@@ -32,6 +46,10 @@ function embedUrl(channel: string) {
 
 function selectChannel(id: 'quran' | 'sunnah') {
   active.value = active.value === id ? null : id
+  if (active.value) {
+    lastChannel.value = id
+    void saveLivePrefs({ lastChannel: id })
+  }
 }
 
 function back() {
@@ -52,6 +70,19 @@ function back() {
     </header>
 
     <div class="body">
+      <button
+        v-if="!active && lastChannel"
+        type="button"
+        class="continue-card"
+        @click="selectChannel(lastChannel)"
+      >
+        <Icon :icon="Radio" :size="18" class="continue-icon" />
+        <span class="continue-text">
+          <span class="continue-title">{{ t('live.resumeTitle') }}</span>
+          <span class="continue-scope">{{ lastChannelLabel }}</span>
+        </span>
+      </button>
+
       <div class="channels" role="group" :aria-label="t('live.channelsAria')">
         <button
           v-for="c in CHANNELS"
@@ -151,6 +182,49 @@ function back() {
   max-width: 46rem;
   margin-inline: auto;
   padding: 1rem clamp(0.75rem, 4vw, 1.5rem) calc(1.5rem + env(safe-area-inset-bottom));
+}
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.continue-card:hover {
+  background: var(--color-elevated);
+  border-color: var(--color-accent);
+}
+.continue-card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.continue-icon {
+  flex: none;
+  color: var(--color-accent);
+}
+.continue-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.continue-title {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.continue-scope {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .channels {
   display: grid;

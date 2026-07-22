@@ -1,5 +1,6 @@
 import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
+import type { PlaybackScope } from '@/core/audio/scope'
 import { idbGet, openDb, txDone } from './idb'
 
 /**
@@ -18,6 +19,7 @@ const PLAN_KEY = 'plan'
 const DAYLOG_KEY = 'dayLog'
 const QUIZ_KEY = 'quiz'
 const AUDIO_KEY = 'audio'
+const LIVE_KEY = 'live'
 const RECORDINGS_KEY = 'recordings'
 const HABIT_VERSES_KEY = 'habitVerses'
 
@@ -433,7 +435,11 @@ export async function saveQuizAccuracy(map: Map<number, number[]>): Promise<void
 /**
  * Audio player preferences (Phase 7.3): the grain, the verse/page reciters, and the
  * playback speed. Only durable preferences — never transient playback (playlist,
- * cursor, time), which starts clean each session. Shares the app DB.
+ * cursor, time), which starts clean each session. `lastListenScope` is the one
+ * exception in spirit only: it's a bookmark of *what* was last played on Listen
+ * (a surah/juz/the whole Quran), not *where* — no cursor or position — so it can
+ * power a "continue listening" shortcut without resurrecting mid-playback state.
+ * Shares the app DB.
  */
 export interface StoredAudioPrefs {
   grain?: string
@@ -441,6 +447,7 @@ export interface StoredAudioPrefs {
   pageReciterId?: string
   speed?: number
   autoScroll?: boolean
+  lastListenScope?: PlaybackScope
 }
 
 /** Load persisted audio prefs (empty object if none / on error). */
@@ -465,8 +472,43 @@ export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
       pageReciterId: prefs.pageReciterId,
       speed: prefs.speed,
       autoScroll: prefs.autoScroll,
+      lastListenScope: prefs.lastListenScope,
     }
     tx.objectStore(STORE).put(plain, AUDIO_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Live-recitation view preferences (redesign 2026 P3.1): just a bookmark of the
+ * last masjid channel watched, so the view can offer a one-tap resume instead of
+ * always opening as a blank picker. No stream-status data exists to show
+ * (no source for iqamah/prayer-time info), so this is the honest version of
+ * "give it memory." Shares the app DB.
+ */
+export interface StoredLivePrefs {
+  lastChannel?: 'quran' | 'sunnah'
+}
+
+/** Load persisted Live prefs (empty object if none / on error). */
+export async function loadLivePrefs(): Promise<StoredLivePrefs> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredLivePrefs>(tx.objectStore(STORE), LIVE_KEY)
+    await txDone(tx)
+    return stored ?? {}
+  } catch {
+    return {}
+  }
+}
+
+/** Persist Live prefs (best-effort). */
+export async function saveLivePrefs(prefs: StoredLivePrefs): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put({ lastChannel: prefs.lastChannel }, LIVE_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */

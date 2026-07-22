@@ -25,6 +25,7 @@ export function useListenPlayer() {
 
   async function play(scope: PlaybackScope): Promise<void> {
     lastScope = scope
+    store.lastListenScope = scope
     store.open = true
     store.loading = true
     try {
