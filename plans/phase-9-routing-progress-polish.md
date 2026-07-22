@@ -98,13 +98,9 @@ Six task groups is a lot for one phase. 9.1–9.3 are cohesive (all user-facing 
   - [x] *Gallery* — skipped per product-owner call (dev/design tool slated for removal).
   - **9.5.3 complete.**
 
-## 9.6 — PWA / service worker / offline *(usual planning; surviving Phase 9 scope)*
-> Offline reading after first visit; installable. Held from earlier phases by design (§8 note). Uses `vite-plugin-pwa` (Workbox) already in the stack.
+## 9.6 — PWA / service worker / offline → **moved to [phase-10-pwa-migration.md](./phase-10-pwa-migration.md)**
 
-- [ ] **9.6.1** Service worker v2: precache the app shell; runtime-cache page data chunks + per-page fonts (stale-while-revalidate); versioned, with background update + an "update available" prompt.
-- [ ] **9.6.2** Offline-download-manager UI: opt-in, size-shown, resumable pack of optimized page data/fonts (mushaf images opt-in separately, size shown — they're excluded from the default pack per §4.1). Core download manager exists from Phase 1; this is its surface.
-- [ ] **9.6.3** Install prompt + PWA manifest polish (icons already in `public/`).
-  - *Verify:* Lighthouse PWA = installable; after one online visit, full reading works offline (throttle to offline in e2e/Lighthouse); cached-asset budgets respected.
+> Superseded 2026-07-22. This stopped being "the usual granular PWA/offline task list" once the redesign became a live production cutover for 1000+ existing users on a real, currently-deployed `source/sw.js` — it needed a dedicated phase covering legacy service-worker teardown (without touching IndexedDB), a device-gated iOS precaching exception, and cutover rehearsal/rollback, none of which fit the "surviving Phase 9 scope" framing below. See that file for the full plan; the original 9.6.1–9.6.3 bullets (SW v2, offline download manager, install prompt) now live there as 10.1/10.4–10.6.
 
 ---
 
@@ -114,10 +110,11 @@ Six task groups is a lot for one phase. 9.1–9.3 are cohesive (all user-facing 
 - [x] Enabling new memorization reliably produces new-memorization tasks (with the regression test that was missing); plan settings reachable via an obvious gear by the streak; no script toggle in plan setup (reader default used).
 - [x] `vue-tsc` clean; unit + e2e green; size budgets held (progress/settings are lazy chunks; reader initial bundle unchanged); no Phase 3/4/5/7/8 regression.
 
-## Exit checklist (Phase 9 — platform milestone 9.4–9.6, or Phase 9b if split)
-- [ ] Lossless export/import incl. a legacy-export fixture round-trip; settings consolidated.
-- [ ] en/ar/bn with correct RTL across all surfaces; themed a11y per locale.
-- [ ] Installable PWA; full offline reading after first visit; caching budgets respected.
+## Exit checklist (Phase 9 — platform milestone 9.4–9.5)
+
+- [x] Lossless export/import incl. a legacy-export fixture round-trip; settings consolidated.
+- [x] en/ar/bn with correct RTL across all surfaces; themed a11y per locale.
+- [ ] PWA/service worker — moved to [phase-10-pwa-migration.md](./phase-10-pwa-migration.md); see that file's exit checklist.
 
 ## Open questions for the product owner
 1. **Surah URL canonical form** — keep `/25` in the address bar (shareable "read Al-Furqan"), or normalize to `/page/{firstPage}`? Draft assumes **keep `/25`** (decision 3).

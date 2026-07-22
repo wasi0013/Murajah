@@ -115,7 +115,8 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - [phase-6-quiz.md](./phase-6-quiz.md) — quiz mode as a lazy, code-split route ✅
 - [phase-7-audio.md](./phase-7-audio.md) — recitation audio: single engine, verse/page grain, reciters, record, live embed ✅
 - [phase-8-navigation-listen.md](./phase-8-navigation-listen.md) — Contents browser (surah/juz/page index) + Listen (full-scope audio-only playback) ✅
-- [phase-9-routing-progress-polish.md](./phase-9-routing-progress-polish.md) — friendly URLs (`/1`…/114, `/page/N`, `/mushaf/N`) + analytics port (Juz/Page progress + Completion Estimate) + Today fixes; then settings/export-import, i18n/RTL, PWA/offline
+- [phase-9-routing-progress-polish.md](./phase-9-routing-progress-polish.md) — friendly URLs (`/1`…/114, `/page/N`, `/mushaf/N`) + analytics port (Juz/Page progress + Completion Estimate) + Today fixes; then settings/export-import, i18n/RTL
+- [phase-10-pwa-migration.md](./phase-10-pwa-migration.md) — PWA/service-worker v2 + **live legacy-SW teardown** (data-safe handoff from the currently-deployed `source/sw.js`) + device-gated iOS precaching exception + cutover rehearsal/rollback
 - _(later phases granularized when reached)_
 
 **Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md) · [ux-audit-2026.md](./ux-audit-2026.md) — navigation/IA + desktop-layout findings on the shipped app, phased P1–P3
@@ -201,15 +202,25 @@ Three product-owner-directed improvements ahead of the original platform scope:
 - **Analytics port** — the popular legacy **Juz Progress** grid, **Page-by-Page** revision heatmap, and **Completion Estimate** (estimated finish date + days remaining) return, as tabs on the existing `/progress` surface, over the new stores.
 - **Today fixes** — the broken "Memorizing new pages?" toggle (never raised the daily new-page budget), an obvious plan-settings **gear** by the streak (distinct from reader settings), and dropping the redundant per-front script toggle (use the reader's default script).
 
-Then the **surviving original scope**: settings + **export/import JSON** (round-trip vs legacy exports), i18n **en/ar/bn** with full RTL, and service worker v2 (Workbox) — precache shell, runtime-cache page data/fonts, offline-download-manager UI, install prompt. Large enough that the platform half may split into **Phase 9b**.
+Then the **surviving original scope**: settings + **export/import JSON** (round-trip vs legacy exports), i18n **en/ar/bn** with full RTL. Service worker v2 was originally scoped here (9.6) but was pulled into its own phase — see below.
 
-**Acceptance:** friendly URLs resolve (word-routes unshadowed); analytics match legacy on migrated data with no fabricated/NaN values; new-memorization toggle reliably schedules pages; then — full offline reading after first visit, legacy export imports without loss, Lighthouse PWA installable, all three languages + RTL correct.
+**Acceptance:** friendly URLs resolve (word-routes unshadowed); analytics match legacy on migrated data with no fabricated/NaN values; new-memorization toggle reliably schedules pages; export/import round-trips a legacy fixture; all three languages + RTL correct.
 
-### Phase 10 — Cutover & launch
+### Phase 10 — PWA / service worker migration & cutover safety (split out of 9.6, 2026-07-22) → [phase-10-pwa-migration.md](./phase-10-pwa-migration.md)
 
-- Per-screen flag flip to 100%; redirect legacy routes → new app; update Play Store webview target.
-- Delete `source/` monolith and dead assets; shrink repo (move 611MB raw PNGs out of git / to optimized pipeline output).
-- Final full-suite Lighthouse + Playwright run against §3 budgets; staged rollout with rollback plan.
+Reframed from "the usual PWA/offline task list" once it became clear this ships as a **live migration** on top of a real, currently-deployed `source/sw.js` controlling ~1000+ users — not a greenfield service worker. Three concerns, in priority order:
+
+- **Legacy SW teardown (universal, all platforms)** — new-app boot unregisters the legacy service worker and deletes *only* its two named cache buckets (`murajah-cache-*`, `murajah-fonts-*`) by prefix, never touching IndexedDB (memorization/plans/streaks live there, untouched by any Cache Storage operation).
+- **iOS/iPadOS precaching exception** — a device-gated service worker variant (registered with a distinguishing query string, decided in the page since iPadOS reports as desktop Safari) that skips app-shell precaching on iOS specifically, eliminating the "stuck on stale app code with no way to refresh" bug class WebKit is prone to, while keeping per-page data/font runtime caching for reading performance.
+- **Cutover rehearsal + rollback** — a Playwright rehearsal against the real legacy SW + realistic IndexedDB fixtures, a rollout-health signal (which fraction of traffic has handed off from legacy), and a dry-run rollback plan confirmed safe with respect to user data.
+
+**Acceptance:** legacy SW/caches torn down on first new-app boot with IndexedDB provably intact; iOS never receives a precached shell; update UX is non-blocking; offline download manager + install prompt shipped; rollback dry-run passes.
+
+### Phase 11 — Cutover & launch (renumbered from Phase 10; depends on Phase 10 above)
+
+- Per-screen flag flip to 100%; redirect legacy routes → new app; 
+- Suggest Deletion of `source/` monolith and other dead assets, list them and write a command in the doc but do not execute the command.
+- Final full-suite Lighthouse + Playwright run against §3 budgets; staged rollout with rollback plan (built on Phase 10's rehearsal + rollout-health signal).
 **Acceptance:** New app serves 100% of traffic under budget; legacy removed; rollback documented and tested.
 
 ---
@@ -234,7 +245,7 @@ Then the **surviving original scope**: settings + **export/import JSON** (round-
 ---
 
 ## 8. Hosting note
-Everything is served from **Cloudflare Pages with no backend servers** and must stay that way (local-first). The redesign adds a *second* Pages deploy (from `redesign` → `app/dist`) alongside the untouched legacy production deploy (`master` → `source`), so shipping the new app never risks the live one.
+Everything is served from **Cloudflare Pages with no backend servers** and must stay that way (local-first). The redesign will be pushed to production, replacing the live app in place — not a parallel deploy. Existing app state/data, the service worker, and other PWA mechanics must be carefully handled before deployment: we already have 1000+ users on the currently-deployed app, and the cutover must be compatible with their existing IndexedDB data and must not strand anyone on a stale cached version. See [phase-10-pwa-migration.md](./phase-10-pwa-migration.md) for the concrete legacy-service-worker teardown, iOS caching exception, and rollback plan this requires. Double check and test thoroughly before green-signaling the deployment.
 
 ## 9. Immediate next step
 Begin **Phase 0**, task **0.1.1** in [phase-0-foundations.md](./phase-0-foundations.md): scaffold `app/` (Vite + Vue 3 + TS), sibling to `source/`, without touching legacy. Work top-to-bottom; each task is checked off only when its **verify** step passes.
