@@ -15,9 +15,16 @@ const DEBOUNCE_MS = 300
  * surface to the reader.
  */
 export function useReaderPersistence(reader: ReaderStore) {
-  async function hydrate(): Promise<void> {
+  /**
+   * Apply saved prefs. `skipPage` restores every view option *except* the last
+   * page — pass it when the URL already names a location (a deep-link like /78 or
+   * /page/50), so reopening that link is never snapped back to the last-read page.
+   * The last page is only meaningful for the bare reader home (`/`).
+   */
+  async function hydrate({ skipPage = false }: { skipPage?: boolean } = {}): Promise<void> {
     const saved = await getPref<Parameters<ReaderStore['restore']>[0]>(PREF_KEY)
-    if (saved) reader.restore(saved)
+    if (!saved) return
+    reader.restore(skipPage ? { ...saved, page: undefined } : saved)
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined

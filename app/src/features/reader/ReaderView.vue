@@ -154,7 +154,11 @@ watch(activeTab, (v) => {
 
 onMounted(async () => {
   void progressPersistence.hydrate() // load memorization/hasanah before rewards accrue
-  await persistence.hydrate() // saved prefs first…
+  // The bare reader home (`/`) reopens on the last-read page; every other reader
+  // route names a location in the URL, so restore prefs but let the URL own the
+  // page (otherwise the saved page clobbers a deep-link — /78 snapped to page 50).
+  const urlNamesPage = String(router.currentRoute.value.name) !== 'home'
+  await persistence.hydrate({ skipPage: urlNamesPage }) // saved prefs first…
   sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
 })
 onBeforeUnmount(() => {

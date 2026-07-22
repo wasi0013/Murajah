@@ -87,6 +87,7 @@ describe('useReaderRouteSync', () => {
     const reader = useReaderStore()
     reader.configure({ qpc: 604 })
     const sync = useReaderRouteSync(reader, router)
+    sync.applyRoute() // mount applies the initial URL before the sync drives it
 
     reader.goToPage(50)
     await flush()

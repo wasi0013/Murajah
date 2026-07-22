@@ -39,10 +39,19 @@ export function useReaderRouteSync(
   const route = (): RouteLocationNormalizedLoaded => router.currentRoute.value
 
   /** Apply the current URL to the store (deep-link / back-forward restore). */
+  // The store→URL sync stays dormant until the *initial* URL has been applied to
+  // the store. Otherwise mount-time hydration (which restores the last-read page)
+  // looks like a user navigation, and the watcher pushes that stale page over a
+  // deep-link — e.g. opening /78 while page 50 was persisted snapped back to
+  // /read/qpc/50. Gating on `applied` means the store is provably in sync with
+  // the URL before the watcher can push, with no reliance on microtask ordering.
+  let applied = false
+
   function applyRoute(): void {
     const r = route()
     const friendly = opts.resolveFriendly?.(r)
     if (friendly === 'pending') return // nav not ready — ReaderView re-applies once it loads
+    applied = true
     if (friendly === null) {
       void router.replace({ name: 'home' }).catch(() => {}) // named something that doesn't exist
       return
@@ -61,6 +70,9 @@ export function useReaderRouteSync(
       return { layout, page, tajweed, wbw, tafsir }
     },
     (curr) => {
+      // Until the initial URL has been applied, the store may still hold the
+      // restored last page — never push that over the URL (see `applied`).
+      if (!applied) return
       // Keep a friendly URL in the bar while it still names the current page, and
       // don't clobber it during the nav-not-ready window (9.1, decision 3).
       const friendly = opts.resolveFriendly?.(route())
