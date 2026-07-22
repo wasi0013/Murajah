@@ -16,6 +16,7 @@ const bn: Messages = {
     pages: 'পৃষ্ঠা {start}–{end}',
     pageWord: 'পৃষ্ঠা',
     juz: 'পারা {n}',
+    primaryNav: 'প্রধান নেভিগেশন',
     weekdays: {
       sun: 'রবি',
       mon: 'সোম',
@@ -254,6 +255,7 @@ const bn: Messages = {
     width: 'পৃষ্ঠার প্রস্থ',
     tajweed: 'তাজবিদ রঙ',
     tajweedLegend: 'তাজবিদ নির্দেশিকা',
+    tajweedRulesAria: 'তাজবীদের নিয়ম',
     wbw: 'শব্দে-শব্দে',
     wbwLang: 'অনুবাদের ভাষা',
     wbwToggle: 'শব্দে-শব্দে অনুবাদ',
@@ -378,6 +380,15 @@ const bn: Messages = {
     micDenied: 'মাইক্রোফোন অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে।',
     deleteRecording: 'রেকর্ডিং মুছুন',
     noRecordings: 'এখনও কোনো রেকর্ডিং নেই — নিজেকে শুনতে এই পৃষ্ঠাটি রেকর্ড করুন।',
+  },
+  palette: {
+    title: 'দ্রুত যান',
+    placeholder: '2:255, page 50, juz 5… লিখুন',
+    resultsAria: 'ফলাফল',
+    ayah: 'আয়াত {surah}:{ayah}',
+    surah: 'সূরা {n}',
+    search: '"{query}" অনুসন্ধান করুন',
+    noMatch: 'কোনো ফলাফল নেই — 2:255, page 50, অথবা juz 5 লিখে দেখুন।',
   },
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import Icon from './Icon.vue'
+import { useI18n } from '@/core/i18n'
 
 // Mobile/webview-first primary navigation. Presentational + accessible; the app
 // shell wires `modelValue` to the router. Handles safe-area insets.
@@ -12,10 +13,11 @@ interface TabDef {
 
 const model = defineModel<string>({ required: true })
 defineProps<{ tabs: TabDef[] }>()
+const { t } = useI18n()
 </script>
 
 <template>
-  <nav class="tabbar" aria-label="Primary">
+  <nav class="tabbar" :aria-label="t('common.primaryNav')">
     <button
       v-for="t in tabs"
       :key="t.value"

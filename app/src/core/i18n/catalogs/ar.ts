@@ -16,6 +16,7 @@ const ar: Messages = {
     pages: 'الصفحات {start}–{end}',
     pageWord: 'صفحة',
     juz: 'الجزء {n}',
+    primaryNav: 'التنقل الرئيسي',
     weekdays: {
       sun: 'أحد',
       mon: 'إثنين',
@@ -254,6 +255,7 @@ const ar: Messages = {
     width: 'عرض الصفحة',
     tajweed: 'ألوان التجويد',
     tajweedLegend: 'دليل التجويد',
+    tajweedRulesAria: 'أحكام التجويد',
     wbw: 'كلمة بكلمة',
     wbwLang: 'لغة الترجمة',
     wbwToggle: 'ترجمة كلمة بكلمة',
@@ -378,6 +380,15 @@ const ar: Messages = {
     micDenied: 'تم رفض الوصول إلى الميكروفون.',
     deleteRecording: 'حذف التسجيل',
     noRecordings: 'لا توجد تسجيلات بعد — سجّل هذه الصفحة لتسمع نفسك.',
+  },
+  palette: {
+    title: 'الانتقال السريع',
+    placeholder: 'اذهب إلى 2:255، صفحة 50، جزء 5…',
+    resultsAria: 'النتائج',
+    ayah: 'الآية {surah}:{ayah}',
+    surah: 'سورة {n}',
+    search: 'بحث عن «{query}»',
+    noMatch: 'لا توجد نتيجة — جرّب 2:255، صفحة 50، أو جزء 5.',
   },
 }
 

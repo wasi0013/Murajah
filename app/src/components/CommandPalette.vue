@@ -2,12 +2,15 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Dialog from './Dialog.vue'
 import { parseJump, type Jump } from '@/core/navigation/parseJump'
+import { useI18n } from '@/core/i18n'
 
 // Quick-jump palette: type "2:255", "page 50", "juz 5", or a surah name.
 // Emits the chosen target; the reader performs the actual navigation.
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ select: [Jump] }>()
 const props = withDefaults(defineProps<{ shortcut?: boolean }>(), { shortcut: true })
+
+const { t } = useI18n()
 
 const query = ref('')
 const activeIndex = ref(0)
@@ -24,15 +27,15 @@ watch(open, (o) => {
 function labelFor(r: Jump): string {
   switch (r.type) {
     case 'ayah':
-      return `Ayah ${r.surah}:${r.ayah}`
+      return t('palette.ayah', { surah: r.surah, ayah: r.ayah })
     case 'page':
-      return `Page ${r.page}`
+      return t('common.page', { n: r.page })
     case 'juz':
-      return `Juz ${r.juz}`
+      return t('common.juz', { n: r.juz })
     case 'surah':
-      return `Surah ${r.surah}`
+      return t('palette.surah', { n: r.surah })
     case 'name':
-      return `Search “${r.query}”`
+      return t('palette.search', { query: r.query })
   }
 }
 
@@ -73,18 +76,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onGlobalKey))
 </script>
 
 <template>
-  <Dialog v-model:open="open" placement="center" label="Quick jump">
+  <Dialog v-model:open="open" placement="center" :label="t('palette.title')">
     <div class="grid gap-3" @keydown="onKey">
       <input
         v-model="query"
         type="text"
         class="palette-input"
-        placeholder="Go to 2:255, page 50, juz 5…"
-        aria-label="Quick jump"
+        :placeholder="t('palette.placeholder')"
+        :aria-label="t('palette.title')"
         autocomplete="off"
         spellcheck="false"
       />
-      <ul v-if="results.length" class="grid gap-0.5" role="listbox" aria-label="Results">
+      <ul v-if="results.length" class="grid gap-0.5" role="listbox" :aria-label="t('palette.resultsAria')">
         <li
           v-for="(r, i) in results"
           :key="i"
@@ -99,7 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onGlobalKey))
         </li>
       </ul>
       <p v-else-if="query" class="px-1 py-2 text-sm text-text-muted">
-        No match — try <b>2:255</b>, <b>page 50</b>, or <b>juz 5</b>.
+        {{ t('palette.noMatch') }}
       </p>
     </div>
   </Dialog>

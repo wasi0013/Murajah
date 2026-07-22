@@ -18,6 +18,7 @@ const en: Messages = {
     pages: 'Pages {start}–{end}',
     pageWord: 'Page',
     juz: 'Juz {n}',
+    primaryNav: 'Primary',
     weekdays: {
       sun: 'Sun',
       mon: 'Mon',
@@ -256,6 +257,7 @@ const en: Messages = {
     width: 'Page width',
     tajweed: 'Tajweed colours',
     tajweedLegend: 'Tajweed legend',
+    tajweedRulesAria: 'Tajweed rules',
     wbw: 'Word-by-word',
     wbwLang: 'Translation language',
     wbwToggle: 'Word-by-word translation',
@@ -381,6 +383,15 @@ const en: Messages = {
     micDenied: 'Microphone access was denied.',
     deleteRecording: 'Delete recording',
     noRecordings: 'No recordings yet — record this page to hear yourself back.',
+  },
+  palette: {
+    title: 'Quick jump',
+    placeholder: 'Go to 2:255, page 50, juz 5…',
+    resultsAria: 'Results',
+    ayah: 'Ayah {surah}:{ayah}',
+    surah: 'Surah {n}',
+    search: 'Search “{query}”',
+    noMatch: 'No match — try 2:255, page 50, or juz 5.',
   },
 }
 

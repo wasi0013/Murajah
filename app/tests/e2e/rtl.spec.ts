@@ -56,6 +56,19 @@ test('Audio player externalises its chrome — controls carry Arabic accessible 
   await expect(page.getByRole('radiogroup', { name: 'وحدة التشغيل' })).toBeVisible()
 })
 
+test('shared chrome externalises — the tab bar and quick-jump palette are Arabic under ar', async ({
+  page,
+}) => {
+  await switchToArabic(page)
+  await page.goto('/')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await expect(page.getByRole('navigation', { name: 'التنقل الرئيسي' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'انتقل إلى صفحة أو آية أو سورة' }).click()
+  await expect(page.getByRole('dialog', { name: 'الانتقال السريع' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'الانتقال السريع' })).toBeVisible()
+})
+
 test('Today externalises its chrome — the set-up heading is Arabic under ar', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/today')
