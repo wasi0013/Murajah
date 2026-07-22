@@ -36,6 +36,16 @@ test('RTL direction carries across navigation to the reader and progress', async
   })
 })
 
+test('Quiz externalises its chrome — the title and setup copy are Arabic under ar', async ({
+  page,
+}) => {
+  await switchToArabic(page)
+  await page.goto('/quiz')
+  await expect(page.getByRole('heading', { name: 'اختبار' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('التدرّب من')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ابدأ التدرّب' })).toBeVisible()
+})
+
 test('Today externalises its chrome — the set-up heading is Arabic under ar', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/today')

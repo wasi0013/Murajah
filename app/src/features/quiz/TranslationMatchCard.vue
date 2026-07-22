@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import QuizOption from './QuizOption.vue'
 import type { TranslationQuestion } from '@/core/quiz/types'
+import { useI18n } from '@/core/i18n'
 
 /** Show a verse's Arabic; choose its meaning. */
 defineProps<{
@@ -10,11 +11,13 @@ defineProps<{
   chosenIndex: number | null
 }>()
 defineEmits<{ pick: [index: number] }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="tm">
-    <p class="prompt-label">What does this verse mean?</p>
+    <p class="prompt-label">{{ t('quiz.translationPrompt') }}</p>
     <p class="verse" dir="rtl" lang="ar" :style="{ fontFamily }">{{ question.arabic }}</p>
 
     <ul class="opts" role="list">

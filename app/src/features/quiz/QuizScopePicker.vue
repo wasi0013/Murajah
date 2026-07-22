@@ -2,6 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
+import { useI18n } from '@/core/i18n'
+
+const { t } = useI18n()
 
 /** Multi-select juz (1–30) or surah (1–114) for the quiz scope. */
 const props = defineProps<{ kind: 'surah' | 'juz' }>()
@@ -32,10 +35,15 @@ function toggleSurah(n: number): void {
 
 const juzNumbers = Array.from({ length: 30 }, (_, i) => i + 1)
 const surahNumbers = Array.from({ length: 114 }, (_, i) => i + 1)
+
+function surahAria(n: number): string {
+  const name = names.value[String(n)]
+  return t('quiz.surahAria', { n, name: name ? ` ${name}` : '' })
+}
 </script>
 
 <template>
-  <div v-if="kind === 'juz'" class="grid grid-juz" role="group" aria-label="Choose juz">
+  <div v-if="kind === 'juz'" class="grid grid-juz" role="group" :aria-label="t('quiz.chooseJuz')">
     <button
       v-for="n in juzNumbers"
       :key="n"
@@ -43,14 +51,14 @@ const surahNumbers = Array.from({ length: 114 }, (_, i) => i + 1)
       class="cell"
       :class="{ 'cell-on': (juz ?? []).includes(n) }"
       :aria-pressed="(juz ?? []).includes(n)"
-      :aria-label="`Juz ${n}`"
+      :aria-label="t('common.juz', { n })"
       @click="toggleJuz(n)"
     >
       {{ n }}
     </button>
   </div>
 
-  <div v-else class="surah-list" role="group" aria-label="Choose surahs">
+  <div v-else class="surah-list" role="group" :aria-label="t('quiz.chooseSurahs')">
     <button
       v-for="n in surahNumbers"
       :key="n"
@@ -58,7 +66,7 @@ const surahNumbers = Array.from({ length: 114 }, (_, i) => i + 1)
       class="surah"
       :class="{ 'surah-on': (surahs ?? []).includes(n) }"
       :aria-pressed="(surahs ?? []).includes(n)"
-      :aria-label="`Surah ${n}${names[String(n)] ? ' ' + names[String(n)] : ''}`"
+      :aria-label="surahAria(n)"
       @click="toggleSurah(n)"
     >
       <span class="surah-n">{{ n }}</span>

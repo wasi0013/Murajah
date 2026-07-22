@@ -14,6 +14,7 @@ import TranslationMatchCard from './TranslationMatchCard.vue'
 import ContinuationCard from './ContinuationCard.vue'
 import WordCompletionCard from './WordCompletionCard.vue'
 import QuizScopePicker from './QuizScopePicker.vue'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Quiz — a focused, one-question-at-a-time practice surface. Drills the pages in
@@ -24,6 +25,7 @@ import QuizScopePicker from './QuizScopePicker.vue'
 const router = useRouter()
 const plan = usePlanStore()
 const quiz = useQuiz()
+const { t } = useI18n()
 
 // Weakness reads progress + mistakes + quiz history; the plan gives the default scope.
 const planPersistence = usePlanPersistence()
@@ -54,19 +56,31 @@ const scopeKind = computed<QuizScopeKind>({
   },
 })
 
-const scopeSources: { kind: QuizScopeKind; label: string }[] = [
-  { kind: 'plan', label: 'My plan' },
-  { kind: 'surah', label: 'Surahs' },
-  { kind: 'juz', label: 'Juz' },
-  { kind: 'all', label: 'Whole Qur’an' },
-]
+const scopeSources = computed<{ kind: QuizScopeKind; label: string }[]>(() => [
+  { kind: 'plan', label: t('quiz.scope.plan') },
+  { kind: 'surah', label: t('quiz.scope.surahs') },
+  { kind: 'juz', label: t('quiz.scope.juz') },
+  { kind: 'all', label: t('quiz.scope.all') },
+])
 
-const modes: { value: QuizModeChoice; label: string; hint: string }[] = [
-  { value: 'mixed', label: 'Mixed', hint: 'A bit of everything' },
-  { value: 'translation', label: 'Meaning', hint: 'Match the translation' },
-  { value: 'continuation', label: 'What’s next', hint: 'Recall the next verse' },
-  { value: 'completion', label: 'Fill the gaps', hint: 'Complete the verse' },
-]
+const modes = computed<{ value: QuizModeChoice; label: string; hint: string }[]>(() => [
+  { value: 'mixed', label: t('quiz.modes.mixed.label'), hint: t('quiz.modes.mixed.hint') },
+  {
+    value: 'translation',
+    label: t('quiz.modes.translation.label'),
+    hint: t('quiz.modes.translation.hint'),
+  },
+  {
+    value: 'continuation',
+    label: t('quiz.modes.continuation.label'),
+    hint: t('quiz.modes.continuation.hint'),
+  },
+  {
+    value: 'completion',
+    label: t('quiz.modes.completion.label'),
+    hint: t('quiz.modes.completion.hint'),
+  },
+])
 
 const canStart = computed(() => {
   if (quiz.loading.value) return false
@@ -87,16 +101,16 @@ function leave(): void {
     <!-- ————— Setup ————— -->
     <template v-if="quiz.phase.value === 'setup'">
       <header class="topbar">
-        <h1 class="title">Quiz</h1>
-        <button class="icon-btn" aria-label="Close quiz" @click="leave">
+        <h1 class="title">{{ t('quiz.title') }}</h1>
+        <button class="icon-btn" :aria-label="t('quiz.close')" @click="leave">
           <Icon :icon="X" :size="20" />
         </button>
       </header>
 
       <div class="setup">
         <section class="block">
-          <h2 class="block-title">Practice from</h2>
-          <div class="chips" role="radiogroup" aria-label="What to practice">
+          <h2 class="block-title">{{ t('quiz.practiceFrom') }}</h2>
+          <div class="chips" role="radiogroup" :aria-label="t('quiz.practiceFromAria')">
             <button
               v-for="s in scopeSources"
               :key="s.kind"
@@ -112,7 +126,7 @@ function leave(): void {
             </button>
           </div>
           <p v-if="!hasPlan && scopeKind === 'plan'" class="hint">
-            You don’t have a plan yet — pick some surahs or juz to practice.
+            {{ t('quiz.noPlanHint') }}
           </p>
           <QuizScopePicker
             v-if="scopeKind === 'surah' || scopeKind === 'juz'"
@@ -123,8 +137,8 @@ function leave(): void {
         </section>
 
         <section class="block">
-          <h2 class="block-title">Question style</h2>
-          <div class="mode-grid" role="radiogroup" aria-label="Question style">
+          <h2 class="block-title">{{ t('quiz.questionStyle') }}</h2>
+          <div class="mode-grid" role="radiogroup" :aria-label="t('quiz.questionStyle')">
             <button
               v-for="m in modes"
               :key="m.value"
@@ -145,7 +159,7 @@ function leave(): void {
       <div class="start-bar">
         <button class="start" type="button" :disabled="!canStart" @click="quiz.start()">
           <Icon :icon="Sparkles" :size="18" />
-          {{ quiz.loading.value ? 'Preparing…' : 'Start practice' }}
+          {{ quiz.loading.value ? t('quiz.preparing') : t('quiz.startPractice') }}
         </button>
       </div>
     </template>
@@ -153,19 +167,18 @@ function leave(): void {
     <!-- ————— Empty ————— -->
     <template v-else-if="quiz.phase.value === 'empty'">
       <header class="topbar">
-        <h1 class="title">Quiz</h1>
-        <button class="icon-btn" aria-label="Back to setup" @click="quiz.exit()">
+        <h1 class="title">{{ t('quiz.title') }}</h1>
+        <button class="icon-btn" :aria-label="t('quiz.backToSetup')" @click="quiz.exit()">
           <Icon :icon="X" :size="20" />
         </button>
       </header>
       <section class="empty">
-        <p class="empty-title">Not enough here to quiz</p>
+        <p class="empty-title">{{ t('quiz.emptyTitle') }}</p>
         <p class="empty-body">
-          This selection doesn’t have enough verses for that question style. Try adding more
-          pages, or switch to a mixed quiz.
+          {{ t('quiz.emptyBody') }}
         </p>
         <button class="start start-ghost" type="button" @click="quiz.exit()">
-          Change selection
+          {{ t('quiz.changeSelection') }}
         </button>
       </section>
     </template>
@@ -173,7 +186,7 @@ function leave(): void {
     <!-- ————— Playing ————— -->
     <template v-else>
       <header class="topbar playbar">
-        <button class="icon-btn" aria-label="End this session" @click="quiz.exit()">
+        <button class="icon-btn" :aria-label="t('quiz.endSession')" @click="quiz.exit()">
           <Icon :icon="X" :size="20" />
         </button>
         <div class="stats" aria-live="off">
@@ -224,7 +237,7 @@ function leave(): void {
             type="button"
             @click="quiz.skip()"
           >
-            {{ quiz.answer.correct ? 'Correct' : 'Next' }}
+            {{ quiz.answer.correct ? t('quiz.correct') : t('quiz.next') }}
             <Icon :icon="ArrowRight" :size="18" />
           </button>
         </div>

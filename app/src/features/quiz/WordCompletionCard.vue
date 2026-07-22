@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import type { CompletionQuestion } from '@/core/quiz/types'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Fill the blanked words of a verse from a word bank. Slot-based throughout: a tap
@@ -13,6 +14,8 @@ const props = defineProps<{
   revealed: boolean
 }>()
 const emit = defineEmits<{ answer: [assignment: Record<number, number>] }>()
+
+const { t } = useI18n()
 
 /** slotId → bank word id. */
 const fills = reactive<Record<number, number>>({})
@@ -73,7 +76,7 @@ function slotClass(slotId: number): string {
 
 <template>
   <div class="wc">
-    <p class="prompt-label">Fill in the missing words</p>
+    <p class="prompt-label">{{ t('quiz.completionPrompt') }}</p>
 
     <p class="verse" dir="rtl" lang="ar" :style="{ fontFamily }">
       <template v-for="(tok, i) in question.tokens" :key="i">
@@ -83,7 +86,12 @@ function slotClass(slotId: number): string {
           class="slot"
           :class="slotClass(tok.slotId!)"
           :disabled="revealed"
-          :aria-label="`Blank ${slots.findIndex((s) => s.slotId === tok.slotId) + 1} of ${slots.length}`"
+          :aria-label="
+            t('quiz.blankAria', {
+              i: slots.findIndex((s) => s.slotId === tok.slotId) + 1,
+              n: slots.length,
+            })
+          "
           @click="fills[tok.slotId!] === undefined ? focusSlot(tok.slotId!) : clearSlot(tok.slotId!)"
         >
           <span v-if="slotText(tok.slotId!)">{{ slotText(tok.slotId!) }}</span>
@@ -95,16 +103,16 @@ function slotClass(slotId: number): string {
     </p>
 
     <div v-if="revealed" class="answer-note" aria-live="polite">
-      <span v-if="slots.every((s) => slotCorrect(s.slotId!))" class="note-ok">Correct</span>
+      <span v-if="slots.every((s) => slotCorrect(s.slotId!))" class="note-ok">{{ t('quiz.correct') }}</span>
       <span v-else class="note-no">
-        Answer:
+        {{ t('quiz.answerLabel') }}
         <span dir="rtl" lang="ar" :style="{ fontFamily }">{{
           slots.map((s) => question.answers[s.slotId!]).join(' ')
         }}</span>
       </span>
     </div>
 
-    <div class="bank" role="group" aria-label="Word bank">
+    <div class="bank" role="group" :aria-label="t('quiz.wordBank')">
       <button
         v-for="w in question.bank"
         :key="w.id"

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import QuizOption from './QuizOption.vue'
 import type { ContinuationQuestion } from '@/core/quiz/types'
+import { useI18n } from '@/core/i18n'
 
 /** Show a verse; choose the one that comes next / before it. */
 const props = defineProps<{
@@ -12,10 +13,12 @@ const props = defineProps<{
 }>()
 defineEmits<{ pick: [index: number] }>()
 
+const { t } = useI18n()
+
 const prompt = computed(() =>
   props.question.direction === 'next'
-    ? 'Which verse comes next?'
-    : 'Which verse comes before?',
+    ? t('quiz.continuationNext')
+    : t('quiz.continuationPrev'),
 )
 </script>
 
