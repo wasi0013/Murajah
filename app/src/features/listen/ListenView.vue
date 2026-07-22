@@ -151,8 +151,14 @@ onBeforeUnmount(() => prefs.dispose())
 .listen {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
+}
+@media (min-width: 1024px) {
+  .listen {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 .topbar {
   position: sticky;

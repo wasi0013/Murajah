@@ -242,10 +242,16 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
 
 <style scoped>
 .progress {
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
   padding-bottom: 3rem;
+}
+@media (min-width: 1024px) {
+  .progress {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 .topbar {
   position: sticky;

@@ -118,7 +118,7 @@ Greenfield, but **de-risked**: the new app is built alongside `source/` on the `
 - [phase-9-routing-progress-polish.md](./phase-9-routing-progress-polish.md) — friendly URLs (`/1`…/114, `/page/N`, `/mushaf/N`) + analytics port (Juz/Page progress + Completion Estimate) + Today fixes; then settings/export-import, i18n/RTL, PWA/offline
 - _(later phases granularized when reached)_
 
-**Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md)
+**Supporting docs:** [audit-assets-data.md](./audit-assets-data.md) · [domain-logic-port-map.md](./domain-logic-port-map.md) · [legacy-schema.md](./legacy-schema.md) · [ux-audit-2026.md](./ux-audit-2026.md) — navigation/IA + desktop-layout findings on the shipped app, phased P1–P3
 
 ### Phase 0 — Foundations & audit
 **Goal:** New app boots, CI/deploy/test harness in place, decisions locked.

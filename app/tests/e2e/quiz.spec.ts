@@ -79,9 +79,10 @@ async function openQuiz(page: Page) {
   await expect(page.getByRole('heading', { name: 'Quiz' })).toBeVisible()
 }
 
-test('the reader Quiz tab opens the quiz', async ({ page }) => {
+test('Quiz is reachable from the More menu', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Quiz' }).click()
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('button', { name: /^Quiz/ }).click()
   await expect(page).toHaveURL(/\/quiz$/)
   await expect(page.getByRole('heading', { name: 'Quiz' })).toBeVisible()
 })

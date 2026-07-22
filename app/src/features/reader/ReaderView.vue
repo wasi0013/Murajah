@@ -1,31 +1,13 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  BookOpen,
-  Brain,
-  CalendarCheck,
-  ChevronLeft,
-  ChevronRight,
-  GraduationCap,
-  Headphones,
-  Home,
-  ListOrdered,
-  Menu,
-  Mic,
-  Palette,
-  Radio,
-  Search,
-  Settings,
-  SlidersHorizontal,
-} from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Headphones, Mic, Palette, Search, SlidersHorizontal } from 'lucide-vue-next'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useAudioStore } from '@/stores/audio'
 import { useRecorderStore } from '@/stores/recorder'
 import { useReaderStore, READING_WIDTHS, type ReaderMode } from '@/stores/reader'
 import type { Layout, WbwLang } from '@/core/data/types'
 import { resolveReaderTarget } from '@/core/navigation/readerRoute'
-import { mushafLink } from '@/core/navigation/readerLinks'
 import { useReaderRouteSync, type FriendlyResolution } from '@/composables/useReaderRouteSync'
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
@@ -47,7 +29,6 @@ import Toggle from '@/components/Toggle.vue'
 import Popover from '@/components/Popover.vue'
 import TajweedLegend from '@/components/TajweedLegend.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
-import BottomTabBar from '@/components/BottomTabBar.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
 import { useI18n } from '@/core/i18n'
 
@@ -55,9 +36,10 @@ const { t } = useI18n()
 
 /**
  * Reader shell: a top bar (quick-jump + settings), the paged reading surface,
- * an optional verse-study panel, and the primary bottom tab bar. All view
- * options live in a controls bottom sheet; quick-jump resolves through the nav
- * indexes. Reader state is bound to the URL + persisted prefs.
+ * and an optional verse-study panel. The primary tab bar and "More" menu live
+ * in the app shell (App.vue), not here. All view options live in a controls
+ * bottom sheet; quick-jump resolves through the nav indexes. Reader state is
+ * bound to the URL + persisted prefs.
  */
 const reader = useReaderStore()
 const router = useRouter()
@@ -136,9 +118,6 @@ function openRecordManually() {
   recordOpen.value = true
 }
 
-// The "More" tab opens a small menu sheet (live recitation, and room to grow).
-const moreOpen = ref(false)
-
 const layoutOptions = computed(() => [
   { value: 'qpc', label: t('reader.uthmani') },
   { value: 'indopak', label: t('reader.indopak') },
@@ -152,32 +131,10 @@ const modeOptions = computed(() => [
   { value: 'read', label: t('reader.read') },
   { value: 'mark-mistake', label: t('reader.mark') },
 ])
-// "Goals" and "Plans" are one surface now — Today (Phase 5).
-const tabs = computed(() => [
-  { value: 'home', label: t('reader.tabs.home'), icon: Home },
-  { value: 'mushaf', label: t('reader.tabs.mushaf'), icon: BookOpen },
-  { value: 'surahs', label: t('reader.tabs.surahs'), icon: ListOrdered },
-  { value: 'today', label: t('reader.tabs.today'), icon: CalendarCheck },
-  { value: 'quiz', label: t('reader.tabs.quiz'), icon: GraduationCap },
-  { value: 'more', label: t('reader.tabs.more'), icon: Menu },
-])
 
 const sheetOpen = ref(false)
 const paletteOpen = ref(false)
 const legendOpen = ref(false)
-const activeTab = ref('home')
-
-// "Home" is this text reader; "Mushaf" opens the scan surface; "Surahs" the
-// contents browser; "Today" the daily practice loop; "More" a small menu sheet.
-watch(activeTab, (v) => {
-  if (v === 'home') return
-  if (v === 'mushaf') openMushaf()
-  else if (v === 'surahs') void router.push({ name: 'contents' })
-  else if (v === 'today') void router.push({ name: 'today' })
-  else if (v === 'quiz') void router.push({ name: 'quiz' })
-  else if (v === 'more') moreOpen.value = true
-  activeTab.value = 'home'
-})
 
 onMounted(async () => {
   void progressPersistence.hydrate() // load memorization/hasanah before rewards accrue
@@ -197,15 +154,6 @@ onBeforeUnmount(() => {
 const maxStep = READING_WIDTHS.length - 1
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
-
-/**
- * Open the standalone mushaf scan surface. QPC pages share the mushaf's 604-page
- * scheme, so hand off the current page; from Indopak (a different page count) the
- * mushaf restores its own last page instead of landing on a mismatched one.
- */
-function openMushaf() {
-  void router.push(reader.layout === 'qpc' ? mushafLink(reader.page) : { name: 'mushaf' })
-}
 </script>
 
 <template>
@@ -239,14 +187,6 @@ function openMushaf() {
         @click="reader.nextPage()"
       >
         <Icon :icon="ChevronRight" :size="22" />
-      </button>
-
-      <button
-        class="icon-btn"
-        :aria-label="t('reader.progress')"
-        @click="router.push('/progress')"
-      >
-        <Icon :icon="Brain" :size="20" />
       </button>
 
       <button
@@ -289,8 +229,6 @@ function openMushaf() {
       @expand="study.expandTafsir($event)"
     />
 
-    <BottomTabBar v-model="activeTab" :tabs="tabs" class="tabbar" />
-
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
     <AudioHost v-if="audio.open" view="text" :layout="reader.layout" :pages="audioPages" />
@@ -303,45 +241,6 @@ function openMushaf() {
     />
 
     <RecordCountdown v-if="quickTestCountdown" :seconds="5" @done="onQuickTestCountdownDone" />
-
-    <BottomSheet v-model:open="moreOpen" :label="t('reader.tabs.more')">
-      <div class="more-menu">
-        <h2 class="settings-title">{{ t('reader.tabs.more') }}</h2>
-        <button
-          class="more-item"
-          type="button"
-          @click="moreOpen = false; router.push({ name: 'listen' })"
-        >
-          <Icon :icon="Headphones" :size="18" />
-          <span class="more-label">
-            <span class="more-name">{{ t('reader.moreListen') }}</span>
-            <span class="more-sub">{{ t('reader.moreListenSub') }}</span>
-          </span>
-        </button>
-        <button
-          class="more-item"
-          type="button"
-          @click="moreOpen = false; router.push({ name: 'live' })"
-        >
-          <Icon :icon="Radio" :size="18" />
-          <span class="more-label">
-            <span class="more-name">{{ t('reader.moreLive') }}</span>
-            <span class="more-sub">{{ t('reader.moreLiveSub') }}</span>
-          </span>
-        </button>
-        <button
-          class="more-item"
-          type="button"
-          @click="moreOpen = false; router.push({ name: 'settings' })"
-        >
-          <Icon :icon="Settings" :size="18" />
-          <span class="more-label">
-            <span class="more-name">{{ t('reader.moreSettings') }}</span>
-            <span class="more-sub">{{ t('reader.moreSettingsSub') }}</span>
-          </span>
-        </button>
-      </div>
-    </BottomSheet>
 
     <BottomSheet v-model:open="sheetOpen" :label="t('reader.settings')">
       <div class="settings">
@@ -434,7 +333,7 @@ function openMushaf() {
 .reader {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
 }
 .reader-surface {
@@ -462,11 +361,6 @@ function openMushaf() {
   padding-top: calc(0.5rem + env(safe-area-inset-top));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-}
-.tabbar {
-  position: sticky;
-  bottom: 0;
-  z-index: var(--z-sticky);
 }
 .icon-btn {
   display: inline-flex;
@@ -545,46 +439,6 @@ function openMushaf() {
 .row-label {
   font-size: var(--text-sm);
   color: var(--color-text);
-}
-.more-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-}
-.more-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text);
-  text-align: start;
-  cursor: pointer;
-  transition: background var(--duration-fast), border-color var(--duration-fast);
-}
-.more-item:hover {
-  background: var(--color-elevated);
-  border-color: var(--color-accent);
-}
-.more-item:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-.more-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-.more-name {
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-.more-sub {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 }
 .row-end {
   display: flex;

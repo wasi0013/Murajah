@@ -102,8 +102,14 @@ function listenJuz(juz: number) {
 .contents {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
+}
+@media (min-width: 1024px) {
+  .contents {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 .topbar {
   position: sticky;

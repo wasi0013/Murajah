@@ -250,9 +250,15 @@ function leave(): void {
 .quiz {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
+}
+@media (min-width: 1024px) {
+  .quiz {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 
 /* Topbar */

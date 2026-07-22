@@ -8,16 +8,16 @@ async function settle(page: Page) {
   })
 }
 
-// Memorization progress view (Phase 4). Reached from the reader top bar; renders
-// the canonical 604-page grid grouped into 30 juz, with a per-page sheet to mark
-// memorized and record clean revisions (which award hasanah). Data persists to
-// IndexedDB, so marks survive a reload.
+// Memorization progress view (Phase 4). Reached from the shell's Progress tab;
+// renders the canonical 604-page grid grouped into 30 juz, with a per-page sheet
+// to mark memorized and record clean revisions (which award hasanah). Data
+// persists to IndexedDB, so marks survive a reload.
 
 const hasanah = (page: Page) => page.locator('.stat', { hasText: 'Hasanah' }).locator('.stat-n')
 
-test('reader top bar opens the progress view', async ({ page }) => {
+test('the shell nav opens the progress view', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Memorization progress' }).click()
+  await page.getByRole('button', { name: 'Progress', exact: true }).click()
   await expect(page).toHaveURL(/\/progress$/)
   await expect(page.getByRole('heading', { name: 'Memorization', level: 1 })).toBeVisible()
 })

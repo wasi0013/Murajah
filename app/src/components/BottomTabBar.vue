@@ -66,4 +66,31 @@ const { t } = useI18n()
   outline-offset: -3px;
   border-radius: var(--radius-sm);
 }
+
+/* Desktop: reflow into a persistent left rail instead of a bottom bar — the
+   shell (App.vue) switches its own positioning at the same breakpoint. */
+@media (min-width: 1024px) {
+  .tabbar {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-auto-rows: min-content;
+    align-content: start;
+    gap: 0.25rem;
+    width: 4.75rem;
+    height: 100%;
+    padding: 0.75rem 0.5rem;
+    border-top: none;
+    border-inline-end: 1px solid var(--color-border);
+  }
+  .tab {
+    padding: 0.6rem 0.25rem;
+    border-radius: var(--radius-md);
+    transition:
+      color var(--duration-fast) var(--ease-standard),
+      background var(--duration-fast) var(--ease-standard);
+  }
+  .tab-active {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+}
 </style>

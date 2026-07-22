@@ -184,10 +184,16 @@ function cancelImport() {
 
 <style scoped>
 .settings-view {
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
   padding-bottom: 3rem;
+}
+@media (min-width: 1024px) {
+  .settings-view {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 .topbar {
   position: sticky;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Flame, Headphones, Settings, Shuffle, Sparkles } from 'lucide-vue-next'
+import { ArrowLeft, Brain, ChevronRight, Flame, Headphones, Settings, Shuffle, Sparkles } from 'lucide-vue-next'
 import { useToday } from '@/composables/useToday'
 import { useStreak } from '@/composables/useStreak'
 import { usePlanStore } from '@/stores/plan'
@@ -267,6 +267,12 @@ const historyOpen = ref(false)
         </div>
       </section>
 
+      <RouterLink to="/progress" class="progress-link">
+        <Icon :icon="Brain" :size="16" />
+        <span class="progress-link-label">{{ t('today.viewProgress') }}</span>
+        <Icon :icon="ChevronRight" :size="16" class="progress-link-chevron" />
+      </RouterLink>
+
       <p v-if="today.isOffDay.value" class="notice">{{ t('today.offDay') }}</p>
 
       <p v-else-if="today.tasks.value?.metadata.pausedNewMemorization" class="notice">
@@ -389,10 +395,16 @@ const historyOpen = ref(false)
 
 <style scoped>
 .today {
-  min-height: 100dvh;
+  min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
   padding-bottom: 3rem;
+}
+@media (min-width: 1024px) {
+  .today {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
 }
 /* Keep the last rows clear of the docked mini-player. */
 .today.audio-docked {
@@ -464,6 +476,31 @@ const historyOpen = ref(false)
 .settings-gear:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+.progress-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 46rem;
+  margin: 0.75rem auto 0;
+  padding: 0.6rem 1rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.progress-link:hover {
+  color: var(--color-text);
+}
+.progress-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+.progress-link-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.progress-link-chevron {
+  margin-inline-start: auto;
 }
 .summary {
   display: flex;
