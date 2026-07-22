@@ -7,6 +7,7 @@ import { useAudioStore } from '@/stores/audio'
 import { useRecorderStore } from '@/stores/recorder'
 import { useMushafPage } from '@/composables/useMushafPage'
 import { useMushafImages } from '@/composables/useMushafImages'
+import { useMushafVerticalPager } from '@/composables/useMushafVerticalPager'
 import { useMushafZoom } from '@/composables/useMushafZoom'
 import { useMushafQuickJump } from '@/composables/useMushafQuickJump'
 import { useMushafLocation } from '@/composables/useMushafLocation'
@@ -22,9 +23,12 @@ import { useI18n } from '@/core/i18n'
 /**
  * Standalone mushaf scan surface (code-split — never in the reader bundle). One
  * page on mobile, an RTL 2-up spread on desktop (composed from two adjacent
- * single-page images). Paging is by the top-bar arrows and the keyboard — there
- * is no swipe (it was clumsy on touch); pinch / double-tap zoom stay. Page boxes
- * are aspect-ratio-reserved from the manifest so images load with no CLS.
+ * single-page images). Paging is by the top-bar arrows, the keyboard, and — in
+ * mobile single-page mode only — a vertical scroll-snap swipe (see
+ * useMushafVerticalPager; deliberately vertical, not horizontal, so it never has
+ * to account for the RTL page order). Pinch / double-tap zoom stay everywhere,
+ * and pause the vertical pager while active. Page boxes are aspect-ratio-reserved
+ * from the manifest so images load with no CLS.
  */
 const SPREAD_MIN_WIDTH = 820 // px — at/above this, show the 2-up spread
 const RTL = true // reading direction for keyboard paging
@@ -48,6 +52,13 @@ const recorder = useRecorderStore()
 
 const img = useMushafImages(store)
 const zoom = useMushafZoom()
+const vpagerEl = ref<HTMLElement>()
+const { slots: vpagerSlots, onScroll: vpagerOnScroll } = useMushafVerticalPager(
+  store,
+  img,
+  vpagerEl,
+  () => zoom.zoomed.value,
+)
 const { jumpTo } = useMushafQuickJump(store)
 const { juz, surahName } = useMushafLocation(store)
 
@@ -296,7 +307,54 @@ function backToReader() {
       @pointerup="onPointerUp($event)"
       @pointercancel="onPointerUp($event, true)"
     >
+      <!-- Mobile single-page mode: a 3-slot vertical scroll-snap pager (prev/
+           current/next) so scrolling down/up turns the page. Disabled while
+           zoomed via the `vscroll-locked` class (see useMushafVerticalPager). -->
       <div
+        v-if="!store.spread"
+        ref="vpagerEl"
+        class="vscroll"
+        :class="{ 'vscroll-locked': zoom.zoomed.value }"
+        @scroll="vpagerOnScroll"
+      >
+        <div v-for="slot in vpagerSlots" :key="slot.key" class="vslot">
+          <div
+            v-if="slot.page"
+            class="spread"
+            :style="slot.key === 'cur' ? zoom.transformStyle.value : undefined"
+          >
+            <div class="page-box" :style="{ aspectRatio: String(img.aspectRatio.value) }">
+              <img
+                v-if="img.entry(slot.page)?.status === 'ready'"
+                class="page-img"
+                :src="img.entry(slot.page)!.url"
+                :alt="t('reader.mushafPageAlt', { page: slot.page })"
+                draggable="false"
+                @error="img.markError(slot.page)"
+              />
+              <button
+                v-else-if="img.entry(slot.page)?.status === 'error'"
+                class="page-error"
+                @click="img.retry(slot.page)"
+              >
+                {{ t('reader.pageError', { page: slot.page }) }}
+              </button>
+              <div
+                v-else
+                class="page-skel"
+                role="status"
+                :aria-label="t('reader.loadingPage', { page: slot.page })"
+              >
+                <Skeleton width="100%" height="100%" rounded="md" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop 2-up spread: unchanged tap/keyboard-only paging. -->
+      <div
+        v-else
         class="spread"
         :class="{ 'is-spread': store.visible.length === 2 }"
         :style="zoom.transformStyle.value"
@@ -422,7 +480,8 @@ function backToReader() {
   align-items: flex-start;
   justify-content: center;
   padding: 0.5rem;
-  /* Allow vertical scroll for tall pages; custom pinch/pan handles zoom. */
+  /* Vertical gesture space is reserved for the .vscroll pager below (mobile) or
+     tall-page scroll; custom pinch/pan handles zoom. */
   touch-action: pan-y;
   filter: blur(0);
   transition: filter var(--duration-base) var(--ease-emphasized);
@@ -439,6 +498,30 @@ function backToReader() {
   .viewport {
     transition: none;
   }
+}
+/* Mobile single-page vertical pager: a 3-slot (prev/current/next) scroll-snap
+   column. `overscroll-behavior-y: contain` stops the drag from chaining into
+   the document (no accidental pull-to-refresh); `scroll-snap-stop: always` on
+   the slots means a fast flick can never skip past a neighbour. */
+.vscroll {
+  align-self: stretch;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+  touch-action: pan-y;
+}
+.vscroll.vscroll-locked {
+  overflow-y: hidden;
+  touch-action: none;
+}
+.vslot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 .spread {
   display: flex;

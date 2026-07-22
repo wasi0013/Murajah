@@ -16,8 +16,10 @@ const DEFAULT_ASPECT = 678 / 966
 /** Wait for paging to settle before loading, so a fast swipe doesn't fire (and
  * fail) fetches for pages flashed past — only the page you land on is loaded. */
 const SETTLE_MS = 120
-/** Transient fetch failures (common on a fast mobile swipe) auto-retry a few
- * times before the manual "tap to retry" is ever shown. */
+/** Transient fetch/decode failures (common on a fast mobile swipe, or iOS/Chrome
+ * mobile dropping a decode under memory pressure) auto-retry a few times —
+ * staying in the `loading` state throughout — before the manual "tap to retry"
+ * is ever shown. */
 const MAX_AUTO_RETRIES = 2
 const RETRY_BACKOFF_MS = 400
 
@@ -34,6 +36,10 @@ export function useMushafImages(store: MushafStore) {
   const ready = ref(false)
   const aspect = ref(DEFAULT_ASPECT)
   const retryTimers = new Set<ReturnType<typeof setTimeout>>()
+  // Auto-retry count per page, shared across fetch failures and decode
+  // failures — either kind counts toward the same cap so the two paths can't
+  // compound into far more than MAX_AUTO_RETRIES attempts.
+  const attempts = new Map<number, number>()
   let settleTimer: ReturnType<typeof setTimeout> | undefined
 
   const initPromise = client
@@ -58,37 +64,46 @@ export function useMushafImages(store: MushafStore) {
       const prev = entries.get(page)
       if (prev?.url) URL.revokeObjectURL(prev.url)
       entries.set(page, { status: 'ready', url })
+      attempts.delete(page)
     } catch {
-      entries.set(page, { status: 'error' })
+      fail(page)
     }
   }
 
   /**
-   * The Blob loaded but the <img> couldn't decode it (a corrupt image, or iOS
-   * dropping the decode under memory pressure). Revoke the dud URL and flip to
-   * the error state so the user gets a retry that force-refetches a fresh copy.
+   * The Blob loaded but the <img> couldn't decode it (a corrupt image, or iOS/
+   * Chrome mobile dropping the decode under memory pressure — the common cause
+   * of a stray "tap to retry" on a fast swipe). Revoke the dud URL and treat it
+   * the same as a fetch failure below — a manual tap should be a last resort,
+   * not the first response to a transient decode glitch.
    */
   function markError(page: number): void {
     const e = entries.get(page)
     if (e?.status !== 'ready') return // ignore stale errors from revoked/pruned pages
     if (e.url) URL.revokeObjectURL(e.url)
-    entries.set(page, { status: 'error' })
+    fail(page)
   }
 
   /**
-   * Load a page and, on a transient failure, auto-retry (force-refetch) a couple
-   * of times with a short backoff before leaving it in the error state. Retries
-   * stop once the page scrolls out of the retained window, so a fast swipe never
-   * keeps retrying pages the reader has already left.
+   * A fetch or decode failure. While auto-retries remain, the entry stays in
+   * `loading` — so the reader sees the ordinary loading skeleton, not a flash
+   * of "tap to retry" for what's usually a transient, self-healing glitch — and
+   * a force-refetch is scheduled with a short backoff. Only once the budget is
+   * exhausted (or the page has scrolled out of the retained window, so retrying
+   * would be wasted) does the entry flip to `error` for the manual retry.
    */
-  async function ensureWithRetry(page: number, attempt = 0): Promise<void> {
-    await ensure(page, attempt > 0 ? { reload: true } : undefined)
-    if (entries.get(page)?.status !== 'error') return
-    if (attempt >= MAX_AUTO_RETRIES || !retained().has(page)) return
+  function fail(page: number): void {
+    const attempt = (attempts.get(page) ?? 0) + 1
+    attempts.set(page, attempt)
+    if (attempt > MAX_AUTO_RETRIES || !retained().has(page)) {
+      entries.set(page, { status: 'error' })
+      return
+    }
+    entries.set(page, { status: 'loading' })
     const timer = setTimeout(() => {
       retryTimers.delete(timer)
-      if (retained().has(page)) void ensureWithRetry(page, attempt + 1)
-    }, RETRY_BACKOFF_MS * (attempt + 1))
+      if (retained().has(page)) void ensure(page, { reload: true })
+    }, RETRY_BACKOFF_MS * attempt)
     retryTimers.add(timer)
   }
 
@@ -105,6 +120,7 @@ export function useMushafImages(store: MushafStore) {
       if (!keep.has(page)) {
         if (e.url) URL.revokeObjectURL(e.url)
         entries.delete(page)
+        attempts.delete(page)
       }
     }
   }
@@ -118,7 +134,7 @@ export function useMushafImages(store: MushafStore) {
     // than SETTLE_MS, so only the page the reader settles on is fetched.
     clearTimeout(settleTimer)
     settleTimer = setTimeout(() => {
-      for (const p of store.visible) void ensureWithRetry(p)
+      for (const p of store.visible) void ensure(p)
     }, SETTLE_MS)
   }
 
@@ -130,6 +146,7 @@ export function useMushafImages(store: MushafStore) {
     retryTimers.clear()
     for (const e of entries.values()) if (e.url) URL.revokeObjectURL(e.url)
     entries.clear()
+    attempts.clear()
   })
 
   const aspectRatio = computed(() => aspect.value)
@@ -137,8 +154,16 @@ export function useMushafImages(store: MushafStore) {
   return {
     entry: (page: number): Entry | undefined => entries.get(page),
     // Explicit retry forces a fresh fetch past both caches, so a cached bad image
-    // can't keep serving the same failure.
-    retry: (page: number) => void ensure(page, { reload: true }),
+    // can't keep serving the same failure. Resets the auto-retry count too, so a
+    // manual tap always gets the full auto-retry budget behind it again.
+    retry: (page: number) => {
+      attempts.delete(page)
+      void ensure(page, { reload: true })
+    },
+    // Cache-first load for a page outside `store.visible` (the vertical pager's
+    // prev/next slots) — same auto-retry as the visible page, just triggered
+    // ahead of when the reader scrolls there instead of on-demand.
+    preload: (page: number) => void ensure(page),
     markError,
     aspectRatio,
     ready,
