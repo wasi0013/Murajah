@@ -11,8 +11,13 @@ import { AssetCache } from '@/core/storage/assetCache'
  * never evict reader JSON chunks and vice-versa.
  */
 export interface ImageTransport {
-  /** Fetch a page image as a Blob (cached). `path` is app-relative. */
-  fetchBlob(path: string): Promise<Blob>
+  /**
+   * Fetch a page image as a Blob (cached). `path` is app-relative. Pass
+   * `{ reload: true }` to force a fresh network fetch that bypasses both the
+   * IndexedDB cache and the browser HTTP cache — used by an explicit retry, so a
+   * cached bad/partial image can never keep serving the same failure.
+   */
+  fetchBlob(path: string, opts?: { reload?: boolean }): Promise<Blob>
   /** Set the image-set version; a change purges the image cache. */
   setVersion(version: string): void
 }
@@ -29,26 +34,39 @@ export function createImageTransport(): ImageTransport {
   const inflight = new Map<string, Promise<Blob>>()
   let cachePromise: Promise<AssetCache | null> = Promise.resolve(null)
 
-  async function load(url: string): Promise<Blob> {
+  async function load(url: string, reload: boolean): Promise<Blob> {
     const cache = await cachePromise
-    if (cache) {
+    if (cache && reload) await cache.delete(url).catch(() => {})
+    if (cache && !reload) {
       const hit = await cache.get<Blob>(url)
-      if (hit !== undefined) return hit
+      // A 0-byte hit is a poisoned entry (a past truncated response) — drop it
+      // and re-fetch rather than handing back an image that will never decode.
+      if (hit !== undefined && hit.size > 0) return hit
+      if (hit !== undefined) await cache.delete(url).catch(() => {})
     }
-    const res = await fetch(url)
+    const res = await fetch(url, reload ? { cache: 'reload' } : undefined)
     if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
     const blob = await res.blob()
+    // Guard against a truncated body that resolved without throwing: caching an
+    // empty blob would make every later read (and retry) fail identically.
+    if (blob.size === 0) throw new Error(`empty image ${url}`)
     if (cache) void cache.put(url, blob, blob.size).catch(() => {})
     return blob
   }
 
   return {
-    fetchBlob(path: string): Promise<Blob> {
+    fetchBlob(path: string, opts?: { reload?: boolean }): Promise<Blob> {
       const url = resolveUrl(path)
-      const pending = inflight.get(url)
-      if (pending) return pending
-      const p = load(url).finally(() => inflight.delete(url))
-      inflight.set(url, p)
+      const reload = opts?.reload ?? false
+      // A forced reload must not be de-duped onto an in-flight cached fetch.
+      if (!reload) {
+        const pending = inflight.get(url)
+        if (pending) return pending
+      }
+      const p = load(url, reload).finally(() => {
+        if (inflight.get(url) === p) inflight.delete(url)
+      })
+      if (!reload) inflight.set(url, p)
       return p
     },
     setVersion(version: string): void {

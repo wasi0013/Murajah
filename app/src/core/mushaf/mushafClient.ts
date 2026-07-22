@@ -69,12 +69,15 @@ export class MushafClient {
     return inRange(this.m, page)
   }
 
-  /** Fetch a page image as a Blob (cached). Rejects for out-of-range pages. */
-  getPageBlob(page: number): Promise<Blob> {
+  /**
+   * Fetch a page image as a Blob (cached). Rejects for out-of-range pages.
+   * `{ reload: true }` forces a fresh fetch past both caches (explicit retry).
+   */
+  getPageBlob(page: number, opts?: { reload?: boolean }): Promise<Blob> {
     if (!inRange(this.m, page)) {
       return Promise.reject(new Error(`mushaf page out of range: ${page}`))
     }
-    return this.transport.fetchBlob(imagePath(this.m, page))
+    return this.transport.fetchBlob(imagePath(this.m, page), opts)
   }
 
   /**

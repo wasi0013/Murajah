@@ -82,6 +82,14 @@ export class AssetCache {
     await this.evict()
   }
 
+  /** Drop a single entry — used to force a fresh fetch when a cached asset is
+   * bad (e.g. a truncated image the user asked to retry). */
+  async delete(url: string): Promise<void> {
+    const tx = this.db.transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).delete(url)
+    await txDone(tx)
+  }
+
   /** Evict least-recently-used entries until total bytes are under the cap. */
   private async evict(): Promise<void> {
     const tx = this.db.transaction(STORE, 'readwrite')

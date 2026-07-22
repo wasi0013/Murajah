@@ -130,7 +130,6 @@ const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
 
 function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'mouse' && e.button !== 0) return
-  viewport.value?.setPointerCapture(e.pointerId)
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
   if (pointers.size === 2) {
@@ -140,6 +139,8 @@ function onPointerDown(e: PointerEvent) {
     mode = 'pinch'
     dragging.value = false
     dragPx.value = 0
+    // A real gesture — capture so both fingers keep tracking off-element.
+    viewport.value?.setPointerCapture(e.pointerId)
     return
   }
   startX = lastX = e.clientX
@@ -151,6 +152,11 @@ function onPointerDown(e: PointerEvent) {
   const width = box?.width ?? window.innerWidth
   edgeStart = localX <= EDGE_GUTTER || localX >= width - EDGE_GUTTER
   mode = zoom.zoomed.value ? 'pan' : 'tap' // becomes 'paging' past the drag threshold
+  // Capture only when a gesture is already committed (panning a zoomed page).
+  // A plain tap must NOT capture, or the pointer is stolen from buttons layered
+  // on the viewport (the "tap to retry" control never fired). Paging captures
+  // later, once the drag threshold is crossed (see onPointerMove).
+  if (mode === 'pan') viewport.value?.setPointerCapture(e.pointerId)
 }
 
 function onPointerMove(e: PointerEvent) {
@@ -180,6 +186,7 @@ function onPointerMove(e: PointerEvent) {
     if (Math.abs(dx) < 8 || Math.abs(dx) <= Math.abs(dy)) return
     mode = 'paging'
     dragging.value = true
+    viewport.value?.setPointerCapture(e.pointerId) // now it's a real drag — capture
   }
   lastX = e.clientX
   lastT = e.timeStamp
@@ -396,6 +403,7 @@ function backToReader() {
                 :src="img.entry(p)!.url"
                 :alt="t('reader.mushafPageAlt', { page: p })"
                 draggable="false"
+                @error="img.markError(p)"
               />
               <button
                 v-else-if="img.entry(p)?.status === 'error'"

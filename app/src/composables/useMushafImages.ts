@@ -39,12 +39,12 @@ export function useMushafImages(store: MushafStore) {
       /* manifest load failed — the view shows an error state per page */
     })
 
-  async function ensure(page: number): Promise<void> {
+  async function ensure(page: number, opts?: { reload?: boolean }): Promise<void> {
     if (!ready.value || !client.inRange(page)) return
-    if (entries.get(page)?.status === 'ready') return
+    if (!opts?.reload && entries.get(page)?.status === 'ready') return
     entries.set(page, { status: 'loading' })
     try {
-      const blob = await client.getPageBlob(page)
+      const blob = await client.getPageBlob(page, opts)
       const url = URL.createObjectURL(blob)
       const prev = entries.get(page)
       if (prev?.url) URL.revokeObjectURL(prev.url)
@@ -52,6 +52,18 @@ export function useMushafImages(store: MushafStore) {
     } catch {
       entries.set(page, { status: 'error' })
     }
+  }
+
+  /**
+   * The Blob loaded but the <img> couldn't decode it (a corrupt image, or iOS
+   * dropping the decode under memory pressure). Revoke the dud URL and flip to
+   * the error state so the user gets a retry that force-refetches a fresh copy.
+   */
+  function markError(page: number): void {
+    const e = entries.get(page)
+    if (e?.status !== 'ready') return // ignore stale errors from revoked/pruned pages
+    if (e.url) URL.revokeObjectURL(e.url)
+    entries.set(page, { status: 'error' })
   }
 
   function retained(): Set<number> {
@@ -91,7 +103,10 @@ export function useMushafImages(store: MushafStore) {
 
   return {
     entry: (page: number): Entry | undefined => entries.get(page),
-    retry: (page: number) => void ensure(page),
+    // Explicit retry forces a fresh fetch past both caches, so a cached bad image
+    // can't keep serving the same failure.
+    retry: (page: number) => void ensure(page, { reload: true }),
+    markError,
     aspectRatio,
     ready,
     initPromise,
