@@ -67,15 +67,15 @@ const lines = computed<RenderLine[]>(() => {
 })
 
 /**
- * Fit each of the 15 mushaf lines to fill the page column with the font's
- * *natural* word spacing (not stretched). Both scripts need this: QPC per-page
- * fonts render a line narrower than a wide column (so `space-between` would
- * stretch it) yet wider than a phone (so it would clip); Indopak's single
- * Nastaleeq font varies more still. We measure each line's natural width (with
- * justification momentarily off), then scale that line's font-size so it fills
- * the column — justified edge-to-edge like a printed mushaf, exactly 15 lines,
- * no stretch, no clip. The clamp keeps an outlier line near its neighbours'
- * size. WBW is allowed to wrap, so it's left alone.
+ * Fit the 15 mushaf lines to fill the page column at a *single, uniform* size —
+ * every line the same font-size, like a printed mushaf page. We measure each
+ * line's natural width (justification momentarily off), then pick one scale
+ * factor for the whole page: the largest that keeps the *widest* line within the
+ * column (so nothing clips). That factor is applied to every line, and the
+ * inherited `space-between` justification absorbs the residual on narrower lines
+ * — no per-line size jumps (the earlier per-line scaling made some lines large
+ * and others small, most visibly on phones). WBW is allowed to wrap, so it's
+ * left alone.
  */
 const surfaceEl = ref<HTMLElement>()
 
@@ -88,6 +88,9 @@ function fitLines() {
     row.style.fontSize = ''
     row.style.justifyContent = 'flex-start'
   }
+  // Measure every line, then take the tightest fit as the shared page factor.
+  const measured: { row: HTMLElement; base: number }[] = []
+  let factor = Infinity
   for (const row of rows) {
     const avail = row.clientWidth
     const words = row.children
@@ -104,11 +107,20 @@ function fitLines() {
     }
     const content = max - min
     if (content > 0) {
-      const base = parseFloat(getComputedStyle(row).fontSize)
-      const factor = Math.min(Math.max(avail / content, 0.35), 1.6)
-      row.style.fontSize = `${base * factor}px`
+      measured.push({ row, base: parseFloat(getComputedStyle(row).fontSize) })
+      factor = Math.min(factor, avail / content)
+    } else {
+      row.style.justifyContent = ''
     }
-    row.style.justifyContent = '' // restore space-between (absorbs sub-pixel residual)
+  }
+  if (!measured.length || !Number.isFinite(factor)) {
+    for (const { row } of measured) row.style.justifyContent = ''
+    return
+  }
+  factor = Math.min(Math.max(factor, 0.35), 1.6)
+  for (const { row, base } of measured) {
+    row.style.fontSize = `${base * factor}px` // identical size on every line
+    row.style.justifyContent = '' // restore space-between to absorb the residual
   }
 }
 
