@@ -46,6 +46,16 @@ test('Quiz externalises its chrome — the title and setup copy are Arabic under
   await expect(page.getByRole('button', { name: 'ابدأ التدرّب' })).toBeVisible()
 })
 
+test('Audio player externalises its chrome — controls carry Arabic accessible names under ar', async ({
+  page,
+}) => {
+  await switchToArabic(page)
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'تلاوة صوتية' })).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('button', { name: 'تلاوة صوتية' }).click()
+  await expect(page.getByRole('radiogroup', { name: 'وحدة التشغيل' })).toBeVisible()
+})
+
 test('Today externalises its chrome — the set-up heading is Arabic under ar', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/today')

@@ -4,6 +4,7 @@ import { Repeat, X } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
+import { useI18n } from '@/core/i18n'
 
 /**
  * The expandable advanced tray (7.2.2): AB-repeat, speed, repeat-count /
@@ -19,6 +20,7 @@ import { useAudioStore } from '@/stores/audio'
 const store = useAudioStore()
 const engine = useAudioEngine()
 const emit = defineEmits<{ rebuild: [] }>()
+const { t } = useI18n()
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
@@ -40,7 +42,7 @@ function toggleSpaced() {
   <div class="tray">
     <!-- AB-repeat -->
     <section class="group" aria-labelledby="ab-label">
-      <span id="ab-label" class="group-label">A–B repeat</span>
+      <span id="ab-label" class="group-label">{{ t('audio.abRepeat') }}</span>
       <div class="ab-row">
         <button
           type="button"
@@ -49,7 +51,7 @@ function toggleSpaced() {
           :aria-pressed="hasA"
           @click="engine.markA()"
         >
-          A<span v-if="hasA" class="ab-time">{{ store.ab.a!.toFixed(1) }}s</span>
+          A<span v-if="hasA" class="ab-time">{{ t('audio.secondsShort', { n: store.ab.a!.toFixed(1) }) }}</span>
         </button>
         <button
           type="button"
@@ -58,7 +60,7 @@ function toggleSpaced() {
           :aria-pressed="hasB"
           @click="engine.markB()"
         >
-          B<span v-if="hasB" class="ab-time">{{ store.ab.b!.toFixed(1) }}s</span>
+          B<span v-if="hasB" class="ab-time">{{ t('audio.secondsShort', { n: store.ab.b!.toFixed(1) }) }}</span>
         </button>
         <button
           type="button"
@@ -69,13 +71,13 @@ function toggleSpaced() {
           @click="engine.toggleAbLoop()"
         >
           <Icon :icon="Repeat" :size="15" />
-          <span>Loop</span>
+          <span>{{ t('audio.loop') }}</span>
         </button>
         <button
           v-if="hasMarkers"
           type="button"
           class="chip ghost"
-          aria-label="Clear A–B markers"
+          :aria-label="t('audio.clearMarkers')"
           @click="engine.clearAbMarkers()"
         >
           <Icon :icon="X" :size="15" />
@@ -85,8 +87,8 @@ function toggleSpaced() {
 
     <!-- Speed -->
     <section class="group" aria-labelledby="speed-label">
-      <span id="speed-label" class="group-label">Speed</span>
-      <div class="seg" role="radiogroup" aria-label="Playback speed">
+      <span id="speed-label" class="group-label">{{ t('audio.speed') }}</span>
+      <div class="seg" role="radiogroup" :aria-label="t('audio.speedAria')">
         <button
           v-for="s in SPEEDS"
           :key="s"
@@ -104,12 +106,26 @@ function toggleSpaced() {
 
     <!-- Repeat count + spaced drill (verse grain) -->
     <section class="group" aria-labelledby="drill-label">
-      <span id="drill-label" class="group-label">Repetition</span>
+      <span id="drill-label" class="group-label">{{ t('audio.repetition') }}</span>
       <div class="drill-row">
-        <div class="stepper" role="group" aria-label="Repeat each verse">
-          <button type="button" class="step" aria-label="Fewer repeats" @click="setRepeat(store.repeatCount - 1)">−</button>
-          <span class="step-val"><span class="step-n">{{ store.repeatCount }}×</span> each</span>
-          <button type="button" class="step" aria-label="More repeats" @click="setRepeat(store.repeatCount + 1)">+</button>
+        <div class="stepper" role="group" :aria-label="t('audio.repeatEachAria')">
+          <button
+            type="button"
+            class="step"
+            :aria-label="t('audio.fewerRepeats')"
+            @click="setRepeat(store.repeatCount - 1)"
+          >
+            −
+          </button>
+          <span class="step-val">{{ t('audio.repeatEachLabel', { n: store.repeatCount }) }}</span>
+          <button
+            type="button"
+            class="step"
+            :aria-label="t('audio.moreRepeats')"
+            @click="setRepeat(store.repeatCount + 1)"
+          >
+            +
+          </button>
         </div>
         <button
           type="button"
@@ -118,7 +134,7 @@ function toggleSpaced() {
           :aria-pressed="store.spaced"
           @click="toggleSpaced()"
         >
-          Spaced drill
+          {{ t('audio.spacedDrill') }}
         </button>
       </div>
     </section>
@@ -127,15 +143,15 @@ function toggleSpaced() {
     <section class="group toggles">
       <label class="switch">
         <input type="checkbox" v-model="store.autoNext" />
-        <span>Autoplay next</span>
+        <span>{{ t('audio.autoplayNext') }}</span>
       </label>
       <label class="switch">
         <input type="checkbox" v-model="store.loopPlaylist" />
-        <span>Loop list</span>
+        <span>{{ t('audio.loopList') }}</span>
       </label>
       <label class="switch">
         <input type="checkbox" v-model="store.autoScroll" />
-        <span>Auto-scroll</span>
+        <span>{{ t('audio.autoScroll') }}</span>
       </label>
     </section>
   </div>
@@ -254,10 +270,6 @@ function toggleSpaced() {
   text-align: center;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-.step-n {
-  color: var(--color-text);
-  font-weight: 700;
 }
 .toggles {
   flex-direction: row;

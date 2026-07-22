@@ -6,6 +6,7 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import { AudioRecorder, toRecording } from '@/core/audio/recorder'
 import { useRecordingsStore } from '@/stores/recordings'
 import { useRecordingsPersistence } from '@/composables/useRecordingsPersistence'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Record-a-page panel (7.6.3): a mic button to capture your own recitation of the
@@ -20,6 +21,7 @@ const store = useRecordingsStore()
 const persistence = useRecordingsPersistence(store)
 onMounted(() => void persistence.hydrate())
 onBeforeUnmount(() => persistence.dispose())
+const { t, locale } = useI18n()
 
 const supported = AudioRecorder.isSupported()
 const recorder = new AudioRecorder()
@@ -48,7 +50,7 @@ async function toggleRecord() {
     await recorder.start()
     recording.value = true
   } catch {
-    error.value = 'Microphone access was denied.'
+    error.value = t('audio.micDenied')
   }
 }
 
@@ -85,7 +87,7 @@ function fmt(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 }
 
 const empty = computed(() => store.items.length === 0)
@@ -97,14 +99,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <BottomSheet v-model:open="open" label="Record recitation">
+  <BottomSheet v-model:open="open" :label="t('audio.recordRecitation')">
     <div class="panel">
       <div class="head">
-        <h2 class="title">Your recitation</h2>
-        <span class="page-tag">Page {{ page }}</span>
+        <h2 class="title">{{ t('audio.yourRecitation') }}</h2>
+        <span class="page-tag">{{ t('common.page', { n: page }) }}</span>
       </div>
 
-      <div v-if="!supported" class="notice">Recording isn’t supported on this device.</div>
+      <div v-if="!supported" class="notice">{{ t('audio.recordingUnsupported') }}</div>
       <template v-else>
         <button
           type="button"
@@ -115,26 +117,31 @@ onBeforeUnmount(() => {
           @click="toggleRecord"
         >
           <Icon :icon="recording ? Square : Mic" :size="22" />
-          <span>{{ recording ? 'Stop recording' : `Record page ${page}` }}</span>
+          <span>{{ recording ? t('audio.stopRecording') : t('audio.recordPage', { n: page }) }}</span>
         </button>
         <p v-if="error" class="err" role="alert">{{ error }}</p>
       </template>
 
       <ul v-if="!empty" class="list">
         <li v-for="r in store.items" :key="r.id" class="item">
-          <button type="button" class="play" :aria-label="playingId === r.id ? 'Pause' : 'Play'" @click="play(r.id, r.blob)">
+          <button
+            type="button"
+            class="play"
+            :aria-label="playingId === r.id ? t('audio.pause') : t('audio.play')"
+            @click="play(r.id, r.blob)"
+          >
             <Icon :icon="playingId === r.id ? Pause : Play" :size="18" />
           </button>
           <div class="info">
-            <span class="info-title">Page {{ r.pageNumber }}</span>
+            <span class="info-title">{{ t('common.page', { n: r.pageNumber }) }}</span>
             <span class="info-meta">{{ fmt(r.duration) }} · {{ fmtDate(r.recordedAt) }}</span>
           </div>
-          <button type="button" class="del" aria-label="Delete recording" @click="remove(r.id)">
+          <button type="button" class="del" :aria-label="t('audio.deleteRecording')" @click="remove(r.id)">
             <Icon :icon="Trash2" :size="18" />
           </button>
         </li>
       </ul>
-      <p v-else-if="supported" class="empty">No recordings yet — record this page to hear yourself back.</p>
+      <p v-else-if="supported" class="empty">{{ t('audio.noRecordings') }}</p>
 
       <audio ref="audioEl" @ended="stopPlayback" playsinline />
     </div>

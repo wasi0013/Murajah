@@ -15,6 +15,7 @@ import AudioControlsTray from './AudioControlsTray.vue'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
 import { PAGE_MODE_UNAVAILABLE_HINT } from '@/core/audio/pageMode'
+import { useI18n } from '@/core/i18n'
 
 /**
  * The mini-player (7.2.1) — the always-simple surface: transport, a slim seekable
@@ -37,6 +38,7 @@ const emit = defineEmits<{ start: []; rebuild: []; openPicker: []; close: [] }>(
 
 const store = useAudioStore()
 const engine = useAudioEngine()
+const { t } = useI18n()
 
 const trayOpen = ref(false)
 
@@ -53,8 +55,10 @@ const regionStyle = computed(() => {
 
 const nowLabel = computed(() => {
   const c = store.current
-  if (!c) return 'Ready to play'
-  return c.kind === 'verse' && c.verse ? `Ayah ${c.verse.surah}:${c.verse.ayah}` : c.label
+  if (!c) return t('audio.readyToPlay')
+  return c.kind === 'verse' && c.verse
+    ? t('audio.ayahLabel', { surah: c.verse.surah, ayah: c.verse.ayah })
+    : c.label
 })
 
 function onPlay() {
@@ -84,7 +88,7 @@ function fmt(s: number) {
 </script>
 
 <template>
-  <section class="player" :class="{ expanded: trayOpen }" aria-label="Recitation player">
+  <section class="player" :class="{ expanded: trayOpen }" :aria-label="t('audio.player')">
     <div class="top">
       <div class="meta">
         <span class="now">{{ nowLabel }}</span>
@@ -93,7 +97,7 @@ function fmt(s: number) {
         </button>
       </div>
 
-      <div v-if="showGrain" class="grain" role="radiogroup" aria-label="Playback grain">
+      <div v-if="showGrain" class="grain" role="radiogroup" :aria-label="t('audio.grainAria')">
         <button
           type="button"
           role="radio"
@@ -102,7 +106,7 @@ function fmt(s: number) {
           :aria-checked="effectiveGrain === 'verse'"
           @click="setGrain('verse')"
         >
-          Verse
+          {{ t('audio.grainVerse') }}
         </button>
         <button
           type="button"
@@ -114,11 +118,11 @@ function fmt(s: number) {
           :title="pageAvailable ? undefined : PAGE_MODE_UNAVAILABLE_HINT"
           @click="setGrain('page')"
         >
-          Page
+          {{ t('audio.grainPage') }}
         </button>
       </div>
 
-      <button type="button" class="icon-btn close" aria-label="Close player" @click="emit('close')">
+      <button type="button" class="icon-btn close" :aria-label="t('audio.close')" @click="emit('close')">
         <Icon :icon="X" :size="18" />
       </button>
     </div>
@@ -126,7 +130,7 @@ function fmt(s: number) {
     <button
       type="button"
       class="bar"
-      aria-label="Seek"
+      :aria-label="t('audio.seek')"
       @click="seek"
     >
       <span class="bar-track">
@@ -143,14 +147,19 @@ function fmt(s: number) {
       <button
         type="button"
         class="icon-btn"
-        aria-label="Previous"
+        :aria-label="t('audio.previous')"
         :disabled="!store.hasPrev"
         @click="engine.prev()"
       >
         <Icon :icon="SkipBack" :size="22" />
       </button>
 
-      <button type="button" class="play" :aria-label="store.isPlaying ? 'Pause' : 'Play'" @click="onPlay">
+      <button
+        type="button"
+        class="play"
+        :aria-label="store.isPlaying ? t('audio.pause') : t('audio.play')"
+        @click="onPlay"
+      >
         <Icon v-if="store.loading" :icon="Loader2" :size="26" class="spin" />
         <Icon v-else :icon="store.isPlaying ? Pause : Play" :size="26" />
       </button>
@@ -158,7 +167,7 @@ function fmt(s: number) {
       <button
         type="button"
         class="icon-btn"
-        aria-label="Next"
+        :aria-label="t('audio.next')"
         :disabled="!store.hasNext"
         @click="engine.next()"
       >
@@ -169,7 +178,7 @@ function fmt(s: number) {
         type="button"
         class="icon-btn more"
         :aria-expanded="trayOpen"
-        aria-label="More controls"
+        :aria-label="t('audio.moreControls')"
         @click="trayOpen = !trayOpen"
       >
         <Icon :icon="trayOpen ? ChevronDown : ChevronUp" :size="20" />

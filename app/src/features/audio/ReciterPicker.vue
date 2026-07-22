@@ -5,6 +5,7 @@ import Icon from '@/components/Icon.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import { PAGE_RECITERS, VERSE_RECITERS } from '@/core/audio/reciters'
 import { useAudioStore } from '@/stores/audio'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Reciter picker (7.2.3) — a bottom sheet listing the grain-appropriate reciters
@@ -20,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{ change: [] }>()
 
 const store = useAudioStore()
+const { t } = useI18n()
 
 const reciters = computed(() => {
   const all = props.grain === 'page' ? PAGE_RECITERS : VERSE_RECITERS
@@ -38,11 +40,11 @@ function choose(id: string, close: () => void) {
 </script>
 
 <template>
-  <BottomSheet v-model:open="open" label="Choose reciter">
+  <BottomSheet v-model:open="open" :label="t('audio.chooseReciter')">
     <template #default="{ close }">
       <div class="picker">
-        <h2 class="picker-title">Reciter</h2>
-        <ul class="list" role="listbox" aria-label="Reciters">
+        <h2 class="picker-title">{{ t('audio.reciter') }}</h2>
+        <ul class="list" role="listbox" :aria-label="t('audio.recitersAria')">
           <li v-for="r in reciters" :key="r.id">
             <button
               type="button"
