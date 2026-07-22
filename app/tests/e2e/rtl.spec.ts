@@ -79,6 +79,19 @@ test('Today externalises its chrome — the set-up heading is Arabic under ar', 
   })
 })
 
+test('the habit catalog (data layer) resolves through the catalog under ar', async ({ page }) => {
+  await switchToArabic(page)
+  await page.goto('/today')
+  await expect(page.getByRole('heading', { name: 'جهّز جلستك', level: 2 })).toBeVisible({
+    timeout: 10_000,
+  })
+  await page.getByRole('button', { name: 'أعدّها بنفسي' }).click()
+  // The habit names live in a plain data module (HABIT_CATALOG); this proves they
+  // resolve as translation keys rather than frozen English at module-eval time.
+  await expect(page.getByRole('switch', { name: 'اتلُ ١٠ آيات' })).toBeVisible()
+  await expect(page.getByRole('switch', { name: 'اختبار سريع' })).toBeVisible()
+})
+
 test('progress surface has no serious a11y violations in RTL', async ({ page }) => {
   await switchToArabic(page)
   await page.goto('/progress')

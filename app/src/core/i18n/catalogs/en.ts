@@ -90,6 +90,16 @@ const en: Messages = {
       weak: 'Needs reinforcement',
       habits: 'Habits',
     },
+    habits: {
+      reciteAyahs: {
+        name: 'Recite 10 verses',
+        description: 'Recite 10 ayahs from the Quran.',
+      },
+      quickTest: {
+        name: 'Do a quick test',
+        description: 'Recite a random memorized page from memory and check for mistakes.',
+      },
+    },
     openQuiz: 'Open the quiz',
     nothing: 'Nothing scheduled today. Mark pages memorized to build your revision queue.',
     allDone: 'Today is complete. May Allah accept it from you.',

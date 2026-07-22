@@ -299,8 +299,8 @@ const historyOpen = ref(false)
         <ul class="rows">
           <li v-for="h in today.habits.value" :key="h.id" class="habit">
             <span class="habit-text">
-              <span class="habit-name">{{ h.name }}</span>
-              <span class="habit-desc">{{ h.description }}</span>
+              <span class="habit-name">{{ t(h.nameKey) }}</span>
+              <span class="habit-desc">{{ t(h.descriptionKey) }}</span>
             </span>
             <button
               v-if="h.wiresTo === 'quiz'"
@@ -313,7 +313,7 @@ const historyOpen = ref(false)
             </button>
             <Toggle
               :model-value="today.isHabitDone(h.id)"
-              :label="h.name"
+              :label="t(h.nameKey)"
               @update:model-value="onHabit(h.id, $event)"
             />
           </li>

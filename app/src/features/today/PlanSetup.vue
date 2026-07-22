@@ -252,10 +252,10 @@ function save() {
       <section class="field">
         <span class="field-label">{{ t('plan.habitsQ') }}</span>
         <label v-for="h in HABIT_CATALOG" :key="h.id" class="row">
-          <span class="sub-label">{{ h.name }}</span>
+          <span class="sub-label">{{ t(h.nameKey) }}</span>
           <Toggle
             :model-value="draft.habits.includes(h.id)"
-            :label="h.name"
+            :label="t(h.nameKey)"
             @update:model-value="toggleHabit(h.id)"
           />
         </label>

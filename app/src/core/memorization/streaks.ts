@@ -144,11 +144,17 @@ export function buildHistory(log: DayLog, days = 90, today: Date = new Date()): 
  * A standing-habit task the user can enable alongside the adaptive plan. `wiresTo`
  * marks a habit whose full behaviour lands in a later phase (until then it's a
  * manual check): `quiz` → Phase 6, `audio` → Phase 7.
+ *
+ * `nameKey`/`descriptionKey` are i18n catalog keys, not display text — this is a
+ * plain data module (no Vue context), so translation happens at render time via
+ * `t(h.nameKey)` in the consuming component, where `t` is reactive to the active
+ * locale. Resolving them here at module-eval time would freeze the catalog's
+ * default-locale text forever (the module-level-const-list gotcha).
  */
 export interface HabitDef {
   id: string
-  name: string
-  description: string
+  nameKey: string
+  descriptionKey: string
   wiresTo?: 'quiz' | 'audio'
 }
 
@@ -156,13 +162,13 @@ export interface HabitDef {
 export const HABIT_CATALOG: readonly HabitDef[] = [
   {
     id: 'recite-ayahs',
-    name: 'Recite 10 verses',
-    description: 'Recite 10 ayahs from the Quran.',
+    nameKey: 'today.habits.reciteAyahs.name',
+    descriptionKey: 'today.habits.reciteAyahs.description',
   },
   {
     id: 'quick-test',
-    name: 'Do a quick test',
-    description: 'Recite a random memorized page from memory and check for mistakes.',
+    nameKey: 'today.habits.quickTest.name',
+    descriptionKey: 'today.habits.quickTest.description',
     wiresTo: 'quiz',
   },
 ] as const
