@@ -31,6 +31,8 @@ const props = defineProps<{
   activeVerse?: string | null
   /** Follow the recited ayah by scrolling it into view (audio player preference). */
   autoScroll?: boolean
+  /** True while the pager is being dragged — defer line-fitting until it settles. */
+  dragging?: boolean
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -124,13 +126,23 @@ function fitLines() {
   }
 }
 
-const scheduleFit = () => nextTick(fitLines)
+// While the pager is dragging, hold off measuring (a forced reflow mid-gesture
+// causes the visible jitter); run the pending fit once the drag settles.
+let pendingFit = false
+function requestFit() {
+  if (props.dragging) {
+    pendingFit = true
+    return
+  }
+  fitLines()
+}
+const scheduleFit = () => nextTick(requestFit)
 
 let ro: ResizeObserver | undefined
 onMounted(() => {
   scheduleFit()
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => fitLines())
+    ro = new ResizeObserver(() => requestFit())
     if (surfaceEl.value) ro.observe(surfaceEl.value)
   }
 })
@@ -139,6 +151,16 @@ onBeforeUnmount(() => ro?.disconnect())
 watch(
   () => [props.page, props.layout, props.pageWidth, props.fontFamily, props.wbw],
   scheduleFit,
+)
+// A deferred fit runs the moment the drag ends.
+watch(
+  () => props.dragging,
+  (d) => {
+    if (!d && pendingFit) {
+      pendingFit = false
+      scheduleFit()
+    }
+  },
 )
 
 // Auto-scroll the recited ayah into view (7.4). Only when it's offscreen, so we

@@ -236,6 +236,7 @@ function snapBack() {
             :mistake-ids="mistakes.store.mistakeIds"
             :active-verse="offset === 0 ? activeVerseKey : null"
             :auto-scroll="surfaceAutoScroll"
+            :dragging="dragging"
           />
           <div v-else class="page-skeleton" role="status" aria-label="Loading page">
             <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />

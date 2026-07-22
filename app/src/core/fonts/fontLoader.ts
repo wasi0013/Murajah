@@ -11,6 +11,14 @@ import type { FontManifest } from './types'
  * reader can await it and avoid both FOIT and wrong-glyph flashes. Neighbour
  * fonts are prefetched. Loaded faces are kept in a small LRU and removed from
  * `document.fonts` to bound memory. Indopak is a single font, loaded once.
+ *
+ * The cap must exceed the fonts on screen at once, or a page's font can be
+ * evicted while it's still displayed — its glyphs then fall back to a system
+ * font and render as garbage (a lone "q" etc.). The swipe carousel mounts three
+ * pages (prev/current/next) and prefetches their neighbours, and a fast swipe
+ * keeps several transitioning, so 6 was too tight. Visible pages are always the
+ * most-recently-touched, so a comfortable cap only ever evicts pages already
+ * swiped past. Each page face is ~190KB, so 12 faces ≈ 2.3MB — negligible.
  */
 export class FontLoader {
   private manifest: FontManifest | null = null
@@ -19,7 +27,7 @@ export class FontLoader {
   private readonly maxFaces: number
   private readonly transport: Transport
 
-  constructor(transport: Transport, maxFaces = 6) {
+  constructor(transport: Transport, maxFaces = 12) {
     this.transport = transport
     this.maxFaces = maxFaces
   }
