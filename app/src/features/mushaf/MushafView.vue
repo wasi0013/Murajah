@@ -109,10 +109,15 @@ function slidePages(offset: number): number[] {
 const pointers = new Map<number, { x: number; y: number }>()
 type Mode = 'none' | 'paging' | 'pan' | 'pinch' | 'tap'
 let mode: Mode = 'none'
+// Reserve the screen edges for the browser's own back/forward swipe so paging
+// never collides with the OS gesture; interior drags page as normal.
+const EDGE_GUTTER = 24
 let startX = 0
+let startY = 0
 let lastX = 0
 let lastY = 0
 let lastT = 0
+let edgeStart = false
 let pinchStartDist = 0
 let pinchStartScale = 1
 let lastTapT = 0
@@ -138,9 +143,13 @@ function onPointerDown(e: PointerEvent) {
     return
   }
   startX = lastX = e.clientX
-  lastY = e.clientY
+  startY = lastY = e.clientY
   lastT = e.timeStamp
   transition.value = false
+  const box = viewport.value?.getBoundingClientRect()
+  const localX = box ? e.clientX - box.left : e.clientX
+  const width = box?.width ?? window.innerWidth
+  edgeStart = localX <= EDGE_GUTTER || localX >= width - EDGE_GUTTER
   mode = zoom.zoomed.value ? 'pan' : 'tap' // becomes 'paging' past the drag threshold
 }
 
@@ -164,8 +173,11 @@ function onPointerMove(e: PointerEvent) {
   }
   // Potential paging drag (fit-width only).
   const dx = e.clientX - startX
+  const dy = e.clientY - startY
   if (mode === 'tap') {
-    if (Math.abs(dx) < 8) return
+    // Ignore edge-gutter starts (OS gesture) and vertical-dominant moves (scroll).
+    if (edgeStart) return
+    if (Math.abs(dx) < 8 || Math.abs(dx) <= Math.abs(dy)) return
     mode = 'paging'
     dragging.value = true
   }
@@ -175,7 +187,7 @@ function onPointerMove(e: PointerEvent) {
   dragPx.value = dampenIfAtEdge(dx, atEdge)
 }
 
-function onPointerUp(e: PointerEvent) {
+function onPointerUp(e: PointerEvent, canceled = false) {
   const p = pointers.get(e.pointerId)
   pointers.delete(e.pointerId)
 
@@ -209,8 +221,9 @@ function onPointerUp(e: PointerEvent) {
     mode = 'none'
     return
   }
-  // A tap that never dragged: double-tap toggles zoom.
-  if (mode === 'tap' && p) {
+  // A tap that never dragged: double-tap toggles zoom. A scroll the browser took
+  // over (pointercancel) is not a tap, so it never triggers zoom.
+  if (mode === 'tap' && p && !canceled) {
     const now = e.timeStamp
     if (now - lastTapT < 300 && dist({ x: e.clientX, y: e.clientY }, { x: lastTapX, y: lastTapY }) < 30) {
       zoom.toggleAt(e.clientX, e.clientY, rect())
@@ -360,8 +373,8 @@ function backToReader() {
       :class="{ dragging, zoomed: zoom.zoomed.value }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
+      @pointerup="onPointerUp($event)"
+      @pointercancel="onPointerUp($event, true)"
     >
       <div class="track" :style="trackStyle">
         <div v-for="offset in OFFSETS" :key="offset" class="slide" :aria-hidden="offset !== 0">

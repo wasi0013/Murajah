@@ -91,25 +91,46 @@ const trackStyle = computed(() => ({
   transition: transition.value ? `transform ${SLIDE_MS}ms var(--ease-emphasized)` : 'none',
 }))
 
+// A drag only becomes a page-turn past this horizontal threshold; a press that
+// stays within TAP_SLOP (in *either* axis) is a tap. EDGE_GUTTER reserves the
+// screen edges for the browser's own back/forward swipe so paging never fights it.
+const DRAG_THRESHOLD = 8
+const TAP_SLOP = 10
+const EDGE_GUTTER = 24
+
 let startX = 0
+let startY = 0
 let lastX = 0
 let lastT = 0
 let active = false
+let moved = false // left the tap slop (in any direction) — no longer a tap
+let edgeStart = false // began in the OS edge gutter — don't page, let the OS act
 
 function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'mouse' && e.button !== 0) return
   active = true
   dragging.value = false
+  moved = false
   transition.value = false
   startX = lastX = e.clientX
+  startY = e.clientY
   lastT = e.timeStamp
+  const box = root.value?.getBoundingClientRect()
+  const localX = box ? e.clientX - box.left : e.clientX
+  const width = box?.width ?? window.innerWidth
+  edgeStart = localX <= EDGE_GUTTER || localX >= width - EDGE_GUTTER
 }
 
 function onPointerMove(e: PointerEvent) {
   if (!active) return
   const dx = e.clientX - startX
+  const dy = e.clientY - startY
+  if (!moved && (Math.abs(dx) > TAP_SLOP || Math.abs(dy) > TAP_SLOP)) moved = true
   if (!dragging.value) {
-    if (Math.abs(dx) < 8) return // below tap threshold — let word taps through
+    // Only hijack for a clearly-horizontal drag that didn't start at the edge;
+    // a vertical-dominant move stays a scroll (the browser owns the pan-y axis).
+    if (edgeStart) return
+    if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return
     dragging.value = true
     root.value?.setPointerCapture(e.pointerId)
   }
@@ -120,11 +141,13 @@ function onPointerMove(e: PointerEvent) {
   dragPx.value = dampenIfAtEdge(dx, atEdge)
 }
 
-function onPointerUp(e: PointerEvent) {
+function onPointerUp(e: PointerEvent, canceled = false) {
   if (!active) return
   active = false
   if (!dragging.value) {
-    handleTap(e)
+    // A stationary press is a tap; a scroll the browser took over (pointercancel)
+    // or any drag past the slop is not — so scrolling never marks/opens a word.
+    if (!canceled && !moved) handleTap(e)
     return
   }
   dragging.value = false
@@ -193,8 +216,8 @@ function snapBack() {
     :class="{ dragging }"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
-    @pointerup="onPointerUp"
-    @pointercancel="onPointerUp"
+    @pointerup="onPointerUp($event)"
+    @pointercancel="onPointerUp($event, true)"
   >
     <div class="track" :style="trackStyle">
       <div v-for="offset in OFFSETS" :key="offset" class="col" :aria-hidden="offset !== 0">
