@@ -4,7 +4,7 @@ import { openSettings } from './helpers'
 /** surah:ayah of the first word on the visible page (layout-independent). */
 async function topAyah(page: import('@playwright/test').Page): Promise<string> {
   const loc = await page
-    .locator('.col[aria-hidden="false"] .surface .word')
+    .locator('.surface .word')
     .first()
     .getAttribute('data-loc')
   return loc!.split(':').slice(0, 2).join(':')
@@ -16,7 +16,7 @@ test('switching to Indopak keeps the ayah and swaps the font', async ({ page }) 
 
   const ayahBefore = await topAyah(page)
   const qpcFamily = await page
-    .locator('.col[aria-hidden="false"] .surface')
+    .locator('.surface')
     .evaluate((el) => getComputedStyle(el).fontFamily)
 
   await openSettings(page)
@@ -27,7 +27,7 @@ test('switching to Indopak keeps the ayah and swaps the font', async ({ page }) 
   await expect.poll(() => topAyah(page)).toBe(ayahBefore)
 
   const indopakFamily = await page
-    .locator('.col[aria-hidden="false"] .surface')
+    .locator('.surface')
     .evaluate((el) => getComputedStyle(el).fontFamily)
   expect(indopakFamily).not.toBe(qpcFamily) // per-page QPC glyph font → Indopak
 })
@@ -52,7 +52,7 @@ test('Indopak shows exactly 15 mushaf lines, each justified to fill the width', 
   await page.goto('/read/indopak/22') // a full 15-line page (Al-Baqarah)
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
-  const surface = page.locator('.col[aria-hidden="false"] .surface')
+  const surface = page.locator('.surface')
   await expect(surface.locator('.line-ayah')).toHaveCount(15)
   // No horizontal overflow, and every line fills the column edge-to-edge
   // (scale-to-fill justification) — the minimum line-fill is ~100%.

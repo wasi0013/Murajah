@@ -4,17 +4,16 @@ import { openSettings } from './helpers'
 // Text size now widens the mushaf column; scale-to-fill grows the line font to
 // match — so we measure a line's (scaled) font-size, not the fixed surface base.
 const fontSizePx = (page: import('@playwright/test').Page) =>
-  page.locator('.col[aria-hidden="false"] .surface .line-ayah').first().evaluate(
+  page.locator('.surface .line-ayah').first().evaluate(
     (el) => parseFloat(getComputedStyle(el).fontSize),
   )
 
-test('pager mounts at most 3 pages and pages forward', async ({ page }) => {
+test('reader renders a single page and pages forward', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 
-  // Windowed: three fixed slots, never more than three mounted surfaces.
-  await expect(page.locator('.track > .col')).toHaveCount(3)
-  expect(await page.locator('.surface').count()).toBeLessThanOrEqual(3)
+  // Only the current page is mounted — no swipe carousel of neighbour surfaces.
+  await expect(page.locator('.surface')).toHaveCount(1)
 
   await expect(page.getByText('Page 1 / 604')).toBeVisible()
 

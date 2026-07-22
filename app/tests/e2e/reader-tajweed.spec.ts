@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { openSettings } from './helpers'
 
 const family = (page: import('@playwright/test').Page) =>
-  page.locator('.col[aria-hidden="false"] .surface').evaluate((el) => getComputedStyle(el).fontFamily)
+  page.locator('.surface').evaluate((el) => getComputedStyle(el).fontFamily)
 
 test('tajweed toggle swaps the QPC font without reflowing the page', async ({ page }) => {
   await page.goto('/')
@@ -11,9 +11,9 @@ test('tajweed toggle swaps the QPC font without reflowing the page', async ({ pa
 
   // Default on → coloured tajweed per-page font.
   await expect.poll(() => family(page)).toContain('tj-p')
-  const wordsBefore = await page.locator('.col[aria-hidden="false"] .surface .word').count()
+  const wordsBefore = await page.locator('.surface .word').count()
   const heightBefore = await page
-    .locator('.col[aria-hidden="false"] .surface')
+    .locator('.surface')
     .evaluate((el) => Math.round(el.getBoundingClientRect().height))
 
   await page.getByRole('switch', { name: 'Tajweed colours' }).click()
@@ -27,9 +27,9 @@ test('tajweed toggle swaps the QPC font without reflowing the page', async ({ pa
   // different metrics, and since every line now shares one page-wide fit factor
   // (so all 15 lines stay the same size), a metric change scales the page as a
   // whole rather than averaging out per line — a small one-time shift (< ~12%).
-  expect(await page.locator('.col[aria-hidden="false"] .surface .word').count()).toBe(wordsBefore)
+  expect(await page.locator('.surface .word').count()).toBe(wordsBefore)
   const heightAfter = await page
-    .locator('.col[aria-hidden="false"] .surface')
+    .locator('.surface')
     .evaluate((el) => Math.round(el.getBoundingClientRect().height))
   expect(Math.abs(heightAfter - heightBefore)).toBeLessThan(heightBefore * 0.12)
 })

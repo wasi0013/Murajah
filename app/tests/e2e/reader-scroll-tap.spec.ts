@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 // pointercancel) as a tap; any movement past the slop is a scroll/drag.
 
 const firstWord = (page: import('@playwright/test').Page) =>
-  page.locator('.col[aria-hidden="false"] .surface .word').first()
+  page.locator('.surface .word').first()
 
 test('a vertical drag on a word does not open morphology (scroll intent)', async ({ page }) => {
   await page.goto('/')

@@ -14,7 +14,7 @@ test('tapping a word opens its morphology; popup is code-split and dismissible',
   // The popup chunk is not in the initial bundle — nothing requested yet.
   expect(chunkReqs).toEqual([])
 
-  const firstWord = page.locator('.col[aria-hidden="false"] .surface .word').first()
+  const firstWord = page.locator('.surface .word').first()
   await firstWord.click()
 
   const dialog = page.getByRole('dialog', { name: 'Word morphology' })
@@ -24,7 +24,7 @@ test('tapping a word opens its morphology; popup is code-split and dismissible',
 
   // Its chunk loaded on demand, and the tapped word is highlighted.
   expect(chunkReqs.length).toBeGreaterThan(0)
-  await expect(page.locator('.col[aria-hidden="false"] .word.state-morphology')).toHaveCount(1)
+  await expect(page.locator('.word.state-morphology')).toHaveCount(1)
 
   // Escape closes and clears the highlight.
   await page.keyboard.press('Escape')
@@ -35,7 +35,7 @@ test('tapping a word opens its morphology; popup is code-split and dismissible',
 test('paging dismisses an open morphology popup', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
-  await page.locator('.col[aria-hidden="false"] .surface .word').first().click()
+  await page.locator('.surface .word').first().click()
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeVisible({ timeout: 10_000 })
 
   await page.getByRole('button', { name: 'Next page' }).click()

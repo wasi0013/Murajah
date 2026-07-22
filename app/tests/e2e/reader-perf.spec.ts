@@ -38,7 +38,7 @@ test('warm morphology tap is served from cache (no new fetch)', async ({ page })
 
   await page.goto('/read/qpc/2') // Al-Baqarah — all words share one morphology chunk
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
-  const words = page.locator('.col[aria-hidden="false"] .surface .word')
+  const words = page.locator('.surface .word')
 
   // First tap warms the surah's morphology.
   await words.first().click()

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { openSettings, closeSettings } from './helpers'
 
 const firstWord = (page: import('@playwright/test').Page) =>
-  page.locator('.col[aria-hidden="false"] .surface .word').first()
+  page.locator('.surface .word').first()
 
 test('mark mode toggles a persisted mistake; read mode still opens morphology', async ({ page }) => {
   await page.goto('/')

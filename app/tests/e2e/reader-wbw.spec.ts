@@ -17,7 +17,7 @@ test('word-by-word: toggle shows glosses, only the page surah loads, en↔bn swa
   await page.getByRole('switch', { name: 'Word-by-word translation' }).click()
 
   // Glosses appear with English text; only surah 1's chunk is fetched.
-  const firstGloss = page.locator('.col[aria-hidden="false"] .gloss').first()
+  const firstGloss = page.locator('.gloss').first()
   await expect(firstGloss).not.toBeEmpty({ timeout: 10_000 })
   const en = await firstGloss.innerText()
   expect(trReqs.some((u) => u.endsWith('/data/tr/en/1.json'))).toBe(true)
