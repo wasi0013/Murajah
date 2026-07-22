@@ -5,14 +5,30 @@ import type { Layout, PageChunk, NavIndex, TafsirChunk, Word } from '@/core/data
 // —— A tiny fake mushaf ————————————————————————————————
 // Surah 1: 3 verses across pages 1–2. Surah 2: 2 verses on page 2.
 // Page 1: 1:1, 1:2.  Page 2: 1:3, 2:1, 2:2.
+// Each ayah's word list carries a trailing "mark" word, mirroring the real data's
+// ayah-end symbol (one extra word per ayah) — versesFromWords must drop it.
 
 function word(surah: number, ayah: number, w: number, text: string): Word {
   return { id: surah * 1000 + ayah * 10 + w, surah: String(surah), ayah: String(ayah), word: String(w), location: `${surah}:${ayah}:${w}`, text }
 }
 
 const PAGES: Record<number, Word[]> = {
-  1: [word(1, 1, 1, 'alif'), word(1, 1, 2, 'baa'), word(1, 2, 1, 'jiim')],
-  2: [word(1, 3, 1, 'daal'), word(2, 1, 1, 'haa'), word(2, 1, 2, 'waw'), word(2, 2, 1, 'zay')],
+  1: [
+    word(1, 1, 1, 'alif'),
+    word(1, 1, 2, 'baa'),
+    word(1, 1, 3, 'mark'),
+    word(1, 2, 1, 'jiim'),
+    word(1, 2, 2, 'mark'),
+  ],
+  2: [
+    word(1, 3, 1, 'daal'),
+    word(1, 3, 2, 'mark'),
+    word(2, 1, 1, 'haa'),
+    word(2, 1, 2, 'waw'),
+    word(2, 1, 3, 'mark'),
+    word(2, 2, 1, 'zay'),
+    word(2, 2, 2, 'mark'),
+  ],
 }
 
 const NAV: NavIndex = {

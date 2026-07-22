@@ -31,12 +31,14 @@ function stubData(pages: Record<number, PageChunk>): AudioDataAccess {
 }
 
 describe('versesForPages', () => {
-  it('assembles verses in reading order with Arabic joined from words', async () => {
+  it('assembles verses in reading order with Arabic joined from words, dropping the trailing ayah-end marker word', async () => {
     const data = stubData({
       1: chunk(1, [
         [1, 1, 'بِسْمِ'],
         [1, 1, 'اللَّهِ'],
+        [1, 1, 'ۧ'], // ayah-end marker — the real data appends one per ayah
         [1, 2, 'الْحَمْدُ'],
+        [1, 2, 'ۧ'],
       ]),
     })
     const verses = await versesForPages('qpc', [1], data)
@@ -48,8 +50,14 @@ describe('versesForPages', () => {
 
   it('concatenates multiple pages in ascending page order (a mushaf spread)', async () => {
     const data = stubData({
-      2: chunk(2, [[2, 5, 'أ']]),
-      3: chunk(3, [[2, 6, 'ب']]),
+      2: chunk(2, [
+        [2, 5, 'أ'],
+        [2, 5, 'ۧ'],
+      ]),
+      3: chunk(3, [
+        [2, 6, 'ب'],
+        [2, 6, 'ۧ'],
+      ]),
     })
     // Pass out of order to prove the sort.
     const verses = await versesForPages('qpc', [3, 2], data)
@@ -58,7 +66,12 @@ describe('versesForPages', () => {
   })
 
   it('skips a page that fails to load rather than failing the whole set', async () => {
-    const data = stubData({ 2: chunk(2, [[2, 5, 'أ']]) })
+    const data = stubData({
+      2: chunk(2, [
+        [2, 5, 'أ'],
+        [2, 5, 'ۧ'],
+      ]),
+    })
     const verses = await versesForPages('qpc', [2, 999], data)
     expect(verses.map((v) => v.page)).toEqual([2])
   })

@@ -25,6 +25,13 @@ export interface PageVerse {
  * Group a page's words into verses, preserving the reading order of both verses
  * and the words within each. Word `surah`/`ayah` are strings in the data; they are
  * coerced to numbers here so callers get a clean numeric shape.
+ *
+ * The mushaf word data models the ayah-end symbol (the circled verse-number glyph)
+ * as one extra trailing "word" per ayah — e.g. surah 2 ayah 1 ("الم") carries 2
+ * words, not 1. It renders fine in the reader, but it has no place in assembled
+ * verse text: it isn't a word, and in the quiz it silently gives away the answer
+ * (the answer's own ayah number sits right there in a multiple-choice option).
+ * Dropped here, at the one shared assembly point, so every consumer gets clean text.
  */
 export function versesFromWords(words: readonly Word[], page: number): PageVerse[] {
   const byVerse = new Map<string, { surah: number; ayah: number; words: string[] }>()
@@ -41,6 +48,6 @@ export function versesFromWords(words: readonly Word[], page: number): PageVerse
     surah: v.surah,
     ayah: v.ayah,
     page,
-    arabic: v.words.join(' '),
+    arabic: v.words.slice(0, -1).join(' '),
   }))
 }
