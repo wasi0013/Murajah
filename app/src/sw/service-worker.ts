@@ -25,6 +25,7 @@ import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import { isAppDataRequest, isAppFontsRequest } from './routeMatchers'
 
 declare let self: ServiceWorkerGlobalScope
 
@@ -63,15 +64,9 @@ if (IS_IOS) {
   registerRoute(({ request }) => request.mode === 'navigate', new NetworkFirst({ cacheName: 'murajah-app-navigation' }))
 }
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/data/'),
-  new StaleWhileRevalidate({ cacheName: 'murajah-app-data' }),
-)
+registerRoute(({ url }) => isAppDataRequest(url), new StaleWhileRevalidate({ cacheName: 'murajah-app-data' }))
 
-registerRoute(
-  ({ url }) => url.pathname.startsWith('/fonts/'),
-  new StaleWhileRevalidate({ cacheName: 'murajah-app-fonts' }),
-)
+registerRoute(({ url }) => isAppFontsRequest(url), new StaleWhileRevalidate({ cacheName: 'murajah-app-fonts' }))
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
