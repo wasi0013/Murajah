@@ -154,10 +154,27 @@ onBeforeUnmount(() => {
 const maxStep = READING_WIDTHS.length - 1
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
+
+// A page turn (next/prev — see reader.nextPage/prevPage) should land the reader
+// back at the top, since a page can be taller than the viewport and the next
+// page's own top is what's relevant, not wherever the previous page happened to
+// be scrolled to. `.app-content` (App.vue) is the actual scroll container, not
+// this component, so we reach for it directly. Skipped when a verse deep-link
+// is driving the page (reader.focusVerse) — that already scrolls itself to the
+// verse, and resetting to top first would just fight it.
+const rootEl = ref<HTMLElement>()
+watch(
+  () => reader.page,
+  (_page, prevPage) => {
+    if (prevPage === undefined) return // initial load — nothing to reset yet
+    if (reader.focusVerse) return
+    rootEl.value?.closest<HTMLElement>('.app-content')?.scrollTo({ top: 0 })
+  },
+)
 </script>
 
 <template>
-  <main class="reader">
+  <main ref="rootEl" class="reader">
     <header class="topbar">
       <button
         class="icon-btn"
