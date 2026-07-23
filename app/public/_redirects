@@ -1,11 +1,10 @@
-# Data/font/image paths must 404 for real when a file is missing, not
-# silently fall back to the app shell with a 200 — a 200-HTML response for a
-# JSON request breaks JSON.parse with a confusing error, and would otherwise
-# get cached as if it were legitimate data by the SW's StaleWhileRevalidate
-# route for these prefixes.
-/data/*    /index.html    404
-/fonts/*   /index.html    404
-/img/*     /index.html    404
+# A missing /data, /fonts or /img asset falls back to the app shell (200 HTML)
+# via Cloudflare's SPA not-found handling — a JSON/font fetch then receives HTML.
+# Cloudflare Pages rejects `404` as a _redirects status (see build warning
+# "Parsed 0 valid redirect rules"), so this can't be forced to a real 404 here.
+# The service worker instead refuses to cache the HTML shell on those routes
+# (see src/sw/service-worker.ts), which is what turned the one-off parse error
+# into a persistent one.
 
-# SPA fallback: every other unmatched path serves the app shell (client-side router).
+# SPA fallback: every unmatched path serves the app shell (client-side router).
 /*    /index.html    200

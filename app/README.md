@@ -56,7 +56,14 @@ production deploy (`master` → `source/`) is never touched.
 1. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git → this repo.
 2. Settings:
    - **Production branch:** `redesign`
-   - **Build command:** `cd app && npm ci && npm run build`
+   - **Build command:** `cd app && npm ci && node ../data-pipeline/src/assets.mjs --no-images && npm run build`
+     (`npm run build`'s own `prebuild` only regenerates `public/data/` — fonts are
+     deliberately left out of that fast path, per `assets.mjs`'s header comment,
+     because the 144MB set is slow. Skip this step and every `/fonts/*` request
+     404s, or worse, silently 200s as the SPA-fallback shell — see
+     `public/_redirects` and `data.worker.ts`'s content-type guard. Mushaf images
+     are committed to git directly, so `--no-images` is intentional here — it's
+     what `app-ci.yml` runs for the same reason.)
    - **Build output directory:** `app/dist`
    - **Root directory:** repo root (leave default)
 3. Deploy. Preview URL serves the new app; deep links work via `public/_redirects`

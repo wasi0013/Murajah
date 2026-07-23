@@ -64,9 +64,33 @@ if (IS_IOS) {
   registerRoute(({ request }) => request.mode === 'navigate', new NetworkFirst({ cacheName: 'murajah-app-navigation' }))
 }
 
-registerRoute(({ url }) => isAppDataRequest(url), new StaleWhileRevalidate({ cacheName: 'murajah-app-data' }))
+/**
+ * A missing `/data` or `/fonts` asset returns the SPA shell (index.html, 200
+ * text/html) via Cloudflare's not-found fallback rather than a real 404. Both
+ * transports already reject that HTML at parse time (see transport.ts), but
+ * StaleWhileRevalidate would otherwise *cache* the shell under the asset's URL,
+ * poisoning it so the parse error persists across reloads. Refuse to cache any
+ * text/html response on these sub-resource routes; a real JSON/woff2 asset (or
+ * the background revalidation once the asset is present) still caches normally,
+ * so poisoned entries self-heal. Never applied to the navigation route below —
+ * that one must cache HTML.
+ */
+const rejectHtml = {
+  cacheWillUpdate: async ({ response }: { response: Response }) =>
+    (response.headers.get('content-type') ?? '').includes('text/html') ? null : response,
+}
 
-registerRoute(({ url }) => isAppFontsRequest(url), new StaleWhileRevalidate({ cacheName: 'murajah-app-fonts' }))
+// cacheName is versioned (-v2): activating this worker abandons any entries a
+// prior version poisoned with the HTML shell, rather than waiting on revalidation.
+registerRoute(
+  ({ url }) => isAppDataRequest(url),
+  new StaleWhileRevalidate({ cacheName: 'murajah-app-data-v2', plugins: [rejectHtml] }),
+)
+
+registerRoute(
+  ({ url }) => isAppFontsRequest(url),
+  new StaleWhileRevalidate({ cacheName: 'murajah-app-fonts-v2', plugins: [rejectHtml] }),
+)
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
