@@ -399,7 +399,21 @@ function backToReader() {
 .mushaf {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  /* height:100% + overflow:hidden — NOT min-height:100%. The vertical
+     scroll-snap pager (.vscroll) needs a real height anchor to resolve
+     against; `min-height` never gave it one (App.vue's .app-content had no
+     definite height of its own), so .vscroll's `height:100%` slots fell back
+     to their natural (unconstrained) content size — three stacked
+     full-height page images, ~3x taller than the viewport — and nothing
+     clipped that, so it dragged the WHOLE document (every other route too,
+     since they share .app-shell/.app-content) into an oversized, mostly-
+     empty scroll area. `.app-shell`/`.app-content` (App.vue) now resolve to
+     a real definite height that this correctly fills — not more, not less,
+     so the shared bottom tab bar still gets its own space. `overflow:hidden`
+     stops any residual overflow from leaking back into that shared
+     calculation, keeping this fix scoped to the mushaf route. */
+  height: 100%;
+  overflow: hidden;
   background: var(--color-bg);
 }
 .topbar {
@@ -474,6 +488,11 @@ function backToReader() {
 }
 .viewport {
   flex: 1 0 auto;
+  /* Flex items default to min-height:auto (never shrink below content's
+     natural size) — without this override, .vscroll's unconstrained content
+     height (see .mushaf above) would still force .viewport to grow past the
+     space .mushaf actually has, defeating the fix above. */
+  min-height: 0;
   overflow: hidden;
   width: 100%;
   display: flex;

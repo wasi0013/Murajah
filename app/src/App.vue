@@ -136,10 +136,21 @@ function goMore(name: string) {
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  /* A real `height`, not just `min-height` — this is what gives descendants
+     (e.g. the mushaf's internal scroll-snap pager) one definite height anchor
+     to resolve against. Content-heavy views (e.g. Progress's page grid) are
+     unaffected: nothing here clips them, they still overflow into normal
+     page scroll exactly as before — this only stops height from being
+     ambiguous/auto when a view legitimately wants to fill (not exceed) the
+     viewport. */
+  height: 100dvh;
 }
 .app-content {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  /* Flex items default to min-height:auto (never shrink below content's
+     natural size), which would otherwise stop this from ever settling
+     smaller than the tallest thing a view has ever rendered. */
+  min-height: 0;
   min-width: 0;
 }
 .shell-tabbar {
