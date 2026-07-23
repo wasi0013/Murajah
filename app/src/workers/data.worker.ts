@@ -45,6 +45,13 @@ async function load(url: string): Promise<unknown> {
   }
   const res = await fetch(url)
   if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
+  // A missing file can still come back 200 (SPA/history fallback serving
+  // index.html instead of a real 404 — see public/_redirects) — catch that
+  // here with a clear error instead of JSON.parse choking on "<!doctype ...".
+  const contentType = res.headers.get('content-type') ?? ''
+  if (!contentType.includes('json')) {
+    throw new Error(`fetch ${url}: expected JSON, got "${contentType || 'unknown'}" (missing file?)`)
+  }
   const text = await res.text()
   const data = JSON.parse(text)
   if (cache) void cache.put(url, data, text.length).catch(() => {})

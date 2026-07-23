@@ -40,6 +40,12 @@ export function createFetchTransport(): Transport {
   const get = memoize<unknown>(async (url: string) => {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
+    // See data.worker.ts's identical guard: a missing file can still 200 via
+    // the SPA fallback, so check content-type before trusting the body is JSON.
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.includes('json')) {
+      throw new Error(`fetch ${url}: expected JSON, got "${contentType || 'unknown'}" (missing file?)`)
+    }
     return res.json()
   })
   return {
