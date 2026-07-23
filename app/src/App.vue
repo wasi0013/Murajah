@@ -152,6 +152,14 @@ function goMore(name: string) {
      smaller than the tallest thing a view has ever rendered. */
   min-height: 0;
   min-width: 0;
+  /* This, not the document, is the scroll container for tall views (e.g.
+     Progress's grid) — .app-shell is a fixed 100dvh box now, so overflow
+     has to be caught here or it escapes to the document and drags the
+     whole shell (tab bar included) into the page scroll, breaking the tab
+     bar's `sticky` (its containing block is .app-shell, which would then
+     be scrolling out from under it). The mushaf route is unaffected: it
+     sets its own `overflow: hidden` and manages scrolling internally. */
+  overflow-y: auto;
 }
 .shell-tabbar {
   position: sticky;
