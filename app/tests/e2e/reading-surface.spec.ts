@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test'
 
-const SHOT = '/private/tmp/claude-501/-Volumes-Main-personal-projects-Murajah/e4aa36f0-35bb-43c9-b51b-f93ff28e231f/scratchpad'
+// Diagnostic screenshots land in the gitignored Playwright output dir. Must be
+// repo-relative — an absolute machine-specific path is unwritable in CI and
+// fails the run (Playwright creates parent dirs for this path automatically).
+const SHOT = 'test-results/screenshots'
 
 test('reading surface renders real page 1 with QPC + tajweed fonts', async ({ page }) => {
   await page.goto('/gallery')
