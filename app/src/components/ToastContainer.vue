@@ -22,7 +22,12 @@ const variantClass: Record<ToastVariant, string> = {
           :class="variantClass[t.variant]"
           role="status"
           aria-live="polite"
-          @click="dismissToast(t.id)"
+          @click="
+            () => {
+              t.onAction?.()
+              dismissToast(t.id)
+            }
+          "
         >
           {{ t.message }}
         </button>

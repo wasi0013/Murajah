@@ -423,6 +423,25 @@ const en: Messages = {
     search: 'Search “{query}”',
     noMatch: 'No match — try 2:255, page 50, or juz 5.',
   },
+  pwa: {
+    updateAvailable: 'Update available — tap to refresh',
+    rebuilt: 'Murajah has been rebuilt — refreshing now…',
+    installTitle: 'Install Murajah',
+    installBody: 'Add Murajah to your home screen for a faster, full-screen experience.',
+    install: 'Install',
+    iosInstallHint: 'Tap the Share icon, then “Add to Home Screen”.',
+  },
+  offline: {
+    title: 'Offline reading',
+    textLead: 'Download the Quran text (~{size} MB) so every page reads offline, no connection needed.',
+    textAction: 'Download text',
+    imagesLead: 'Also download the mushaf page scans (~{size} MB) for offline reading in image view.',
+    imagesAction: 'Download images',
+    progress: '{done} / {total} pages',
+    downloaded: 'Downloaded',
+    canceled: 'Canceled — tap to resume',
+    cancel: 'Cancel',
+  },
 }
 
 export default en

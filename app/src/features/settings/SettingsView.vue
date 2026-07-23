@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Download, Upload } from 'lucide-vue-next'
+import { ArrowLeft, BookImage, Download, Smartphone, Type, Upload, X } from 'lucide-vue-next'
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
 import { useI18n } from '@/core/i18n'
 import { LOCALE_LIST, LOCALES, type Locale } from '@/core/i18n/types'
 import { exportUserData, importUserData, type ExportSnapshot } from '@/core/storage/exportImport'
 import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
 import { toast } from '@/composables/useToast'
+import { useInstallPrompt } from '@/composables/useInstallPrompt'
+import { useOfflineDownload } from '@/composables/useOfflineDownload'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Button from '@/components/Button.vue'
@@ -22,6 +24,9 @@ import Modal from '@/components/Dialog.vue'
 const router = useRouter()
 const settings = useSettingsStore()
 const { t, locale, setLocale } = useI18n()
+const { canInstall, isIOSManualInstall, promptInstall } = useInstallPrompt()
+const offline = useOfflineDownload()
+onMounted(() => void offline.hydrate())
 
 const themeOptions = computed<{ value: ThemeName; label: string }[]>(() => [
   { value: 'light', label: t('settings.appearance.light') },
@@ -117,6 +122,16 @@ function cancelImport() {
       <h1 class="title">{{ t('settings.title') }}</h1>
     </header>
 
+    <section v-if="canInstall || isIOSManualInstall" class="section" :aria-label="t('pwa.installTitle')">
+      <h2 class="section-title">{{ t('pwa.installTitle') }}</h2>
+      <p class="lead">{{ t('pwa.installBody') }}</p>
+      <Button v-if="canInstall" variant="secondary" @click="promptInstall">
+        <Icon :icon="Smartphone" :size="18" />
+        {{ t('pwa.install') }}
+      </Button>
+      <p v-else class="hint">{{ t('pwa.iosInstallHint') }}</p>
+    </section>
+
     <section class="section" :aria-label="t('settings.appearance.title')">
       <h2 class="section-title">{{ t('settings.appearance.title') }}</h2>
       <div class="row">
@@ -165,6 +180,54 @@ function cancelImport() {
         tabindex="-1"
         @change="onFileChosen"
       />
+    </section>
+
+    <section class="section" :aria-label="t('offline.title')">
+      <h2 class="section-title">{{ t('offline.title') }}</h2>
+
+      <div class="offline-pack">
+        <p class="lead">{{ t('offline.textLead', { size: offline.state.text.sizeEstimateMb }) }}</p>
+        <div class="actions">
+          <Button
+            v-if="offline.state.text.status === 'idle' || offline.state.text.status === 'canceled'"
+            variant="secondary"
+            @click="offline.downloadText"
+          >
+            <Icon :icon="Type" :size="18" />
+            {{ offline.state.text.status === 'canceled' ? t('offline.canceled') : t('offline.textAction') }}
+          </Button>
+          <template v-else-if="offline.state.text.status === 'downloading'">
+            <span class="row-label">{{ t('offline.progress', { done: offline.state.text.done, total: offline.state.text.total }) }}</span>
+            <Button variant="ghost" @click="offline.cancelText">
+              <Icon :icon="X" :size="16" />
+              {{ t('offline.cancel') }}
+            </Button>
+          </template>
+          <span v-else-if="offline.state.text.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
+        </div>
+      </div>
+
+      <div class="offline-pack">
+        <p class="lead">{{ t('offline.imagesLead', { size: offline.state.images.sizeEstimateMb }) }}</p>
+        <div class="actions">
+          <Button
+            v-if="offline.state.images.status === 'idle' || offline.state.images.status === 'canceled'"
+            variant="secondary"
+            @click="offline.downloadImages"
+          >
+            <Icon :icon="BookImage" :size="18" />
+            {{ offline.state.images.status === 'canceled' ? t('offline.canceled') : t('offline.imagesAction') }}
+          </Button>
+          <template v-else-if="offline.state.images.status === 'downloading'">
+            <span class="row-label">{{ t('offline.progress', { done: offline.state.images.done, total: offline.state.images.total }) }}</span>
+            <Button variant="ghost" @click="offline.cancelImages">
+              <Icon :icon="X" :size="16" />
+              {{ t('offline.cancel') }}
+            </Button>
+          </template>
+          <span v-else-if="offline.state.images.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
+        </div>
+      </div>
     </section>
 
     <Modal v-model:open="confirmOpen" :label="t('settings.data.import')">
@@ -258,7 +321,11 @@ function cancelImport() {
 .actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
+}
+.offline-pack + .offline-pack {
+  margin-top: 1.25rem;
 }
 .sr-only {
   position: absolute;

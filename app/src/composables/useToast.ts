@@ -5,6 +5,9 @@ export interface ToastItem {
   id: number
   message: string
   variant: ToastVariant
+  /** Runs before dismissal when the toast itself is tapped — e.g. the PWA
+   * update toast applying a pending refresh. Plain toasts just dismiss. */
+  onAction?: () => void
 }
 
 // Module-level reactive store so toast() works from anywhere (no injection).
@@ -22,10 +25,12 @@ export function dismissToast(id: number) {
 
 export function toast(
   message: string,
-  opts: { variant?: ToastVariant; duration?: number } = {},
+  opts: { variant?: ToastVariant; duration?: number; onAction?: () => void } = {},
 ): number {
   const id = nextId++
-  items.push({ id, message, variant: opts.variant ?? 'info' })
+  items.push({ id, message, variant: opts.variant ?? 'info', onAction: opts.onAction })
+  // duration: 0 disables auto-dismiss — for a toast that should stay until the
+  // user acts or navigates away (e.g. the PWA update prompt).
   const duration = opts.duration ?? 3000
   if (duration > 0) setTimeout(() => dismissToast(id), duration)
   return id
