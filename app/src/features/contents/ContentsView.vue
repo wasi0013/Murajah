@@ -9,6 +9,7 @@ import JuzList from './JuzList.vue'
 import PageList from './PageList.vue'
 import { juzRows, surahRows, type JuzRow, type SurahRow } from '@/core/navigation/contents'
 import { readerLink } from '@/core/navigation/readerLinks'
+import { resolveJump } from '@/core/navigation/resolveJump'
 import { getDataClient } from '@/core/data'
 import type { NavIndex } from '@/core/data/types'
 import { useReaderStore } from '@/stores/reader'
@@ -59,9 +60,15 @@ function toPage(page: number) {
 function onSurah(surah: number) {
   void router.push(readerLink({ surah }))
 }
+// Routed through the ayah friendly URL (not `toPage`) so the reader scrolls to
+// the juz's exact start line — a page-only route would clobber the focus verse
+// (its own applyRoute always resets focusVerse to match the URL, see
+// useReaderRouteSync.ts).
 function onJuz(juz: number) {
-  const page = nav?.juzToPage[String(juz)]
-  if (page) toPage(page)
+  const target = nav && resolveJump(nav, { type: 'juz', juz })
+  if (!target?.ayah) return
+  const [surah, ayah] = target.ayah.split(':').map(Number)
+  void router.push(readerLink({ surah, ayah }))
 }
 function listenSurah(surah: number) {
   void router.push({ name: 'listen', query: { scope: 'surah', ref: String(surah) } })

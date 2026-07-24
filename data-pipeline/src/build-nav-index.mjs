@@ -21,10 +21,10 @@ export const JUZ_STARTS = [
 ]
 
 /**
- * Build the three nav maps for one layout from `quran.json`.
+ * Build the nav maps for one layout from `quran.json`.
  * @param quran  `{ "<surah>": [{ chapter, verse, page, indopak_page }, …] }`
  * @param pageField  `'page'` (QPC) or `'indopak_page'` (Indopak)
- * @returns `{ ayahToPage: {"s:a":page}, surahToPage: {"s":page}, juzToPage: {"j":page} }`
+ * @returns `{ ayahToPage: {"s:a":page}, surahToPage: {"s":page}, juzToPage: {"j":page}, juzToVerse: {"j":"s:a"} }`
  */
 export function buildNavIndex(quran, pageField) {
   const ayahToPage = {}
@@ -41,14 +41,18 @@ export function buildNavIndex(quran, pageField) {
   }
 
   const juzToPage = {}
+  const juzToVerse = {}
   JUZ_STARTS.forEach(([surah, ayah], i) => {
     const key = `${surah}:${ayah}`
     const page = ayahToPage[key]
     if (page == null) throw new Error(`juz ${i + 1} start ${key} not found`)
     juzToPage[i + 1] = page
+    // Juz boundaries are verse-based, so the start verse is identical across
+    // layouts — only the resulting page number differs.
+    juzToVerse[i + 1] = key
   })
 
-  return { ayahToPage, surahToPage, juzToPage }
+  return { ayahToPage, surahToPage, juzToPage, juzToVerse }
 }
 
 /** Read quran.json, build + write per-layout nav indexes, return manifest entries. */

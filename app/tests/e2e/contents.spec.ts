@@ -9,14 +9,16 @@ test('Surah lens navigates to a surah’s page', async ({ page }) => {
   await expect(page).toHaveURL(/\/25$/)
 })
 
-test('Juz lens navigates to a juz’s page', async ({ page }) => {
+test('Juz lens navigates to a juz’s page and scrolls to its start verse', async ({ page }) => {
   await page.goto('/contents')
   await page.getByRole('radio', { name: 'Juz' }).click()
   const juz30 = page.getByRole('button', { name: /^Juz 30/ })
   await expect(juz30).toBeVisible({ timeout: 10_000 })
   await juz30.click()
-  // Juz 30 opens on QPC page 582 (page-form friendly URL).
-  await expect(page).toHaveURL(/\/page\/582$/)
+  // Juz 30 starts at 78:1 — routed through the ayah friendly URL (not /page/582)
+  // so the reader also scrolls to the exact line, not just the page.
+  await expect(page).toHaveURL(/\/78\/1$/)
+  await expect(page.locator('.word[data-verse="78:1"]').first()).toBeVisible({ timeout: 10_000 })
 })
 
 test('Page lens navigates to a page', async ({ page }) => {

@@ -26,6 +26,7 @@ test('counts are sane: 114 surahs, 30 juz, page ranges match layouts', () => {
   assert.equal(Object.keys(qpc.surahToPage).length, 114)
   assert.equal(Object.keys(indopak.surahToPage).length, 114)
   assert.equal(Object.keys(qpc.juzToPage).length, 30)
+  assert.equal(Object.keys(qpc.juzToVerse).length, 30)
   assert.equal(JUZ_STARTS.length, 30)
   assert.equal(Math.max(...Object.values(qpc.ayahToPage)), 604)
   assert.equal(Math.max(...Object.values(indopak.ayahToPage)), 610)
@@ -40,6 +41,11 @@ test('known references resolve correctly', () => {
   // juz starts: juz 1 → page 1; juz 30 (78:1) → same page as ayah 78:1
   assert.equal(qpc.juzToPage[1], 1)
   assert.equal(qpc.juzToPage[30], qpc.ayahToPage['78:1'])
+  // juz start verses are layout-independent
+  assert.equal(qpc.juzToVerse[1], '1:1')
+  assert.equal(qpc.juzToVerse[2], '2:142')
+  assert.equal(qpc.juzToVerse[30], '78:1')
+  assert.deepEqual(qpc.juzToVerse, indopak.juzToVerse)
 })
 
 test('surahToPage equals the page of the surah first verse', () => {

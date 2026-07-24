@@ -159,7 +159,10 @@ watch(
 )
 
 // Auto-scroll the recited ayah into view (7.4). Only when it's offscreen, so we
-// never fight the reader's own scroll; honours reduced-motion.
+// never fight the reader's own scroll; honours reduced-motion. `immediate` so a
+// deep-link/surah/juz jump — which remounts this surface (`:key="reader.page"`
+// in ReaderPager.vue) with `activeVerse` already set — still scrolls: a
+// non-immediate watch only fires on a later *change*, and there isn't one here.
 watch(
   () => props.activeVerse,
   (key) => {
@@ -177,6 +180,7 @@ watch(
       el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
     })
   },
+  { immediate: true },
 )
 </script>
 

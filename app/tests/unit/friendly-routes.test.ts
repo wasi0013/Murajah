@@ -8,14 +8,15 @@ import type { NavIndex } from '@/core/data/types'
 // A minimal QPC-shaped nav fixture (real page numbers for the asserted entries).
 const nav: NavIndex = {
   surahToPage: { '1': 1, '2': 2, '25': 359, '114': 604 },
-  ayahToPage: { '2:255': 42, '25:20': 363 },
+  ayahToPage: { '2:255': 42, '25:20': 363, '1:1': 1, '114:1': 604 },
   juzToPage: { '1': 1, '30': 582 },
+  juzToVerse: { '1': '1:1', '30': '78:1' },
 }
 
 describe('resolveReaderTarget', () => {
-  it('maps a surah to its start page', () => {
-    expect(resolveReaderTarget({ surah: '1' }, nav)).toEqual({ page: 1 })
-    expect(resolveReaderTarget({ surah: '114' }, nav)).toEqual({ page: 604 })
+  it('maps a surah to its start page (and its first ayah, to scroll to the exact line)', () => {
+    expect(resolveReaderTarget({ surah: '1' }, nav)).toEqual({ page: 1, ayah: '1:1' })
+    expect(resolveReaderTarget({ surah: '114' }, nav)).toEqual({ page: 604, ayah: '114:1' })
   })
 
   it('maps a surah + ayah to the ayah’s page, keeping the verse key', () => {
@@ -27,9 +28,9 @@ describe('resolveReaderTarget', () => {
     expect(resolveReaderTarget({ page: '50' }, nav)).toEqual({ page: 50 })
   })
 
-  it('resolves a name-slug to the surah’s page', () => {
-    expect(resolveReaderTarget({ slug: 'al-furqan' }, nav)).toEqual({ page: 359 })
-    expect(resolveReaderTarget({ slug: 'an-nas' }, nav)).toEqual({ page: 604 })
+  it('resolves a name-slug to the surah’s page (and its first ayah)', () => {
+    expect(resolveReaderTarget({ slug: 'al-furqan' }, nav)).toEqual({ page: 359, ayah: '25:1' })
+    expect(resolveReaderTarget({ slug: 'an-nas' }, nav)).toEqual({ page: 604, ayah: '114:1' })
   })
 
   it('returns null for out-of-range or unknown targets', () => {

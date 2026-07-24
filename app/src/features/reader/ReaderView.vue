@@ -88,6 +88,10 @@ const audioPages = computed(() => [reader.page])
 const activeVerseKey = computed(() =>
   audio.activeVerse ? `${audio.activeVerse.surah}:${audio.activeVerse.ayah}` : reader.focusVerse,
 )
+// A non-audio jump (surah/juz/ayah deep-link) should always scroll, even if the
+// user has turned off *audio* auto-scroll — that pref only governs following the
+// reciter (mirrors ReaderPager.vue's `surfaceAutoScroll`).
+const tafsirAutoScroll = computed(() => (audio.activeVerse ? audio.autoScroll : true))
 
 // Record-your-recitation (7.6) — lazy panel, opened from the mic control. The
 // reading surface blurs while `recorder.active`, so a recall test can't be read
@@ -242,7 +246,7 @@ watch(
       :tafsir="study.tafsir.value"
       :loading="study.loading.value"
       :active-verse="activeVerseKey"
-      :auto-scroll="audio.autoScroll"
+      :auto-scroll="tafsirAutoScroll"
       @expand="study.expandTafsir($event)"
     />
 

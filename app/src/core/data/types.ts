@@ -58,6 +58,8 @@ export interface NavIndex {
   ayahToPage: Record<string, number>
   surahToPage: Record<string, number>
   juzToPage: Record<string, number>
+  /** Juz number → its start verse (`"s:a"`) — layout-independent. */
+  juzToVerse: Record<string, string>
 }
 
 export interface Manifest {

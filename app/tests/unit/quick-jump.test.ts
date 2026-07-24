@@ -7,6 +7,7 @@ const nav: NavIndex = {
   ayahToPage: { '2:255': 42, '1:1': 1 },
   surahToPage: { '1': 1, '2': 2, '36': 440, '112': 604 },
   juzToPage: { '1': 1, '5': 87, '30': 582 },
+  juzToVerse: { '1': '1:1', '5': '4:24', '30': '78:1' },
 }
 
 describe('findSurahByName', () => {
@@ -29,11 +30,17 @@ describe('findSurahByName', () => {
 
 describe('resolveJump', () => {
   it('resolves each target type to a page', () => {
-    expect(resolveJump(nav, { type: 'page', page: 50 })).toBe(50)
-    expect(resolveJump(nav, { type: 'ayah', surah: 2, ayah: 255 })).toBe(42)
-    expect(resolveJump(nav, { type: 'juz', juz: 5 })).toBe(87)
-    expect(resolveJump(nav, { type: 'surah', surah: 36 })).toBe(440)
-    expect(resolveJump(nav, { type: 'name', query: 'baqarah' })).toBe(2)
+    expect(resolveJump(nav, { type: 'page', page: 50 })).toEqual({ page: 50 })
+    expect(resolveJump(nav, { type: 'ayah', surah: 2, ayah: 255 })).toEqual({
+      page: 42,
+      ayah: '2:255',
+    })
+    expect(resolveJump(nav, { type: 'juz', juz: 5 })).toEqual({ page: 87, ayah: '4:24' })
+    expect(resolveJump(nav, { type: 'surah', surah: 36 })).toEqual({ page: 440, ayah: '36:1' })
+    expect(resolveJump(nav, { type: 'name', query: 'baqarah' })).toEqual({
+      page: 2,
+      ayah: '2:1',
+    })
   })
 
   it('returns undefined when the target does not exist', () => {

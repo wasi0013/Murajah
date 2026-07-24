@@ -33,8 +33,8 @@ export function useMushafQuickJump(store: MushafStore, data: DataClient = getDat
   async function jumpTo(jump: Jump): Promise<void> {
     const index = await ensureNav()
     if (!index) return
-    const page = resolveJump(index, jump)
-    if (page !== undefined) store.goToPage(page) // clamps to the mushaf range
+    const target = resolveJump(index, jump)
+    if (target) store.goToPage(target.page) // clamps to the mushaf range
   }
 
   return { jumpTo }

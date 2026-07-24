@@ -100,12 +100,11 @@ export function resolveReaderTarget(
 
   if (surah != null) {
     if (surah < 1 || surah > MAX_SURAH) return null
-    if (ayah != null) {
-      const p = resolveJump(nav, { type: 'ayah', surah, ayah })
-      return p != null ? { page: p, ayah: `${surah}:${ayah}` } : null
-    }
-    const p = resolveJump(nav, { type: 'surah', surah })
-    return p != null ? { page: p } : null
+    const target =
+      ayah != null
+        ? resolveJump(nav, { type: 'ayah', surah, ayah })
+        : resolveJump(nav, { type: 'surah', surah })
+    return target ?? null
   }
   if (page != null) {
     return page >= 1 ? { page } : null

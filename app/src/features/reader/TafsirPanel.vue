@@ -45,11 +45,14 @@ const canNext = computed(() => reader.page < reader.pageCount)
 // mirrors the mushaf's own surah_name/basmallah lines (ReadingSurface.vue) so
 // the study panel doesn't lose that orientation when it replaces the mushaf.
 const surahNames = ref<SurahNames>({})
-onMounted(() => {
-  getDataClient()
-    .getSurahNames()
-    .then((n) => (surahNames.value = n))
-    .catch(() => {})
+onMounted(async () => {
+  try {
+    const data = getDataClient()
+    await data.init()
+    surahNames.value = await data.getSurahNames()
+  } catch {
+    /* names are non-critical chrome */
+  }
 })
 
 const surahOf = (verse: string): number => Number(verse.split(':')[0])
@@ -64,10 +67,17 @@ const showBasmala = (surah: number): boolean => surah !== 1 && surah !== 9
 
 // Auto-scroll the recited ayah into view. Only when it's offscreen, so we never
 // fight the reader's own scroll; honours reduced-motion and the auto-scroll pref.
+// `immediate` so a deep-link/surah/juz jump straight into tafsir mode — where
+// `activeVerse` is already set before this ever mounts — still scrolls. Also
+// re-runs whenever `entries` changes (not just `activeVerse`): unlike the mushaf
+// surface, entries load asynchronously (useVerseStudy fetches the page chunk +
+// translations after `reader.page` changes) — a jump often sets `activeVerse`
+// before that page's `.verse` elements exist yet, so scrolling only on the
+// verse-key change would silently miss with no retry once the DOM catches up.
 const rootEl = ref<HTMLElement>()
 watch(
-  () => props.activeVerse,
-  (verse) => {
+  () => [props.activeVerse, props.entries] as const,
+  ([verse]) => {
     if (!verse || props.autoScroll === false) return
     void nextTick(() => {
       const el = rootEl.value?.querySelector<HTMLElement>(`.verse[data-verse="${verse}"]`)
@@ -81,6 +91,7 @@ watch(
       el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
     })
   },
+  { immediate: true },
 )
 
 function onToggle(verse: string, e: Event) {

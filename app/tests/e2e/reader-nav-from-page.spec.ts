@@ -32,7 +32,9 @@ test('from page 50 → Surahs → Juz 30 opens its page, not page 50', async ({ 
   await page.getByRole('button', { name: 'Surahs' }).click()
   await page.getByRole('radio', { name: 'Juz' }).click()
   await page.getByRole('button', { name: /^Juz 30/ }).click()
-  await expect(page).toHaveURL(/\/page\/582$/)
+  // Juz 30 starts at 78:1 — routed through the ayah friendly URL (not /page/582)
+  // so the reader also scrolls to the exact line, not just the page.
+  await expect(page).toHaveURL(/\/78\/1$/)
   await expect(page.getByText(/Page 582 \//)).toBeVisible({ timeout: 10_000 })
 })
 

@@ -32,8 +32,10 @@ export function useQuickJump(
   async function jumpTo(jump: Jump): Promise<void> {
     const index = await nav(reader.layout)
     if (!index) return
-    const page = resolveJump(index, jump)
-    if (page !== undefined) reader.goToPage(page)
+    const target = resolveJump(index, jump)
+    if (!target) return
+    reader.goToPage(target.page)
+    reader.setFocusVerse(target.ayah ?? null)
   }
 
   return { jumpTo }

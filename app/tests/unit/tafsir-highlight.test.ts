@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import TafsirPanel from '@/features/reader/TafsirPanel.vue'
 import type { VerseStudy } from '@/composables/useVerseStudy'
 
@@ -11,6 +12,8 @@ function entries(): VerseStudy[] {
 }
 
 describe('TafsirPanel verse-highlight (7.4 / auto-scroll)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
   it('anchors every verse and highlights only the active one', () => {
     const wrapper = mount(TafsirPanel, {
       props: { entries: entries(), fontFamily: 'qpc-p1', tafsir: {}, loading: false, activeVerse: '1:2' },
