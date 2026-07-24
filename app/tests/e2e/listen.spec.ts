@@ -5,14 +5,16 @@ import AxeBuilder from '@axe-core/playwright'
 // these assert the wiring and UI: the scope picker, the page-only mini-player (no
 // grain toggle), the curated reciter list, and the browse → listen cross-link.
 
+// `/listen` is directly routable — most tests below just need to land there and
+// don't care how, so they navigate straight there rather than via the "More"
+// sheet (a mobile-only affordance now that the desktop rail unpacks Quiz/
+// Listen/Live/Settings as ordinary inline tabs — see BottomTabBar.vue).
 async function openListen(page: Page) {
-  await page.goto('/')
-  await page.getByRole('button', { name: 'More' }).click()
-  await page.getByRole('button', { name: /^Listen/ }).click()
-  await expect(page).toHaveURL(/\/listen$/)
+  await page.goto('/listen')
 }
 
 test('the More menu offers both Listen and Live recitation', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 }) // mobile: the sheet this test covers
   await page.goto('/')
   await page.getByRole('button', { name: 'More' }).click()
   await expect(page.getByRole('button', { name: /^Listen/ })).toBeVisible()

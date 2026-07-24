@@ -6,6 +6,8 @@ import AxeBuilder from '@axe-core/playwright'
 // IndexedDB so it survives a reload.
 
 test('the More tab opens Settings', async ({ page }) => {
+  // "More" is a mobile-only affordance — desktop unpacks it as an inline rail tab.
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.getByRole('button', { name: 'More' }).click()
   const sheet = page.getByRole('dialog', { name: 'More' })

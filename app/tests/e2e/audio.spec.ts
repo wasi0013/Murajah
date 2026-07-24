@@ -81,6 +81,8 @@ test('record panel opens with a record control', async ({ page }) => {
 })
 
 test('live recitation opens as a full view from More and a channel starts the embed', async ({ page }) => {
+  // "More" is a mobile-only affordance — desktop unpacks it as an inline rail tab.
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.getByRole('button', { name: 'More' }).click()
   await page.getByRole('button', { name: /Live recitation/ }).click()

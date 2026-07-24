@@ -18,13 +18,32 @@ describe('BottomTabBar', () => {
     { value: 'surahs', label: 'Surahs', icon: ListChecks },
     { value: 'goals', label: 'Goals', icon: Target },
   ]
+  const moreTabs = [{ value: 'quiz', label: 'Quiz', icon: Target }]
+
   it('marks the active tab and emits on click', async () => {
-    wrapper = mount(BottomTabBar, { props: { tabs, modelValue: 'read' } })
+    wrapper = mount(BottomTabBar, { props: { tabs, moreTabs, modelValue: 'read' } })
     const btns = wrapper.findAll('button')
     expect(btns[0].attributes('aria-current')).toBe('page')
     expect(btns[1].attributes('aria-current')).toBeUndefined()
     await btns[2].trigger('click')
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['goals'])
+  })
+
+  // moreTabs render as ordinary tabs (unpacked on the desktop rail — hidden by
+  // CSS, not by the DOM, on the mobile bottom bar) and drive the same
+  // `update:modelValue` as primary tabs; the trigger button is a distinct
+  // affordance (opens the mobile "More" sheet in App.vue) with its own emit.
+  it('renders moreTabs as ordinary tabs and emits "more" from the trigger', async () => {
+    wrapper = mount(BottomTabBar, { props: { tabs, moreTabs, modelValue: 'read' } })
+    const quizTab = wrapper.findAll('.tab-desktop-only').find((b) => b.text().includes('Quiz'))
+    expect(quizTab).toBeTruthy()
+    await quizTab!.trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['quiz'])
+
+    const trigger = wrapper.find('.tab-mobile-only')
+    expect(trigger.exists()).toBe(true)
+    await trigger.trigger('click')
+    expect(wrapper.emitted('more')).toHaveLength(1)
   })
 })
 

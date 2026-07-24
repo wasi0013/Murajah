@@ -347,7 +347,7 @@ const tajweed = ['ghunnah', 'qalqalah', 'ikhfa', 'madd']
           </Button>
         </div>
         <div class="max-w-sm overflow-hidden rounded-lg border border-border">
-          <BottomTabBar v-model="activeTab" :tabs="navTabs" />
+          <BottomTabBar v-model="activeTab" :tabs="navTabs" :more-tabs="[]" />
         </div>
         <p class="text-sm text-text-muted">Active tab: <b class="text-text">{{ activeTab }}</b></p>
         <CommandPalette v-model:open="paletteOpen" :shortcut="false" @select="onJump" />

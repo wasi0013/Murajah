@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { BookOpen, Brain, CalendarCheck, GraduationCap, Headphones, Home, ListOrdered, Menu, Radio, Settings } from 'lucide-vue-next'
+import { BookOpen, Brain, CalendarCheck, GraduationCap, Headphones, Home, ListOrdered, MessageCircle, Radio, Settings, Store } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings'
 import { useReaderStore } from '@/stores/reader'
 import { hydrateLocale, useI18n } from '@/core/i18n'
 import { mushafLink } from '@/core/navigation/readerLinks'
+import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
 import ToastContainer from '@/components/ToastContainer.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -25,13 +26,14 @@ onMounted(() => {
 /**
  * Primary shell nav (redesign 2026 P1): every screen gets the same tab bar,
  * with the active tab derived from the current route rather than local state,
- * so deep links and back/forward navigation stay in sync. Quiz, Listen, Live
- * and Settings share the "More" sheet — there's only room for so many
- * top-level tabs, and none of those four is a daily-loop surface the way
- * Today/Progress/Mushaf/Surahs are.
+ * so deep links and back/forward navigation stay in sync. `tabs` are the
+ * daily-loop surfaces (Home/Mushaf/Surahs/Today/Progress) — always visible.
+ * `moreTabs` (Quiz/Listen/Live/Settings) are secondary: unpacked as ordinary
+ * inline tabs on the desktop rail (room enough there), but tucked behind a
+ * "More" sheet on the mobile bottom bar, which has no room to spare (see
+ * BottomTabBar's `tab-desktop-only`/`tab-mobile-only` split).
  */
 const READER_ROUTE_NAMES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
-const MORE_ROUTE_NAMES = new Set(['quiz', 'listen', 'live', 'settings'])
 // The disabled-reader placeholder has nowhere useful for the tabs to lead.
 const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled'])
 
@@ -42,9 +44,7 @@ const activeTab = computed(() => {
   if (READER_ROUTE_NAMES.has(name)) return 'home'
   if (name === 'mushaf') return 'mushaf'
   if (name === 'contents') return 'surahs'
-  if (name === 'today') return 'today'
-  if (name === 'progress') return 'progress'
-  if (MORE_ROUTE_NAMES.has(name)) return 'more'
+  if (['today', 'progress', 'quiz', 'listen', 'live', 'settings'].includes(name)) return name
   return ''
 })
 
@@ -54,16 +54,18 @@ const tabs = computed(() => [
   { value: 'surahs', label: t('common.tabs.surahs'), icon: ListOrdered },
   { value: 'today', label: t('common.tabs.today'), icon: CalendarCheck },
   { value: 'progress', label: t('common.tabs.progress'), icon: Brain },
-  { value: 'more', label: t('common.tabs.more'), icon: Menu },
+])
+
+const moreTabs = computed(() => [
+  { value: 'quiz', label: t('common.tabs.quiz'), icon: GraduationCap },
+  { value: 'listen', label: t('common.tabs.listen'), icon: Headphones },
+  { value: 'live', label: t('common.tabs.live'), icon: Radio },
+  { value: 'settings', label: t('common.tabs.settings'), icon: Settings },
 ])
 
 const moreOpen = ref(false)
 
 function onTabSelect(tab: string) {
-  if (tab === 'more') {
-    moreOpen.value = true
-    return
-  }
   if (tab === activeTab.value) return // already there
   if (tab === 'home') void router.push({ name: 'home' })
   // QPC pages share the mushaf's 604-page scheme, so hand off the current
@@ -72,8 +74,7 @@ function onTabSelect(tab: string) {
   else if (tab === 'mushaf') {
     void router.push(reader.layout === 'qpc' ? mushafLink(reader.page) : { name: 'mushaf' })
   } else if (tab === 'surahs') void router.push({ name: 'contents' })
-  else if (tab === 'today') void router.push({ name: 'today' })
-  else if (tab === 'progress') void router.push({ name: 'progress' })
+  else if (['today', 'progress', 'quiz', 'listen', 'live', 'settings'].includes(tab)) void router.push({ name: tab })
 }
 
 function goMore(name: string) {
@@ -92,7 +93,9 @@ function goMore(name: string) {
       class="shell-tabbar"
       :model-value="activeTab"
       :tabs="tabs"
+      :more-tabs="moreTabs"
       @update:model-value="onTabSelect"
+      @more="moreOpen = true"
     />
   </div>
   <ToastContainer />
@@ -128,6 +131,21 @@ function goMore(name: string) {
           <span class="more-sub">{{ t('common.moreSettingsSub') }}</span>
         </span>
       </button>
+      <div class="more-divider" role="separator"></div>
+      <a class="more-item" :href="DISCORD_URL" target="_blank" rel="noopener noreferrer" @click="moreOpen = false">
+        <Icon :icon="MessageCircle" :size="18" />
+        <span class="more-label">
+          <span class="more-name">{{ t('common.discord') }}</span>
+          <span class="more-sub">{{ t('common.discordSub') }}</span>
+        </span>
+      </a>
+      <a class="more-item" :href="PLAY_STORE_URL" target="_blank" rel="noopener noreferrer" @click="moreOpen = false">
+        <Icon :icon="Store" :size="18" />
+        <span class="more-label">
+          <span class="more-name">{{ t('common.playStore') }}</span>
+          <span class="more-sub">{{ t('common.playStoreSub') }}</span>
+        </span>
+      </a>
     </div>
   </BottomSheet>
 </template>
@@ -201,8 +219,14 @@ function goMore(name: string) {
   border-radius: var(--radius-md);
   color: var(--color-text);
   text-align: start;
+  text-decoration: none;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
+}
+.more-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.4rem 0.5rem;
 }
 .more-item:hover,
 .more-item:focus-visible {

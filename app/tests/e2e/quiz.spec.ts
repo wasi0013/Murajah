@@ -80,6 +80,8 @@ async function openQuiz(page: Page) {
 }
 
 test('Quiz is reachable from the More menu', async ({ page }) => {
+  // "More" is a mobile-only affordance — desktop unpacks it as an inline rail tab.
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await page.getByRole('button', { name: 'More' }).click()
   await page.getByRole('button', { name: /^Quiz/ }).click()
