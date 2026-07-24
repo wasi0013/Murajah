@@ -26,8 +26,8 @@ describe('VERSE_RECITERS', () => {
   })
 
   it('the custom-hosted reciters use the github-pages primary and Shuraim fallback', () => {
-    const { primary, fallback } = verseReciter('luhaidan').verseUrl(114, 6)
-    expect(primary).toBe('https://wasi0013.github.io/Murajah/recitations/luhaidan/114006.mp3')
+    const { primary, fallback } = verseReciter('ali_jaber').verseUrl(114, 6)
+    expect(primary).toBe('https://wasi0013.github.io/Murajah/recitations/ali_jaber/114006.mp3')
     expect(fallback).toBe('https://everyayah.com/data/Shuraim_128kbps/114006.mp3')
   })
 

@@ -6,8 +6,8 @@
  * builders; no I/O. See the bug catalogue for what we deliberately did *not* carry
  * over (A2: the HEAD-probe — fallback is now driven by the `<audio>` error event).
  *
- * Sourcing note: most reciters stream from everyayah.com; three verse reciters
- * (Shuraim, Ali Jaber, Luhaidan) have a primary on a single github-pages host and
+ * Sourcing note: most reciters stream from everyayah.com; two verse reciters
+ * (Shuraim, Ali Jaber) have a primary on a single github-pages host and
  * fall back to everyayah's Shuraim if that host is unreachable.
  */
 
@@ -41,7 +41,6 @@ interface VerseReciterDef {
 const VERSE_RECITER_DEFS: VerseReciterDef[] = [
   { id: 'shuraim', name: 'Sheikh Shuraim', primary: (s, a) => `${CUSTOM}/sheikh_shuraim/${pad3(s)}${pad3(a)}.mp3` },
   { id: 'ali_jaber', name: 'Ali Jaber', primary: (s, a) => `${CUSTOM}/ali_jaber/${pad3(s)}${pad3(a)}.mp3` },
-  { id: 'luhaidan', name: 'Muhammad Al-Luhaidan', primary: (s, a) => `${CUSTOM}/luhaidan/${pad3(s)}${pad3(a)}.mp3` },
   {
     id: 'alafasy',
     name: 'Mishary Rashid Al Afasy',

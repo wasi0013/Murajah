@@ -34,7 +34,7 @@ describe('useAudioPersistence', () => {
     const store = useAudioStore()
     const p = useAudioPersistence(store)
     store.grain = 'page'
-    store.verseReciterId = 'luhaidan'
+    store.verseReciterId = 'ali_jaber'
     store.speed = 0.75
     store.autoScroll = false
     await tick(360) // past the 300ms debounce
@@ -45,7 +45,7 @@ describe('useAudioPersistence', () => {
     const store2 = useAudioStore()
     await useAudioPersistence(store2).hydrate()
     expect(store2.grain).toBe('page')
-    expect(store2.verseReciterId).toBe('luhaidan')
+    expect(store2.verseReciterId).toBe('ali_jaber')
     expect(store2.speed).toBe(0.75)
     expect(store2.autoScroll).toBe(false)
   })
