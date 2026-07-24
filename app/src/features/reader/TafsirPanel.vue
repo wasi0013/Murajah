@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { BookOpen, Copy } from 'lucide-vue-next'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { BookOpen, ChevronLeft, ChevronRight, Copy } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { toast } from '@/composables/useToast'
 import type { VerseStudy } from '@/composables/useVerseStudy'
+import type { SurahNames } from '@/core/data/types'
+import { getDataClient } from '@/core/data'
+import { useReaderStore } from '@/stores/reader'
+import { useI18n } from '@/core/i18n'
 
 /**
  * Verse-study surface — one card per ayah with the Arabic, the English (Saheeh)
@@ -25,9 +29,38 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ expand: [verse: string] }>()
 
+const { t } = useI18n()
+
 // tj-p{n} is the COLR/CPAL tajweed font (baked-in colour, not `currentColor`);
 // see ReadingSurface.vue for the fuller explanation of the dark-theme fix.
 const isTajweedFont = computed(() => props.fontFamily.startsWith('tj-'))
+
+// Same foot-of-page prev/next as the mushaf/WBW surface (ReaderPager.vue) —
+// tafsir replaces that surface, so it needs its own page-turn controls too.
+const reader = useReaderStore()
+const canPrev = computed(() => reader.page > 1)
+const canNext = computed(() => reader.page < reader.pageCount)
+
+// Surah name + Bismillah header, shown ahead of each surah's first verse —
+// mirrors the mushaf's own surah_name/basmallah lines (ReadingSurface.vue) so
+// the study panel doesn't lose that orientation when it replaces the mushaf.
+const surahNames = ref<SurahNames>({})
+onMounted(() => {
+  getDataClient()
+    .getSurahNames()
+    .then((n) => (surahNames.value = n))
+    .catch(() => {})
+})
+
+const surahOf = (verse: string): number => Number(verse.split(':')[0])
+const ayahOf = (verse: string): number => Number(verse.split(':')[1])
+/** Same "SurahNames" glyph-font ligature as ReadingSurface.vue's surah header. */
+function surahNameGlyph(surah: number): string {
+  return `${String(surah).padStart(3, '0')}surah`
+}
+// Al-Fatihah's ayah 1 *is* the Bismillah text (no separate basmallah line in the
+// mushaf data either); At-Tawbah has none. Every other surah gets the glyph.
+const showBasmala = (surah: number): boolean => surah !== 1 && surah !== 9
 
 // Auto-scroll the recited ayah into view. Only when it's offscreen, so we never
 // fight the reader's own scroll; honours reduced-motion and the auto-scroll pref.
@@ -70,9 +103,14 @@ async function copy(v: VerseStudy) {
     <p v-if="loading && entries.length === 0" class="state">Loading…</p>
     <p v-else-if="entries.length === 0" class="state">No verses for this page.</p>
 
+    <template v-for="e in entries" :key="e.verse">
+      <div v-if="ayahOf(e.verse) === 1" class="line line-surah">
+        <span class="surah-name-glyph" aria-hidden="true">{{ surahNameGlyph(surahOf(e.verse)) }}</span>
+        <span class="sr-only">{{ surahNames[String(surahOf(e.verse))] ?? '' }}</span>
+      </div>
+      <div v-if="ayahOf(e.verse) === 1 && showBasmala(surahOf(e.verse))" class="line line-basmala">﷽</div>
+
     <article
-      v-for="e in entries"
-      :key="e.verse"
       class="verse"
       :class="{ 'is-playing': activeVerse === e.verse }"
       :data-verse="e.verse"
@@ -121,6 +159,28 @@ async function copy(v: VerseStudy) {
         </div>
       </details>
     </article>
+    </template>
+
+    <nav v-if="entries.length > 0" class="page-nav" :aria-label="t('reader.pageNavAria')">
+      <button
+        type="button"
+        class="page-nav-btn"
+        :disabled="!canPrev"
+        @click="reader.prevPage()"
+      >
+        <Icon :icon="ChevronLeft" :size="20" />
+        <span>{{ t('reader.goToPrevPage') }}</span>
+      </button>
+      <button
+        type="button"
+        class="page-nav-btn"
+        :disabled="!canNext"
+        @click="reader.nextPage()"
+      >
+        <span>{{ t('reader.goToNextPage') }}</span>
+        <Icon :icon="ChevronRight" :size="20" />
+      </button>
+    </nav>
   </section>
 </template>
 
@@ -144,6 +204,36 @@ async function copy(v: VerseStudy) {
 }
 .verse:last-child {
   border-bottom: none;
+}
+/* Surah name + Bismillah — identical markup/styling to ReadingSurface.vue's
+   mushaf header, so the study panel doesn't look like a different app. */
+.line {
+  display: flex;
+}
+.line-surah {
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+.surah-name-glyph {
+  color: var(--color-accent);
+  font-size: 1.7em;
+  font-family: 'SurahNames', var(--font-arabic);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.line-basmala {
+  justify-content: center;
+  color: var(--color-accent);
+  font-size: 1.7em;
+  padding: 0.25rem 0 0.75rem;
 }
 /* The ayah being recited: a soft accent wash with a hairline start-edge rule —
    subtle, and not carried by colour alone. Bled slightly past the text column. */
@@ -235,5 +325,37 @@ async function copy(v: VerseStudy) {
 }
 .tafsir-html :deep(.text-rtl) {
   direction: rtl;
+}
+.page-nav {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem 0 0.5rem;
+}
+.page-nav-btn {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.page-nav-btn:hover:not(:disabled) {
+  background: var(--color-elevated);
+  border-color: var(--color-accent);
+}
+.page-nav-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.page-nav-btn:disabled {
+  opacity: 0.4;
 }
 </style>
