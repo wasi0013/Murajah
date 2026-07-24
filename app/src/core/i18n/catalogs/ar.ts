@@ -421,12 +421,12 @@ const ar: Messages = {
   },
   palette: {
     title: 'الانتقال السريع',
-    placeholder: 'اذهب إلى 2:255، صفحة 50، جزء 5…',
+    placeholder: 'اذهب إلى 2:255، صفحة 50، جزء 5، سورة 2…',
     resultsAria: 'النتائج',
     ayah: 'الآية {surah}:{ayah}',
-    surah: 'سورة {n}',
+    surah: 'سورة {n} — {name}',
     search: 'بحث عن «{query}»',
-    noMatch: 'لا توجد نتيجة — جرّب 2:255، صفحة 50، أو جزء 5.',
+    noMatch: 'لا توجد نتيجة — جرّب 2:255، صفحة 50، جزء 5، أو سورة 2.',
   },
   pwa: {
     updateAvailable: 'يتوفر تحديث — اضغط للتحديث',

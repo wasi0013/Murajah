@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Dialog from './Dialog.vue'
 import { parseJump, type Jump } from '@/core/navigation/parseJump'
+import { SURAH_NAMES, findSurahByName } from '@/core/navigation/surahNames'
 import { useI18n } from '@/core/i18n'
 
 // Quick-jump palette: type "2:255", "page 50", "juz 5", or a surah name.
@@ -24,6 +25,11 @@ watch(open, (o) => {
   }
 })
 
+/** English transliteration for `n` (1–114) — the palette's own reference data, no fetch. */
+function surahName(n: number): string | undefined {
+  return SURAH_NAMES[n - 1]
+}
+
 function labelFor(r: Jump): string {
   switch (r.type) {
     case 'ayah':
@@ -33,9 +39,15 @@ function labelFor(r: Jump): string {
     case 'juz':
       return t('common.juz', { n: r.juz })
     case 'surah':
-      return t('palette.surah', { n: r.surah })
-    case 'name':
+      return t('palette.surah', { n: r.surah, name: surahName(r.surah) ?? '' })
+    case 'name': {
+      // A name query already resolves to a surah synchronously (a tiny static
+      // 114-entry table, no I/O) — show the same "Surah N — Name" confirmation
+      // as an explicit surah jump, so the user can see what they're about to open.
+      const surah = findSurahByName(r.query)
+      if (surah !== undefined) return t('palette.surah', { n: surah, name: surahName(surah) ?? '' })
       return t('palette.search', { query: r.query })
+    }
   }
 }
 

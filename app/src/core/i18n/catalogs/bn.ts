@@ -421,12 +421,12 @@ const bn: Messages = {
   },
   palette: {
     title: 'দ্রুত যান',
-    placeholder: '2:255, page 50, juz 5… লিখুন',
+    placeholder: '2:255, page 50, juz 5, surah 2… লিখুন',
     resultsAria: 'ফলাফল',
     ayah: 'আয়াত {surah}:{ayah}',
-    surah: 'সূরা {n}',
+    surah: 'সূরা {n} — {name}',
     search: '"{query}" অনুসন্ধান করুন',
-    noMatch: 'কোনো ফলাফল নেই — 2:255, page 50, অথবা juz 5 লিখে দেখুন।',
+    noMatch: 'কোনো ফলাফল নেই — 2:255, page 50, juz 5, অথবা surah 2 লিখে দেখুন।',
   },
   pwa: {
     updateAvailable: 'আপডেট উপলব্ধ — রিফ্রেশ করতে ট্যাপ করুন',

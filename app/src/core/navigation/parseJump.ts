@@ -42,6 +42,14 @@ export function parseJump(input: string): Jump[] {
     return n >= 1 && n <= MAX_JUZ ? [{ type: 'juz', juz: n }] : []
   }
 
+  // surah N  →  "surah 1", "surah2", "s 114" (unambiguous — unlike a bare number,
+  // which could mean page or surah)
+  const surah = q.match(/^(?:s|surah)\s*(\d+)$/)
+  if (surah) {
+    const n = Number(surah[1])
+    return n >= 1 && n <= MAX_SURAH ? [{ type: 'surah', surah: n }] : []
+  }
+
   // bare number → page, and (if plausible) surah
   if (/^\d+$/.test(q)) {
     const n = Number(q)

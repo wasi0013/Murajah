@@ -22,6 +22,14 @@ describe('parseJump', () => {
     expect(parseJump('juz 40')).toEqual([])
   })
 
+  it('parses an explicit surah N (unambiguous, unlike a bare number)', () => {
+    expect(parseJump('surah 1')).toEqual([{ type: 'surah', surah: 1 }])
+    expect(parseJump('surah2')).toEqual([{ type: 'surah', surah: 2 }])
+    expect(parseJump('s 114')).toEqual([{ type: 'surah', surah: 114 }])
+    expect(parseJump('surah 115')).toEqual([])
+    expect(parseJump('surah 0')).toEqual([])
+  })
+
   it('offers page + surah for a small bare number, page only for large', () => {
     expect(parseJump('5')).toEqual([
       { type: 'page', page: 5 },

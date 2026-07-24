@@ -29,6 +29,38 @@ test('quick-jump resolves ayah / surah name / page to the right page', async ({ 
   await expect(page).toHaveURL(/\/read\/qpc\/300(\?|$)/) // unchanged
 })
 
+test('quick-jump accepts an explicit "surah N" and shows the English name for both forms', async ({
+  page,
+}) => {
+  await page.goto('/read/qpc/50') // start off page 1, so each jump below is a real move
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  const openJump = () => page.getByRole('button', { name: 'Go to page, ayah or surah' }).click()
+  const input = page.getByRole('textbox', { name: 'Quick jump' })
+
+  // "surah N" is unambiguous — no bare-number page/surah split — and shows the
+  // English transliteration so the user can confirm the match before choosing.
+  await openJump()
+  await input.fill('surah 1')
+  await expect(page.getByRole('option')).toHaveText('Surah 1 — Al-Fatihah')
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/read\/qpc\/1(\?|$)/)
+
+  await openJump()
+  await input.fill('surah 114')
+  await expect(page.getByRole('option')).toHaveText('Surah 114 — An-Nas')
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/read\/qpc\/604(\?|$)/)
+
+  // A name search resolves to the same "Surah N — Name" confirmation, not a
+  // raw echo of the typed text.
+  await openJump()
+  await input.fill('baqarah')
+  await expect(page.getByRole('option')).toHaveText('Surah 2 — Al-Baqarah')
+  await input.press('Enter')
+  await expect(page).toHaveURL(/\/read\/qpc\/2(\?|$)/)
+})
+
 test('the Surahs tab opens the Contents browser', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()

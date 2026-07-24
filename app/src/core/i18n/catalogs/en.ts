@@ -424,12 +424,12 @@ const en: Messages = {
   },
   palette: {
     title: 'Quick jump',
-    placeholder: 'Go to 2:255, page 50, juz 5…',
+    placeholder: 'Go to 2:255, page 50, juz 5, surah 2…',
     resultsAria: 'Results',
     ayah: 'Ayah {surah}:{ayah}',
-    surah: 'Surah {n}',
+    surah: 'Surah {n} — {name}',
     search: 'Search “{query}”',
-    noMatch: 'No match — try 2:255, page 50, or juz 5.',
+    noMatch: 'No match — try 2:255, page 50, juz 5, or surah 2.',
   },
   pwa: {
     updateAvailable: 'Update available — tap to refresh',
