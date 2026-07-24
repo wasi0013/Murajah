@@ -3,7 +3,7 @@
 # Murajah - Quran Memorization & Revision Tool
 
 [![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
-[![version](https://img.shields.io/badge/V-26.04.14-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
+[![version](https://img.shields.io/badge/V-26.07.24-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
 
 [![Playstore Link](https://img.shields.io/badge/Download%20App-black?logo=Google%20Play&logoColor=white&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.murajah.webview)
 [![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
@@ -38,279 +38,172 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 
 ## ✨ Key Features
 
-### Quran Display
-- Full Quran text with Tajweed highlighting (Madinah Mushaf / QPC layout)
-- Indopak Nastaleeq layout option
-- Customizable text size
-- Surah view with chapter-level browsing
-- Page-by-page navigation with swipe gestures on mobile
+### 📖 Three Reading Surfaces
 
-### Word-Level Tools
-- **Word-by-word** translation and meanings
-- **Morphology** — tap any word to view Arabic grammar analysis
-- **Mistake highlighter** — tap words to mark recitation errors
-- Toggle between morphology and mistake modes via an interaction mode switch
+- **Madani (QPC) Mushaf** — Uthmani script with full color-coded tajweed and a legend, toggleable
+- **Indopak Nastaleeq** — a first-class layout for the subcontinent tradition, not an afterthought
+- **Mushaf (scanned pages)** — the real printed-page feel: single page on phones, a true 2-page spread on desktop, pinch-to-zoom throughout
+- Adjustable text size, plus light / dark / sepia reading themes with full RTL support
 
-### Tafsir (Commentary)
-- Inline Arabic, English, and Bengali tafsir
-- Toggleable per-page alongside Quran text
+### 🔤 Word-Level Tools
 
-### Memorization Tracking
-- Visual memorized page grid with color-coded status
-- Juz-level progress overview
-- Perfect revision counter per page
-- Bulk-mark pages as memorized
+- Word-by-word translation
+- Tap-to-inspect **morphology** — full Arabic grammar breakdown per word
+- **Mistake-marking mode** to flag and revisit the words you keep missing
 
-### Daily Goals & Streaks
-- Configurable daily tasks (recite, record, review, memorize)
-- Streak tracking with automatic reset at midnight
-- Timeline view of historical daily activity
+### 📜 Tafsir
 
-### Quiz Mode
-- Surah-based interactive quizzes
-- Question types: word completion, verse continuation, verse translation
-- Lightning round mode
-- Real-time scoring
+- Inline commentary in Arabic, English, and Bengali — toggle per page without leaving the reader
 
-### Audio
-- Record your own recitations and play them back
-- Floating audio player for verse-by-verse Qari playback (Sheikh Shuraim, Sheikh Luhaidan)
-- Live Quran/Sunnah stream embed
+### 📊 Memorization & Analytics
 
-### Notes & Journal
-- Markdown-based personal notes linked to your session
-- Persistent across sessions
+- Color-coded memorized-page grid and Juz-level progress overview
+- Per-page perfect-revision counters and a weakness score that surfaces pages needing review
+- A page-by-page revision heatmap and a **completion estimate** — a projected finish date based on your pace
 
-### Navigation
-- Bottom tab bar on mobile (Read, Surahs, Goals, Quiz, More)
-- Desktop header with full navigation menu and dropdowns
-- Keyboard shortcuts (press **H** for the full list)
-- URL-based state: page, tafsir, word-by-word settings preserved in URL
+### 🗓️ Adaptive Daily Plans
 
-### Offline & PWA
-- Installable as a Progressive Web App (Android Play Store / browser install)
-- Full offline support — download all resources for offline use
-- Service worker with automatic update detection
+- One adaptive plan combining scope, pace, and new-memorization targets — not a static checklist
+- Smart, weakness-aware scheduling
+- A daily "Today" view with streaks (midnight reset) and full history
 
-### Data & Privacy
-- All data stored locally in IndexedDB — nothing leaves your device
-- Export/import progress as JSON
-- Multi-language UI: English, Arabic, Bengali
+### ❓ Quiz Mode
+
+- Translation matching, verse continuation, and word completion
+- Scoped to any surah, juz, or range, scored in real time
+
+### 🔊 Audio & Recitation
+
+- 14 verse-by-verse reciters and 11 page-level reciters, with automatic fallback sourcing
+- Record your own recitation and play it back for self-review
+- **Listen** mode — continuous playback of a surah, juz, or the entire Quran
+- **Live** — 24/7 streams from Makkah and Madinah
+
+### 🧭 Navigation
+
+- Friendly, shareable URLs (`/2` opens Al-Baqarah, `/page/50`, `/mushaf/50`)
+- A Contents browser with Surah / Juz / Page views
+- A command palette (`⌘K` / `Ctrl+K`) for instant quick-jump
+- A responsive shell — a bottom tab bar on mobile, a full navigation rail on desktop
+
+### 📴 Offline & Installable
+
+- Installs as a real Progressive Web App on Android, iOS, and desktop
+- A resumable offline download manager — size shown up front, nothing downloads silently
+- An iOS-safe service worker that avoids the stale-cache issues common to WebKit PWAs
+
+### 🔒 Data & Privacy
+
+- 100% local-first — everything lives in your browser's IndexedDB; no account, no backend, nothing tracked
+- Export and import your entire history as a single JSON file, anytime
+
+### 🌍 Multi-language
+
+- Full UI localization in English, Arabic, and Bengali
 
 ## 🚀 Getting Started
 
+### Try It Now
+
+- 🌐 **Web app:** [murajah.pages.dev](https://murajah.pages.dev/)
+- 📱 **Android:** [Get it on Google Play](https://play.google.com/store/apps/details?id=com.murajah.webview)
+
 ### Prerequisites
 
-- A modern web browser (Chrome, Firefox, Safari, Edge)
-- Internet connection
-
-### Installation & Self-Hosting
-
-#### Option A: GitHub Pages (Recommended for Personal Use)
-
-1. **Fork or Clone the Repository**
-
-   ```bash
-   git clone https://github.com/wasi0013/Murajah.git
-   cd Murajah
-   ```
-
-2. **Enable GitHub Pages**
-   - Go to your repository settings
-   - Navigate to "Pages" section
-   - Select `master` branch as the source
-   - Select `/source` as the folder
-   - Save
-
-3. **Access Your App**
-   - Your app will be available at: `https://yourusername.github.io/Murajah/`
-
-**Note**: Data is stored locally in your browser, so it persists across sessions on the same device.
-
-#### Option B: Cloudflare Pages (Advanced Deployment)
-
-1. **Prerequisites**
-   - Cloudflare account (free tier available)
-   - GitHub account with the Murajah repository
-
-2. **Connect Cloudflare to GitHub**
-   - Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
-   - Navigate to "Pages" section
-   - Click "Create a project"
-   - Select "Connect to Git"
-   - Authorize and select your Murajah repository
-
-3. **Configure Build Settings**
-   - **Production branch**: `master`
-   - **Build command**: Leave empty (no build step needed)
-   - **Build output directory**: `source`
-
-4. **Deploy**
-   - Save and deploy
-   - Your app will be available at a Cloudflare-provided URL
-   - You can add a custom domain if you own one
-
-5. **Access Your App**
-   - Visit your Cloudflare Pages URL
-   - Navigate to `index.html` or the root URL
-
-**Benefits of Cloudflare Pages**:
-
-- Global CDN for faster loading
-- Free HTTPS/SSL
-- Automatic deployments on git push
-- More reliable than GitHub Pages
-- Option to add custom domain
+- [Node.js](https://nodejs.org/) 22 or later
+- npm
 
 ### Local Development
 
-1. Clone the repository:
+```bash
+git clone https://github.com/wasi0013/Murajah.git
+cd Murajah/app
+npm install
+npm run dev
+```
 
-   ```bash
-   git clone https://github.com/wasi0013/Murajah.git
-   ```
+The dev server regenerates the Quran data chunks automatically and starts at `http://localhost:5173`.
 
-2. Navigate to the source directory:
+### Production Build
 
-   ```bash
-   cd Murajah/source
-   ```
+```bash
+cd app
+npm run build      # type-check + production build → dist/ (incl. the PWA service worker)
+npm run preview    # serve the production build locally
+```
 
-3. Start a local server (choose one):
+### Deployment
 
-   ```bash
-   # Python 3
-   python3 -m http.server 8000
-   
-   
-   # Or with Node.js (http-server)
-   npx http-server
-   ```
-
-4. Open your browser and visit:
-
-   ```bash
-   http://localhost:8000/index.html
-   ```
+The app builds to a static bundle (`app/dist`) that runs anywhere capable of serving static files with SPA-fallback routing (see `app/public/_redirects`). It's currently deployed on **Cloudflare Pages** with zero backend servers. Full deploy configuration lives in [`app/README.md`](app/README.md).
 
 ## ✅ Running Tests
 
-Prerequisites: `Node.js` (recommended v16+) and `npm` or `npx` available.
-
-1. Install project dependencies (from the repository root):
-
 ```bash
-# install deps (use npm ci in CI for reproducible installs)
+cd app
 npm install
-# or
-npm ci
+npm run test:unit                        # Vitest — domain logic, stores, components
+npx playwright install --with-deps chromium
+npm run test:e2e                         # Playwright — full user flows + accessibility
+npm test                                 # both
 ```
 
-2. (Playwright only) Install browser dependencies used by Playwright:
+Useful variants:
 
 ```bash
-# installs required browser binaries
-npx playwright install
+npm run test:unit:watch        # unit tests, watch mode
+npm run test:unit:coverage     # unit test coverage report
+npm run size                   # bundle-size budget gate
 ```
 
-3. Run tests:
-
-- Run unit tests (Vitest):
-
-```bash
-npm run test:unit
-```
-
-- Run end-to-end tests (Playwright). Playwright will start a local server automatically
-   using the configured `webServer` in `playwright.config.js`:
-
-```bash
-npm run test:e2e
-```
-
-- Run all tests (unit + e2e):
-
-```bash
-npm test
-```
-
-4. Useful variants:
-
-```bash
-# Run unit tests in watch mode
-npm run test:unit:watch
-
-# Run Playwright in headed mode (visible browser)
-npm run test:e2e:headed
-
-# Run Playwright with debugger
-npm run test:e2e:debug
-
-# Generate unit test coverage report
-npm run test:unit:coverage
-```
-
-Notes:
-- Playwright's `webServer` will serve the `source` folder at `http://localhost:3000` during tests
-   (configured in `playwright.config.js`). If you prefer, start the server yourself with:
-
-```bash
-npx serve source -p 3000
-```
-
-- Some tests (audio/recording) may require granting microphone permissions to the browser.
-- On CI, use `npm ci` and ensure Playwright browsers are installed before running `npm run test:e2e`.
+Every pull request runs type-checking, the full unit + e2e suite, a bundle-size gate, and a Lighthouse CI performance budget via GitHub Actions.
 
 ## 💾 Data Management
 
-- All data (memorization progress, mistakes, recordings, notes, goals) is stored in IndexedDB locally
-- Data is per-browser and per-device — use export/import to transfer
-- Export your progress as JSON from the Settings panel
-- No server-side storage — completely private
+- All progress — memorization, mistakes, plans, streaks, recordings — is stored locally in **IndexedDB**. Nothing is ever sent to a server.
+- Data is per-browser and per-device; use **Settings → Export/Import** to back it up or move it between devices.
 
 ## 🏗️ Project Structure
 
 ```plaintext
 Murajah/
-├── source/
-│   ├── index.html              # Main SPA (Vue 3, single-file)
-│   ├── quiz.html               # Quiz mode
-│   ├── sw.js                   # Service worker
-│   ├── manifest.json           # PWA manifest
-│   └── resources/
-│       ├── data/               # Quran text, tafsir, i18n, morphology
-│       └── js/                 # Components, stores, utilities
-├── tests/
-│   ├── unit/                   # Vitest unit tests
-│   └── e2e/                    # Playwright E2E tests
-├── vitest.config.js
-└── playwright.config.js
+├── app/               # The application (Vue 3 + Vite + TypeScript)
+│   ├── src/
+│   │   ├── core/          # Framework-agnostic domain logic (memorization, storage, audio, i18n…)
+│   │   ├── stores/        # Pinia stores
+│   │   ├── components/    # Shared UI primitives
+│   │   ├── features/      # One folder per feature — reader, quiz, audio, progress, settings…
+│   │   ├── router/        # Code-split routes
+│   │   ├── workers/       # Off-main-thread data parsing
+│   │   └── sw/            # Service worker (Workbox via vite-plugin-pwa)
+│   ├── tests/         # Vitest unit tests + Playwright e2e specs
+│   └── public/        # Static assets, PWA icons, SPA redirects
+├── data-pipeline/     # Build-time scripts: chunk & compress Quran/tafsir/morphology data, fonts, images
+└── plans/             # Design & implementation planning docs
 ```
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: Vue.js 3 (CDN, no build step)
-- **Styling**: Tailwind CSS 3.4
-- **Icons**: Font Awesome 6
-- **Storage**: IndexedDB (via custom wrapper)
-- **Fonts**: QPC v2, Indopak Nastaleeq, SurahNames
-- **Testing**: Vitest (unit), Playwright (E2E)
-- **Deployment**: Cloudflare Pages / GitHub Pages
+- **Framework**: Vue 3 (`<script setup>` + TypeScript), Vite
+- **State**: Pinia
+- **Routing**: Vue Router, fully code-split
+- **Styling**: Tailwind CSS v4, compiled at build time — no runtime JIT
+- **Icons**: Lucide, tree-shaken SVGs
+- **Offline**: vite-plugin-pwa (Workbox) + IndexedDB
+- **Testing**: Vitest (unit), Playwright (e2e + accessibility via axe-core)
+- **Performance gates**: size-limit (bundle budgets) + Lighthouse CI, enforced on every PR
+- **Hosting**: Cloudflare Pages — static, no backend servers
 
-## 📚 Keyboard Shortcuts
-
-Press **H** in the app to see the full list. Key shortcuts include:
+## ⌨️ Keyboard Shortcuts
 
 | Key | Action |
-|-----|--------|
-| `←` / `→` | Previous / next page |
-| `T` | Toggle Tajweed highlighting |
-| `R` | Start/stop recording |
-| `H` | Show help modal |
+| --- | --- |
+| `←` / `→` | Previous / next page (mirrors reading direction) |
+| `Page Up` / `Page Down` | Previous / next page |
+| `⌘K` / `Ctrl+K` | Open quick-jump — surah, ayah, page, or juz |
 
 ## 🤝 Contributing
 
-Found a bug or have a feature request? Feel free to:
+Found a bug or have a feature request?
 
 1. Open an issue on GitHub
 2. Submit a pull request with improvements
@@ -318,26 +211,24 @@ Found a bug or have a feature request? Feel free to:
 
 ## 📄 License
 
-This project is open-source and available for personal use. Please check the [LICENSE](/LICENSE) file for detailed terms.
+This project is licensed under **GNU GPL v3.0**. See [LICENSE](/LICENSE) for full terms.
 
 ## 📞 Support
 
-For questions, issues, or suggestions:
-
 1. Check existing issues on GitHub
-2. Create a new issue with detailed description
-3. Include your browser and device information
+2. Open a new issue with a clear description, including your browser and device
+3. Or join the [Discord community](https://discord.gg/Vycfm28anP)
 
 ## 🙏 Acknowledgments
 
-- Quran data sourced from [https://github.com/TarteelAI/quranic-universal-library](https://github.com/TarteelAI/quranic-universal-library)
-- Tajweed font is also from quran.com
+- Quran text, tafsir, and morphology data from the [Quranic Universal Library (QUL)](https://github.com/TarteelAI/quranic-universal-library)
+- Tajweed-colored font from [quran.com](https://quran.com)
 
 ---
 
 ## 🌟 Start Your Journey
 
-Start your memorization journey with Murajah today! Make review easy, systematic, and rewarding. 📖✨
+Start your memorization journey with Murajah today — make review easy, systematic, and rewarding. 📖✨
 May Allah accept your efforts in memorizing and preserve **His Words** in your heart. 🤍
 
-> May Allah bless all the JSON resource providers and quran.com team.
+> May Allah bless all the JSON resource providers and the quran.com team.
