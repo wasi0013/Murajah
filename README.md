@@ -1,4 +1,4 @@
-<p align="center"><img src="source/resources/assets/images/logo-bg.png" alt="Murajah Logo" width=125></p>
+<p align="center"><img src="screenshots/title.png" alt="Murajah Logo" width=700></p>
 
 # Murajah - Quran Memorization & Revision Tool
 
@@ -11,7 +11,7 @@
 [![Free](https://img.shields.io/badge/Opensource-yes-lightgray?style=for-the-badge)](./LICENSE)
 ![JavaScript](https://img.shields.io/badge/Framework-Vue%20JS-yellow?style=for-the-badge)
 
-<p align='center'><a href="https://play.google.com/store/apps/details?id=com.murajah.webview"><img src="screenshots/playstore.png" alt="Murajah Logo" width=500></a></p>
+<p align='center'><a href="https://youtu.be/0_FSN7e0qxw"><img src="screenshots/playstore.png" alt="Murajah App Promo video" width=700></a></p>
 
 ## 📖 What is Murajah?
 
