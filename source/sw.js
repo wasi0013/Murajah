@@ -1,10 +1,13 @@
 /**
- * Murajah Service Worker v26.04.14
- * 
+ * Murajah Service Worker v26.07.23
+ *
  * Strategies:
  * - Navigation (HTML):  Network-First with timeout → cache fallback
  *   Ensures users always get the latest HTML when online.
  *   Falls back to cache only when offline or network is slow.
+ *   iOS/iPadOS clients (registered as `./sw.js?platform=ios`, see index.html)
+ *   instead get a **network-only** navigation strategy — see "iOS navigation"
+ *   below for why.
  * - Static assets (JS/CSS/JSON): Stale-While-Revalidate
  *   Serves cached resources immediately, updates in background.
  * - Fonts: Stale-While-Revalidate with folder-aware matching
@@ -17,14 +20,42 @@
  * - Forced reload message on version change ensures no stale HTML + new JS mismatch
  * - Install has per-resource timeouts to prevent hanging
  * - Critical resource failures prevent activation (skipWaiting gated)
+ *
+ * iOS navigation (added 2026-07-23): iOS/iPadOS Safari has a recurring family of
+ * WebKit bugs around service workers fulfilling *navigation* (top-level document)
+ * requests with a synthesized/cached Response — this codebase has already hit
+ * three distinct variants (redirected-response rejection; clone()/tee "body is
+ * locked"; now a Blob-backed navigation response going stale and surfacing as
+ * "Safari can't open the page" / WebKitBlobResource error 1 on Home Screen PWA
+ * relaunch). Rather than chase another clone/blob variant that risks
+ * reintroducing a bug already fixed once, iOS navigation requests bypass Cache
+ * Storage entirely (see `networkOnlyNavigation`) — network-only, no cache.put,
+ * no cache.match fallback. Per-page font/data caching (fonts + `staleWhileRevalidate`)
+ * is UNCHANGED on iOS — only the top-level navigation is affected. Android/desktop
+ * keep the exact existing `networkFirst` behavior, untouched.
  */
 
-const CACHE_VERSION = '26.05.31';
+const CACHE_VERSION = '26.07.23';
 const CACHE_NAME = `murajah-cache-v${CACHE_VERSION}`;
 const FONTS_CACHE_NAME = `murajah-fonts-v${CACHE_VERSION}`; // Versioned with app — old font caches cleaned on activate
 
-// Timeout (ms) for network-first navigation fetches
+// True when this SW instance was registered for an iOS/iPadOS client — see
+// index.html's registration code, which decides this client-side (maxTouchPoints
+// is not reliably available in the SW global scope, and iPadOS reports as desktop
+// Safari in the user agent, so the page — not the worker — makes this call).
+const IS_IOS = new URL(self.location.href).searchParams.get('platform') === 'ios';
+
+// Timeout (ms) for network-first navigation fetches (Android/desktop). Short on
+// purpose — the point is to fail FAST to the cached shell, not to wait out a
+// slow network.
 const NAVIGATION_TIMEOUT_MS = 3000;
+
+// Timeout (ms) for iOS's network-ONLY navigation (networkOnlyNavigation). There
+// is no cache fallback on this path, so failing fast buys nothing but an error
+// page — an online-but-slow iOS user (exactly the subcontinent/mosque-wifi
+// audience this app targets) would otherwise see "Unable to load" after 3s
+// even though the page would have arrived at 4s. Generous on purpose.
+const IOS_NAVIGATION_TIMEOUT_MS = 20000;
 
 // Timeout (ms) for individual resource fetches during install
 const INSTALL_FETCH_TIMEOUT_MS = 15000;
@@ -227,8 +258,58 @@ async function findCachedFont(request) {
 }
 
 /**
- * Network-First with timeout for navigation (HTML) requests.
- * 
+ * Shared "can't load, please retry" fallback for when navigation has no other
+ * option left (network failed and — for platforms that try it — no cache hit).
+ */
+function offlineFallbackResponse() {
+  return new Response(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+    '<body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:#f8fafc">' +
+    '<div style="text-align:center;max-width:400px">' +
+    '<h2 style="margin-bottom:0.5rem">📖 Murajah</h2>' +
+    '<p style="color:#64748b;margin-bottom:1rem">Unable to load. Please check your internet connection and try again.</p>' +
+    '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer">Retry</button>' +
+    ' <a href="./hotfix.html" style="display:inline-block;margin-top:0.5rem;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
+    '</div></body></html>',
+    { status: 503, headers: { 'Content-Type': 'text/html' } }
+  );
+}
+
+/**
+ * Network-ONLY navigation strategy for iOS/iPadOS — no Cache Storage read or
+ * write, ever, for the top-level document. See the "iOS navigation" note at
+ * the top of this file for why: iOS WebKit has repeatedly broken on
+ * synthesized/cached navigation Responses (redirect rejection, clone/tee
+ * "body is locked", and now Blob-backed responses surfacing as
+ * WebKitBlobResource error 1 on Home Screen relaunch). The fetch itself is
+ * returned untouched — no `.blob()`, no `.clone()`, nothing WebKit can later
+ * decide is stale/invalid. The tradeoff (explicitly accepted, see
+ * plans/phase-10-pwa-migration.md decision 2): iOS gets no offline app-shell
+ * fallback. Per-page fonts/data below are unaffected and still cache normally.
+ */
+async function networkOnlyNavigation(request) {
+  try {
+    const fetchRequest = new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      redirect: 'follow',
+      credentials: request.credentials,
+    });
+    const networkResponse = await fetchWithTimeout(fetchRequest, IOS_NAVIGATION_TIMEOUT_MS);
+    if (networkResponse.ok) {
+      return networkResponse;
+    }
+    throw new Error(`HTTP ${networkResponse.status}`);
+  } catch (networkErr) {
+    console.log('[SW] iOS network-only navigation failed:', request.url, networkErr.message);
+    return offlineFallbackResponse();
+  }
+}
+
+/**
+ * Network-First with timeout for navigation (HTML) requests. Android/desktop
+ * only — see IS_IOS branch in the fetch handler below.
+ *
  * 1. Try network with a timeout
  * 2. If network succeeds, cache the response and return it
  * 3. If network fails/times out, fall back to cache
@@ -306,19 +387,9 @@ async function networkFirst(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Both network and cache failed
-    return new Response(
-      '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-      '<body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;background:#f8fafc">' +
-      '<div style="text-align:center;max-width:400px">' +
-      '<h2 style="margin-bottom:0.5rem">📖 Murajah</h2>' +
-      '<p style="color:#64748b;margin-bottom:1rem">Unable to load. Please check your internet connection and try again.</p>' +
-      '<button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:0.5rem;font-size:1rem;cursor:pointer">Retry</button>' +
-      ' <a href="./hotfix.html" style="display:inline-block;margin-top:0.5rem;padding:0.75rem 1.5rem;color:#64748b;font-size:0.875rem;text-decoration:underline">Recovery Page</a>' +
-      '</div></body></html>',
-      { status: 503, headers: { 'Content-Type': 'text/html' } }
-    );
+    return offlineFallbackResponse();
   }
 }
 
@@ -432,6 +503,14 @@ async function staleWhileRevalidateFont(request) {
   return new Response(null, { status: 404, statusText: 'Font not cached' });
 }
 
+// Navigable HTML shell URLs. On iOS these are deliberately left OUT of Cache
+// Storage entirely (see IS_IOS / networkOnlyNavigation) — precaching them
+// anyway would be inert (never read back, since networkOnlyNavigation never
+// calls cache.match) but still puts another Blob-backed navigation-shaped
+// Response into Cache Storage for no benefit, which is exactly the surface
+// area this hotfix is trying to shrink on iOS.
+const NAVIGATION_SHELL_URLS = ['./', './index.html', './quiz.html', './privacy.html'];
+
 // Critical resources that MUST be cached for the app to work.
 // If any of these fail during install, skipWaiting() is NOT called
 // so the old SW continues serving until a successful install occurs.
@@ -493,6 +572,11 @@ self.addEventListener('install', (event) => {
         const failedNonCritical = [];
 
         for (const url of APP_SHELL) {
+          // iOS never reads these back (networkOnlyNavigation doesn't touch Cache
+          // Storage) — skip precaching them there entirely rather than storing an
+          // inert Blob-backed navigation Response. Not a failure: leave both
+          // failed lists untouched so skipWaiting() still proceeds normally.
+          if (IS_IOS && NAVIGATION_SHELL_URLS.includes(url)) continue;
           try {
             const response = await fetchWithTimeout(new Request(url), INSTALL_FETCH_TIMEOUT_MS);
             if (response.ok) {
@@ -564,10 +648,16 @@ self.addEventListener('activate', (event) => {
   
   event.waitUntil(
     (async () => {
-      // Safety check: verify new cache has minimum required resources
+      // Safety check: verify new cache has minimum required resources. On iOS,
+      // navigation-shell URLs are deliberately never cached (see install handler) —
+      // checking for them here would permanently defeat old-cache cleanup, since
+      // they'd never be found. Exclude them from the check on iOS only.
       const newCache = await caches.open(CACHE_NAME);
+      const expectedMinimum = IS_IOS
+        ? MINIMUM_CACHE_RESOURCES.filter((url) => !NAVIGATION_SHELL_URLS.includes(url))
+        : MINIMUM_CACHE_RESOURCES;
       const missingMinimum = [];
-      for (const url of MINIMUM_CACHE_RESOURCES) {
+      for (const url of expectedMinimum) {
         const match = await newCache.match(url);
         if (!match) missingMinimum.push(url);
       }
@@ -642,9 +732,11 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests (except fonts)
   if (url.origin !== location.origin && request.destination !== 'font') return;
   
-  // Navigation requests (HTML pages): Network-First with timeout
+  // Navigation requests (HTML pages): Network-First with timeout on
+  // Android/desktop; network-ONLY (no Cache Storage) on iOS/iPadOS — see the
+  // "iOS navigation" note at the top of this file.
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(IS_IOS ? networkOnlyNavigation(request) : networkFirst(request));
     return;
   }
   

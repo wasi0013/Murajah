@@ -1,0 +1,137 @@
+{
+  "_comment": "Legacy IndexedDB `plans` store records + the export's dailyGoals block, in the real shapes legacy wrote (planManager.js createPlan / dailyGoalsManager.js). Plans are NOT part of the v2.0.0 export JSON — see plans/legacy-schema.md §2. Deliberately exercises: two active plans overlapping on page 582 with different review history, an up-front seeded page (583) that was never actually reviewed, and an archived plan that must be ignored.",
+  "plans": [
+    {
+      "id": "plan_juz30",
+      "name": "Juz 30 Plan",
+      "type": "beginner",
+      "layout": "qpc",
+      "targetPages": [582, 583, 584],
+      "targetJuz": [30],
+      "createdAt": "2026-04-01T08:00:00.000Z",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-20",
+      "pace": { "newPagesPerDay": 1, "revisionPagesPerDay": 5, "daysPerWeek": 6, "offDays": [5] },
+      "status": "active",
+      "currentCycleNumber": 1,
+      "currentMemorizationPage": 585,
+      "schedulerState": {
+        "pageReviewData": {
+          "582": {
+            "lastReviewDate": "2026-04-28",
+            "nextReviewDate": "2026-05-05",
+            "interval": 7,
+            "easeFactor": 2.6,
+            "reviewCount": 4,
+            "consecutiveCorrect": 3,
+            "weaknessScore": 20
+          },
+          "583": {
+            "lastReviewDate": null,
+            "nextReviewDate": "2026-04-02",
+            "interval": 1,
+            "easeFactor": 2.5,
+            "reviewCount": 0,
+            "consecutiveCorrect": 0,
+            "weaknessScore": 50
+          }
+        },
+        "lastScheduledDate": "2026-04-30",
+        "backlogPages": []
+      }
+    },
+    {
+      "id": "plan_juz1",
+      "name": "Juz 1, 2 Plan",
+      "type": "hafiz",
+      "layout": "qpc",
+      "targetPages": [1, 2, 3, 4, 5, 6, 7, 8, 582],
+      "targetJuz": [1, 2],
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "startDate": "2026-03-01",
+      "pace": { "newPagesPerDay": 0, "revisionPagesPerDay": 20, "daysPerWeek": 7, "offDays": [] },
+      "status": "active",
+      "currentMemorizationPage": null,
+      "schedulerState": {
+        "pageReviewData": {
+          "1": {
+            "lastReviewDate": "2026-04-30",
+            "nextReviewDate": "2026-05-03",
+            "interval": 3,
+            "easeFactor": 2.5,
+            "reviewCount": 2,
+            "consecutiveCorrect": 2
+          },
+          "582": {
+            "lastReviewDate": "2026-04-10",
+            "nextReviewDate": "2026-04-11",
+            "interval": 1,
+            "easeFactor": 1.9,
+            "reviewCount": 1,
+            "consecutiveCorrect": 0,
+            "weaknessScore": 70
+          }
+        },
+        "lastScheduledDate": "2026-04-30",
+        "backlogPages": []
+      }
+    },
+    {
+      "id": "plan_old",
+      "name": "Old Plan",
+      "type": "beginner",
+      "layout": "qpc",
+      "targetPages": [100, 101],
+      "targetJuz": [6],
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "startDate": "2026-01-01",
+      "pace": { "newPagesPerDay": 3, "revisionPagesPerDay": 1, "daysPerWeek": 5, "offDays": [0, 6] },
+      "status": "archived",
+      "currentMemorizationPage": 102,
+      "schedulerState": {
+        "pageReviewData": {
+          "100": {
+            "lastReviewDate": "2026-01-15",
+            "nextReviewDate": "2026-01-16",
+            "interval": 1,
+            "easeFactor": 2.5,
+            "reviewCount": 1,
+            "consecutiveCorrect": 1
+          }
+        }
+      }
+    }
+  ],
+  "dailyGoals": {
+    "todayGoal": {
+      "date": "2026-05-01",
+      "tasks": {
+        "reciteAyahs": { "name": "Recite 10 verses", "completed": true, "completedAt": "2026-05-01T07:00:00.000Z" },
+        "reviewRange": { "name": "Recite from memory", "completed": false, "startPage": 1, "endPage": 3, "pages": [1, 2, 3] }
+      },
+      "completed": false
+    },
+    "goalHistory": [
+      {
+        "date": "2026-04-29",
+        "tasks": {
+          "reciteAyahs": { "completed": true },
+          "reviewRange": { "completed": true, "pages": [4, 5] }
+        },
+        "completed": true
+      },
+      {
+        "date": "2026-04-30",
+        "tasks": {
+          "reciteAyahs": { "completed": true },
+          "recordRandomPage": { "completed": true },
+          "reviewRange": { "completed": true, "pages": [6, 7] }
+        },
+        "completed": true
+      }
+    ],
+    "streak": 4,
+    "longestStreak": 12,
+    "selectedTasks": ["reciteAyahs", "recordRandomPage", "reviewRange", "memorizeDaily"]
+  }
+}

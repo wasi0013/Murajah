@@ -1,0 +1,13 @@
+# Hashed build assets never change — cache forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Per-page Quran data/fonts/images (added in Phase 1) — cache but revalidate.
+/data/*
+  Cache-Control: public, max-age=86400, must-revalidate
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shell must always be fresh so new deploys are picked up.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

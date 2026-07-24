@@ -11317,11 +11317,27 @@ Display:
 
   <!-- Service Worker Registration for Offline Support -->
   <script>
+    // iOS/iPadOS 13+ report as desktop Safari in the user agent (platform:
+    // "MacIntel"), so a plain UA sniff misses iPads — combine both checks.
+    // Kept in sync with the same check documented in
+    // plans/phase-10-pwa-migration.md decision 1 for the redesigned app.
+    function isIOSDevice() {
+      const ua = navigator.userAgent || '';
+      if (/iPad|iPhone|iPod/.test(ua)) return true;
+      return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    }
+
     // Register Service Worker for PWA/Offline functionality
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('./sw.js', {
+          // iOS gets a service worker that never touches Cache Storage for
+          // navigation (see sw.js's IS_IOS branch) — a recurring family of
+          // WebKit bugs breaks when a navigation is fulfilled from a
+          // synthesized/cached Response. Android/desktop are unaffected;
+          // font/data caching is identical on every platform.
+          const swUrl = isIOSDevice() ? './sw.js?platform=ios' : './sw.js';
+          const registration = await navigator.serviceWorker.register(swUrl, {
             scope: './'
           });
           

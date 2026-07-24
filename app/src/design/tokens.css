@@ -1,0 +1,264 @@
+/*
+ * Murajah 2026 design tokens — see plans/design-direction.md.
+ *
+ * One system, three themes (light "Mihrab" / dark "Night Study" / sepia), with
+ * tajweed as a toggle-driven colour layer. Colours are theme-dependent and set
+ * per [data-theme]; scales (space/radius/type/motion/z) are theme-independent.
+ * Style components through these tokens — never hardcode colours.
+ */
+
+/* ---------------------------------------------------------------- *
+ * Surah-name header font (legacy parity) — an ornamental, per-surah glyph
+ * font: feeding it the zero-padded trigger text "NNNsurah" (e.g. "001surah")
+ * makes the browser's default `liga` OpenType feature substitute one of 114
+ * bespoke calligraphic surah-header glyphs (see ReadingSurface.vue). Plain
+ * glyf outlines (no COLR/CPAL), so it tracks `color` like normal text — no
+ * per-theme correction needed, unlike the tajweed glyph font.
+ * ---------------------------------------------------------------- */
+@font-face {
+  font-family: 'SurahNames';
+  src: url('/fonts/surah-names.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------- *
+ * Theme-independent scales
+ * ---------------------------------------------------------------- */
+:root {
+  /* Type families — UI is the native system stack (OS-native Bengali/Arabic
+     fallback); the reader injects the real per-page QPC/Indopak fonts. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Bengali',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-arabic: 'SF Arabic', 'Geeza Pro', 'Noto Naskh Arabic', serif;
+
+  /* Type scale (size / line-height) */
+  --text-xs: 0.75rem;    --leading-xs: 1rem;
+  --text-sm: 0.875rem;   --leading-sm: 1.25rem;
+  --text-base: 1rem;     --leading-base: 1.5rem;
+  --text-lg: 1.125rem;   --leading-lg: 1.6rem;
+  --text-xl: 1.375rem;   --leading-xl: 1.8rem;
+  --text-2xl: 1.75rem;   --leading-2xl: 2.1rem;
+  --text-3xl: 2.25rem;   --leading-3xl: 2.5rem;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.08em;
+
+  /* Mushaf reading typography — per-surface metrics (tuned vs real fonts in 2.7).
+     Legacy: QPC lh 1.6 / tracking 0.1em; Indopak lh 2.2 / tracking 0.05em. */
+  --reading-size-sm: 1.5rem;
+  --reading-size-md: 1.9rem;
+  --reading-size-lg: 2.4rem;
+  --qpc-line-height: 2; /* airier vertical rhythm, matching Indopak's */
+  --qpc-tracking: 0.06em;
+  --indopak-line-height: 2.2;
+  --indopak-tracking: 0.03em;
+
+  /* Spacing base (Tailwind multiplies this; p-4 = 1rem) */
+  --spacing: 0.25rem;
+
+  /* Radius — soft/architectural: 10px controls, 13px cards */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.8125rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* Z layers */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-sheet: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+/* ---------------------------------------------------------------- *
+ * Light — "Mihrab" (default)
+ * ---------------------------------------------------------------- */
+:root,
+:root[data-theme='light'] {
+  --color-bg: #e9ebe5;
+  --color-surface: #f6f7f3;
+  --color-elevated: #eef0ea;
+  --color-text: #161d1a;
+  --color-text-muted: #5b645c; /* AA (>=4.5) on bg */
+  --color-border: #d5dbcf;
+  --color-accent: #0f5f57;
+  --color-accent-hover: #0c4d47;
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #2e7d46;
+  --color-warn: #b45309;
+  --color-danger: #c0392f;
+  --color-on-status: #ffffff;
+
+  /* Tajweed rule colours (functional; finalized vs font in 2.7.3) */
+  --tajweed-ghunnah: #2e9e5b;
+  --tajweed-qalqalah: #d0453f;
+  --tajweed-ikhfa: #3b74d6;
+  --tajweed-madd: #b4791f;
+
+  /* The tajweed glyph font (tj-p{n}) is a COLR/CPAL colour font: its base,
+     non-rule-colored strokes are baked-in near-black, matching a printed page
+     on a light background — CSS `color` can't repaint them. On a dark surface
+     that base ink is unreadable, so dark theme inverts+hue-rotates the
+     rendered glyphs (a lightness flip that leaves the rule colours roughly
+     hued the same); light/sepia backgrounds need no correction. */
+  --tajweed-glyph-filter: none;
+
+  --shadow-sm: 0 1px 2px rgba(20, 30, 24, 0.06);
+  --shadow-md: 0 4px 12px -4px rgba(20, 30, 24, 0.12);
+  --shadow-lg: 0 12px 28px -10px rgba(20, 30, 24, 0.18);
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------- *
+ * Dark — "Night Study" (deep ink + warm lamp amber)
+ * ---------------------------------------------------------------- */
+:root[data-theme='dark'] {
+  --color-bg: #0e1524;
+  --color-surface: #141d31;
+  --color-elevated: #1a2439;
+  --color-text: #f0ebde;
+  --color-text-muted: #8b95a9;
+  --color-border: #26324c;
+  --color-accent: #e2a44b;
+  --color-accent-hover: #eab562;
+  --color-accent-contrast: #0e1524;
+
+  --color-success: #4caf6a;
+  --color-warn: #e0a34a;
+  --color-danger: #e0655c;
+  --color-on-status: #0e1524;
+
+  --tajweed-ghunnah: #56c983;
+  --tajweed-qalqalah: #ec7a74;
+  --tajweed-ikhfa: #6f9ff0;
+  --tajweed-madd: #e0b45f;
+
+  --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px -6px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.65);
+
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------- *
+ * Sepia — warm daytime reading comfort
+ * ---------------------------------------------------------------- */
+:root[data-theme='sepia'] {
+  --color-bg: #f2e9d6;
+  --color-surface: #f8f1e2;
+  --color-elevated: #eee3cc;
+  --color-text: #3a3020;
+  --color-text-muted: #6d5e44; /* AA (>=4.5) on bg */
+  --color-border: #ddceb0;
+  --color-accent: #0f5f57;
+  --color-accent-hover: #0c4d47;
+  --color-accent-contrast: #ffffff;
+
+  --color-success: #2e7d46;
+  --color-warn: #a5560a;
+  --color-danger: #b23a2f;
+  --color-on-status: #ffffff;
+
+  --tajweed-ghunnah: #2c8f52;
+  --tajweed-qalqalah: #c0403a;
+  --tajweed-ikhfa: #35609e;
+  --tajweed-madd: #9a6716;
+
+  --shadow-sm: 0 1px 2px rgba(58, 48, 32, 0.08);
+  --shadow-md: 0 4px 12px -4px rgba(58, 48, 32, 0.14);
+  --shadow-lg: 0 12px 28px -10px rgba(58, 48, 32, 0.2);
+
+  color-scheme: light;
+}
+
+/* Respect OS dark preference when the user hasn't chosen a theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #0e1524;
+    --color-surface: #141d31;
+    --color-elevated: #1a2439;
+    --color-text: #f0ebde;
+    --color-text-muted: #8b95a9;
+    --color-border: #26324c;
+    --color-accent: #e2a44b;
+    --color-accent-hover: #eab562;
+    --color-accent-contrast: #0e1524;
+    --color-success: #4caf6a;
+    --color-warn: #e0a34a;
+    --color-danger: #e0655c;
+    --color-on-status: #0e1524;
+    --tajweed-ghunnah: #56c983;
+    --tajweed-qalqalah: #ec7a74;
+    --tajweed-ikhfa: #6f9ff0;
+    --tajweed-madd: #e0b45f;
+    --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 16px -6px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.65);
+    color-scheme: dark;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Bridge tokens into Tailwind v4 utilities. `inline` = utilities
+ * reference the live vars, so runtime theme switching flows through.
+ * ---------------------------------------------------------------- */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-elevated: var(--color-elevated);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-contrast: var(--color-accent-contrast);
+  --color-success: var(--color-success);
+  --color-warn: var(--color-warn);
+  --color-danger: var(--color-danger);
+  --color-on-status: var(--color-on-status);
+  --color-tajweed-ghunnah: var(--tajweed-ghunnah);
+  --color-tajweed-qalqalah: var(--tajweed-qalqalah);
+  --color-tajweed-ikhfa: var(--tajweed-ikhfa);
+  --color-tajweed-madd: var(--tajweed-madd);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-arabic: var(--font-arabic);
+
+  --text-xs: var(--text-xs);        --text-xs--line-height: var(--leading-xs);
+  --text-sm: var(--text-sm);        --text-sm--line-height: var(--leading-sm);
+  --text-base: var(--text-base);    --text-base--line-height: var(--leading-base);
+  --text-lg: var(--text-lg);        --text-lg--line-height: var(--leading-lg);
+  --text-xl: var(--text-xl);        --text-xl--line-height: var(--leading-xl);
+  --text-2xl: var(--text-2xl);      --text-2xl--line-height: var(--leading-2xl);
+  --text-3xl: var(--text-3xl);      --text-3xl--line-height: var(--leading-3xl);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-standard: var(--ease-standard);
+  --ease-emphasized: var(--ease-emphasized);
+}

@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "exported": "2026-05-01T09:30:00.000Z",
+  "memorized": [1, 2, 3, 604, 50],
+  "perfectRevisions": { "1": 5, "2": 3, "604": 12 },
+  "mistakes": { "3": [1, 4, 7], "50": [2] },
+  "settings": {
+    "layout": "qpc",
+    "tajweedEnabled": true,
+    "fontSize": "medium",
+    "finishRevisionDays": 30,
+    "pagesPerDay": 1,
+    "language": "en"
+  },
+  "recordings": [
+    { "pageNumber": 1, "recordedAt": "2026-04-20T10:00:00.000Z", "duration": 45231, "timestamp": 1745143200000 },
+    { "pageNumber": 3, "recordedAt": "2026-04-21T11:00:00.000Z", "duration": 38120, "timestamp": 1745229600000 }
+  ],
+  "dailyGoals": {
+    "todayGoal": {
+      "date": "2026-05-01",
+      "tasks": { "recite": true, "review": false },
+      "completed": false
+    },
+    "goalHistory": [
+      { "date": "2026-04-29", "tasks": { "recite": true }, "completed": true },
+      { "date": "2026-04-30", "tasks": { "recite": true, "review": true }, "completed": true }
+    ],
+    "streak": 4,
+    "longestStreak": 12,
+    "selectedTasks": ["recite", "review"]
+  },
+  "notes": [
+    { "id": "n1", "page": 2, "text": "Focus on the last two ayahs", "createdAt": "2026-04-10T08:00:00.000Z" }
+  ]
+}

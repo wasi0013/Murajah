@@ -1,0 +1,10 @@
+# A missing /data, /fonts or /img asset falls back to the app shell (200 HTML)
+# via Cloudflare's SPA not-found handling — a JSON/font fetch then receives HTML.
+# Cloudflare Pages rejects `404` as a _redirects status (see build warning
+# "Parsed 0 valid redirect rules"), so this can't be forced to a real 404 here.
+# The service worker instead refuses to cache the HTML shell on those routes
+# (see src/sw/service-worker.ts), which is what turned the one-off parse error
+# into a persistent one.
+
+# SPA fallback: every unmatched path serves the app shell (client-side router).
+/*    /index.html    200
