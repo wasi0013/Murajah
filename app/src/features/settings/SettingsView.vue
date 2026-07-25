@@ -1,12 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, BookImage, Download, Smartphone, Type, Upload, X } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  BookImage,
+  Download,
+  RotateCcw,
+  Smartphone,
+  TriangleAlert,
+  Type,
+  Upload,
+  X,
+} from 'lucide-vue-next'
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
 import { useI18n } from '@/core/i18n'
 import { LOCALE_LIST, LOCALES, type Locale } from '@/core/i18n/types'
 import { exportUserData, importUserData, type ExportSnapshot } from '@/core/storage/exportImport'
 import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
+import { resetApp } from '@/core/storage/resetApp'
 import { toast } from '@/composables/useToast'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { useOfflineDownload } from '@/composables/useOfflineDownload'
@@ -105,6 +116,31 @@ async function confirmImport() {
 function cancelImport() {
   confirmOpen.value = false
   pending.value = null
+}
+
+// —— Full reset ————————————————————————————————————
+const resetConfirmOpen = ref(false)
+const resetting = ref(false)
+
+async function confirmReset() {
+  resetting.value = true
+  try {
+    await resetApp()
+    resetConfirmOpen.value = false
+    toast(t('settings.reset.done'), { variant: 'success' })
+    // Hard navigation (not router.push): every store, the SW registration, and
+    // all caches must reinitialize from scratch, exactly like a first visit.
+    setTimeout(() => {
+      window.location.href = '/'
+    }, 600)
+  } catch {
+    resetting.value = false
+    toast(t('settings.reset.failed'), { variant: 'error' })
+  }
+}
+
+function cancelReset() {
+  resetConfirmOpen.value = false
 }
 </script>
 
@@ -230,6 +266,21 @@ function cancelImport() {
       </div>
     </section>
 
+    <section class="section section-danger" :aria-label="t('settings.reset.title')">
+      <h2 class="section-title danger-title">
+        <Icon :icon="TriangleAlert" :size="18" />
+        {{ t('settings.reset.title') }}
+      </h2>
+      <p class="lead">{{ t('settings.reset.warning') }}</p>
+      <p class="hint">{{ t('settings.reset.backupHint') }}</p>
+      <div class="actions">
+        <Button variant="danger" @click="resetConfirmOpen = true">
+          <Icon :icon="RotateCcw" :size="18" />
+          {{ t('settings.reset.action') }}
+        </Button>
+      </div>
+    </section>
+
     <Modal v-model:open="confirmOpen" :label="t('settings.data.import')">
       <h3 class="modal-title">{{ t('settings.data.confirmTitle') }}</h3>
       <p class="modal-body">{{ t('settings.data.confirmBody') }}</p>
@@ -239,6 +290,19 @@ function cancelImport() {
         </Button>
         <Button variant="danger" :loading="importing" @click="confirmImport">
           {{ t('settings.data.replace') }}
+        </Button>
+      </div>
+    </Modal>
+
+    <Modal v-model:open="resetConfirmOpen" :label="t('settings.reset.title')">
+      <h3 class="modal-title">{{ t('settings.reset.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('settings.reset.confirmBody') }}</p>
+      <div class="modal-actions">
+        <Button variant="ghost" :disabled="resetting" @click="cancelReset">
+          {{ t('common.cancel') }}
+        </Button>
+        <Button variant="danger" :loading="resetting" @click="confirmReset">
+          {{ t('settings.reset.confirmAction') }}
         </Button>
       </div>
     </Modal>
@@ -326,6 +390,20 @@ function cancelImport() {
 }
 .offline-pack + .offline-pack {
   margin-top: 1.25rem;
+}
+.section-danger {
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklab, var(--color-danger) 40%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--color-danger) 6%, transparent);
+}
+.danger-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-danger);
 }
 .sr-only {
   position: absolute;

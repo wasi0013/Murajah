@@ -84,6 +84,19 @@ const en: Messages = {
       restoreFailed: "Couldn't restore this backup.",
       notBackup: 'This file is not a Murajah backup.',
     },
+    reset: {
+      title: 'Reset app',
+      warning:
+        'This permanently deletes everything stored on this device — memorization progress, mistakes, your plan, recordings, and preferences — plus all cached Quran text, audio, and images. This cannot be undone.',
+      backupHint: 'Export a backup above first if you want to keep a copy.',
+      action: 'Reset app to brand new',
+      confirmTitle: 'Reset Murajah on this device?',
+      confirmBody:
+        "This permanently erases all your data and cached files on this device. There is no undo — make sure you've exported a backup above if you want to keep anything.",
+      confirmAction: 'Yes, erase everything',
+      done: 'App reset — reloading…',
+      failed: "Couldn't fully reset the app. Try again.",
+    },
   },
   today: {
     title: 'Today',
