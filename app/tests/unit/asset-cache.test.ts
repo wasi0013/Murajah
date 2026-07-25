@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
-import { AssetCache } from '@/core/storage/assetCache'
+import { AssetCache, CACHE_SCHEMA_VERSION } from '@/core/storage/assetCache'
 
 // Fresh IndexedDB per test.
 beforeEach(() => {
@@ -41,5 +41,16 @@ describe('AssetCache', () => {
     await c2.put('b', 2, 100)
     const c3 = await AssetCache.open({ version: 'v2' })
     expect(await c3.get('b')).toBe(2)
+  })
+
+  it('CACHE_SCHEMA_VERSION is a stable constant, not data-content-derived', async () => {
+    // data.worker.ts opens the JSON chunk cache with this fixed constant
+    // (not the data manifest's build-timestamp version) — per-URL content
+    // hashing (paths.ts's `?v=`) means a data change never needs a purge, so
+    // reopening with the same schema version must never drop entries.
+    const c1 = await AssetCache.open({ version: CACHE_SCHEMA_VERSION })
+    await c1.put('a', 1, 100)
+    const c2 = await AssetCache.open({ version: CACHE_SCHEMA_VERSION })
+    expect(await c2.get('a')).toBe(1)
   })
 })

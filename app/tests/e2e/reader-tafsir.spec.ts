@@ -28,14 +28,15 @@ test('verse-study surface: translations upfront, Arabic tafsir on demand, replac
   await expect(first.getByText('— Dr. Abu Bakr Muhammad Zakaria')).toBeVisible()
 
   // Only en + bn translations load upfront; the (large) Arabic tafsir does NOT.
-  expect(tafReqs.some((u) => u.endsWith('/data/tafsir/en/2.json'))).toBe(true)
-  expect(tafReqs.some((u) => u.endsWith('/data/tafsir/bn/2.json'))).toBe(true)
+  // Dataset URLs carry a `?v=<hash>` cache-buster (see paths.ts).
+  expect(tafReqs.some((u) => /\/data\/tafsir\/en\/2\.json\?v=/.test(u))).toBe(true)
+  expect(tafReqs.some((u) => /\/data\/tafsir\/bn\/2\.json\?v=/.test(u))).toBe(true)
   expect(tafReqs.some((u) => u.includes('/tafsir/ar/'))).toBe(false)
 
   // Expanding a verse's Tafsir loads the Arabic tafsir on demand.
   await first.locator('.tafsir-summary').click()
   await expect(first.locator('.tafsir-html')).toBeVisible({ timeout: 10_000 })
-  expect(tafReqs.some((u) => u.endsWith('/data/tafsir/ar/2.json'))).toBe(true)
+  expect(tafReqs.some((u) => /\/data\/tafsir\/ar\/2\.json\?v=/.test(u))).toBe(true)
 
   // Tafsir replaces the mushaf as the reading surface — the 15-line pager is gone.
   await expect(page.locator('.surface')).toHaveCount(0)

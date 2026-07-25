@@ -13,6 +13,20 @@ const DB_VERSION = 1 // schema version (not data version)
 const STORE = 'assets'
 const META = 'meta'
 
+/**
+ * Pass this (not the data manifest's `version`) to `AssetCache.open()` for the
+ * JSON chunk cache. Every dataset/index URL is now content-hashed (`?v=`, see
+ * `data-pipeline/src/lib/manifest.mjs` and `core/data/paths.ts`), so a stale
+ * schema mismatch is impossible by construction — a changed URL is simply a
+ * cache miss. `purgeIfVersionChanged` no longer needs to track data content at
+ * all; keying it to a hardcoded schema constant means it only fires when THIS
+ * `Entry` shape actually changes (bump the string then), decoupled from data
+ * deploys entirely. The data manifest's `version` is a build timestamp that
+ * changes on every deploy regardless of content — wiring it in here would
+ * wipe every user's downloaded cache on every code-only deploy too.
+ */
+export const CACHE_SCHEMA_VERSION = '1'
+
 interface Entry {
   url: string
   data: unknown

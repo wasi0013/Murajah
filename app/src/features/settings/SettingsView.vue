@@ -3,12 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowLeft,
-  BookImage,
   Download,
   RotateCcw,
   Smartphone,
+  Trash2,
   TriangleAlert,
-  Type,
   Upload,
   X,
 } from 'lucide-vue-next'
@@ -17,7 +16,7 @@ import { useI18n } from '@/core/i18n'
 import { LOCALE_LIST, LOCALES, type Locale } from '@/core/i18n/types'
 import { exportUserData, importUserData, type ExportSnapshot } from '@/core/storage/exportImport'
 import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
-import { resetApp } from '@/core/storage/resetApp'
+import { resetApp, clearResourceCache } from '@/core/storage/resetApp'
 import { toast } from '@/composables/useToast'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { useOfflineDownload } from '@/composables/useOfflineDownload'
@@ -142,6 +141,29 @@ async function confirmReset() {
 function cancelReset() {
   resetConfirmOpen.value = false
 }
+
+// —— Clear cache (safe — never touches memorization data) —————————
+const clearCacheConfirmOpen = ref(false)
+const clearingCache = ref(false)
+
+async function confirmClearCache() {
+  clearingCache.value = true
+  try {
+    await clearResourceCache()
+    clearCacheConfirmOpen.value = false
+    toast(t('offline.clearCache.cleared'), { variant: 'success' })
+    // Reload so every in-memory cache (the data worker's dedupe map, loaded
+    // font faces) starts clean against the now-empty persistent caches.
+    setTimeout(() => window.location.reload(), 600)
+  } catch {
+    clearingCache.value = false
+    toast(t('offline.clearCache.clearFailed'), { variant: 'error' })
+  }
+}
+
+function cancelClearCache() {
+  clearCacheConfirmOpen.value = false
+}
 </script>
 
 <template>
@@ -222,46 +244,34 @@ function cancelReset() {
       <h2 class="section-title">{{ t('offline.title') }}</h2>
 
       <div class="offline-pack">
-        <p class="lead">{{ t('offline.textLead', { size: offline.state.text.sizeEstimateMb }) }}</p>
+        <p class="lead">{{ t('offline.lead', { size: offline.state.pack.sizeEstimateMb }) }}</p>
         <div class="actions">
           <Button
-            v-if="offline.state.text.status === 'idle' || offline.state.text.status === 'canceled'"
+            v-if="offline.state.pack.status === 'idle' || offline.state.pack.status === 'canceled'"
             variant="secondary"
-            @click="offline.downloadText"
+            @click="offline.download"
           >
-            <Icon :icon="Type" :size="18" />
-            {{ offline.state.text.status === 'canceled' ? t('offline.canceled') : t('offline.textAction') }}
+            <Icon :icon="Download" :size="18" />
+            {{ offline.state.pack.status === 'canceled' ? t('offline.canceled') : t('offline.action') }}
           </Button>
-          <template v-else-if="offline.state.text.status === 'downloading'">
-            <span class="row-label">{{ t('offline.progress', { done: offline.state.text.done, total: offline.state.text.total }) }}</span>
-            <Button variant="ghost" @click="offline.cancelText">
+          <template v-else-if="offline.state.pack.status === 'downloading'">
+            <span class="row-label">{{ t('offline.progress', { done: offline.state.pack.done, total: offline.state.pack.total }) }}</span>
+            <Button variant="ghost" @click="offline.cancel">
               <Icon :icon="X" :size="16" />
               {{ t('offline.cancel') }}
             </Button>
           </template>
-          <span v-else-if="offline.state.text.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
+          <span v-else-if="offline.state.pack.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
         </div>
       </div>
 
       <div class="offline-pack">
-        <p class="lead">{{ t('offline.imagesLead', { size: offline.state.images.sizeEstimateMb }) }}</p>
+        <p class="lead">{{ t('offline.clearCache.lead') }}</p>
         <div class="actions">
-          <Button
-            v-if="offline.state.images.status === 'idle' || offline.state.images.status === 'canceled'"
-            variant="secondary"
-            @click="offline.downloadImages"
-          >
-            <Icon :icon="BookImage" :size="18" />
-            {{ offline.state.images.status === 'canceled' ? t('offline.canceled') : t('offline.imagesAction') }}
+          <Button variant="warn" @click="clearCacheConfirmOpen = true">
+            <Icon :icon="Trash2" :size="18" />
+            {{ t('offline.clearCache.action') }}
           </Button>
-          <template v-else-if="offline.state.images.status === 'downloading'">
-            <span class="row-label">{{ t('offline.progress', { done: offline.state.images.done, total: offline.state.images.total }) }}</span>
-            <Button variant="ghost" @click="offline.cancelImages">
-              <Icon :icon="X" :size="16" />
-              {{ t('offline.cancel') }}
-            </Button>
-          </template>
-          <span v-else-if="offline.state.images.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
         </div>
       </div>
     </section>
@@ -303,6 +313,19 @@ function cancelReset() {
         </Button>
         <Button variant="danger" :loading="resetting" @click="confirmReset">
           {{ t('settings.reset.confirmAction') }}
+        </Button>
+      </div>
+    </Modal>
+
+    <Modal v-model:open="clearCacheConfirmOpen" :label="t('offline.clearCache.title')">
+      <h3 class="modal-title">{{ t('offline.clearCache.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('offline.clearCache.confirmBody') }}</p>
+      <div class="modal-actions">
+        <Button variant="ghost" :disabled="clearingCache" @click="cancelClearCache">
+          {{ t('common.cancel') }}
+        </Button>
+        <Button variant="warn" :loading="clearingCache" @click="confirmClearCache">
+          {{ t('offline.clearCache.confirmAction') }}
         </Button>
       </div>
     </Modal>
@@ -403,7 +426,10 @@ function cancelReset() {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: var(--color-danger);
+  /* Mixed toward the theme's own (guaranteed high-contrast) text colour rather
+     than used raw — on the section's tinted background, --color-danger alone
+     falls just under WCAG AA (4.15:1 vs 4.5:1 required) in the light theme. */
+  color: color-mix(in oklab, var(--color-danger) 70%, var(--color-text) 30%);
 }
 .sr-only {
   position: absolute;

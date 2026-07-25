@@ -16,6 +16,12 @@ describe('Button', () => {
     expect(w.classes()).toContain('h-12')
   })
 
+  it('applies the warn variant (on-brand amber, distinct from danger)', () => {
+    const w = mount(Button, { props: { variant: 'warn' } })
+    expect(w.classes()).toContain('bg-warn')
+    expect(w.classes()).not.toContain('bg-danger')
+  })
+
   it('emits click when enabled', async () => {
     const w = mount(Button)
     await w.trigger('click')

@@ -1,9 +1,11 @@
 /// <reference lib="webworker" />
 // Data worker: fetch + parse JSON off the main thread, backed by two caches —
 // an in-memory map (this session) and a persistent IndexedDB AssetCache
-// (across sessions / offline). The AssetCache opens once the main thread sends
-// the data version (so a new deploy purges stale chunks).
-import { AssetCache } from '@/core/storage/assetCache'
+// (across sessions / offline). The AssetCache opens once the main thread signals
+// the manifest has loaded; per-URL content hashing (see paths.ts) means the
+// cache itself never needs purging on a data change, so it opens with a fixed
+// schema version rather than the manifest's (deploy-timestamp) version.
+import { AssetCache, CACHE_SCHEMA_VERSION } from '@/core/storage/assetCache'
 
 interface FetchReq {
   id: number
@@ -21,6 +23,13 @@ interface Res {
   result?: unknown
   error?: string
 }
+
+// ~100MB: comfortably holds the full "download for offline" JSON set (both
+// layouts' text, translations, tafsir, morphology, nav indexes, surah names —
+// ~58MB complete) with headroom, so a completed download is never silently
+// evicted under LRU pressure (the default 24MB cap is sized for casual,
+// unpinned reading only).
+const JSON_CAP = 100 * 1024 * 1024
 
 const mem = new Map<string, Promise<unknown>>()
 let cachePromise: Promise<AssetCache | null> = Promise.resolve(null)
@@ -64,7 +73,11 @@ self.onmessage = async (e: MessageEvent<Req>) => {
   const msg = e.data
   if ('cmd' in msg) {
     if (msg.cmd === 'setVersion') {
-      cachePromise = AssetCache.open({ version: msg.version }).catch(() => null)
+      // msg.version (the manifest's build timestamp) is intentionally unused
+      // here — see the import comment above.
+      cachePromise = AssetCache.open({ version: CACHE_SCHEMA_VERSION, maxBytes: JSON_CAP }).catch(
+        () => null,
+      )
     }
     return
   }

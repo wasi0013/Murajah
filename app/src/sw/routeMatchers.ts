@@ -17,3 +17,17 @@ export function isAppDataRequest(url: URL): boolean {
 export function isAppFontsRequest(url: URL): boolean {
   return url.origin === self.location.origin && url.pathname.startsWith('/fonts/')
 }
+
+/**
+ * The two manifest files are the trust anchor for every hash-versioned `/data/*`
+ * and `/fonts/*` URL — unlike those, they're NOT content-hashed (a hash can't
+ * describe itself), so they must never be served stale. Matched and routed
+ * *before* the general data/fonts routes below (Workbox is first-match-wins)
+ * so they get `NetworkFirst` instead of the generic `StaleWhileRevalidate`.
+ */
+export function isManifestRequest(url: URL): boolean {
+  return (
+    url.origin === self.location.origin &&
+    (url.pathname === '/data/manifest.json' || url.pathname === '/fonts/manifest.json')
+  )
+}

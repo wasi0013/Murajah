@@ -8,14 +8,14 @@ import type { Manifest } from '@/core/data/types'
 const manifest: Manifest = {
   version: 'test',
   datasets: {
-    qpc: { pathTemplate: 'data/qpc/pages/{page}.json', count: 604 },
-    'tr-en': { pathTemplate: 'data/tr/en/{surah}.json', count: 114 },
-    morphology: { pathTemplate: 'data/morphology/{surah}.json', count: 114 },
+    qpc: { pathTemplate: 'data/qpc/pages/{page}.json', count: 604, hash: 'qpchash' },
+    'tr-en': { pathTemplate: 'data/tr/en/{surah}.json', count: 114, hash: 'trenhash' },
+    morphology: { pathTemplate: 'data/morphology/{surah}.json', count: 114, hash: 'morphhash' },
   },
   indexes: {
-    surahNames: { path: 'data/surah-names.json' },
-    navQpc: { path: 'data/nav/qpc.json' },
-    navIndopak: { path: 'data/nav/indopak.json' },
+    surahNames: { path: 'data/surah-names.json', hash: 'namehash' },
+    navQpc: { path: 'data/nav/qpc.json', hash: 'navqpchash' },
+    navIndopak: { path: 'data/nav/indopak.json', hash: 'navindohash' },
   },
 }
 
@@ -36,7 +36,7 @@ describe('DataClient (mock transport)', () => {
   it('loads manifest on init and serves typed pages', async () => {
     const { transport } = mockTransport({
       'data/manifest.json': manifest,
-      'data/qpc/pages/1.json': { page: 1, layout: [], words: [] },
+      'data/qpc/pages/1.json?v=qpchash': { page: 1, layout: [], words: [] },
     })
     const client = new DataClient(transport)
     await client.init()
@@ -54,28 +54,28 @@ describe('DataClient (mock transport)', () => {
   it('getMorphology builds the per-surah path', async () => {
     const { transport, calls } = mockTransport({
       'data/manifest.json': manifest,
-      'data/morphology/2.json': { '2:255:1': '<i>the</i>' },
+      'data/morphology/2.json?v=morphhash': { '2:255:1': '<i>the</i>' },
     })
     const client = new DataClient(transport)
     await client.init()
     calls.length = 0
     const morph = await client.getMorphology(2)
-    expect(calls).toEqual(['data/morphology/2.json'])
+    expect(calls).toEqual(['data/morphology/2.json?v=morphhash'])
     expect(morph['2:255:1']).toContain('the')
   })
 
   it('getNavIndex picks the per-layout index path', async () => {
     const { transport, calls } = mockTransport({
       'data/manifest.json': manifest,
-      'data/nav/qpc.json': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
-      'data/nav/indopak.json': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
+      'data/nav/qpc.json?v=navqpchash': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
+      'data/nav/indopak.json?v=navindohash': { ayahToPage: {}, surahToPage: {}, juzToPage: {} },
     })
     const client = new DataClient(transport)
     await client.init()
     calls.length = 0
     await client.getNavIndex('qpc')
     await client.getNavIndex('indopak')
-    expect(calls).toEqual(['data/nav/qpc.json', 'data/nav/indopak.json'])
+    expect(calls).toEqual(['data/nav/qpc.json?v=navqpchash', 'data/nav/indopak.json?v=navindohash'])
   })
 
   it('prefetch clamps out-of-range pages (no fetch)', async () => {
@@ -87,7 +87,7 @@ describe('DataClient (mock transport)', () => {
     client.prefetchPage('qpc', 605)
     expect(calls).toEqual([])
     client.prefetchPage('qpc', 5)
-    expect(calls).toEqual(['data/qpc/pages/5.json'])
+    expect(calls).toEqual(['data/qpc/pages/5.json?v=qpchash'])
   })
 })
 
@@ -99,8 +99,10 @@ const hasData = existsSync(resolve(PUBLIC, 'data/manifest.json'))
 
 describe.skipIf(!hasData)('DataClient (real generated fixtures)', () => {
   const fsTransport: Transport = {
+    // Real paths now carry a `?v=<hash>` cache-buster; a filesystem read (unlike
+    // an HTTP request) needs it stripped to resolve the actual file on disk.
     fetchJson: async (path: string) =>
-      JSON.parse(readFileSync(resolve(PUBLIC, path), 'utf8')) as never,
+      JSON.parse(readFileSync(resolve(PUBLIC, path.split('?')[0]), 'utf8')) as never,
   }
 
   it('serves a real QPC page 1 with layout + words', async () => {

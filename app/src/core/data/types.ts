@@ -63,7 +63,14 @@ export interface NavIndex {
 }
 
 export interface Manifest {
+  /** Build timestamp — display/debug only, NOT a cache-invalidation signal.
+   * See `data-pipeline/src/lib/manifest.mjs` for why: it changes on every
+   * deploy regardless of whether data content changed. Correctness comes from
+   * the per-dataset/per-index `hash` below, appended as a cache-busting `?v=`
+   * query param by `paths.ts` — never gate cache-purge logic on this field. */
   version: string
-  datasets: Record<string, { pathTemplate: string; count: number }>
-  indexes?: Record<string, { path: string }>
+  /** `hash` is a content hash of the dataset's chunks (changes only when that
+   * dataset's actual content changes, independent of `version`). */
+  datasets: Record<string, { pathTemplate: string; count: number; hash: string }>
+  indexes?: Record<string, { path: string; hash: string }>
 }

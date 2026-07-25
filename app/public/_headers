@@ -2,11 +2,26 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Per-page Quran data/fonts/images (added in Phase 1) — cache but revalidate.
+# Per-page Quran data/fonts/images — every dataset/index URL is now
+# content-hashed (`?v=<hash>`, see data-pipeline/src/lib/manifest.mjs), so a
+# cache hit is never stale by construction: safe to cache forever, same as
+# hashed JS/CSS above. Per-page font files aren't hash-versioned but are
+# treated as immutable by convention (their content never changes for a given
+# URL).
 /data/*
-  Cache-Control: public, max-age=86400, must-revalidate
+  Cache-Control: public, max-age=31536000, immutable
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The two manifest files are the trust anchor those hashes are checked
+# against — they are NOT content-hashed (a hash can't describe itself) and
+# must always be revalidated, never served stale from any HTTP cache. Listed
+# after the wildcard rules above so they override Cache-Control for these
+# exact paths.
+/data/manifest.json
+  Cache-Control: no-cache
+/fonts/manifest.json
+  Cache-Control: no-cache
 
 # The shell must always be fresh so new deploys are picked up.
 /index.html

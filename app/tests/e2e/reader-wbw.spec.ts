@@ -20,15 +20,16 @@ test('word-by-word: toggle shows glosses, only the page surah loads, en↔bn swa
   const firstGloss = page.locator('.gloss').first()
   await expect(firstGloss).not.toBeEmpty({ timeout: 10_000 })
   const en = await firstGloss.innerText()
-  expect(trReqs.some((u) => u.endsWith('/data/tr/en/1.json'))).toBe(true)
+  // Dataset URLs carry a `?v=<hash>` cache-buster (see paths.ts).
+  expect(trReqs.some((u) => /\/data\/tr\/en\/1\.json\?v=/.test(u))).toBe(true)
   // Only the window's surahs load (p1=Fatiha s1, prefetched p2=Baqarah s2) —
   // never the whole set of 114.
-  expect(trReqs.every((u) => /\/tr\/en\/[12]\.json$/.test(u))).toBe(true)
+  expect(trReqs.every((u) => /\/tr\/en\/[12]\.json\?v=/.test(u))).toBe(true)
 
   // Switch to Bengali → text changes, bn chunk loads.
   await page.getByRole('radio', { name: 'বাংলা' }).click()
   await expect.poll(() => firstGloss.innerText()).not.toBe(en)
-  expect(trReqs.some((u) => u.endsWith('/data/tr/bn/1.json'))).toBe(true)
+  expect(trReqs.some((u) => /\/data\/tr\/bn\/1\.json\?v=/.test(u))).toBe(true)
 
   // Toggle off → glosses removed.
   await page.getByRole('switch', { name: 'Word-by-word translation' }).click()

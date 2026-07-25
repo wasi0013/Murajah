@@ -55,6 +55,14 @@ export class DataClient {
     return pageCount(this.m, layout)
   }
 
+  /** Content hash for a dataset or index (its own `?v=` cache-buster) — used
+   * by the offline-download reconciliation to detect a data correction that
+   * needs re-fetching. `null` if the name doesn't exist in the manifest. */
+  manifestHash(kind: 'dataset' | 'index', name: string): string | null {
+    if (kind === 'dataset') return this.m.datasets[name]?.hash ?? null
+    return this.m.indexes?.[name]?.hash ?? null
+  }
+
   getPage(layout: Layout, page: number): Promise<PageChunk> {
     return this.transport.fetchJson<PageChunk>(pagePath(this.m, layout, page))
   }

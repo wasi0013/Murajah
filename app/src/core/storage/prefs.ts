@@ -45,6 +45,17 @@ export async function setPref(key: string, value: unknown): Promise<void> {
   }
 }
 
+/** Remove a single pref by key. Errors are swallowed (best-effort). */
+export async function deletePref(key: string): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).delete(key)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Test hook: drop the cached connection so a fresh DB is opened next call. */
 export function _resetPrefsDb(): void {
   dbPromise = null

@@ -9,10 +9,21 @@
  *   `source/sw.js`, most recently WebKitBlobResource error 1 on Home Screen PWA
  *   relaunch; see plan §0.1). The `IS_IOS` gate mirrors that file's hotfix
  *   byte-for-byte in intent so both codebases reason about iOS the same way.
- * - `/data/*` and `/fonts/*`: stale-while-revalidate on every platform, iOS
- *   included — sub-resource caching was never implicated in any navigation
- *   incident, so it stays identical everywhere (mirrors `_headers`' own
- *   revalidation policy).
+ * - `data/manifest.json` and `fonts/manifest.json`: network-first (short
+ *   timeout), on every platform. These two files are the trust anchor every
+ *   other `/data/*`/`/fonts/*` URL's content hash is checked against, so they
+ *   must never be served stale from Cache Storage while a connection exists —
+ *   see routeMatchers.ts's `isManifestRequest` docstring.
+ * - Everything else under `/data/*`: cache-first on every platform, iOS
+ *   included. Every dataset/index URL now carries a `?v=<hash>` of its own
+ *   content (data-pipeline/src/lib/manifest.mjs), so a cache hit is never
+ *   stale by construction — nothing left to revalidate, making cache-first a
+ *   pure performance win over the previous stale-while-revalidate.
+ * - Everything else under `/fonts/*`: cache-first too. Per-page font files
+ *   aren't content-hashed (binary assets don't have JSON's silent-schema-drift
+ *   failure mode, so the manifest-bloat cost of per-file hashing wasn't worth
+ *   it — see the plan), but each URL is treated as immutable by convention
+ *   (mirrors `_headers`), same as before.
  * - `clientsClaim()` on activate, matching legacy's aggressive-takeover
  *   precedent for *uncontrolled* clients (a fresh install, or the very first
  *   legacy→new handoff). `skipWaiting()` is deliberately NOT called
@@ -24,8 +35,8 @@
 import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
-import { isAppDataRequest, isAppFontsRequest } from './routeMatchers'
+import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { isAppDataRequest, isAppFontsRequest, isManifestRequest } from './routeMatchers'
 
 declare let self: ServiceWorkerGlobalScope
 
@@ -68,28 +79,41 @@ if (IS_IOS) {
  * A missing `/data` or `/fonts` asset returns the SPA shell (index.html, 200
  * text/html) via Cloudflare's not-found fallback rather than a real 404. Both
  * transports already reject that HTML at parse time (see transport.ts), but
- * StaleWhileRevalidate would otherwise *cache* the shell under the asset's URL,
+ * the SW's cache would otherwise *store* the shell under the asset's URL,
  * poisoning it so the parse error persists across reloads. Refuse to cache any
- * text/html response on these sub-resource routes; a real JSON/woff2 asset (or
- * the background revalidation once the asset is present) still caches normally,
- * so poisoned entries self-heal. Never applied to the navigation route below —
- * that one must cache HTML.
+ * text/html response on these sub-resource routes — refusing the write means
+ * the entry never gets created, so it's still a cache miss (retried against
+ * the network) next time, and a poisoned URL self-heals the moment a real
+ * JSON/woff2 response comes back. Never applied to the navigation route below
+ * — that one must cache HTML.
  */
 const rejectHtml = {
   cacheWillUpdate: async ({ response }: { response: Response }) =>
     (response.headers.get('content-type') ?? '').includes('text/html') ? null : response,
 }
 
-// cacheName is versioned (-v2): activating this worker abandons any entries a
-// prior version poisoned with the HTML shell, rather than waiting on revalidation.
+// Registered BEFORE the general /data/ and /fonts/ routes below — Workbox
+// routing is first-match-wins, so the two manifest files never fall through to
+// the generic (now cache-first) routes. Short network timeout: fast on a live
+// connection, falls back to cache only when truly offline.
+registerRoute(
+  ({ url }) => isManifestRequest(url),
+  new NetworkFirst({ cacheName: 'murajah-app-manifest', networkTimeoutSeconds: 4 }),
+)
+
+// cacheName bumped to -v3 (was stale-while-revalidate -v2): abandons any
+// entries a prior version cached under an unversioned URL, rather than a
+// cache-first hit serving one of those forever. New URLs are all `?v=<hash>`
+// (data) or treated as immutable by convention (fonts, see the docstring
+// above), so cache-first has nothing to revalidate going forward.
 registerRoute(
   ({ url }) => isAppDataRequest(url),
-  new StaleWhileRevalidate({ cacheName: 'murajah-app-data-v2', plugins: [rejectHtml] }),
+  new CacheFirst({ cacheName: 'murajah-app-data-v3', plugins: [rejectHtml] }),
 )
 
 registerRoute(
   ({ url }) => isAppFontsRequest(url),
-  new StaleWhileRevalidate({ cacheName: 'murajah-app-fonts-v2', plugins: [rejectHtml] }),
+  new CacheFirst({ cacheName: 'murajah-app-fonts-v3', plugins: [rejectHtml] }),
 )
 
 self.addEventListener('message', (event) => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'warn'
 type Size = 'sm' | 'md' | 'lg'
 
 const props = withDefaults(
@@ -23,6 +23,9 @@ const variantClass: Record<Variant, string> = {
   secondary: 'bg-surface text-text border border-border hover:bg-elevated',
   ghost: 'bg-transparent text-text hover:bg-elevated',
   danger: 'bg-danger text-on-status hover:opacity-90',
+  // A confirmable-but-not-destructive action (e.g. clearing a regenerable
+  // cache) — on-brand amber, distinct from danger's alarm red.
+  warn: 'bg-warn text-on-status hover:opacity-90',
 }
 const sizeClass: Record<Size, string> = {
   sm: 'h-8 px-3 text-sm gap-1.5',

@@ -137,6 +137,34 @@ describe('useReaderPages', () => {
     pages.dispose()
   })
 
+  it('retry() forces a fresh attempt at a page that failed to load', async () => {
+    const { data, fonts, pageCalls } = makeDoubles()
+    let failNext = true
+    const fontsThatFailOnce = {
+      ...fonts,
+      ensure: vi.fn(async (req: { layout: string; page: number; tajweed?: boolean }) => {
+        if (failNext) {
+          failNext = false
+          throw new Error('offline — font not cached')
+        }
+        return req.tajweed ? `tj-p${req.page}` : `qpc-p${req.page}`
+      }),
+    } as unknown as FontLoader
+    const reader = useReaderStore()
+    reader.goToPage(1)
+    const pages = useReaderPages(reader, { data, fonts: fontsThatFailOnce })
+    await flush()
+    expect(pages.entry(1)?.status).toBe('error')
+    const fetchesBeforeRetry = pageCalls.length
+
+    pages.retry(1)
+    await flush()
+
+    expect(pages.entry(1)?.status).toBe('ready')
+    expect(pageCalls.length).toBeGreaterThan(fetchesBeforeRetry) // re-fetched, not reused
+    pages.dispose()
+  })
+
   it('clears the cache and reloads on layout switch', async () => {
     const { data, fonts } = makeDoubles()
     const reader = useReaderStore()

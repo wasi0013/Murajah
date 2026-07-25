@@ -7,6 +7,7 @@ import { useMorphology } from '@/composables/useMorphology'
 import { useMistakes } from '@/composables/useMistakes'
 import { useAudioStore } from '@/stores/audio'
 import { getDataClient } from '@/core/data'
+import { mushafLink } from '@/core/navigation/readerLinks'
 import type { SurahNames } from '@/core/data/types'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
@@ -151,6 +152,17 @@ function handleTap(e: PointerEvent) {
       :active-verse="activeVerseKey"
       :auto-scroll="surfaceAutoScroll"
     />
+    <div v-else-if="current?.status === 'error'" class="page-error-state" role="alert">
+      <button type="button" class="page-error" @click="pages.retry(reader.page)">
+        {{ t('reader.pageError', { page: reader.page }) }}
+      </button>
+      <!-- A font-load failure is the common cause (offline + not downloaded);
+           the mushaf image view renders the same page from a scanned image,
+           needing no font — an offline-safe fallback when it's cached. -->
+      <RouterLink v-if="reader.layout === 'qpc'" :to="mushafLink(reader.page)" class="page-error-alt">
+        {{ t('reader.viewAsImage') }}
+      </RouterLink>
+    </div>
     <div v-else class="page-skeleton" role="status" aria-label="Loading page">
       <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
     </div>
@@ -200,6 +212,32 @@ function handleTap(e: PointerEvent) {
 }
 .page-skeleton > * {
   max-width: 40ch;
+}
+.page-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+.page-error {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  max-width: 32ch;
+}
+.page-error:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.page-error-alt {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.page-error-alt:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .page-nav {
   display: flex;

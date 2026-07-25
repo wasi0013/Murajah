@@ -1,6 +1,7 @@
-import { resolveUrl, type Transport } from '@/core/data/transport'
+import type { Transport } from '@/core/data/transport'
 import { FONT_MANIFEST_PATH } from '@/core/data/paths'
 import { fontFamily, fontPageCount, fontPath, type FontRequest } from './fontPaths'
+import type { FontCache } from './fontCache'
 import type { FontManifest } from './types'
 
 /**
@@ -26,9 +27,17 @@ export class FontLoader {
   private readonly order: string[] = []
   private readonly maxFaces: number
   private readonly transport: Transport
+  private readonly fontCache: FontCache
+  // Concurrent `ensure()` calls for the same family (e.g. a load + a
+  // prefetch racing) must share one in-flight attempt: `this.loaded` can only
+  // be registered once the buffer fetch resolves (unlike the old url()-source
+  // FontFace, which registered synchronously before any await), so without
+  // this a second concurrent caller would double-fetch and double-register.
+  private readonly inflight = new Map<string, Promise<string>>()
 
-  constructor(transport: Transport, maxFaces = 12) {
+  constructor(transport: Transport, fontCache: FontCache, maxFaces = 12) {
     this.transport = transport
+    this.fontCache = fontCache
     this.maxFaces = maxFaces
   }
 
@@ -52,9 +61,23 @@ export class FontLoader {
       this.touch(family)
       return family
     }
+    const pending = this.inflight.get(family)
+    if (pending) return pending
 
-    const url = resolveUrl(fontPath(this.m, req))
-    const face = new FontFace(family, `url(${url}) format('woff2')`, { display: 'block' })
+    const attempt = this.load(req, family).finally(() => {
+      if (this.inflight.get(family) === attempt) this.inflight.delete(family)
+    })
+    this.inflight.set(family, attempt)
+    return attempt
+  }
+
+  private async load(req: FontRequest, family: string): Promise<string> {
+    // Bytes come from the persistent font cache (IndexedDB), not a bare
+    // browser fetch — this is what makes a font a verifiable, durable part of
+    // "download for offline" rather than an incidental side effect of the SW's
+    // own `/fonts/*` Cache Storage route.
+    const buffer = await this.fontCache.fetchBuffer(fontPath(this.m, req))
+    const face = new FontFace(family, buffer, { display: 'block' })
     this.loaded.set(family, face)
     this.order.push(family)
     document.fonts.add(face)

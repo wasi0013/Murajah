@@ -1,3 +1,5 @@
+import { deletePref } from './prefs'
+
 /**
  * Full "reset to brand new" — wipes every persistence layer the app writes to
  * (all IndexedDB databases, every Cache Storage bucket, the reader
@@ -6,7 +8,18 @@
  * install. Irreversible — callers must get explicit user confirmation first
  * (see SettingsView's "Reset app" section).
  */
-const DATABASES = ['murajah-userdata', 'murajah-prefs', 'murajah-assets', 'murajah-images']
+const DATABASES = [
+  'murajah-userdata',
+  'murajah-prefs',
+  'murajah-assets',
+  'murajah-images',
+  'murajah-fonts',
+]
+
+/** Regenerable caches only — never the user's memorization/progress data
+ * (`murajah-userdata`) or the rest of their preferences (`murajah-prefs`'s
+ * theme/reader/locale keys). Used by the safe "Clear cache" action. */
+const REGENERABLE_DATABASES = ['murajah-assets', 'murajah-images', 'murajah-fonts']
 
 function deleteDatabase(name: string): Promise<void> {
   return new Promise((resolve) => {
@@ -37,5 +50,25 @@ export async function resetApp(): Promise<void> {
     ...DATABASES.map(deleteDatabase),
     deleteAllCaches(),
     unregisterAllServiceWorkers(),
+  ])
+}
+
+/**
+ * Safe cache reset: wipes only the regenerable caches — downloaded/cached
+ * Quran text, images, fonts, and the service worker's Cache Storage buckets —
+ * plus the offline-pack completion record (so the UI stops claiming
+ * "downloaded" against a now-empty cache). Never touches `murajah-userdata`
+ * (memorization progress, mistakes, plan, recordings) or the rest of
+ * `murajah-prefs` (theme, reader view options, locale) — those are the
+ * reason this exists as a distinct, non-destructive action from `resetApp()`.
+ * Callers should still confirm with the user first (it can be a multi-hundred
+ * MB deletion) and reload afterward so in-memory caches (the data worker's
+ * dedupe map, loaded font faces) start clean.
+ */
+export async function clearResourceCache(): Promise<void> {
+  await Promise.all([
+    ...REGENERABLE_DATABASES.map(deleteDatabase),
+    deleteAllCaches(),
+    deletePref('offlinePack'),
   ])
 }

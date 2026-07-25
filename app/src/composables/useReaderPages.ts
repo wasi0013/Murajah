@@ -135,6 +135,13 @@ export function useReaderPages(
     ready,
     pages,
     entry: (page: number): PageEntry | undefined => cache.get(page),
+    /** Force a fresh attempt at a page that failed to load (offline + not yet
+     * downloaded, most commonly) — drops the errored entry so `load()` treats
+     * it as new rather than reusing whatever partial state it left behind. */
+    retry: (page: number): void => {
+      cache.delete(page)
+      void load(page)
+    },
     dispose: () => stop(),
   }
 }
