@@ -69,7 +69,6 @@ describe('clearResourceCache', () => {
     await seedDb('murajah-images', 'y', { sentinel: 'wipe-me' })
     await seedDb('murajah-fonts', 'z', { sentinel: 'wipe-me' })
     await setPref('theme', 'dark')
-    await setPref('offlinePack', { complete: true, hashes: {} })
 
     await clearResourceCache()
 
@@ -78,7 +77,6 @@ describe('clearResourceCache', () => {
     expect(await readDb('murajah-images', 'y')).toBeUndefined()
     expect(await readDb('murajah-fonts', 'z')).toBeUndefined()
     expect(await getPref('theme')).toBe('dark') // untouched pref survives
-    expect(await getPref('offlinePack')).toBeUndefined() // completion record cleared
   })
 
   it('deletes every Cache Storage bucket when available', async () => {

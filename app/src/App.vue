@@ -7,7 +7,6 @@ import { useReaderStore } from '@/stores/reader'
 import { hydrateLocale, useI18n } from '@/core/i18n'
 import { mushafLink } from '@/core/navigation/readerLinks'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
-import { reconcileOfflinePack } from '@/composables/useOfflineDownload'
 import ToastContainer from '@/components/ToastContainer.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -22,9 +21,6 @@ onMounted(() => {
   // Load and apply the saved theme and language (each falls back to its default).
   void settings.hydrate()
   void hydrateLocale()
-  // Silently keep a completed "download for offline" pack correct: a no-op
-  // for the common case (no download ever completed, or nothing changed).
-  void reconcileOfflinePack()
 })
 
 /**

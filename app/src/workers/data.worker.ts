@@ -24,11 +24,10 @@ interface Res {
   error?: string
 }
 
-// ~100MB: comfortably holds the full "download for offline" JSON set (both
-// layouts' text, translations, tafsir, morphology, nav indexes, surah names —
-// ~58MB complete) with headroom, so a completed download is never silently
-// evicted under LRU pressure (the default 24MB cap is sized for casual,
-// unpinned reading only).
+// ~100MB: generous headroom for organically-cached JSON (both layouts' text,
+// translations, tafsir, morphology, nav indexes, surah names) built up over a
+// normal reading session, well above the default 24MB cap sized for casual,
+// unpinned reading only.
 const JSON_CAP = 100 * 1024 * 1024
 
 const mem = new Map<string, Promise<unknown>>()

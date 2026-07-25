@@ -3,13 +3,11 @@ import { AssetCache, CACHE_SCHEMA_VERSION } from '@/core/storage/assetCache'
 
 /**
  * Persistent byte cache for per-page Quran fonts, mirroring
- * `core/mushaf/imageTransport.ts`. Before this, fonts were only ever cached
- * via the service worker's Cache Storage route (`/fonts/*`) — a side effect of
- * the browser's own font fetch, invisible to and unverifiable by app code. That
- * made font availability an incidental property of which pages a user had
- * visited online, not a deterministic part of "download for offline complete."
- * Routing font bytes through this cache (like images and JSON already are)
- * makes them a first-class, verifiable part of the offline pack.
+ * `core/mushaf/imageTransport.ts`. Fonts are fetched as raw bytes and cached
+ * in IndexedDB rather than left to the service worker's Cache Storage route
+ * (`/fonts/*`) alone, so a font a reader has already used stays available
+ * (and dedupes concurrent requests) without depending on Cache Storage
+ * surviving eviction.
  *
  * Font content is static reference data (a given page's glyph mapping doesn't
  * change), so — like images — this opens with the fixed `CACHE_SCHEMA_VERSION`
@@ -22,9 +20,9 @@ export interface FontCache {
 }
 
 const FONT_DB = 'murajah-fonts'
-/** ~180MB: comfortably holds the full font set (QPC + Tajweed + Indopak,
- * ~145MB) with headroom, so a completed "download for offline" is never
- * silently evicted under LRU pressure. */
+/** ~180MB: generous headroom above the full font set (QPC + Tajweed +
+ * Indopak, ~145MB) so organically-cached fonts aren't evicted under LRU
+ * pressure during normal reading. */
 const FONT_CAP = 180 * 1024 * 1024
 
 export function createFontCache(): FontCache {

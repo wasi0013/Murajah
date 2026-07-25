@@ -84,18 +84,35 @@ const en: Messages = {
       restoreFailed: "Couldn't restore this backup.",
       notBackup: 'This file is not a Murajah backup.',
     },
-    reset: {
-      title: 'Reset app',
-      warning:
-        'This permanently deletes everything stored on this device — memorization progress, mistakes, your plan, recordings, and preferences — plus all cached Quran text, audio, and images. This cannot be undone.',
-      backupHint: 'Export a backup above first if you want to keep a copy.',
-      action: 'Reset app to brand new',
-      confirmTitle: 'Reset Murajah on this device?',
-      confirmBody:
-        "This permanently erases all your data and cached files on this device. There is no undo — make sure you've exported a backup above if you want to keep anything.",
-      confirmAction: 'Yes, erase everything',
-      done: 'App reset — reloading…',
-      failed: "Couldn't fully reset the app. Try again.",
+    dangerZone: {
+      title: 'Danger zone',
+      intro:
+        "These tools help you self-debug network or stale-data issues. If something looks out of date or broken, try clearing the cache first — it fixes most sync problems without touching your data. If that doesn't help, back up your data above, then do a full reset.",
+      clearCache: {
+        lead: 'Clears downloaded and cached Quran text, images, and fonts, then re-fetches them fresh. Your memorization progress, mistakes, plan, and settings are never affected.',
+        action: 'Clear cache',
+        confirmTitle: 'Clear the cache?',
+        confirmBody:
+          "This removes downloaded and cached Quran data, images, and fonts to free up space — you'll need a connection again for anything not re-cached. Your memorization progress, mistakes, plan, and settings are not affected.",
+        confirmAction: 'Clear cache',
+        cleared: 'Cache cleared — reloading…',
+        clearFailed: "Couldn't clear the cache.",
+      },
+      reset: {
+        warning:
+          'This permanently deletes everything stored on this device — memorization progress, mistakes, your plan, recordings, and preferences — plus all cached Quran text, audio, and images. This cannot be undone.',
+        backupHint: 'Export a backup above first if you want to keep a copy.',
+        action: 'Reset app to brand new',
+        confirmTitle: 'Reset Murajah on this device?',
+        confirmBody:
+          "This permanently erases all your data and cached files on this device. There is no undo — make sure you've exported a backup above if you want to keep anything.",
+        confirmAction: 'Yes, erase everything',
+        done: 'App reset — reloading…',
+        failed: "Couldn't fully reset the app. Try again.",
+      },
+      community: {
+        lead: "Still stuck, found a bug, or have a suggestion? Join our Discord — we're happy to help.",
+      },
     },
   },
   today: {
@@ -452,25 +469,6 @@ const en: Messages = {
     installBody: 'Add Murajah to your home screen for a faster, full-screen experience.',
     install: 'Install',
     iosInstallHint: 'Tap the Share icon, then “Add to Home Screen”.',
-  },
-  offline: {
-    title: 'Offline reading',
-    lead: 'Download everything (~{size} MB) — both scripts, translations, tafsir, and mushaf page scans — so the whole app works with no connection needed.',
-    action: 'Download for offline',
-    progress: '{done} / {total}',
-    downloaded: 'Downloaded',
-    canceled: 'Canceled — tap to resume',
-    cancel: 'Cancel',
-    clearCache: {
-      title: 'Clear cache',
-      lead: 'Frees up storage by removing downloaded and cached Quran data, images, and fonts. Your memorization progress, mistakes, plan, and settings are never affected.',
-      action: 'Clear cache',
-      confirmTitle: 'Clear the cache?',
-      confirmBody: "This removes downloaded and cached Quran data, images, and fonts to free up space — you'll need a connection again for anything not re-cached. Your memorization progress, mistakes, plan, and settings are not affected.",
-      confirmAction: 'Clear cache',
-      cleared: 'Cache cleared — reloading…',
-      clearFailed: "Couldn't clear the cache.",
-    },
   },
 }
 

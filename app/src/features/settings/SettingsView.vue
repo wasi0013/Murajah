@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowLeft,
   Download,
+  MessageCircle,
   RotateCcw,
   Smartphone,
   Trash2,
   TriangleAlert,
   Upload,
-  X,
 } from 'lucide-vue-next'
 import { useSettingsStore, type ThemeName } from '@/stores/settings'
 import { useI18n } from '@/core/i18n'
@@ -19,7 +19,7 @@ import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
 import { resetApp, clearResourceCache } from '@/core/storage/resetApp'
 import { toast } from '@/composables/useToast'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
-import { useOfflineDownload } from '@/composables/useOfflineDownload'
+import { DISCORD_URL } from '@/core/links'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import Button from '@/components/Button.vue'
@@ -35,8 +35,6 @@ const router = useRouter()
 const settings = useSettingsStore()
 const { t, locale, setLocale } = useI18n()
 const { canInstall, isIOSManualInstall, promptInstall } = useInstallPrompt()
-const offline = useOfflineDownload()
-onMounted(() => void offline.hydrate())
 
 const themeOptions = computed<{ value: ThemeName; label: string }[]>(() => [
   { value: 'light', label: t('settings.appearance.light') },
@@ -126,7 +124,7 @@ async function confirmReset() {
   try {
     await resetApp()
     resetConfirmOpen.value = false
-    toast(t('settings.reset.done'), { variant: 'success' })
+    toast(t('settings.dangerZone.reset.done'), { variant: 'success' })
     // Hard navigation (not router.push): every store, the SW registration, and
     // all caches must reinitialize from scratch, exactly like a first visit.
     setTimeout(() => {
@@ -134,7 +132,7 @@ async function confirmReset() {
     }, 600)
   } catch {
     resetting.value = false
-    toast(t('settings.reset.failed'), { variant: 'error' })
+    toast(t('settings.dangerZone.reset.failed'), { variant: 'error' })
   }
 }
 
@@ -151,13 +149,13 @@ async function confirmClearCache() {
   try {
     await clearResourceCache()
     clearCacheConfirmOpen.value = false
-    toast(t('offline.clearCache.cleared'), { variant: 'success' })
+    toast(t('settings.dangerZone.clearCache.cleared'), { variant: 'success' })
     // Reload so every in-memory cache (the data worker's dedupe map, loaded
     // font faces) starts clean against the now-empty persistent caches.
     setTimeout(() => window.location.reload(), 600)
   } catch {
     clearingCache.value = false
-    toast(t('offline.clearCache.clearFailed'), { variant: 'error' })
+    toast(t('settings.dangerZone.clearCache.clearFailed'), { variant: 'error' })
   }
 }
 
@@ -240,54 +238,47 @@ function cancelClearCache() {
       />
     </section>
 
-    <section class="section" :aria-label="t('offline.title')">
-      <h2 class="section-title">{{ t('offline.title') }}</h2>
+    <section class="section section-danger" :aria-label="t('settings.dangerZone.title')">
+      <h2 class="section-title danger-title">
+        <Icon :icon="TriangleAlert" :size="18" />
+        {{ t('settings.dangerZone.title') }}
+      </h2>
+      <p class="lead">{{ t('settings.dangerZone.intro') }}</p>
 
-      <div class="offline-pack">
-        <p class="lead">{{ t('offline.lead', { size: offline.state.pack.sizeEstimateMb }) }}</p>
-        <div class="actions">
-          <Button
-            v-if="offline.state.pack.status === 'idle' || offline.state.pack.status === 'canceled'"
-            variant="secondary"
-            @click="offline.download"
-          >
-            <Icon :icon="Download" :size="18" />
-            {{ offline.state.pack.status === 'canceled' ? t('offline.canceled') : t('offline.action') }}
-          </Button>
-          <template v-else-if="offline.state.pack.status === 'downloading'">
-            <span class="row-label">{{ t('offline.progress', { done: offline.state.pack.done, total: offline.state.pack.total }) }}</span>
-            <Button variant="ghost" @click="offline.cancel">
-              <Icon :icon="X" :size="16" />
-              {{ t('offline.cancel') }}
-            </Button>
-          </template>
-          <span v-else-if="offline.state.pack.status === 'done'" class="row-label">{{ t('offline.downloaded') }}</span>
-        </div>
-      </div>
-
-      <div class="offline-pack">
-        <p class="lead">{{ t('offline.clearCache.lead') }}</p>
+      <div class="danger-item">
+        <p class="lead">{{ t('settings.dangerZone.clearCache.lead') }}</p>
         <div class="actions">
           <Button variant="warn" @click="clearCacheConfirmOpen = true">
             <Icon :icon="Trash2" :size="18" />
-            {{ t('offline.clearCache.action') }}
+            {{ t('settings.dangerZone.clearCache.action') }}
           </Button>
         </div>
       </div>
-    </section>
 
-    <section class="section section-danger" :aria-label="t('settings.reset.title')">
-      <h2 class="section-title danger-title">
-        <Icon :icon="TriangleAlert" :size="18" />
-        {{ t('settings.reset.title') }}
-      </h2>
-      <p class="lead">{{ t('settings.reset.warning') }}</p>
-      <p class="hint">{{ t('settings.reset.backupHint') }}</p>
-      <div class="actions">
-        <Button variant="danger" @click="resetConfirmOpen = true">
-          <Icon :icon="RotateCcw" :size="18" />
-          {{ t('settings.reset.action') }}
-        </Button>
+      <div class="danger-item">
+        <p class="lead">{{ t('settings.dangerZone.reset.warning') }}</p>
+        <p class="hint">{{ t('settings.dangerZone.reset.backupHint') }}</p>
+        <div class="actions">
+          <Button variant="danger" @click="resetConfirmOpen = true">
+            <Icon :icon="RotateCcw" :size="18" />
+            {{ t('settings.dangerZone.reset.action') }}
+          </Button>
+        </div>
+      </div>
+
+      <div class="danger-item">
+        <p class="lead">{{ t('settings.dangerZone.community.lead') }}</p>
+        <div class="actions">
+          <a
+            class="discord-link"
+            :href="DISCORD_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon :icon="MessageCircle" :size="18" />
+            {{ t('common.discord') }}
+          </a>
+        </div>
       </div>
     </section>
 
@@ -304,28 +295,28 @@ function cancelClearCache() {
       </div>
     </Modal>
 
-    <Modal v-model:open="resetConfirmOpen" :label="t('settings.reset.title')">
-      <h3 class="modal-title">{{ t('settings.reset.confirmTitle') }}</h3>
-      <p class="modal-body">{{ t('settings.reset.confirmBody') }}</p>
+    <Modal v-model:open="resetConfirmOpen" :label="t('settings.dangerZone.reset.action')">
+      <h3 class="modal-title">{{ t('settings.dangerZone.reset.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('settings.dangerZone.reset.confirmBody') }}</p>
       <div class="modal-actions">
         <Button variant="ghost" :disabled="resetting" @click="cancelReset">
           {{ t('common.cancel') }}
         </Button>
         <Button variant="danger" :loading="resetting" @click="confirmReset">
-          {{ t('settings.reset.confirmAction') }}
+          {{ t('settings.dangerZone.reset.confirmAction') }}
         </Button>
       </div>
     </Modal>
 
-    <Modal v-model:open="clearCacheConfirmOpen" :label="t('offline.clearCache.title')">
-      <h3 class="modal-title">{{ t('offline.clearCache.confirmTitle') }}</h3>
-      <p class="modal-body">{{ t('offline.clearCache.confirmBody') }}</p>
+    <Modal v-model:open="clearCacheConfirmOpen" :label="t('settings.dangerZone.clearCache.action')">
+      <h3 class="modal-title">{{ t('settings.dangerZone.clearCache.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('settings.dangerZone.clearCache.confirmBody') }}</p>
       <div class="modal-actions">
         <Button variant="ghost" :disabled="clearingCache" @click="cancelClearCache">
           {{ t('common.cancel') }}
         </Button>
         <Button variant="warn" :loading="clearingCache" @click="confirmClearCache">
-          {{ t('offline.clearCache.confirmAction') }}
+          {{ t('settings.dangerZone.clearCache.confirmAction') }}
         </Button>
       </div>
     </Modal>
@@ -411,8 +402,31 @@ function cancelClearCache() {
   align-items: center;
   gap: 0.75rem;
 }
-.offline-pack + .offline-pack {
+.danger-item {
   margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in oklab, var(--color-danger) 20%, transparent);
+}
+.discord-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: 500;
+  transition: background-color var(--duration-fast, 150ms);
+}
+.discord-link:hover {
+  background: var(--color-elevated);
+}
+.discord-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .section-danger {
   margin-top: 2.5rem;

@@ -102,6 +102,70 @@ test('choosing Arabic flips the document to RTL and persists', async ({ page }) 
   })
 })
 
+test('danger zone: clear cache requires confirmation, wipes the cache, and never touches memorization data', async ({ page }) => {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('heading', { name: 'Danger zone' })).toBeVisible()
+
+  // Seed some "memorization progress" so we can prove it survives.
+  await page.evaluate(async () => {
+    const req = indexedDB.open('murajah-userdata', 1)
+    await new Promise<void>((resolve, reject) => {
+      req.onupgradeneeded = () => req.result.createObjectStore('data')
+      req.onsuccess = () => {
+        const db = req.result
+        const tx = db.transaction('data', 'readwrite')
+        tx.objectStore('data').put({ sentinel: 'keep-me' }, 'progress')
+        tx.oncomplete = () => {
+          db.close()
+          resolve()
+        }
+        tx.onerror = () => reject(tx.error)
+      }
+      req.onerror = () => reject(req.error)
+    })
+  })
+
+  await page.getByRole('button', { name: 'Clear cache' }).click()
+  await expect(page.getByRole('heading', { name: 'Clear the cache?' })).toBeVisible()
+
+  // Cancel first — must not clear anything.
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByRole('heading', { name: 'Clear the cache?' })).not.toBeVisible()
+
+  await page.getByRole('button', { name: 'Clear cache' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Clear cache' }).click()
+  await expect(page.getByText('Cache cleared')).toBeVisible()
+
+  await page.waitForURL('**/settings', { timeout: 5_000 })
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({ timeout: 10_000 })
+
+  const progress = await page.evaluate(async () => {
+    const req = indexedDB.open('murajah-userdata')
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+    const tx = db.transaction('data', 'readonly')
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const r = tx.objectStore('data').get('progress')
+      r.onsuccess = () => resolve(r.result)
+      r.onerror = () => reject(r.error)
+    })
+    db.close()
+    return value
+  })
+  expect(progress).toEqual({ sentinel: 'keep-me' })
+})
+
+test('danger zone: has a link to join the Discord community', async ({ page }) => {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({ timeout: 10_000 })
+  const link = page.locator('section', { hasText: 'Danger zone' }).getByRole('link', { name: 'Discord' })
+  await expect(link).toHaveAttribute('href', /discord\.gg/)
+  await expect(link).toHaveAttribute('target', '_blank')
+})
+
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({

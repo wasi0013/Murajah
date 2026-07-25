@@ -1,5 +1,3 @@
-import { deletePref } from './prefs'
-
 /**
  * Full "reset to brand new" — wipes every persistence layer the app writes to
  * (all IndexedDB databases, every Cache Storage bucket, the reader
@@ -55,20 +53,16 @@ export async function resetApp(): Promise<void> {
 
 /**
  * Safe cache reset: wipes only the regenerable caches — downloaded/cached
- * Quran text, images, fonts, and the service worker's Cache Storage buckets —
- * plus the offline-pack completion record (so the UI stops claiming
- * "downloaded" against a now-empty cache). Never touches `murajah-userdata`
- * (memorization progress, mistakes, plan, recordings) or the rest of
- * `murajah-prefs` (theme, reader view options, locale) — those are the
- * reason this exists as a distinct, non-destructive action from `resetApp()`.
- * Callers should still confirm with the user first (it can be a multi-hundred
- * MB deletion) and reload afterward so in-memory caches (the data worker's
- * dedupe map, loaded font faces) start clean.
+ * Quran text, images, fonts, and the service worker's Cache Storage buckets.
+ * Never touches `murajah-userdata` (memorization progress, mistakes, plan,
+ * recordings) or the rest of `murajah-prefs` (theme, reader view options,
+ * locale) — those are the reason this exists as a distinct, non-destructive
+ * action from `resetApp()`. The most common reason to use it: clearing out
+ * stale or corrupted cached data as a first, non-destructive troubleshooting
+ * step. Callers should still confirm with the user first (it can be a
+ * multi-hundred MB deletion) and reload afterward so in-memory caches (the
+ * data worker's dedupe map, loaded font faces) start clean.
  */
 export async function clearResourceCache(): Promise<void> {
-  await Promise.all([
-    ...REGENERABLE_DATABASES.map(deleteDatabase),
-    deleteAllCaches(),
-    deletePref('offlinePack'),
-  ])
+  await Promise.all([...REGENERABLE_DATABASES.map(deleteDatabase), deleteAllCaches()])
 }

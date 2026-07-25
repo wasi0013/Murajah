@@ -73,9 +73,9 @@ export class FontLoader {
 
   private async load(req: FontRequest, family: string): Promise<string> {
     // Bytes come from the persistent font cache (IndexedDB), not a bare
-    // browser fetch — this is what makes a font a verifiable, durable part of
-    // "download for offline" rather than an incidental side effect of the SW's
-    // own `/fonts/*` Cache Storage route.
+    // browser fetch — durable across reloads and deduped across concurrent
+    // requests, rather than relying solely on the SW's own `/fonts/*` Cache
+    // Storage route.
     const buffer = await this.fontCache.fetchBuffer(fontPath(this.m, req))
     const face = new FontFace(family, buffer, { display: 'block' })
     this.loaded.set(family, face)
