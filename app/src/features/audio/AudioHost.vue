@@ -49,9 +49,16 @@ onBeforeUnmount(() => {
 const pickerOpen = ref(false)
 
 const pageAvailable = computed(() => pageAudioAvailable(props.layout))
-// What actually plays / is shown selected — page grain degrades to verse where
-// unavailable, so the toggle never claims a grain the engine won't use.
-const effectiveGrain = computed(() => resolveGrain(store.grain, props.layout))
+// What's actually loaded right now, not the stored preference: playback can have
+// been started by a sibling view (Listen, Today) whose grain may disagree with
+// this one's `store.grain`. Falls back to the preference (page degrading to verse
+// where the layout doesn't support it) only when nothing is loaded yet.
+const effectiveGrain = computed(() => {
+  const kind = store.current?.kind
+  if (kind === 'verse') return 'verse'
+  if (kind === 'page-part') return 'page'
+  return resolveGrain(store.grain, props.layout)
+})
 const reciterName = computed(() =>
   effectiveGrain.value === 'page'
     ? pageReciter(store.pageReciterId).name
@@ -76,7 +83,11 @@ function onStart() {
   void player.start(ctx())
 }
 function onRebuild() {
-  void player.restart()
+  // Not `player.restart()`: playback may have been started by a different
+  // view entirely (Listen, Today) whose own player instance holds the
+  // context, not this one's. Always rebuild from what's actually on screen
+  // here, same as the exhausted-callback and page-follow watcher above.
+  void player.start(ctx())
 }
 function onClose() {
   engine.stop()

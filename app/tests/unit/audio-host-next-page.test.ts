@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { useAudioStore } from '@/stores/audio'
+import AudioMiniPlayer from '@/features/audio/AudioMiniPlayer.vue'
 
 // Bug: "when auto play next is selected, the audio loads the next page's audio but
 // the page stays on the previous one." The engine signals exhaustion (no more items,
@@ -12,7 +14,6 @@ import { setActivePinia, createPinia } from 'pinia'
 // `nextTick` in AudioHost really see the parent's updated `pages` prop?).
 
 const start = vi.fn(async () => {})
-const restart = vi.fn(async () => {})
 let onExhausted: (() => void) | null = null
 const setOnExhausted = vi.fn((cb: (() => void) | null) => {
   onExhausted = cb
@@ -20,7 +21,7 @@ const setOnExhausted = vi.fn((cb: (() => void) | null) => {
 const engineStop = vi.fn()
 
 vi.mock('@/composables/useQariPlayer', () => ({
-  useQariPlayer: () => ({ start, restart }),
+  useQariPlayer: () => ({ start }),
 }))
 vi.mock('@/composables/useAudioEngine', () => ({
   useAudioEngine: () => ({ setOnExhausted, stop: engineStop }),
@@ -97,5 +98,29 @@ describe('AudioHost — autoplay-next page-turn wiring', () => {
     wrapper.unmount()
     wrapper = null
     expect(setOnExhausted).toHaveBeenLastCalledWith(null)
+  })
+})
+
+describe('AudioHost — rebuild after playback started elsewhere', () => {
+  // Bug: playback started in a sibling view (Listen, Today — each with its own
+  // player-composable instance) leaves *this* instance's context empty. Rebuild
+  // must re-derive from this view's own current props, not from memory of a
+  // `start()` that may never have happened here.
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('rebuilds from the current view context on a grain/reciter change, even without a prior start() here', async () => {
+    const { wrapper: w } = harness([5], () => {})
+    wrapper = w
+    useAudioStore().open = true // as if a sibling view already opened the player
+    await nextTick()
+    start.mockClear()
+
+    await wrapper.findComponent(AudioMiniPlayer).vm.$emit('rebuild')
+    await nextTick()
+
+    expect(start).toHaveBeenCalledTimes(1)
+    expect(start.mock.calls[0][0]).toEqual({ view: 'text', layout: 'qpc', pages: [5] })
   })
 })

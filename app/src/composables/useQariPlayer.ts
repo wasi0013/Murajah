@@ -3,8 +3,11 @@
  *
  * The view supplies a plain context (which surface, layout, and page(s) are showing;
  * see `audioPagesFor`); this builds the right playlist for the current grain/reciter
- * and hands it to the engine. Rebuilding for the same context (`restart`) lets the
- * UI re-derive playback when the grain or reciter changes mid-session.
+ * and hands it to the engine. There's deliberately no `restart`/"last context"
+ * memory here: playback can be started by a *different* view entirely (Listen,
+ * Today — siblings with their own player composables), so a grain/reciter change
+ * always re-derives from the caller's current, live context (`start` again) rather
+ * than from whatever this instance last saw, which may be stale or nonexistent.
  */
 import { getDataClient } from '@/core/data'
 import type { Layout } from '@/core/data/types'
@@ -27,10 +30,8 @@ export function useQariPlayer() {
   const store = useAudioStore()
   const engine = useAudioEngine()
   const data = getDataClient()
-  let lastCtx: QariContext | null = null
 
   async function start(ctx: QariContext): Promise<void> {
-    lastCtx = ctx
     store.open = true
     store.loading = true
     try {
@@ -51,10 +52,5 @@ export function useQariPlayer() {
     }
   }
 
-  /** Rebuild playback for the last context (after a grain / reciter change). */
-  async function restart(): Promise<void> {
-    if (lastCtx) await start(lastCtx)
-  }
-
-  return { start, restart }
+  return { start }
 }
