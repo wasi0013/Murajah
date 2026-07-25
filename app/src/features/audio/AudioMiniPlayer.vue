@@ -68,7 +68,11 @@ function onPlay() {
 
 function setGrain(grain: 'verse' | 'page') {
   if (grain === 'page' && !props.pageAvailable) return
-  if (store.grain === grain) return
+  // Compare against what's actually loaded (`effectiveGrain`), not the stored
+  // preference — a re-tap of the button matching reality is still a no-op, but a
+  // tap on the other button always rebuilds, even if `store.grain` already agreed
+  // with it (e.g. audio playing here started from a sibling view).
+  if (props.effectiveGrain === grain) return
   store.grain = grain
   emit('rebuild')
 }
