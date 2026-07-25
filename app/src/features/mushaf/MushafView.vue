@@ -389,7 +389,13 @@ function backToReader() {
 
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
-    <AudioHost v-if="audio.open" view="mushaf" layout="qpc" :pages="store.visible" />
+    <AudioHost
+      v-if="audio.open"
+      view="mushaf"
+      layout="qpc"
+      :pages="store.visible"
+      @need-next-page="store.canNext && store.next()"
+    />
 
     <RecordingPanel v-if="recordOpen" v-model:open="recordOpen" :page="store.page" />
   </main>

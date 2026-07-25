@@ -252,7 +252,13 @@ watch(
 
     <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
 
-    <AudioHost v-if="audio.open" view="text" :layout="reader.layout" :pages="audioPages" />
+    <AudioHost
+      v-if="audio.open"
+      view="text"
+      :layout="reader.layout"
+      :pages="audioPages"
+      @need-next-page="reader.nextPage()"
+    />
 
     <RecordingPanel
       v-if="recordOpen"

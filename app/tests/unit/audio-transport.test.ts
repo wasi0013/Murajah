@@ -10,8 +10,12 @@ describe('nextOnEnd', () => {
     expect(nextOnEnd(0, 3, false, false)).toBe('stop')
   })
 
-  it('stops after the last item without loop', () => {
-    expect(nextOnEnd(2, 3, true, false)).toBe('stop')
+  it('stops after the last item without loop when autoplay-next is off', () => {
+    expect(nextOnEnd(2, 3, false, false)).toBe('stop')
+  })
+
+  it('is exhausted after the last item without loop when autoplay-next is on (asks the caller for a next page)', () => {
+    expect(nextOnEnd(2, 3, true, false)).toBe('exhausted')
   })
 
   it('wraps to the start after the last item when loop-playlist is on', () => {
@@ -20,8 +24,9 @@ describe('nextOnEnd', () => {
     expect(nextOnEnd(2, 3, false, true)).toEqual({ index: 0 })
   })
 
-  it('stops on an empty list', () => {
+  it('stops on an empty list regardless of autoplay-next/loop', () => {
     expect(nextOnEnd(-1, 0, true, true)).toBe('stop')
+    expect(nextOnEnd(-1, 0, true, false)).toBe('stop')
   })
 })
 

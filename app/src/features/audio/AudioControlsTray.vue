@@ -11,8 +11,12 @@ import { useI18n } from '@/core/i18n'
  * spaced-repetition, and the autoplay-next / loop-playlist transport companions.
  * Kept out of the always-visible mini-player so the default surface stays simple.
  *
- * AB-repeat is driven entirely by the engine's reducer (decision 7): setting A then
- * B starts the loop; the Loop button toggles looping while preserving the markers.
+ * AB-repeat is driven entirely by the engine's reducer (`core/audio/abRepeat.ts`):
+ * setting both A and B starts the loop immediately; setting B alone loops from the
+ * start; and the Loop button — always tappable, not just once markers exist — loops
+ * the whole item with no markers, or fills in whichever end is missing (start or
+ * duration) so a lone A marker can be turned into "loop from here to the end" right
+ * away, without waiting for the item to finish playing once first.
  * Changing repeat-count or the spaced drill needs the playlist rebuilt, so those
  * emit `rebuild`; autoplay-next / loop-playlist are read live by the engine, so
  * they don't.
@@ -67,7 +71,6 @@ function toggleSpaced() {
           class="chip"
           :class="{ on: store.ab.loop }"
           :aria-pressed="store.ab.loop"
-          :disabled="!hasMarkers"
           @click="engine.toggleAbLoop()"
         >
           <Icon :icon="Repeat" :size="15" />

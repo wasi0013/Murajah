@@ -446,6 +446,10 @@ export interface StoredAudioPrefs {
   verseReciterId?: string
   pageReciterId?: string
   speed?: number
+  repeatCount?: number
+  spaced?: boolean
+  autoNext?: boolean
+  loopPlaylist?: boolean
   autoScroll?: boolean
   lastListenScope?: PlaybackScope
 }
@@ -471,6 +475,10 @@ export async function saveAudioPrefs(prefs: StoredAudioPrefs): Promise<void> {
       verseReciterId: prefs.verseReciterId,
       pageReciterId: prefs.pageReciterId,
       speed: prefs.speed,
+      repeatCount: prefs.repeatCount,
+      spaced: prefs.spaced,
+      autoNext: prefs.autoNext,
+      loopPlaylist: prefs.loopPlaylist,
       autoScroll: prefs.autoScroll,
       lastListenScope: prefs.lastListenScope,
     }

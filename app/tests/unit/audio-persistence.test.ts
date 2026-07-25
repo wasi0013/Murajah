@@ -24,6 +24,16 @@ describe('audio prefs storage', () => {
     })
   })
 
+  it('round-trips repeat-count, spaced-drill, autoplay-next, and loop-playlist', async () => {
+    await saveAudioPrefs({ repeatCount: 4, spaced: true, autoNext: false, loopPlaylist: true })
+    expect(await loadAudioPrefs()).toEqual({
+      repeatCount: 4,
+      spaced: true,
+      autoNext: false,
+      loopPlaylist: true,
+    })
+  })
+
   it('returns an empty object when nothing is stored', async () => {
     expect(await loadAudioPrefs()).toEqual({})
   })
@@ -48,6 +58,33 @@ describe('useAudioPersistence', () => {
     expect(store2.verseReciterId).toBe('ali_jaber')
     expect(store2.speed).toBe(0.75)
     expect(store2.autoScroll).toBe(false)
+  })
+
+  it('persists repeat-count, spaced-drill, autoplay-next, and loop-playlist (bug: these used to silently reset every reload)', async () => {
+    const store = useAudioStore()
+    const p = useAudioPersistence(store)
+    store.repeatCount = 3
+    store.spaced = true
+    store.autoNext = false
+    store.loopPlaylist = true
+    await tick(360)
+    p.dispose()
+
+    setActivePinia(createPinia())
+    const store2 = useAudioStore()
+    await useAudioPersistence(store2).hydrate()
+    expect(store2.repeatCount).toBe(3)
+    expect(store2.spaced).toBe(true)
+    expect(store2.autoNext).toBe(false)
+    expect(store2.loopPlaylist).toBe(true)
+  })
+
+  it('ignores an out-of-range repeat-count on hydrate', async () => {
+    await saveAudioPrefs({ repeatCount: 42 })
+    const store = useAudioStore()
+    const before = store.repeatCount
+    await useAudioPersistence(store).hydrate()
+    expect(store.repeatCount).toBe(before)
   })
 
   it('ignores an unknown reciter id and an invalid speed on hydrate', async () => {

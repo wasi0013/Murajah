@@ -56,6 +56,17 @@ test('AB-repeat: setting A then B starts the loop (decision 7a)', async ({ page 
   await expect(loop).toHaveAttribute('aria-pressed', 'true') // auto-on when both set
 })
 
+test('AB-repeat: the Loop button is always usable, even before any A/B marker is set', async ({ page }) => {
+  // Regression: Loop used to be disabled until a marker existed, making "just loop
+  // the whole thing" impossible without first fiddling with A/B. What it does when
+  // pressed (loop the whole item vs. from a marker) is unit-covered in
+  // audio-engine.test.ts, since it depends on the track's duration.
+  await openReaderPlayer(page)
+  await page.getByRole('button', { name: 'More controls' }).click()
+  const loop = page.getByRole('button', { name: 'Loop' })
+  await expect(loop).toBeEnabled()
+})
+
 test('the reader tags words with their verse for highlight sync', async ({ page }) => {
   await page.goto('/')
   // Words render from real data; each carries a data-verse anchor (7.4 mapping).

@@ -2,14 +2,21 @@
  * AB-repeat state machine (decision 7), pure half.
  *
  * The reducer owns the marker/loop *state*; the engine (7.1.2) owns the timeline
- * effects (seeking). Behaviours, all confirmed:
- *   a) set A then B → looping starts immediately.
- *   b) set A but never B → when the item reaches its end, B is auto-placed at the
- *      end and looping begins (so "A to the end, on repeat" needs one tap).
- *   c) the loop can be toggled off while the A/B markers stay put, and back on.
- *   d) clear removes the markers and stops the loop.
+ * effects (seeking). Simplified interaction model, all confirmed:
+ *   a) set A then B (either order) → looping starts immediately, region [min, max].
+ *   b) set B alone (no A yet) → loops from the very beginning (0) to B immediately —
+ *      no separate "tap Loop" step needed, since "loop the start of this" is the
+ *      common case and A is awkward to place exactly at 0.
+ *   c) set A alone, then tap Loop → loops from A to the end immediately (no need to
+ *      wait for the item to finish playing first).
+ *   d) tap Loop with no markers at all → loops the whole item, [0, duration].
+ *   e) the loop can be toggled off while the A/B markers stay put, and back on.
+ *   f) clear removes the markers and stops the loop.
  *
- * Markers may be set in either order; the *region* is always `[min, max]`.
+ * Markers may be set in either order; the *region* is always `[min, max]`. Whenever
+ * `loop` is true, both `a` and `b` are guaranteed non-null (every transition that
+ * sets `loop: true` fills both markers in the same step) — callers can rely on this
+ * instead of re-checking.
  */
 
 export interface AbState {
@@ -23,22 +30,38 @@ export interface AbState {
 
 export const AB_NONE: AbState = { a: null, b: null, loop: false }
 
-/** Set/replace point A. If B is already set, looping starts (behaviour a). */
+/**
+ * Set/replace point A. Marking A alone never starts a loop on its own (the user
+ * must explicitly tap Loop, or place B, per the module doc) — unless B is already
+ * set, in which case both markers are now in place and looping starts (behaviour a).
+ */
 export function setA(s: AbState, time: number): AbState {
   return { a: Math.max(0, time), b: s.b, loop: s.b !== null ? true : s.loop }
 }
 
-/** Set/replace point B. If A is already set, looping starts (behaviour a). */
+/**
+ * Set/replace point B. Always starts looping immediately: if A isn't set yet, the
+ * region defaults to [0, B] (behaviour b); if A is already set, [A, B] (behaviour a).
+ */
 export function setB(s: AbState, time: number): AbState {
-  return { a: s.a, b: Math.max(0, time), loop: s.a !== null ? true : s.loop }
+  return { a: s.a ?? 0, b: Math.max(0, time), loop: true }
 }
 
-/** Toggle looping on/off, preserving the markers (behaviour c). */
-export function toggleLoop(s: AbState): AbState {
-  return { ...s, loop: !s.loop }
+/**
+ * Toggle looping. Turning off just flips the flag, preserving markers (behaviour e).
+ * Turning on fills in whichever marker is missing so a region always exists right
+ * away: no markers → [0, duration] (d); A only → [A, duration] (c); B only → [0, B]
+ * (mirrors b, reachable if a caller flips loop off and back on with only B set).
+ * `duration` may be 0/NaN before metadata has loaded — in that rare case there's
+ * nothing sensible to loop against yet, so this is a no-op.
+ */
+export function toggleLoop(s: AbState, duration: number): AbState {
+  if (s.loop) return { ...s, loop: false }
+  if (!(duration > 0)) return s
+  return { a: s.a ?? 0, b: s.b ?? duration, loop: true }
 }
 
-/** Clear both markers and stop looping (behaviour d). */
+/** Clear both markers and stop looping (behaviour f). */
 export function clearAb(): AbState {
   return { ...AB_NONE }
 }
@@ -62,17 +85,13 @@ export function abSeekTarget(s: AbState, currentTime: number): number | null {
 
 /**
  * When the current item ends: how AB-repeat wants to handle it.
- * - Only A set → auto-place B at the end, turn looping on, seek back to A (behaviour b).
- * - Both set and looping → wrap to the region start (in case `ended` fired past B).
- * - Otherwise → let the engine advance normally.
+ * - Looping, with a region → wrap to the region start (in case `ended` fired
+ *   before `timeupdate` caught the crossing).
+ * - Otherwise → let the engine advance normally. (A lone A-marker, not yet turned
+ *   into a loop via `toggleLoop`, is just a bookmark at this point — it does not
+ *   force looping on reaching the end; see the module doc.)
  */
-export function abOnEnded(
-  s: AbState,
-  duration: number,
-): { state: AbState; seekTo: number | null } {
-  if (s.a !== null && s.b === null) {
-    return { state: { a: s.a, b: Math.max(0, duration), loop: true }, seekTo: Math.min(s.a, duration) }
-  }
+export function abOnEnded(s: AbState): { state: AbState; seekTo: number | null } {
   const region = abRegion(s)
   if (region && s.loop) {
     return { state: s, seekTo: region.start }

@@ -95,7 +95,7 @@ describe('useAudioEngine wiring', () => {
     el().fire('ended')
     expect(store.index).toBe(1)
     expect(el().src).toBe('b.mp3')
-    el().fire('ended') // last item, no loop → stop
+    el().fire('ended') // last item, no loop → exhausted (pauses; see the dedicated tests below)
     expect(store.isPlaying).toBe(false)
   })
 
@@ -142,17 +142,143 @@ describe('useAudioEngine wiring', () => {
     expect(el().currentTime).toBe(5) // looped back to A
   })
 
-  it('only-A + ended auto-places B at the end, enables loop, seeks to A', () => {
+  it('markA/markB read the element directly, not the throttled store.currentTime', () => {
+    // Regression: timeupdate (and so store.currentTime) only updates on the
+    // browser's own cadence (commonly ~250ms) — a marker set right after a seek
+    // could otherwise land on a stale value, contributing to "hard to set AB
+    // repeat precisely."
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fireMeta(30)
+    el().fireTime(5) // store.currentTime is now 5...
+    el().currentTime = 7 // ...but the element has since moved on, no timeupdate yet
+    engine.markA()
+    expect(store.ab.a).toBe(7)
+  })
+
+  it('only-A, no explicit Loop tap: reaching the end advances normally, does not force a loop', () => {
     const engine = useAudioEngine()
     const store = useAudioStore()
     engine.setPlaylistAndPlay([item('a.mp3'), item('b.mp3')])
     el().fireMeta(20)
     el().fireTime(4)
-    engine.markA() // A = 4, no B yet
+    engine.markA() // A = 4, no B yet, loop still off
     el().fire('ended')
+    expect(store.ab).toEqual({ a: 4, b: null, loop: false })
+    expect(store.index).toBe(1) // advanced normally (autoplay-next is on by default)
+  })
+
+  it('tapping Loop with only A set loops from A to the end immediately (no need to wait for it to end once)', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fireMeta(20)
+    el().fireTime(4)
+    engine.markA() // A = 4
+    engine.toggleAbLoop()
     expect(store.ab).toEqual({ a: 4, b: 20, loop: true })
-    expect(el().currentTime).toBe(4)
-    expect(store.index).toBe(0) // did NOT advance — it's looping the item now
+    el().fireTime(20) // cross the end
+    expect(el().currentTime).toBe(4) // looped back to A without ever needing `ended`
+  })
+
+  it('tapping Loop with no markers loops the whole item', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fireMeta(15)
+    engine.toggleAbLoop()
+    expect(store.ab).toEqual({ a: 0, b: 15, loop: true })
+  })
+
+  it('placing B alone loops from the beginning immediately', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fireMeta(20)
+    el().fireTime(6)
+    engine.markB()
+    expect(store.ab).toEqual({ a: 0, b: 6, loop: true })
+  })
+
+  it('playback rate is reasserted on loadedmetadata/durationchange, surviving a WebView reset on load()', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    store.speed = 0.75
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    expect(el().playbackRate).toBe(0.75)
+    // Simulate a WebView silently resetting playbackRate as part of the load
+    // algorithm — the bug: the UI still shows 0.75 (store.speed unchanged) while
+    // the element itself would play at 1x without this reassertion.
+    el().playbackRate = 1
+    el().fireMeta(30)
+    expect(el().playbackRate).toBe(0.75)
+  })
+
+  it('playback rate is also reasserted right as playback starts/resumes (in case a WebView resets it there instead of at load())', () => {
+    // Exactly *when* a WebView resets playbackRate isn't something we can observe
+    // from here, so both plausible moments (load() and actual playback-start) are
+    // covered independently. This one isolates the "resumed after a manual pause,
+    // well after loadedmetadata already fired" case — onMeta alone can't catch a
+    // reset that happens later, at resume.
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    store.speed = 0.75
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fireMeta(20)
+    engine.pause()
+    el().playbackRate = 1 // webview quirk, on resume rather than load
+    engine.play()
+    expect(el().playbackRate).toBe(0.75)
+  })
+
+  it('advancing to a new track reasserts the current speed even if a prior reset happened', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    store.speed = 1.25
+    engine.setPlaylistAndPlay([item('a.mp3'), item('b.mp3')])
+    el().playbackRate = 1 // webview quirk
+    el().fireMeta(10)
+    expect(el().playbackRate).toBe(1.25)
+    el().fire('ended')
+    expect(el().src).toBe('b.mp3')
+    el().playbackRate = 1 // webview quirk again, on the new track
+    el().fireMeta(12)
+    expect(el().playbackRate).toBe(1.25)
+  })
+
+  it('calls the exhausted callback when autoplay-next runs off the end of the list with no loop', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    const onExhausted = vi.fn()
+    engine.setOnExhausted(onExhausted)
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fire('ended') // single-item list, autoplay-next on, loop off
+    expect(onExhausted).toHaveBeenCalledOnce()
+    expect(store.isPlaying).toBe(false)
+  })
+
+  it('does not call the exhausted callback when loop-playlist is on (wraps instead)', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    const onExhausted = vi.fn()
+    engine.setOnExhausted(onExhausted)
+    store.loopPlaylist = true
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fire('ended')
+    expect(onExhausted).not.toHaveBeenCalled()
+    expect(store.index).toBe(0) // wrapped back to itself
+  })
+
+  it('does not call the exhausted callback when autoplay-next is off (plain stop)', () => {
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    const onExhausted = vi.fn()
+    engine.setOnExhausted(onExhausted)
+    store.autoNext = false
+    engine.setPlaylistAndPlay([item('a.mp3')])
+    el().fire('ended')
+    expect(onExhausted).not.toHaveBeenCalled()
   })
 
   it('exposes the active verse for the reader highlight (verse grain)', () => {
