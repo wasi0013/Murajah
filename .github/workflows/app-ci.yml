@@ -1,16 +1,19 @@
 name: app CI
 
 # Redesign app (app/) quality + performance gates.
-# Legacy source/ is unaffected; this only runs on app/ changes.
+# data-pipeline/ feeds app/'s build (see the assets.mjs step below), so its
+# changes gate this too. Legacy source/ is unaffected either way.
 on:
   pull_request:
     paths:
       - 'app/**'
+      - 'data-pipeline/**'
       - '.github/workflows/app-ci.yml'
   push:
     branches: [redesign]
     paths:
       - 'app/**'
+      - 'data-pipeline/**'
       - '.github/workflows/app-ci.yml'
 
 defaults:
