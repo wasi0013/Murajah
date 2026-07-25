@@ -216,7 +216,7 @@ Reframed from "the usual PWA/offline task list" once it became clear this ships 
 
 **Acceptance:** legacy SW/caches torn down on first new-app boot with IndexedDB provably intact; iOS never receives a precached shell; update UX is non-blocking; offline download manager + install prompt shipped; rollback dry-run passes.
 
-### Phase 11 — Cutover & launch (renumbered from Phase 10; depends on Phase 10 above)
+### Phase 11 — Cutover & launch (renumbered from Phase 10; depends on Phase 10 above) → [phase-11-cutover-launch.md](./phase-11-cutover-launch.md)
 
 - Per-screen flag flip to 100%; redirect legacy routes → new app; 
 - Suggest Deletion of `source/` monolith and other dead assets, list them and write a command in the doc but do not execute the command.

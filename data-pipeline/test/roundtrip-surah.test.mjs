@@ -1,16 +1,16 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { SOURCE_DATA } from '../src/lib/paths.mjs'
+import { INPUT_DATA } from '../src/lib/paths.mjs'
 import { groupBySurah, mergeSurahChunks } from '../src/chunk-by-surah.mjs'
 
 // Word-by-word translations (keyed s:a:w) and tafsir (keyed s:a).
 const files = [
-  { name: 'tr-en', file: `${SOURCE_DATA}/quran/english-wbw-translation.json` },
-  { name: 'tr-bn', file: `${SOURCE_DATA}/quran/bangali-word-by-word-translation.json` },
-  { name: 'tafsir-ar', file: `${SOURCE_DATA}/tafsir/ar-tafsir.json` },
-  { name: 'tafsir-en', file: `${SOURCE_DATA}/tafsir/en-tafsir.json` },
-  { name: 'tafsir-bn', file: `${SOURCE_DATA}/tafsir/bn-tafsir.json` },
+  { name: 'tr-en', file: `${INPUT_DATA}/quran/english-wbw-translation.json` },
+  { name: 'tr-bn', file: `${INPUT_DATA}/quran/bangali-word-by-word-translation.json` },
+  { name: 'tafsir-ar', file: `${INPUT_DATA}/tafsir/ar-tafsir.json` },
+  { name: 'tafsir-en', file: `${INPUT_DATA}/tafsir/en-tafsir.json` },
+  { name: 'tafsir-bn', file: `${INPUT_DATA}/tafsir/bn-tafsir.json` },
 ]
 
 for (const f of files) {

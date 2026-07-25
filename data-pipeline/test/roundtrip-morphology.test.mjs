@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { SOURCE_DATA } from '../src/lib/paths.mjs'
+import { INPUT_DATA } from '../src/lib/paths.mjs'
 import { unwrapMorphology, wrapMorphology } from '../src/chunk-morphology.mjs'
 
-const SRC = `${SOURCE_DATA}/morphology`
+const SRC = `${INPUT_DATA}/morphology`
 const read = (surah) => JSON.parse(readFileSync(`${SRC}/${surah}.json`, 'utf8'))
 
 // Spot-check a small surah and the largest (surah 2, 6116 words).

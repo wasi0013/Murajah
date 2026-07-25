@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Build-time scripts: chunk + compress Quran data/assets from source/ into app/public.",
+  "description": "Build-time scripts: chunk + compress Quran data/assets from input/ into app/public.",
   "scripts": {
     "data:build": "node src/build.mjs",
     "assets:build": "node src/assets.mjs",

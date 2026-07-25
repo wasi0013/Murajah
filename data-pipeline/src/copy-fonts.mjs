@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
-import { SOURCE_FONTS, OUTPUT_PUBLIC } from './lib/paths.mjs'
+import { INPUT_FONTS, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { writeJson } from './lib/manifest.mjs'
 
 /**
@@ -35,14 +35,14 @@ export function copyFonts() {
   const outFonts = `${OUTPUT_PUBLIC}/fonts`
   const isWoff2 = (n) => n.endsWith('.woff2')
 
-  const qpc = copyDir(`${SOURCE_FONTS}/qpc-v2`, `${outFonts}/qpc-v2`, isWoff2)
-  const tajweed = copyDir(`${SOURCE_FONTS}/tajweed`, `${outFonts}/tajweed`, isWoff2)
-  const indopak = copyDir(`${SOURCE_FONTS}/indopak`, `${outFonts}/indopak`, isWoff2)
+  const qpc = copyDir(`${INPUT_FONTS}/qpc-v2`, `${outFonts}/qpc-v2`, isWoff2)
+  const tajweed = copyDir(`${INPUT_FONTS}/tajweed`, `${outFonts}/tajweed`, isWoff2)
+  const indopak = copyDir(`${INPUT_FONTS}/indopak`, `${outFonts}/indopak`, isWoff2)
 
   // Single static asset (not per-page generated): the ornamental surah-header
   // glyph font, referenced directly by design/tokens.css `@font-face`.
   mkdirSync(outFonts, { recursive: true })
-  copyFileSync(`${SOURCE_FONTS}/surah_names.woff2`, `${outFonts}/surah-names.woff2`)
+  copyFileSync(`${INPUT_FONTS}/surah_names.woff2`, `${outFonts}/surah-names.woff2`)
 
   const manifest = {
     // Per-page glyph fonts: family is fixed, the woff2 URL varies by page.

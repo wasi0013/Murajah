@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { SOURCE_DATA } from '../src/lib/paths.mjs'
+import { INPUT_DATA } from '../src/lib/paths.mjs'
 import { buildPageChunks, reconstruct } from '../src/chunk-quran.mjs'
 
 // Both per-page layouts share the same shape and chunking guarantees.
@@ -9,14 +9,14 @@ const datasets = [
   {
     name: 'qpc',
     pages: 604,
-    layoutFile: `${SOURCE_DATA}/quran/qpc-v2-15-lines.json`,
-    wordsFile: `${SOURCE_DATA}/quran/qpc-v2-word-by-word.json`,
+    layoutFile: `${INPUT_DATA}/quran/qpc-v2-15-lines.json`,
+    wordsFile: `${INPUT_DATA}/quran/qpc-v2-word-by-word.json`,
   },
   {
     name: 'indopak',
     pages: 610,
-    layoutFile: `${SOURCE_DATA}/quran/indopak-15-lines.json`,
-    wordsFile: `${SOURCE_DATA}/indopak/indopak-nastaleeq.json`,
+    layoutFile: `${INPUT_DATA}/quran/indopak-15-lines.json`,
+    wordsFile: `${INPUT_DATA}/indopak/indopak-nastaleeq.json`,
   },
 ]
 

@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { SOURCE_DATA } from '../src/lib/paths.mjs'
+import { INPUT_DATA } from '../src/lib/paths.mjs'
 import { buildNavIndex, JUZ_STARTS } from '../src/build-nav-index.mjs'
 
-const quran = JSON.parse(readFileSync(`${SOURCE_DATA}/quran/quran.json`, 'utf8'))
+const quran = JSON.parse(readFileSync(`${INPUT_DATA}/quran/quran.json`, 'utf8'))
 const qpc = buildNavIndex(quran, 'page')
 const indopak = buildNavIndex(quran, 'indopak_page')
 

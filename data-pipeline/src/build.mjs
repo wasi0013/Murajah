@@ -1,6 +1,6 @@
 import { gzipSync } from 'node:zlib'
 import { readFileSync } from 'node:fs'
-import { SOURCE_DATA, OUTPUT_DATA, OUTPUT_PUBLIC } from './lib/paths.mjs'
+import { INPUT_DATA, OUTPUT_DATA, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { createManifest, writeJson } from './lib/manifest.mjs'
 import { chunkQuranLayout } from './chunk-quran.mjs'
 import { chunkFlatBySurah } from './chunk-by-surah.mjs'
@@ -14,14 +14,14 @@ function main() {
   const datasets = [
     {
       name: 'qpc',
-      layoutFile: `${SOURCE_DATA}/quran/qpc-v2-15-lines.json`,
-      wordsFile: `${SOURCE_DATA}/quran/qpc-v2-word-by-word.json`,
+      layoutFile: `${INPUT_DATA}/quran/qpc-v2-15-lines.json`,
+      wordsFile: `${INPUT_DATA}/quran/qpc-v2-word-by-word.json`,
       outDir: 'qpc/pages',
     },
     {
       name: 'indopak',
-      layoutFile: `${SOURCE_DATA}/quran/indopak-15-lines.json`,
-      wordsFile: `${SOURCE_DATA}/indopak/indopak-nastaleeq.json`,
+      layoutFile: `${INPUT_DATA}/quran/indopak-15-lines.json`,
+      wordsFile: `${INPUT_DATA}/indopak/indopak-nastaleeq.json`,
       outDir: 'indopak/pages',
     },
   ]
@@ -34,11 +34,11 @@ function main() {
 
   // Word-by-word translations + tafsir → per-surah chunks (layout-independent).
   const surahDatasets = [
-    { name: 'tr-en', file: `${SOURCE_DATA}/quran/english-wbw-translation.json`, outDir: 'tr/en' },
-    { name: 'tr-bn', file: `${SOURCE_DATA}/quran/bangali-word-by-word-translation.json`, outDir: 'tr/bn' },
-    { name: 'tafsir-ar', file: `${SOURCE_DATA}/tafsir/ar-tafsir.json`, outDir: 'tafsir/ar' },
-    { name: 'tafsir-en', file: `${SOURCE_DATA}/tafsir/en-tafsir.json`, outDir: 'tafsir/en' },
-    { name: 'tafsir-bn', file: `${SOURCE_DATA}/tafsir/bn-tafsir.json`, outDir: 'tafsir/bn' },
+    { name: 'tr-en', file: `${INPUT_DATA}/quran/english-wbw-translation.json`, outDir: 'tr/en' },
+    { name: 'tr-bn', file: `${INPUT_DATA}/quran/bangali-word-by-word-translation.json`, outDir: 'tr/bn' },
+    { name: 'tafsir-ar', file: `${INPUT_DATA}/tafsir/ar-tafsir.json`, outDir: 'tafsir/ar' },
+    { name: 'tafsir-en', file: `${INPUT_DATA}/tafsir/en-tafsir.json`, outDir: 'tafsir/en' },
+    { name: 'tafsir-bn', file: `${INPUT_DATA}/tafsir/bn-tafsir.json`, outDir: 'tafsir/bn' },
   ]
   for (const ds of surahDatasets) {
     const entry = chunkFlatBySurah({ ...ds, outputData: OUTPUT_DATA })
@@ -48,7 +48,7 @@ function main() {
 
   // Morphology → per-surah chunks (source is already per-surah, wrapped in `.data`).
   const morphology = chunkMorphology({
-    srcDir: `${SOURCE_DATA}/morphology`,
+    srcDir: `${INPUT_DATA}/morphology`,
     outDir: 'morphology',
     outputData: OUTPUT_DATA,
   })
@@ -57,9 +57,9 @@ function main() {
 
   // Whole-file indexes the app loads once (small).
   const indexes = [
-    { name: 'surahNames', src: `${SOURCE_DATA}/quran/surah-names.json`, out: 'surah-names.json' },
-    { name: 'tafsirMapQpc', src: `${SOURCE_DATA}/tafsir/qpc-page-tafsir-mapping.json`, out: 'tafsir/mapping/qpc.json' },
-    { name: 'tafsirMapIndopak', src: `${SOURCE_DATA}/tafsir/indopak-page-tafsir-mapping.json`, out: 'tafsir/mapping/indopak.json' },
+    { name: 'surahNames', src: `${INPUT_DATA}/quran/surah-names.json`, out: 'surah-names.json' },
+    { name: 'tafsirMapQpc', src: `${INPUT_DATA}/tafsir/qpc-page-tafsir-mapping.json`, out: 'tafsir/mapping/qpc.json' },
+    { name: 'tafsirMapIndopak', src: `${INPUT_DATA}/tafsir/indopak-page-tafsir-mapping.json`, out: 'tafsir/mapping/indopak.json' },
   ]
   for (const idx of indexes) {
     const value = JSON.parse(readFileSync(idx.src, 'utf8'))
@@ -69,7 +69,7 @@ function main() {
 
   // Per-layout navigation indexes (ayah/juz/surah → page) for quick-jump.
   for (const { name, path, bytes, hash } of writeNavIndexes({
-    quranFile: `${SOURCE_DATA}/quran/quran.json`,
+    quranFile: `${INPUT_DATA}/quran/quran.json`,
     outputData: OUTPUT_DATA,
   })) {
     manifest.addIndex(name, { path, bytes, hash })

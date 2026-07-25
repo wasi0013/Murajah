@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync } from 'node:fs'
-import { SOURCE_IMAGES, OUTPUT_PUBLIC } from './lib/paths.mjs'
+import { INPUT_IMAGES, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { writeJson, hash } from './lib/manifest.mjs'
 
 /**
@@ -69,7 +69,7 @@ function writeManifest(outDir, dims) {
 }
 
 export function transcodeImages({ limit = Infinity } = {}) {
-  const srcDir = `${SOURCE_IMAGES}/quran_pages`
+  const srcDir = `${INPUT_IMAGES}/quran_pages`
   const outDir = `${OUTPUT_PUBLIC}/img/mushaf`
   mkdirSync(outDir, { recursive: true })
 
