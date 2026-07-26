@@ -117,6 +117,35 @@ describe('progress store', () => {
     expect(p.hasanah).toBe(2780)
   })
 
+  it('bulkMarkMemorized credits default strength + proportional hasanah for freshly-marked pages', () => {
+    const p = useProgressStore()
+    p.bulkMarkMemorized([1, 2], true)
+    expect(p.isMemorized(1)).toBe(true)
+    expect(p.isMemorized(2)).toBe(true)
+    expect(p.strengthOf(1)).toBe(40)
+    expect(p.strengthOf(2)).toBe(40)
+    expect(p.hasanah).toBe((1390 + 1600) * 40) // page 1 + page 2 weights × 40
+
+    // A page with real review history is never clobbered by a bulk mark.
+    p.bumpStrength(1, -30) // simulate mistakes: strength now 10
+    const hasanahBefore = p.hasanah
+    p.bulkMarkMemorized([1], true)
+    expect(p.strengthOf(1)).toBe(10) // untouched
+    expect(p.hasanah).toBe(hasanahBefore) // no re-award
+
+    // Unmarking never touches strength/hasanah.
+    p.bulkMarkMemorized([2], false)
+    expect(p.isMemorized(2)).toBe(false)
+    expect(p.strengthOf(2)).toBe(40)
+    expect(p.hasanah).toBe(hasanahBefore)
+
+    // A page previously left at 0 by the old bug is backfilled on the next bulk mark.
+    p.setMemorized(3, true) // simulates the pre-fix bug: memorized, strength 0
+    expect(p.strengthOf(3)).toBe(0)
+    p.bulkMarkMemorized([3], true)
+    expect(p.strengthOf(3)).toBe(40)
+  })
+
   it('markReviewed records a dated, counted review (and a clean revision marks one)', () => {
     const p = useProgressStore()
     p.markReviewed(10, '2026-07-10')

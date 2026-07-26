@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  ArchiveRestore,
   ArrowLeft,
   Download,
   MessageCircle,
@@ -17,6 +18,7 @@ import { LOCALE_LIST, LOCALES, type Locale } from '@/core/i18n/types'
 import { exportUserData, importUserData, type ExportSnapshot } from '@/core/storage/exportImport'
 import { downloadBackup, readBackupFile } from '@/core/storage/backupFile'
 import { resetApp, clearResourceCache } from '@/core/storage/resetApp'
+import { hasLegacyData, recoverLegacyData } from '@/core/storage/legacyRecovery'
 import { toast } from '@/composables/useToast'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { DISCORD_URL } from '@/core/links'
@@ -113,6 +115,43 @@ async function confirmImport() {
 function cancelImport() {
   confirmOpen.value = false
   pending.value = null
+}
+
+// —— Recover legacy data (only offered while it's actually there) ————
+const hasLegacy = ref(false)
+onMounted(() => {
+  void hasLegacyData().then((v) => (hasLegacy.value = v))
+})
+
+const recoverConfirmOpen = ref(false)
+const recovering = ref(false)
+
+async function confirmRecover() {
+  recovering.value = true
+  const result = await recoverLegacyData()
+  recoverConfirmOpen.value = false
+  recovering.value = false
+
+  if (result.status === 'recovered') {
+    hasLegacy.value = false
+    toast(t('settings.dangerZone.recover.done'), { variant: 'success' })
+    setTimeout(() => window.location.reload(), 600)
+  } else if (result.status === 'delete-blocked') {
+    // Merged and backed up — only the old copy's deletion failed (another tab
+    // still has it open). Reload to pick up the merge; the option stays
+    // visible next visit (murajah-db is still there) so it can be retried.
+    toast(t('settings.dangerZone.recover.blocked'), { variant: 'error' })
+    setTimeout(() => window.location.reload(), 600)
+  } else if (result.status === 'no-data') {
+    hasLegacy.value = false
+    toast(t('settings.dangerZone.recover.noData'), { variant: 'error' })
+  } else {
+    toast(t('settings.dangerZone.recover.failed'), { variant: 'error' })
+  }
+}
+
+function cancelRecover() {
+  recoverConfirmOpen.value = false
 }
 
 // —— Full reset ————————————————————————————————————
@@ -245,6 +284,16 @@ function cancelClearCache() {
       </h2>
       <p class="lead">{{ t('settings.dangerZone.intro') }}</p>
 
+      <div v-if="hasLegacy" class="danger-item">
+        <p class="lead">{{ t('settings.dangerZone.recover.lead') }}</p>
+        <div class="actions">
+          <Button variant="secondary" @click="recoverConfirmOpen = true">
+            <Icon :icon="ArchiveRestore" :size="18" />
+            {{ t('settings.dangerZone.recover.action') }}
+          </Button>
+        </div>
+      </div>
+
       <div class="danger-item">
         <p class="lead">{{ t('settings.dangerZone.clearCache.lead') }}</p>
         <div class="actions">
@@ -291,6 +340,19 @@ function cancelClearCache() {
         </Button>
         <Button variant="danger" :loading="importing" @click="confirmImport">
           {{ t('settings.data.replace') }}
+        </Button>
+      </div>
+    </Modal>
+
+    <Modal v-model:open="recoverConfirmOpen" :label="t('settings.dangerZone.recover.action')">
+      <h3 class="modal-title">{{ t('settings.dangerZone.recover.confirmTitle') }}</h3>
+      <p class="modal-body">{{ t('settings.dangerZone.recover.confirmBody') }}</p>
+      <div class="modal-actions">
+        <Button variant="ghost" :disabled="recovering" @click="cancelRecover">
+          {{ t('common.cancel') }}
+        </Button>
+        <Button variant="secondary" :loading="recovering" @click="confirmRecover">
+          {{ t('settings.dangerZone.recover.confirmAction') }}
         </Button>
       </div>
     </Modal>

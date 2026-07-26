@@ -90,7 +90,8 @@ const rangeEnd = ref(1)
 function bulkMark(on: boolean) {
   const a = Math.max(1, Math.min(rangeStart.value, TOTAL_PAGES))
   const b = Math.max(a, Math.min(rangeEnd.value, TOTAL_PAGES))
-  for (let p = a; p <= b; p++) progress.setMemorized(p, on)
+  const pages = Array.from({ length: b - a + 1 }, (_, i) => a + i)
+  progress.bulkMarkMemorized(pages, on)
 }
 
 const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US'))

@@ -113,6 +113,19 @@ const en: Messages = {
       community: {
         lead: "Still stuck, found a bug, or have a suggestion? Join our Discord — we're happy to help.",
       },
+      recover: {
+        lead: "We found memorization data from your previous version of Murajah on this device. Recover it into your current progress — anything you've already done here is kept, not replaced.",
+        action: 'Recover old data',
+        confirmTitle: 'Recover your old data?',
+        confirmBody:
+          "This merges your old memorized pages, strength, and mistakes into your current progress, downloads a backup of what's recovered, then permanently deletes the old copy. This cannot be undone.",
+        confirmAction: 'Recover and remove old copy',
+        done: 'Old data recovered — reloading…',
+        noData: 'No old data was found — it may have already been recovered.',
+        blocked:
+          "Recovered, but couldn't remove the old copy yet — close any other Murajah tabs and try again.",
+        failed: "Couldn't recover your old data. Try again.",
+      },
     },
   },
   today: {

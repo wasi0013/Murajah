@@ -13,6 +13,15 @@ import {
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
 export const TOTAL_PAGES = 604
 
+/**
+ * Strength credited when a page is bulk-marked memorized directly, skipping
+ * the page-by-page review loop that normally builds strength one clean
+ * revision at a time (previously this left strength at 0). Approximates ~40
+ * clean revisions' worth so a bulk-marked page isn't indistinguishable from
+ * an untouched one — see {@link useProgressStore}'s `bulkMarkMemorized`.
+ */
+export const BULK_MARK_STRENGTH = 40
+
 /** Local calendar date as `YYYY-MM-DD` (matches the weakness scorer's parsing). */
 export function todayISODate(d: Date = new Date()): string {
   const y = d.getFullYear()
@@ -130,6 +139,25 @@ export const useProgressStore = defineStore('progress', () => {
     return bumpStrength(page, -1)
   }
 
+  /**
+   * Mark (or unmark) a whole page range as memorized in one action — the
+   * Progress screen's bulk range-mark. Marking on credits {@link BULK_MARK_STRENGTH}
+   * and its proportional hasanah (at the same per-revision rate {@link recordReview}
+   * uses) to each page — but only a page with no strength yet, so re-running this
+   * over pages that already have real review history never overwrites it, and
+   * re-running it over a page the bug already left at 0 backfills it. Unmarking
+   * never touches strength/hasanah, matching the single-page toggle.
+   */
+  function bulkMarkMemorized(pages: number[], on: boolean): void {
+    for (const page of pages) {
+      setMemorized(page, on)
+      if (on && strengthOf(page) === 0) {
+        bumpStrength(page, BULK_MARK_STRENGTH)
+        awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
+      }
+    }
+  }
+
   /** Replace all progress (migration / hydrate). */
   function setAll(p: Progress): void {
     memorized.clear()
@@ -167,6 +195,7 @@ export const useProgressStore = defineStore('progress', () => {
     recordReview,
     recordPerfectRevision,
     penalizeMistake,
+    bulkMarkMemorized,
     setAll,
     snapshot,
   }

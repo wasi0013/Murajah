@@ -1,8 +1,8 @@
 name: app CI
 
-# Redesign app (app/) quality + performance gates.
+# app/ (the product, since the Phase 11 cutover) quality + performance gates.
 # data-pipeline/ feeds app/'s build (see the assets.mjs step below), so its
-# changes gate this too. Legacy source/ is unaffected either way.
+# changes gate this too. Legacy source/ has been removed from the repo.
 on:
   pull_request:
     paths:
@@ -10,7 +10,7 @@ on:
       - 'data-pipeline/**'
       - '.github/workflows/app-ci.yml'
   push:
-    branches: [redesign]
+    branches: [master]
     paths:
       - 'app/**'
       - 'data-pipeline/**'

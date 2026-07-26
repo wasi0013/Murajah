@@ -3,17 +3,25 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // Phase 10.7.3 — the cutover rehearsal plans/phase-10-pwa-migration.md
-// requires before Phase 11 can proceed: run the migration against the
-// *actual* `source/sw.js` (not a stub) plus realistic IndexedDB fixtures
-// shaped like plans/legacy-schema.md, and prove every fixture survives byte-
-// identical. This is the authoritative test of §10.2's teardown — pwa.spec.ts
-// covers the registration/gate logic with a trivial stub, but real legacy has
-// a very different lifecycle (conditional skipWaiting gated on all critical
+// required before Phase 11: run the migration against the *actual* legacy
+// `sw.js` (not a stub) plus realistic IndexedDB fixtures shaped like
+// plans/legacy-schema.md, and prove every fixture survives byte-identical.
+// This is the authoritative test of §10.2's teardown — pwa.spec.ts covers the
+// registration/gate logic with a trivial stub, but real legacy has a very
+// different lifecycle (conditional skipWaiting gated on all critical
 // resources caching successfully, heavy Blob-based install) worth exercising
 // for real.
-
+//
+// `source/` (the legacy monolith) was deleted from the repo once the redesign
+// replaced it in production — Phase 11 has happened. But the teardown code
+// this test guards (`core/pwa/legacyTeardown.ts`) is still live in every
+// build: any user who hasn't yet reconnected since the cutover still carries
+// the real legacy service worker and will run this exact migration on their
+// next boot. So the rehearsal stays, sourcing the last real `source/sw.js`
+// bytes (captured before deletion, commit 11747411^) from a static fixture
+// instead of the live tree — see fixtures/legacy-sw.js.
 const LEGACY_SW_SOURCE = readFileSync(
-  fileURLToPath(new URL('../../../source/sw.js', import.meta.url)),
+  fileURLToPath(new URL('./fixtures/legacy-sw.js', import.meta.url)),
   'utf-8',
 )
 
