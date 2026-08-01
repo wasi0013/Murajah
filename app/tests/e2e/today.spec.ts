@@ -142,6 +142,36 @@ test('completing a revision advances the ring and persists across reload', async
   await expect(page.locator('.row').first()).toContainText('Done')
 })
 
+test('the revision rotation advances to disk and resumes the next chunk on reload', async ({ page }) => {
+  await open(page, {
+    progress: { memorized: Array.from({ length: 10 }, (_, i) => i + 1), perfectRevisions: {}, hasanah: 0, reviewData: {} },
+    plan: plan({ pace: { ...plan().pace, revisionPagesPerDay: 2 } }),
+  })
+  await expect(ring(page)).toHaveText('0/2', { timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Page 1 recited cleanly' }).click()
+  await page.getByRole('button', { name: 'Page 2 recited cleanly' }).click()
+  await expect(ring(page)).toHaveText('2/2')
+
+  await page.waitForTimeout(500) // the debounced write
+  const stored = await readKey<{ revisionCursor: { lastPage: number; lastAdvanceDate: string } }>(
+    page,
+    'plan',
+  )
+  expect(stored.revisionCursor.lastPage).toBe(2)
+
+  await page.reload()
+  // The chunk stays frozen on reload rather than jumping ahead...
+  await expect(ring(page)).toHaveText('2/2', { timeout: 10_000 })
+  await expect(page.locator('.row')).toContainText(['Page 1', 'Page 2'])
+
+  // ...but a new day resumes right where the rotation left off.
+  await page.clock.setFixedTime(new Date('2026-07-16T09:00:00'))
+  await page.reload()
+  await expect(ring(page)).toHaveText('0/2', { timeout: 10_000 })
+  await expect(page.locator('.row')).toContainText(['Page 3', 'Page 4'])
+})
+
 test('finishing every task completes the day and lights the streak', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan() })
   await expect(ring(page)).toHaveText('0/3', { timeout: 10_000 })
@@ -271,38 +301,50 @@ test('a first-run user with nothing memorized gets a beginner plan at Juz 30', a
 
 // —— Weak reinforcement ————————————————————————————————
 
-test('a page the schedule calls fine but the evidence calls weak gets its own lane', async ({
+test('a page the rotation hasn’t reached yet but the evidence calls weak gets its own lane', async ({
   page,
 }) => {
-  // Page 3 was reviewed 20 days ago on a 21-day interval, so SM-2 says "not due
-  // until tomorrow" — it never reaches the revision queue. But it has never been
-  // revised cleanly and carries 30 word-mistakes, scoring ~57 (WEAK_THRESHOLD 50).
-  // Catching exactly this page is why the lane exists.
+  // 10 pages memorized, 2 revised a day — the rotation's first chunk is [1, 2],
+  // so it won't reach page 3 for another day. Pages 4-10 are given a clean, recent
+  // history so weakness scoring leaves them alone (an untouched page defaults to
+  // looking maximally "weak" — recency and low-review-count both maxed out — so
+  // without this they'd swamp page 3's signal). Page 3 has never been revised
+  // cleanly and carries 30 word-mistakes, scoring ~57 (WEAK_THRESHOLD 50). Catching
+  // exactly this page — one the rotation schedule hasn't gotten to yet — is why the
+  // reinforcement lane exists, independent of where the rotation currently stands.
+  const healthy = { lastReviewDate: before(1), nextReviewDate: before(-30), interval: 30, easeFactor: 2.6, reviewCount: 10, consecutiveCorrect: 8 }
   await open(page, {
     progress: {
-      ...PROGRESS,
-      perfectRevisions: {},
+      memorized: Array.from({ length: 10 }, (_, i) => i + 1),
+      perfectRevisions: { 4: 10, 5: 10, 6: 10, 7: 10, 8: 10, 9: 10, 10: 10 },
+      hasanah: 0,
       reviewData: {
         '3': {
           lastReviewDate: before(20),
-          nextReviewDate: before(-1), // tomorrow
+          nextReviewDate: before(-1),
           interval: 21,
           easeFactor: 2.5,
           reviewCount: 5,
           consecutiveCorrect: 0,
         },
+        '4': healthy,
+        '5': healthy,
+        '6': healthy,
+        '7': healthy,
+        '8': healthy,
+        '9': healthy,
+        '10': healthy,
       },
     },
     mistakes: { '3': Array.from({ length: 30 }, (_, i) => i + 1) },
-    plan: plan({ pace: { ...plan().pace, revisionPagesPerDay: 5, weakPagesPerDay: 2 } }),
+    plan: plan({ pace: { ...plan().pace, revisionPagesPerDay: 2, weakPagesPerDay: 2 } }),
   })
 
   await expect(section(page, 'Needs reinforcement').locator('.row')).toContainText(['Page 3'], {
     timeout: 10_000,
   })
-  // It's reinforcement, not revision — page 3 isn't due, so it must not be in both.
-  // Pages 1 and 2 are never-reviewed and *are* due, which pins the exclusion on
-  // page 3's schedule rather than on an empty revision queue.
+  // It's reinforcement, not revision — page 3 isn't in today's rotation chunk, so
+  // it must not be in both. Pages 1 and 2 are the rotation's first chunk.
   await expect(section(page, 'Revision').locator('.row')).toContainText(['Page 1', 'Page 2'])
 
   // The lane is actionable, and the reward loop runs through it like any other:

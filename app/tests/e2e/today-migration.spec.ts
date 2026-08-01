@@ -114,12 +114,12 @@ test('a migrated plan loads and shows a sane day-one queue', async ({ page }) =>
 
   await expect(section(page, 'Revision')).toBeVisible({ timeout: 10_000 })
 
-  // Pages with real history are respected: 1 is due 3 May, 582 due 5 May — neither
-  // is asked for today. The rest of the scope has no history, so it enters the
-  // cycle via the never-reviewed top-up rather than all at once.
+  // Migration doesn't carry an SM-2 "due" concept into the rotation — the murajah
+  // cycle starts fresh at the first scoped page regardless of any migrated review
+  // history. Pages 1 and 582 keep their real `reviewData` (it still feeds weakness
+  // scoring), but that history no longer gates their place in the rotation.
   const rows = section(page, 'Revision').locator('.row')
-  await expect(rows).not.toContainText(['Page 1,'])
-  await expect(rows.first()).toContainText('Page 2')
+  await expect(rows.first()).toContainText('Page 1')
 
   // The whole scope is juz 1, 2 and 30 — nothing outside it is queued.
   await expect(page.getByText('Page 100')).toHaveCount(0)
@@ -147,16 +147,21 @@ test('completing a task on a migrated plan advances it and persists', async ({ p
   await expect(ring(page)).toBeVisible({ timeout: 10_000 })
 
   const hasanahBefore = 98765
+  const pageTwoRow = section(page, 'Revision').locator('.row').filter({ hasText: 'Page 2' })
   await page.getByRole('button', { name: 'Page 2 recited cleanly' }).click()
-  await expect(section(page, 'Revision').locator('.row').first()).toContainText('Done')
+  await expect(pageTwoRow).toContainText('Done')
+  // Page 1 is in the same rotation chunk but wasn't touched — still pending.
+  const pageOneRow = section(page, 'Revision').locator('.row').filter({ hasText: 'Page 1' })
+  await expect(pageOneRow).not.toContainText('Done')
 
   await page.waitForTimeout(500)
   await page.reload()
 
   // The completion stuck, and it built on the migrated hasanah rather than resetting it.
-  await expect(section(page, 'Revision').locator('.row').first()).toContainText('Done', {
-    timeout: 10_000,
-  })
+  await expect(section(page, 'Revision').locator('.row').filter({ hasText: 'Page 2' })).toContainText(
+    'Done',
+    { timeout: 10_000 },
+  )
   const stored = await page.evaluate(
     () =>
       new Promise((resolve, reject) => {

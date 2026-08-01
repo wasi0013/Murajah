@@ -70,7 +70,7 @@ describe('planMigration — review history', () => {
     // If the user ever adds juz 6 back, the real history is still there for it.
   })
 
-  it('a seeded page is still practised — it just re-enters as never-reviewed', () => {
+  it('a seeded page is still practised — revision walks the whole scope regardless of history', () => {
     const { plan, reviewData } = migrateLegacyPlans({ plans: PLANS, today: TODAY })
     const tasks = generateDailyTasks({
       scopePages: [582, 583, 584],
@@ -79,11 +79,12 @@ describe('planMigration — review history', () => {
       pace: plan!.pace,
       today: TODAY,
     })
-    // Nothing is lost by dropping the seed: 583/584 arrive via the never-reviewed
-    // top-up, and 582 keeps its real schedule (not due until 5 May).
+    // Nothing is lost by dropping the seed: the rotation doesn't consult SM-2 due
+    // dates at all, so 582's real (not-yet-due) schedule doesn't exclude it —
+    // it's revised right alongside the never-reviewed 583/584.
+    expect(tasks.revision).toContain(582)
     expect(tasks.revision).toContain(583)
     expect(tasks.revision).toContain(584)
-    expect(tasks.revision).not.toContain(582)
   })
 
   it('survives plans with no scheduler state at all', () => {

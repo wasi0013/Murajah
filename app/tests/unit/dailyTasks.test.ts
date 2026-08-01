@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { generateDailyTasks, MAX_BACKLOG_BEFORE_PAUSE } from '@/core/memorization/dailyTasks'
+import { generateDailyTasks, MAX_STALE_DAYS_BEFORE_PAUSE } from '@/core/memorization/dailyTasks'
 import { handleMissedDays } from '@/core/memorization/reviewScheduler'
+import type { RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { ReviewSchedule, PlanPace } from '@/core/storage/userData'
 
 // 2026-07-15 is a Wednesday (getDay() === 3).
@@ -29,15 +30,36 @@ const sched = (nextReviewDate: string, over: Partial<ReviewSchedule> = {}): Revi
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
 
-describe('generateDailyTasks — revision queue', () => {
-  it('selects due pages within scope, most overdue first, capped at the budget', () => {
+describe('generateDailyTasks — revision queue (the murajah rotation)', () => {
+  it('starts a fresh cycle at the first scoped page, capped at the daily budget', () => {
     const scopePages = range(1, 10)
-    const reviewData = new Map<number, ReviewSchedule>([
-      [1, sched('2026-07-14')], // due (1 day over)
-      [2, sched('2026-07-10')], // due (most overdue)
-      [3, sched(TODAY_STR)], // due today
-      [4, sched('2026-07-20')], // not due
-    ])
+    const tasks = generateDailyTasks({
+      scopePages,
+      memorized: new Set(scopePages),
+      pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
+      today: TODAY,
+    })
+    expect(tasks.revision).toEqual([1, 2])
+  })
+
+  it('continues from the cursor the next day, in mushaf order', () => {
+    const scopePages = range(1, 10)
+    const revisionCursor: RevisionCursor = { lastPage: 2, lastAdvanceDate: '2026-07-14' }
+    const tasks = generateDailyTasks({
+      scopePages,
+      memorized: new Set(scopePages),
+      revisionCursor,
+      pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
+      today: TODAY,
+    })
+    expect(tasks.revision).toEqual([3, 4])
+  })
+
+  it('is completely blind to SM-2 due dates and weakness — that is reinforcement’s job', () => {
+    const scopePages = range(1, 10)
+    // Page 1 isn't "due" until next month and page 2 has never been reviewed —
+    // under the old due-date model neither would qualify. The rotation doesn't care.
+    const reviewData = new Map<number, ReviewSchedule>([[1, sched('2026-08-20')]])
     const tasks = generateDailyTasks({
       scopePages,
       memorized: new Set(scopePages),
@@ -45,62 +67,75 @@ describe('generateDailyTasks — revision queue', () => {
       pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
       today: TODAY,
     })
-    expect(tasks.revision).toEqual([2, 1]) // most overdue first, budget respected
-    expect(tasks.metadata.backlogSize).toBe(3)
-    expect(tasks.revision).not.toContain(4)
+    expect(tasks.revision).toEqual([1, 2])
   })
 
   it('excludes pages outside the scope and pages that are not memorized', () => {
-    const reviewData = new Map<number, ReviewSchedule>([
-      [1, sched('2026-07-10')],
-      [50, sched('2026-07-10')], // due but out of scope
-      [2, sched('2026-07-10')], // due but not memorized
-    ])
     const tasks = generateDailyTasks({
-      scopePages: [1, 2],
+      scopePages: [1, 2, 50],
       memorized: new Set([1]),
-      reviewData,
       pace: pace({ weakPagesPerDay: 0 }),
       today: TODAY,
     })
     expect(tasks.revision).toEqual([1])
   })
 
-  it('fills spare budget with never-reviewed pages', () => {
+  it('10 pages at 2/day walks straight through in contiguous daily chunks', () => {
     const scopePages = range(1, 10)
-    const reviewData = new Map<number, ReviewSchedule>([[1, sched('2026-07-10')]])
-    const tasks = generateDailyTasks({
-      scopePages,
-      memorized: new Set(scopePages),
-      reviewData,
-      pace: pace({ revisionPagesPerDay: 4, weakPagesPerDay: 0 }),
-      today: TODAY,
-    })
-    // the one due page, then never-reviewed pages in mushaf order
-    expect(tasks.revision).toEqual([1, 2, 3, 4])
+    let revisionCursor: RevisionCursor = { lastPage: null, lastAdvanceDate: null }
+    const days: number[][] = []
+    for (let d = 0; d < 5; d++) {
+      const today = new Date(`2026-07-${15 + d}T09:00:00`)
+      const tasks = generateDailyTasks({
+        scopePages,
+        memorized: new Set(scopePages),
+        revisionCursor,
+        pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
+        today,
+      })
+      days.push(tasks.revision)
+      revisionCursor = { lastPage: tasks.revision.at(-1)!, lastAdvanceDate: tasks.metadata.date }
+    }
+    expect(days).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+      [7, 8],
+      [9, 10],
+    ])
   })
 
-  it('ranks equally-overdue pages by weakness', () => {
-    const scopePages = [1, 2]
-    const reviewData = new Map<number, ReviewSchedule>([
-      [1, sched('2026-07-10', { reviewCount: 10 })],
-      [2, sched('2026-07-10', { reviewCount: 0 })], // fewer reviews → weaker
+  it('13 pages at 2/day: the cycle wraps mid-chunk into the next cycle, no gap', () => {
+    const scopePages = range(1, 13)
+    let revisionCursor: RevisionCursor = { lastPage: null, lastAdvanceDate: null }
+    const days: number[][] = []
+    for (let d = 0; d < 7; d++) {
+      const today = new Date(`2026-07-${15 + d}T09:00:00`)
+      const tasks = generateDailyTasks({
+        scopePages,
+        memorized: new Set(scopePages),
+        revisionCursor,
+        pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
+        today,
+      })
+      days.push(tasks.revision)
+      revisionCursor = { lastPage: tasks.revision.at(-1)!, lastAdvanceDate: tasks.metadata.date }
+    }
+    expect(days).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+      [7, 8],
+      [9, 10],
+      [11, 12],
+      [13, 1], // last page of cycle one, immediately followed by cycle two's first page
     ])
-    const tasks = generateDailyTasks({
-      scopePages,
-      memorized: new Set(scopePages),
-      reviewData,
-      strength: new Map([[1, 10]]), // page 1 has revision quality behind it
-      pace: pace({ revisionPagesPerDay: 2, weakPagesPerDay: 0 }),
-      today: TODAY,
-    })
-    expect(tasks.revision).toEqual([2, 1])
   })
 
   it('is graceful with an empty scope', () => {
     const tasks = generateDailyTasks({ scopePages: [], memorized: new Set(), pace: pace(), today: TODAY })
     expect(tasks).toMatchObject({ newMemorization: [], revision: [], weakReinforcement: [] })
-    expect(tasks.metadata).toMatchObject({ date: TODAY_STR, backlogSize: 0, totalPages: 0 })
+    expect(tasks.metadata).toMatchObject({ date: TODAY_STR, staleDays: 0, totalPages: 0 })
   })
 })
 
@@ -121,7 +156,6 @@ describe('generateDailyTasks — new memorization', () => {
     const tasks = generateDailyTasks({
       scopePages,
       memorized: new Set(scopePages),
-      reviewData: new Map([[1, sched('2026-07-10')]]),
       newFront: { layout: 'qpc', nextPage: 100 },
       pace: pace({ offDays: [3] }), // Wednesday — today
       today: TODAY,
@@ -132,22 +166,52 @@ describe('generateDailyTasks — new memorization', () => {
     expect(tasks.revision).toContain(1)
   })
 
-  it('pauses new memorization when the backlog is too deep', () => {
+  it('pauses new memorization once the revision rotation has stalled too many days', () => {
     const scopePages = range(1, 20)
-    const reviewData = new Map<number, ReviewSchedule>(
-      scopePages.map((p) => [p, sched('2026-07-10')] as const),
-    )
+    // The cursor hasn't advanced in well over MAX_STALE_DAYS_BEFORE_PAUSE — the
+    // user has been opening the app but not finishing their daily chunk.
+    const revisionCursor: RevisionCursor = { lastPage: 5, lastAdvanceDate: '2026-07-05' }
     const tasks = generateDailyTasks({
       scopePages,
       memorized: new Set(scopePages),
-      reviewData,
+      revisionCursor,
       newFront: { layout: 'qpc', nextPage: 100 },
       pace: pace(),
       today: TODAY,
     })
-    expect(tasks.metadata.backlogSize).toBeGreaterThan(MAX_BACKLOG_BEFORE_PAUSE)
+    expect(tasks.metadata.staleDays).toBeGreaterThan(MAX_STALE_DAYS_BEFORE_PAUSE)
     expect(tasks.metadata.pausedNewMemorization).toBe(true)
     expect(tasks.newMemorization).toEqual([])
+  })
+
+  it('does not pause new memorization while the rotation is on track', () => {
+    const scopePages = range(1, 20)
+    const revisionCursor: RevisionCursor = { lastPage: 5, lastAdvanceDate: '2026-07-14' } // yesterday
+    const tasks = generateDailyTasks({
+      scopePages,
+      memorized: new Set(scopePages),
+      revisionCursor,
+      newFront: { layout: 'qpc', nextPage: 100 },
+      pace: pace(),
+      today: TODAY,
+    })
+    expect(tasks.metadata.pausedNewMemorization).toBe(false)
+    expect(tasks.newMemorization).not.toEqual([])
+  })
+
+  it('a zero revision budget never blocks new memorization, however stale the cursor', () => {
+    const scopePages = range(1, 20)
+    const revisionCursor: RevisionCursor = { lastPage: 5, lastAdvanceDate: '2026-06-01' } // ancient
+    const tasks = generateDailyTasks({
+      scopePages,
+      memorized: new Set(scopePages),
+      revisionCursor,
+      newFront: { layout: 'qpc', nextPage: 100 },
+      pace: pace({ revisionPagesPerDay: 0 }),
+      today: TODAY,
+    })
+    expect(tasks.metadata.pausedNewMemorization).toBe(false)
+    expect(tasks.newMemorization).not.toEqual([])
   })
 
   it('no front, or a zero budget, means no new memorization (but not "paused")', () => {

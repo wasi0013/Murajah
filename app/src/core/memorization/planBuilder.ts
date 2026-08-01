@@ -15,6 +15,7 @@
  */
 import type { Layout } from '@/core/data/types'
 import type { PlanConfig, PlanScope, NewFront, PlanPace } from '@/core/storage/userData'
+import { INITIAL_REVISION_CURSOR } from './revisionCycle'
 import type { ReviewSchedule } from '@/core/storage/userData'
 import { juzForPage } from '@/core/navigation/juz'
 import { calculateAllWeaknesses, WEAK_THRESHOLD } from './weaknessScorer'
@@ -222,6 +223,7 @@ export function generateSmartPlan(input: SmartPlanInput): {
     habits: ['recite-ayahs'],
     startDate,
     createdAt: today.toISOString(),
+    revisionCursor: INITIAL_REVISION_CURSOR,
   }
 
   const scopeJuz =

@@ -21,6 +21,7 @@ const samplePlan = (): PlanConfig => ({
   habits: ['recite-ayahs'],
   startDate: '2026-07-15',
   createdAt: '2026-07-15T00:00:00.000Z',
+  revisionCursor: { lastPage: null, lastAdvanceDate: null },
 })
 
 describe('plan store', () => {

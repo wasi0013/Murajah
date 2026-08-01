@@ -8,6 +8,7 @@ import { useReaderStore } from '@/stores/reader'
 import { generateSmartPlan, totalPagesForLayout } from '@/core/memorization/planBuilder'
 import { getTodayDate, HABIT_CATALOG } from '@/core/memorization/streaks'
 import { serializePlan, type PlanConfig } from '@/core/storage/userData'
+import { INITIAL_REVISION_CURSOR } from '@/core/memorization/revisionCycle'
 import { useI18n } from '@/core/i18n'
 import BottomSheet from '@/components/BottomSheet.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
@@ -58,6 +59,7 @@ function blankPlan(): PlanConfig {
     habits: [],
     startDate: getTodayDate(now),
     createdAt: now.toISOString(),
+    revisionCursor: INITIAL_REVISION_CURSOR,
   }
 }
 

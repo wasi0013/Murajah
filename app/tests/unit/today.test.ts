@@ -13,6 +13,8 @@ const TODAY_STR = '2026-07-15'
 
 beforeEach(() => setActivePinia(createPinia()))
 
+const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
+
 const pace = (over: Partial<PlanPace> = {}): PlanPace => ({
   newPagesPerDay: 1,
   revisionPagesPerDay: 5,
@@ -29,6 +31,7 @@ const planConfig = (over: Partial<PlanConfig> = {}): PlanConfig => ({
   habits: [],
   startDate: TODAY_STR,
   createdAt: '2026-07-15T00:00:00.000Z',
+  revisionCursor: { lastPage: null, lastAdvanceDate: null },
   ...over,
 })
 
@@ -189,5 +192,64 @@ describe('useToday — day completion + habits', () => {
     today.toggleHabit('recite-ayahs')
     expect(today.isHabitDone('recite-ayahs')).toBe(false)
     expect(today.allDone.value).toBe(false)
+  })
+})
+
+describe('useToday — the revision rotation advances on full-chunk completion', () => {
+  it('a partial chunk leaves the cursor untouched', () => {
+    const { today, plan } = setup(range(1, 10), { pace: pace({ revisionPagesPerDay: 2 }) })
+    expect(today.revision.value).toEqual([1, 2])
+
+    today.complete('revision', 1)
+    expect(plan.config!.revisionCursor).toEqual({ lastPage: null, lastAdvanceDate: null })
+  })
+
+  it('completing the whole chunk advances the cursor to its last page', () => {
+    const { today, plan } = setup(range(1, 10), { pace: pace({ revisionPagesPerDay: 2 }) })
+
+    today.complete('revision', 1)
+    today.complete('revision', 2)
+
+    expect(plan.config!.revisionCursor).toEqual({ lastPage: 2, lastAdvanceDate: TODAY_STR })
+    // The list doesn't jump to the next chunk mid-session, once done.
+    expect(today.revision.value).toEqual([1, 2])
+  })
+
+  it('a mistake still counts toward completing the chunk and advancing the cursor', () => {
+    const { today, plan } = setup(range(1, 4), { pace: pace({ revisionPagesPerDay: 2 }) })
+
+    today.markMistake('revision', 1)
+    today.complete('revision', 2)
+
+    expect(plan.config!.revisionCursor.lastPage).toBe(2)
+  })
+
+  it('tomorrow continues from the advanced cursor, wrapping at the end of the set', () => {
+    const memorized = range(1, 4)
+    const progress = useProgressStore()
+    for (const p of memorized) progress.setMemorized(p, true)
+    const plan = usePlanStore()
+    plan.create(planConfig({ pace: pace({ revisionPagesPerDay: 2 }) }))
+    const dayLog = useDayLogStore()
+
+    const day1 = ref(TODAY)
+    const today1 = useToday({ today: day1 })
+    expect(today1.revision.value).toEqual([1, 2])
+    today1.complete('revision', 1)
+    today1.complete('revision', 2)
+
+    // A new day: same stores, a fresh Today view-model (mirrors a reload).
+    const day2 = ref(new Date('2026-07-16T09:00:00'))
+    const today2 = useToday({ today: day2 })
+    expect(today2.revision.value).toEqual([3, 4])
+    today2.complete('revision', 3)
+    today2.complete('revision', 4)
+
+    // Wraps back to the start for the third day.
+    const day3 = ref(new Date('2026-07-17T09:00:00'))
+    const today3 = useToday({ today: day3 })
+    expect(today3.revision.value).toEqual([1, 2])
+
+    expect(dayLog).toBeTruthy() // keeps the store alive for the reload framing above
   })
 })

@@ -31,6 +31,7 @@ const samplePlan = (): PlanConfig => ({
   habits: ['recite-ayahs'],
   startDate: '2026-07-01',
   createdAt: '2026-07-01',
+  revisionCursor: { lastPage: 11, lastAdvanceDate: '2026-07-14' },
 })
 
 const record = (date: string, completed: boolean): DayRecord => ({

@@ -10,6 +10,7 @@ import { generateDailyTasks } from '@/core/memorization/dailyTasks'
 import { advanceMemorizationPage } from '@/core/memorization/planBuilder'
 import { getHabit, getTodayDate, type HabitDef } from '@/core/memorization/streaks'
 import type { ReviewRating } from '@/core/memorization/reviewScheduler'
+import { advanceRevisionCursor } from '@/core/memorization/revisionCycle'
 
 /** The one habit whose checkbox also drives the habit-builder verse cursor. */
 const RECITE_AYAHS_HABIT = 'recite-ayahs'
@@ -55,10 +56,10 @@ export function useToday(opts: UseTodayOptions = {}) {
           strength: progress.strength,
           quizScores: quiz.accuracyByPage,
           newFront: plan.newFront,
+          revisionCursor: plan.config.revisionCursor,
           pace: plan.config.pace,
           completedToday: {
             newMemorization: record.value?.newMemorization ?? [],
-            revision: record.value?.revision ?? [],
             weak: record.value?.weak ?? [],
           },
           today: today.value,
@@ -134,6 +135,20 @@ export function useToday(opts: UseTodayOptions = {}) {
     }
 
     dayLog.setPageDone(date.value, section, page, true)
+
+    // The rotation only advances once the whole day's chunk is done — a partial
+    // day just leaves the cursor where it was, so tomorrow resumes the same chunk
+    // instead of skipping ahead. Guarded by `lastAdvanceDate` so this only fires
+    // once per day even as `complete` keeps getting called for other sections.
+    if (
+      section === 'revision' &&
+      revision.value.length > 0 &&
+      revision.value.every((p) => isDone('revision', p)) &&
+      plan.config?.revisionCursor?.lastAdvanceDate !== date.value
+    ) {
+      plan.update({ revisionCursor: advanceRevisionCursor(revision.value, date.value) })
+    }
+
     syncCompleted()
     return true
   }

@@ -28,6 +28,7 @@ import type {
 } from '@/core/storage/userData'
 import { normalizeSchedule } from '@/core/storage/userData'
 import { getTodayDate } from './streaks'
+import { INITIAL_REVISION_CURSOR } from './revisionCycle'
 
 /** One page's schedule as legacy stored it, inside a plan's `schedulerState`. */
 export interface LegacyReviewRecord {
@@ -208,6 +209,7 @@ export function planFromLegacy(
     habits: opts.habits ?? [],
     startDate: dominant.startDate ?? getTodayDate(today),
     createdAt: dominant.createdAt ?? today.toISOString(),
+    revisionCursor: INITIAL_REVISION_CURSOR,
   }
 }
 

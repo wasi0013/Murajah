@@ -1,5 +1,6 @@
 import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
+import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { PlaybackScope } from '@/core/audio/scope'
 import { idbGet, openDb, txDone } from './idb'
 
@@ -240,6 +241,8 @@ export interface PlanConfig {
   habits: string[]
   startDate: string
   createdAt: string
+  /** Where the daily revision rotation stands (Phase 5.6) — see `revisionCycle`. */
+  revisionCursor: RevisionCursor
 }
 
 /** On-disk plan shape — identical to {@link PlanConfig} (already JSON-safe). */
@@ -289,6 +292,7 @@ export function serializePlan(p: PlanConfig | null): StoredPlan | null {
     habits: [...p.habits],
     startDate: p.startDate,
     createdAt: p.createdAt,
+    revisionCursor: { ...p.revisionCursor },
   }
 }
 
@@ -308,6 +312,7 @@ export function deserializePlan(stored: StoredPlan | null | undefined): PlanConf
     habits: [...(stored.habits ?? [])],
     startDate: stored.startDate ?? isoToday(),
     createdAt: stored.createdAt ?? isoToday(),
+    revisionCursor: { ...INITIAL_REVISION_CURSOR, ...(stored.revisionCursor ?? {}) },
   }
 }
 

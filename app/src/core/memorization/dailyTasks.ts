@@ -2,10 +2,12 @@
  * The day's task generator (Phase 5.1.1) — one adaptive path.
  *
  * Collapses the legacy `planScheduler.js` beginner/hafiz/mixed branches into a
- * single queue driven by **scope + pace + the unified {@link ReviewSchedule}**:
- * today's revision = pages **due within scope**, ranked by overdue-ness then
- * weakness, capped at the daily budget, and topped up with never-reviewed pages.
- * New memorization walks the plan's front; weak pages get extra reinforcement.
+ * single queue driven by **scope + pace**: today's revision is a fixed-size
+ * rotation through every memorized scope page (the murajah cycle — see
+ * `revisionCycle`), completely blind to SM-2 due dates or weakness. New
+ * memorization walks the plan's front; weak pages get extra reinforcement from
+ * the unified {@link ReviewSchedule}/weakness score — a separate goal from
+ * revision, served by its own lane.
  *
  * Pure and stateless: it says what *should* be done today. Completion state lives in
  * the day log (`DayRecord`), and finishing a task routes through the progress store's
@@ -15,9 +17,15 @@ import type { ReviewSchedule, NewFront, PlanPace } from '@/core/storage/userData
 import { calculateAllWeaknesses, getWeakestPages, WEAK_THRESHOLD } from './weaknessScorer'
 import { totalPagesForLayout } from './planBuilder'
 import { getTodayDate } from './streaks'
+import {
+  INITIAL_REVISION_CURSOR,
+  revisionChunkForToday,
+  daysSinceCursorAdvance,
+  type RevisionCursor,
+} from './revisionCycle'
 
-/** Overdue pages beyond which new memorization pauses until the backlog clears. */
-export const MAX_BACKLOG_BEFORE_PAUSE = 10
+/** Days the revision rotation can stall before new memorization pauses to let it catch up. */
+export const MAX_STALE_DAYS_BEFORE_PAUSE = 3
 
 /**
  * Pages already finished today (from the day log). They stay in the day's list and
@@ -27,7 +35,6 @@ export const MAX_BACKLOG_BEFORE_PAUSE = 10
  */
 export interface CompletedToday {
   newMemorization?: number[]
-  revision?: number[]
   weak?: number[]
 }
 
@@ -36,7 +43,8 @@ export interface DailyTasksInput {
   scopePages: number[]
   /** The memorized set — only memorized pages can be revised. */
   memorized: Set<number> | Iterable<number>
-  /** The one per-page schedule map (`progress.reviewData`). */
+  /** The one per-page schedule map (`progress.reviewData`) — feeds weakness only;
+   * revision selection no longer reads SM-2 due dates. */
   reviewData?: Map<number, ReviewSchedule>
   /** Per-page mistake sets (feeds weakness). */
   mistakes?: Map<number, Set<unknown>>
@@ -46,6 +54,8 @@ export interface DailyTasksInput {
   quizScores?: Map<number, number>
   /** Where new memorization is happening, or null when only maintaining. */
   newFront?: NewFront | null
+  /** Where the revision rotation stands (`plan.revisionCursor`). */
+  revisionCursor?: RevisionCursor
   pace: PlanPace
   /** What's already been finished today — keeps the day's list stable as it's worked. */
   completedToday?: CompletedToday
@@ -59,9 +69,9 @@ export interface DailyTasksMetadata {
   date: string
   /** Today is an off day — new memorization rests, maintenance continues. */
   isOffDay: boolean
-  /** How many scoped pages are currently due (the backlog). */
-  backlogSize: number
-  /** New memorization is paused (off day, or the backlog is too deep). */
+  /** Days since the revision rotation last fully advanced (0 = on track). */
+  staleDays: number
+  /** New memorization is paused (off day, or revision has stalled too long). */
   pausedNewMemorization: boolean
   totalPages: number
 }
@@ -93,7 +103,6 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
   const isOffDay = pace.offDays?.includes(today.getDay()) ?? false
 
   const doneNew = input.completedToday?.newMemorization ?? []
-  const doneRevision = input.completedToday?.revision ?? []
   const doneWeak = input.completedToday?.weak ?? []
 
   // Only memorized pages inside the scope are revisable.
@@ -108,40 +117,17 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
     today,
   })
 
-  // Due = scheduled on or before today. Most overdue first, then weakest, then in
-  // mushaf order — so the longest-neglected page is always the first one recited.
-  const doneRevisionSet = new Set(doneRevision)
-  const due = candidates
-    .filter((p) => {
-      if (doneRevisionSet.has(p)) return false
-      const next = reviewData.get(p)?.nextReviewDate
-      return !!next && next <= todayStr
-    })
-    .sort((a, b) => {
-      const aNext = reviewData.get(a)!.nextReviewDate
-      const bNext = reviewData.get(b)!.nextReviewDate
-      if (aNext !== bNext) return aNext.localeCompare(bNext)
-      const aWeak = weakness.get(a) ?? 0
-      const bWeak = weakness.get(b) ?? 0
-      if (aWeak !== bWeak) return bWeak - aWeak
-      return a - b
-    })
+  // The murajah rotation: N pages a day, walking every memorized scope page in
+  // mushaf order and wrapping back to the start — no due dates, no weakness.
+  const cursor = input.revisionCursor ?? INITIAL_REVISION_CURSOR
+  const revision = revisionChunkForToday(candidates, cursor, pace.revisionPagesPerDay, todayStr)
 
-  const backlogSize = due.length
-  const revisionBudget = Math.max(0, pace.revisionPagesPerDay - doneRevision.length)
-  const picked = due.slice(0, revisionBudget)
-
-  // Top up spare budget with pages that have never been reviewed at all — this is
-  // what walks a fresh plan through its first cycle (no upfront seeding needed).
-  if (picked.length < revisionBudget) {
-    const scheduled = new Set([...picked, ...doneRevision])
-    const neverReviewed = candidates.filter((p) => !scheduled.has(p) && !reviewData.has(p))
-    picked.push(...neverReviewed.slice(0, revisionBudget - picked.length))
-  }
-  // Finished pages lead the list; what's left follows in priority order.
-  const revision = [...doneRevision, ...picked]
-
-  const pausedNewMemorization = isOffDay || backlogSize > MAX_BACKLOG_BEFORE_PAUSE
+  // The rotation can only stall (not overflow) — it's a fixed-size chunk every
+  // day. Gate the new-memorization pause on the cursor going stale, and only
+  // when there's a rotation to stall in the first place (revisionPagesPerDay: 0
+  // has no chunk to complete, so it must never block new memorization).
+  const staleDays = daysSinceCursorAdvance(cursor, todayStr)
+  const pausedNewMemorization = isOffDay || (revision.length > 0 && staleDays > MAX_STALE_DAYS_BEFORE_PAUSE)
   const newBudget = Math.max(0, pace.newPagesPerDay - doneNew.length)
   const newPicked: number[] = []
   if (!pausedNewMemorization && front && newBudget > 0) {
@@ -167,7 +153,7 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
     metadata: {
       date: todayStr,
       isOffDay,
-      backlogSize,
+      staleDays,
       pausedNewMemorization,
       totalPages: newMemorization.length + revision.length + weakReinforcement.length,
     },
