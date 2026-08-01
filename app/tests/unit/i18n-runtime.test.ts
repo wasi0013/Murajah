@@ -40,6 +40,20 @@ describe('i18n runtime', () => {
     expect(t('nope.not.here')).toBe('nope.not.here')
   })
 
+  // A rarely-reached UI branch (the surah/juz picker's "nav index still loading"
+  // state) has no e2e coverage — this is the cheap guard against a typo'd key
+  // silently rendering as a literal dot-path instead of throwing.
+  it('resolves the juz-picker loading message (a rarely-hit UI branch)', () => {
+    expect(t('progress.pick.juzLoading')).not.toBe('progress.pick.juzLoading')
+  })
+
+  // The picker's per-kind hints render on every open but nothing asserts their
+  // text (e2e only checks visible page counts) — same cheap guard as above.
+  it('resolves the surah/juz picker hints', () => {
+    expect(t('progress.pick.hintJuz')).not.toBe('progress.pick.hintJuz')
+    expect(t('progress.pick.hintSurah')).not.toBe('progress.pick.hintSurah')
+  })
+
   it('interpolates params', () => {
     // en has no param strings in this surface; verify passthrough on a real key.
     expect(t('common.cancel', { unused: 1 })).toBe('Cancel')

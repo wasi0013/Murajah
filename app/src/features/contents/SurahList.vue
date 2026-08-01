@@ -6,18 +6,43 @@ import { useI18n } from '@/core/i18n'
 
 const { t } = useI18n()
 
-// Presentational surah index. Emits the chosen surah number; the view resolves it
-// to a page and navigates (keeps navigation in one place, and lets Listen reuse
-// the same selection). With `showListen`, each row also offers a headphones
-// shortcut that deep-links into Listen (emits `listen`).
-defineProps<{ rows: SurahRow[]; showListen?: boolean }>()
-defineEmits<{ select: [surah: number]; listen: [surah: number] }>()
+/**
+ * Presentational surah index. Two interaction modes:
+ * - Default (no `selected` prop): a single-select navigation list — clicking a
+ *   row emits the chosen surah number; the view resolves it to a page and
+ *   navigates (keeps navigation in one place, and lets Listen reuse the same
+ *   selection). With `showListen`, each row also offers a headphones shortcut
+ *   that deep-links into Listen (emits `listen`).
+ * - Selectable (`selected` passed, even `[]`): rows become checkboxes instead —
+ *   clicking toggles membership in the caller's selection (emits `toggle`)
+ *   rather than navigating. Used by the memorize-by-surah picker, where surah
+ *   *number* alone isn't how anyone thinks of what they've memorized.
+ */
+defineProps<{ rows: SurahRow[]; showListen?: boolean; selected?: number[] }>()
+defineEmits<{ select: [surah: number]; listen: [surah: number]; toggle: [surah: number] }>()
 </script>
 
 <template>
   <ul class="list" role="list">
     <li v-for="r in rows" :key="r.surah" class="row-wrap">
-      <button type="button" class="row" @click="$emit('select', r.surah)">
+      <label v-if="selected" class="row row-check">
+        <input
+          type="checkbox"
+          :checked="selected.includes(r.surah)"
+          @change="$emit('toggle', r.surah)"
+        />
+        <span class="num" aria-hidden="true">{{ r.surah }}</span>
+        <span class="main">
+          <span class="translit">{{ r.translit }}</span>
+          <span class="meta">
+            {{ t(r.ayahs === 1 ? 'surahList.ayahOne' : 'surahList.ayahOther', { n: r.ayahs }) }}
+            <span class="dot" aria-hidden="true">·</span>
+            <span class="place" :class="r.place">{{ r.place === 'makki' ? t('surahList.makki') : t('surahList.madani') }}</span>
+          </span>
+        </span>
+        <span class="arabic" dir="rtl" lang="ar">{{ r.arabic }}</span>
+      </label>
+      <button v-else type="button" class="row" @click="$emit('select', r.surah)">
         <span class="num" aria-hidden="true">{{ r.surah }}</span>
         <span class="main">
           <span class="translit">{{ r.translit }}</span>
@@ -72,6 +97,16 @@ defineEmits<{ select: [surah: number]; listen: [surah: number] }>()
 .row:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
+}
+.row-check input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-accent);
+}
+.row-check input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .num {
   flex: 0 0 auto;

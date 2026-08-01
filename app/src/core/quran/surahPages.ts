@@ -61,3 +61,27 @@ export function pageIsWhollyWithin(surah: number, page: number): boolean {
   const on = surahsOnPage(page)
   return on.length === 1 && on[0] === surah
 }
+
+/**
+ * Expand surah numbers to the pages that are **fully covered** by the
+ * selection, sorted ascending. Unlike `getPagesForJuz` (whose page ranges
+ * never overlap), a surah's boundary page can carry a large chunk of a
+ * *different*, unselected surah — marking it memorized on that basis alone
+ * would be wrong. So a shared page (`surahsOnPage(page).length > 1`) is only
+ * included once **every** surah on it is in `surahNumbers`; a surah selected
+ * on its own contributes only its wholly-owned interior pages, and a boundary
+ * page joins the result the moment its last neighbour is also selected (e.g.
+ * page 604 needs surahs 112, 113 *and* 114; page 578 needs both 75 and 76).
+ * Out-of-range surah numbers are silently ignored.
+ */
+export function getPagesForSurah(surahNumbers: number[]): number[] {
+  const selected = new Set(surahNumbers.filter((s) => SURAH_PAGE_RANGES_QPC[s] != null))
+  const candidates = new Set<number>()
+  for (const s of selected) {
+    const [start, end] = SURAH_PAGE_RANGES_QPC[s]
+    for (let p = start; p <= end; p++) candidates.add(p)
+  }
+  return [...candidates]
+    .filter((p) => surahsOnPage(p).every((s) => selected.has(s)))
+    .sort((a, b) => a - b)
+}

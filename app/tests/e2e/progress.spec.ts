@@ -83,6 +83,173 @@ test('bulk range mark memorizes a contiguous range', async ({ page }) => {
   }
 })
 
+// —— Mark memorized by surah/juz (9.x) ————————————————————————————————
+test('the surah/juz picker opens, defaults to an empty pick, and confirm stays disabled', async ({
+  page,
+}) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await expect(sheet).toBeVisible()
+  await expect(sheet.getByText('Nothing selected yet.')).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Mark as memorized' })).toBeDisabled()
+})
+
+test('picking a juz marks every page in it memorized, and persists', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('button', { name: 'Juz 1', exact: true }).click()
+  await expect(sheet.getByText('21 pages selected.')).toBeVisible()
+
+  const confirm = sheet.getByRole('button', { name: 'Mark as memorized' })
+  await expect(confirm).toBeEnabled()
+  await confirm.click()
+  await expect(sheet).toBeHidden()
+
+  // Confirms the reward-side effect fired, not just the sheet closing.
+  await expect(page.getByRole('status').getByText('21 pages marked memorized.')).toBeVisible()
+
+  // Juz 1 is pages 1–21 (derived nav index) — first, last, and an interior page.
+  for (const p of [1, 10, 21]) {
+    await expect(page.getByRole('button', { name: `Page ${p}, memorized` })).toBeVisible()
+  }
+  // Juz 2 starts right after — untouched.
+  await expect(page.getByRole('button', { name: 'Page 22, not memorized' })).toBeVisible()
+
+  await page.waitForTimeout(500)
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Page 1, memorized' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'Page 21, memorized' })).toBeVisible()
+})
+
+test('picking a surah marks only its pages, via the kind switch', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('radio', { name: 'Surahs' }).click()
+  // Al-Fatihah — a named checkbox row, not a bare number; also a single-page
+  // surah, so this proves the singular copy too.
+  await sheet.getByRole('checkbox', { name: /Al-Fatihah/ }).check()
+  await expect(sheet.getByText('1 page selected.')).toBeVisible()
+
+  await sheet.getByRole('button', { name: 'Mark as memorized' }).click()
+  await expect(page.getByRole('button', { name: 'Page 1, memorized' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Page 2, not memorized' })).toBeVisible()
+})
+
+test('the surah list shows names, not just numbers, and supports unchecking', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('radio', { name: 'Surahs' }).click()
+
+  const fatihah = sheet.getByRole('checkbox', { name: /Al-Fatihah/ })
+  await expect(fatihah).toBeVisible()
+  // The Arabic name renders alongside the transliteration — a bare "Surah 1"
+  // number is exactly what this list is meant to replace.
+  await expect(sheet.getByText('الفاتحة')).toBeVisible()
+
+  await fatihah.check()
+  const baqarah = sheet.getByRole('checkbox', { name: /Al-Baqarah/ })
+  await baqarah.check()
+  await expect(sheet.getByText('49 pages selected.')).toBeVisible() // page 1 + pages 2–49
+
+  await fatihah.uncheck()
+  await expect(sheet.getByText('48 pages selected.')).toBeVisible()
+  await expect(fatihah).not.toBeChecked()
+  await expect(baqarah).toBeChecked()
+})
+
+test('a surah shared with an unpicked neighbour contributes no pages until the neighbour joins it', async ({
+  page,
+}) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('radio', { name: 'Surahs' }).click()
+
+  // Al-Qiyamah (75) spans only pages 577–578, and both are shared with a
+  // neighbour (74 and 76 respectively) — picking it alone must resolve to
+  // nothing, with a message explaining why, not a silent "nothing selected".
+  await sheet.getByRole('checkbox', { name: /^Al-Qiyamah\b/ }).check()
+  await expect(sheet.getByText(/shared with surahs you haven.t picked/)).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Mark as memorized' })).toBeDisabled()
+
+  // Picking its neighbour (Al-Insan, 76) completes page 578 — the two surahs'
+  // shared boundary — while leaving 577 (shared with 74, not picked) and 580
+  // (shared with 77, not picked) untouched.
+  await sheet.getByRole('checkbox', { name: /^Al-Insan\b/ }).check()
+  await expect(sheet.getByText('2 pages selected.')).toBeVisible()
+
+  await sheet.getByRole('button', { name: 'Mark as memorized' }).click()
+  await expect(sheet).toBeHidden()
+
+  await expect(page.getByRole('button', { name: 'Page 578, memorized' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Page 579, memorized' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Page 577, not memorized' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Page 580, not memorized' })).toBeVisible()
+})
+
+test('closing the picker without confirming discards the pick', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('button', { name: 'Juz 1', exact: true }).click()
+  await expect(sheet.getByText('21 pages selected.')).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await expect(sheet).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible()
+
+  // Reopening starts fresh — the discarded pick doesn't linger.
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  await expect(page.getByRole('dialog', { name: 'Mark memorized' }).getByText('Nothing selected yet.')).toBeVisible()
+})
+
+test('the summary reports how many of the pick are already memorized', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Mark page 1 by hand first — juz 1 (pages 1–21) then partially overlaps it.
+  await page.getByLabel('From page').fill('1')
+  await page.getByLabel('To page').fill('1')
+  await page.getByRole('button', { name: 'Memorized', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Page 1, memorized' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Mark memorized' })
+  await sheet.getByRole('button', { name: 'Juz 1', exact: true }).click()
+  await expect(sheet.getByText('21 pages selected.')).toBeVisible()
+  await expect(sheet.getByText('1 of these is already memorized.')).toBeVisible()
+})
+
 test('grid cells are a roving-tabindex group navigable by arrow keys', async ({ page }) => {
   await page.goto('/progress')
   const cell1 = page.getByRole('button', { name: 'Page 1, not memorized' })
@@ -189,5 +356,38 @@ for (const theme of themes) {
         `${theme}/${lens}: ${JSON.stringify(serious.map((v) => ({ id: v.id, nodes: v.nodes.length })))}`,
       ).toEqual([])
     }
+
+    // The surah/juz picker sheet, opened over the Overview lens. The sheet's own
+    // slide/fade-in transition can still be mid-flight when `toBeVisible` resolves
+    // (opacity isn't part of Playwright's visibility check) — give it a moment to
+    // start before `settle` waits out whatever's left, so axe samples resting colours.
+    await page.getByRole('button', { name: 'Mark by surah or juz' }).click()
+    await expect(page.getByRole('dialog', { name: 'Mark memorized' })).toBeVisible()
+    await page.waitForTimeout(250)
+    await settle(page)
+    const pickerResults = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+    const pickerSerious = pickerResults.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    )
+    expect(
+      pickerSerious,
+      `${theme}/pick-sheet: ${JSON.stringify(pickerSerious.map((v) => ({ id: v.id, nodes: v.nodes.length })))}`,
+    ).toEqual([])
+
+    // The surah checkbox list — new interactive surface (native checkbox +
+    // `accent-color`) the juz-default sweep above never reaches.
+    await page.getByRole('radio', { name: 'Surahs' }).click()
+    await page.waitForTimeout(250)
+    await settle(page)
+    const surahResults = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+    const surahSerious = surahResults.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    )
+    expect(
+      surahSerious,
+      `${theme}/pick-sheet-surahs: ${JSON.stringify(surahSerious.map((v) => ({ id: v.id, nodes: v.nodes.length })))}`,
+    ).toEqual([])
+
+    await page.keyboard.press('Escape')
   })
 }

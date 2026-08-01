@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, BookOpen, Minus, Plus } from 'lucide-vue-next'
+import { ArrowLeft, BookOpen, ListChecks, Minus, Plus } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
@@ -18,6 +18,7 @@ import SegmentedControl from '@/components/SegmentedControl.vue'
 import MemorizedGrid from './MemorizedGrid.vue'
 import JuzProgressGrid from './JuzProgressGrid.vue'
 import PageDotsGrid from './PageDotsGrid.vue'
+import MarkMemorizedModal from './MarkMemorizedModal.vue'
 
 /**
  * Memorization progress. Three lenses (9.2): **Overview** — summary stats, bulk
@@ -94,6 +95,9 @@ function bulkMark(on: boolean) {
   progress.bulkMarkMemorized(pages, on)
 }
 
+// A friendlier alternative to the manual range: pick whole surahs/juz instead.
+const pickOpen = ref(false)
+
 const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US'))
 </script>
 
@@ -155,6 +159,10 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
         <button class="btn" @click="bulkMark(true)">{{ t('progress.bulk.memorized') }}</button>
         <button class="btn btn-ghost" @click="bulkMark(false)">{{ t('progress.bulk.clear') }}</button>
       </div>
+      <button class="pick-trigger" type="button" @click="pickOpen = true">
+        <Icon :icon="ListChecks" :size="14" />
+        <span>{{ t('progress.pick.button') }}</span>
+      </button>
     </section>
 
     <MemorizedGrid @select="openPage" />
@@ -256,6 +264,8 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
         </button>
       </div>
     </BottomSheet>
+
+    <MarkMemorizedModal v-model:open="pickOpen" />
   </main>
 </template>
 
@@ -458,6 +468,23 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
   border: 1px solid var(--color-border);
 }
 .btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.pick-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.pick-trigger:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
