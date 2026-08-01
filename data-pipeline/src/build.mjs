@@ -4,6 +4,7 @@ import { INPUT_DATA, OUTPUT_DATA, OUTPUT_PUBLIC } from './lib/paths.mjs'
 import { createManifest, writeJson } from './lib/manifest.mjs'
 import { chunkQuranLayout } from './chunk-quran.mjs'
 import { chunkFlatBySurah } from './chunk-by-surah.mjs'
+import { buildQuranTextFlat } from './chunk-quran-text.mjs'
 import { chunkMorphology } from './chunk-morphology.mjs'
 import { writeNavIndexes } from './build-nav-index.mjs'
 
@@ -42,6 +43,21 @@ function main() {
   ]
   for (const ds of surahDatasets) {
     const entry = chunkFlatBySurah({ ...ds, outputData: OUTPUT_DATA })
+    manifest.addDataset(entry.name, entry)
+    reportSurahSizes(entry)
+  }
+
+  // Plain Unicode Arabic verse text (not the QPC glyph font's presentation
+  // forms) → per-surah chunks. Used wherever copy/paste-able Arabic is needed
+  // (e.g. the tafsir panel's copy button) — see chunk-quran-text.mjs.
+  {
+    const quran = JSON.parse(readFileSync(`${INPUT_DATA}/quran/quran.json`, 'utf8'))
+    const entry = chunkFlatBySurah({
+      name: 'quran-text',
+      data: buildQuranTextFlat(quran),
+      outDir: 'quran-text',
+      outputData: OUTPUT_DATA,
+    })
     manifest.addDataset(entry.name, entry)
     reportSurahSizes(entry)
   }

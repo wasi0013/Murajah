@@ -25,9 +25,13 @@ export function mergeSurahChunks(bySurah) {
   return flat
 }
 
-/** Read a flat surah-prefixed file, write per-surah chunks, return manifest entry. */
-export function chunkFlatBySurah({ name, file, outDir, outputData }) {
-  const flat = JSON.parse(readFileSync(file, 'utf8'))
+/**
+ * Write per-surah chunks for a flat `{ "s:...": value }` object, return manifest
+ * entry. Pass either `file` (read + parsed here) or an already-parsed `data`
+ * object (e.g. transformed in memory from a differently-shaped source).
+ */
+export function chunkFlatBySurah({ name, file, data, outDir, outputData }) {
+  const flat = data ?? JSON.parse(readFileSync(file, 'utf8'))
   const bySurah = groupBySurah(flat)
 
   const info = []

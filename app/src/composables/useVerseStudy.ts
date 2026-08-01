@@ -11,6 +11,10 @@ export interface VerseStudy {
   verse: string
   /** The verse's Arabic (its words on this page), rendered in the page font. */
   arabic: string
+  /** Plain Unicode Arabic for the whole verse — copy/paste-able, unlike
+   * `arabic` above (a page glyph font's presentation forms, meaningless text
+   * outside that font). Empty if the dataset failed to load. */
+  arabicText: string
   /** English — Saheeh International. */
   en: string
   /** Bengali — Dr. Abu Bakr Muhammad Zakaria. */
@@ -33,6 +37,7 @@ export function useVerseStudy(
   const chunkCache = new Map<string, PageChunk>()
   const trCache = new Map<string, TafsirChunk>() // `${lang}:${surah}` (en/bn)
   const arCache = new Map<number, TafsirChunk>() // ar tafsir by surah
+  const textCache = new Map<number, TafsirChunk>() // plain Arabic verse text by surah
   const entries = ref<VerseStudy[]>([])
   const fontFamily = ref('serif')
   const tafsir = ref<Record<string, string>>({}) // verse → ar tafsir (lazy)
@@ -69,14 +74,22 @@ export function useVerseStudy(
       }
 
       const surahs = [...new Set(verses.map((v) => Number(v.split(':')[0])))]
-      await Promise.all(
-        surahs.flatMap((surah) =>
+      await Promise.all([
+        ...surahs.flatMap((surah) =>
           (['en', 'bn'] as const).map(async (lang) => {
             const key = `${lang}:${surah}`
             if (!trCache.has(key)) trCache.set(key, await data.getTafsir(lang, surah))
           }),
         ),
-      )
+        ...surahs.map(async (surah) => {
+          if (textCache.has(surah)) return
+          try {
+            textCache.set(surah, await data.getVerseText(surah))
+          } catch {
+            textCache.set(surah, {}) // copy falls back to omitting Arabic, never the glyph text
+          }
+        }),
+      ])
       const family = await fonts.ensure(fontReq())
 
       if (!reader.tafsir || reader.page !== page || reader.layout !== layout) return
@@ -92,6 +105,7 @@ export function useVerseStudy(
         return {
           verse,
           arabic: (byVerse.get(verse) ?? []).join(' '),
+          arabicText: textCache.get(surah)?.[verse]?.text ?? '',
           en: trCache.get(`en:${surah}`)?.[verse]?.text ?? '',
           bn: trCache.get(`bn:${surah}`)?.[verse]?.text ?? '',
         }

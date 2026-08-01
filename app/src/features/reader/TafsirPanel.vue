@@ -99,7 +99,9 @@ function onToggle(verse: string, e: Event) {
 }
 
 async function copy(v: VerseStudy) {
-  const text = [v.verse, v.arabic, v.en, v.bn].filter(Boolean).join('\n')
+  // `v.arabic` is glyph-font text (QPC presentation forms) — copies as
+  // gibberish outside that font. `v.arabicText` is plain Unicode Arabic.
+  const text = [v.verse, v.arabicText, v.en, v.bn].filter(Boolean).join('\n')
   try {
     await navigator.clipboard.writeText(text)
     toast('Verse copied', { variant: 'success' })

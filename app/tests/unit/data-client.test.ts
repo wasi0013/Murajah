@@ -11,6 +11,7 @@ const manifest: Manifest = {
     qpc: { pathTemplate: 'data/qpc/pages/{page}.json', count: 604, hash: 'qpchash' },
     'tr-en': { pathTemplate: 'data/tr/en/{surah}.json', count: 114, hash: 'trenhash' },
     morphology: { pathTemplate: 'data/morphology/{surah}.json', count: 114, hash: 'morphhash' },
+    'quran-text': { pathTemplate: 'data/quran-text/{surah}.json', count: 114, hash: 'qtexthash' },
   },
   indexes: {
     surahNames: { path: 'data/surah-names.json', hash: 'namehash' },
@@ -62,6 +63,19 @@ describe('DataClient (mock transport)', () => {
     const morph = await client.getMorphology(2)
     expect(calls).toEqual(['data/morphology/2.json?v=morphhash'])
     expect(morph['2:255:1']).toContain('the')
+  })
+
+  it('getVerseText builds the per-surah path and serves plain Arabic', async () => {
+    const { transport, calls } = mockTransport({
+      'data/manifest.json': manifest,
+      'data/quran-text/1.json?v=qtexthash': { '1:1': { text: 'بِسْمِ ٱللَّهِ' } },
+    })
+    const client = new DataClient(transport)
+    await client.init()
+    calls.length = 0
+    const text = await client.getVerseText(1)
+    expect(calls).toEqual(['data/quran-text/1.json?v=qtexthash'])
+    expect(text['1:1'].text).toBe('بِسْمِ ٱللَّهِ')
   })
 
   it('getNavIndex picks the per-layout index path', async () => {
@@ -142,5 +156,22 @@ describe.skipIf(!hasData)('DataClient (real generated fixtures)', () => {
     const morph = await client.getMorphology(1)
     expect(morph['1:1:1']).toContain('س م و') // bismillah root, unwrapped from .data
     expect(Object.keys(morph).length).toBeGreaterThan(0)
+  })
+
+  it('serves real plain Arabic verse text, distinct from the QPC glyph font', async () => {
+    const client = new DataClient(fsTransport)
+    await client.init()
+    const text = await client.getVerseText(1)
+    expect(text['1:1'].text.length).toBeGreaterThan(0)
+    // Not a presentation-form ligature (how the QPC glyph font hijacks Unicode
+    // as glyph indices) — real text renders correctly without that font.
+    for (const ch of text['1:1'].text) {
+      const cp = ch.codePointAt(0)!
+      expect(cp >= 0xfb50 && cp <= 0xfdff).toBe(false)
+      expect(cp >= 0xfe70 && cp <= 0xfeff).toBe(false)
+    }
+    const page = await client.getPage('qpc', 1)
+    const glyph = page.words.find((w) => w.location === '1:1:1')!.text
+    expect(text['1:1'].text).not.toContain(glyph) // real Arabic ≠ font glyph text
   })
 })

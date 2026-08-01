@@ -30,6 +30,10 @@ function mocks() {
       if (lang === 'ar') arCalls.push(`ar:${surah}`)
       return tafsir[`${lang}:${surah}`] ?? {}
     }),
+    getVerseText: vi.fn(async () => ({
+      '2:142': { text: 'سَيَقُولُ السُّفَهَاءُ' },
+      '2:143': { text: 'وَكَذَٰلِكَ' },
+    })),
   } as unknown as DataClient
   const fonts = {
     init: vi.fn(async () => ({})),
@@ -56,8 +60,20 @@ describe('useVerseStudy', () => {
 
     expect(s.fontFamily.value).toBe('tj-p22')
     expect(s.entries.value).toEqual([
-      { verse: '2:142', arabic: 'سَیَقُوْلُ السُّفَهَآءُ', en: 'The foolish…', bn: 'নির্বোধরা…' },
-      { verse: '2:143', arabic: 'وَكَذٰلِكَ', en: 'And thus…', bn: 'এভাবে…' },
+      {
+        verse: '2:142',
+        arabic: 'سَیَقُوْلُ السُّفَهَآءُ',
+        arabicText: 'سَيَقُولُ السُّفَهَاءُ',
+        en: 'The foolish…',
+        bn: 'নির্বোধরা…',
+      },
+      {
+        verse: '2:143',
+        arabic: 'وَكَذٰلِكَ',
+        arabicText: 'وَكَذَٰلِكَ',
+        en: 'And thus…',
+        bn: 'এভাবে…',
+      },
     ])
   })
 

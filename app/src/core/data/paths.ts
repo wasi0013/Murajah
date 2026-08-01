@@ -42,6 +42,11 @@ export function morphologyPath(manifest: Manifest, surah: number): string {
   return withVersion(fill(ds.pathTemplate, 'surah', surah), ds.hash)
 }
 
+export function quranTextPath(manifest: Manifest, surah: number): string {
+  const ds = dataset(manifest, 'quran-text')
+  return withVersion(fill(ds.pathTemplate, 'surah', surah), ds.hash)
+}
+
 export function indexPath(manifest: Manifest, name: string): string {
   const idx = manifest.indexes?.[name]
   if (!idx) throw new Error(`manifest: unknown index "${name}"`)

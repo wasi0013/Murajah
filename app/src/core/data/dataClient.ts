@@ -3,6 +3,7 @@ import {
   morphologyPath,
   pageCount,
   pagePath,
+  quranTextPath,
   tafsirPath,
   translationPath,
   MANIFEST_PATH,
@@ -65,6 +66,11 @@ export class DataClient {
 
   getTafsir(lang: TafsirLang, surah: number): Promise<TafsirChunk> {
     return this.transport.fetchJson<TafsirChunk>(tafsirPath(this.m, lang, surah))
+  }
+
+  /** Plain Unicode Arabic verse text (not a page's glyph font) — for copy/paste. */
+  getVerseText(surah: number): Promise<TafsirChunk> {
+    return this.transport.fetchJson<TafsirChunk>(quranTextPath(this.m, surah))
   }
 
   /** Per-surah morphology (location → HTML analysis). Lazy; prefetch by surah. */
