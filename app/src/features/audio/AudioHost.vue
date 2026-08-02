@@ -101,6 +101,7 @@ function onClose() {
     :page-available="pageAvailable"
     :effective-grain="effectiveGrain"
     :reciter-name="reciterName"
+    :show-repeat="effectiveGrain === 'verse'"
     @start="onStart"
     @rebuild="onRebuild"
     @open-picker="pickerOpen = true"

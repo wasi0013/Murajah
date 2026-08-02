@@ -31,6 +31,17 @@ test('picking a surah docks the mini-player with no grain toggle', async ({ page
   await expect(page.getByRole('radiogroup', { name: 'Playback grain' })).toHaveCount(0)
 })
 
+test('the tray hides the (non-functional) repeat/spaced-drill controls', async ({ page }) => {
+  // BUG regression: Listen is a straight-through whole-scope playthrough, not a
+  // per-verse drill — repeatCount/spaced are never wired into its playlists
+  // (see useListenPlayer.ts), so the tray must not show controls implying they do.
+  await openListen(page)
+  await page.getByRole('button', { name: /Al-Furqan/ }).click()
+  await expect(page.locator('.player')).toBeVisible()
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByText('Repetition')).toHaveCount(0)
+})
+
 test('the reciter picker offers the curated single-voice set only', async ({ page }) => {
   await openListen(page)
   await page.getByRole('button', { name: /Al-Furqan/ }).click()

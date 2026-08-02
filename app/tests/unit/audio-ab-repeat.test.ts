@@ -59,6 +59,31 @@ describe('AB-repeat reducer (decision 7, simplified interaction model)', () => {
     const s = setA(setB(setA(AB_NONE, 5), 10), 7)
     expect(s).toEqual({ a: 7, b: 10, loop: true })
   })
+
+  it('BUG regression: setting B at currentTime 0 with no A does not arm a zero-width loop', () => {
+    // Previously: {a:0, b:0, loop:true} — abSeekTarget then returned 0 for every
+    // currentTime >= 0, permanently pinning playback at the start.
+    const s = setB(AB_NONE, 0)
+    expect(s).toEqual({ a: 0, b: 0, loop: false })
+    expect(abRegion(s)).toBeNull()
+  })
+
+  it('BUG regression: setting A exactly at an existing B does not arm a zero-width loop', () => {
+    const s = setA(setB(AB_NONE, 8), 8)
+    expect(s).toEqual({ a: 8, b: 8, loop: false })
+    expect(abRegion(s)).toBeNull()
+  })
+
+  it('BUG regression: toggling Loop on with A already sitting exactly at duration is a no-op', () => {
+    const s = setA(AB_NONE, 42) // A placed exactly at the (soon-to-be-known) duration
+    expect(toggleLoop(s, 42)).toEqual(s)
+  })
+
+  it('a non-degenerate B right next to A still arms the loop normally', () => {
+    const s = setB(setA(AB_NONE, 5), 5.01)
+    expect(s.loop).toBe(true)
+    expect(abRegion(s)).toEqual({ start: 5, end: 5.01 })
+  })
 })
 
 describe('abSeekTarget (timeupdate loop-back)', () => {
@@ -76,6 +101,14 @@ describe('abSeekTarget (timeupdate loop-back)', () => {
 
   it('does nothing when markers are incomplete', () => {
     expect(abSeekTarget(setA(AB_NONE, 5), 100)).toBeNull()
+  })
+
+  it('is defensively safe against a degenerate zero-width region even if loop were somehow true', () => {
+    // Belt-and-braces: abRegion is the single choke point that refuses a
+    // zero-width region, but this asserts abSeekTarget itself never pins
+    // playback even given a directly-constructed (not reducer-built) state.
+    expect(abSeekTarget({ a: 3, b: 3, loop: true }, 3)).toBeNull()
+    expect(abSeekTarget({ a: 3, b: 3, loop: true }, 10)).toBeNull()
   })
 })
 

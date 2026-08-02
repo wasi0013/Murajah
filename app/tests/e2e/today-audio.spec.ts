@@ -107,6 +107,16 @@ test('selecting a list tab docks a page-grain mini-player with no grain toggle',
   await expect(page.getByRole('radiogroup', { name: 'Playback grain' })).toHaveCount(0)
 })
 
+test('a page-grain list tab hides the (non-functional) repeat/spaced-drill controls', async ({ page }) => {
+  // BUG regression: the tray used to show Repeat-count/Spaced-drill in every
+  // context, including page grain, where they have no effect on playback at all.
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await page.getByRole('radio', { name: 'Revision' }).click()
+  await expect(page.locator('.player')).toBeVisible()
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByText('Repetition')).toHaveCount(0)
+})
+
 test('enabling the habit adds a Daily verses tab starting at 1:1', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan({ habits: ['recite-ayahs'] }) })
   const versesTab = page.getByRole('radio', { name: 'Daily verses' })
@@ -115,6 +125,11 @@ test('enabling the habit adds a Daily verses tab starting at 1:1', async ({ page
   await versesTab.click()
   await expect(page.locator('.player')).toBeVisible()
   await expect(page.locator('.now')).toHaveText('Ayah 1:1')
+
+  // Verse grain here is the one Today context that actually wires repeat-count/
+  // spaced-drill into playback (see useTodayPlayer.ts), so the tray shows them.
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByText('Repetition')).toBeVisible()
 })
 
 test('the habit row links straight into the Daily verses tab', async ({ page }) => {

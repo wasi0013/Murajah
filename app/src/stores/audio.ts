@@ -39,6 +39,14 @@ export const useAudioStore = defineStore('audio', () => {
   const ab = ref<AbState>({ ...AB_NONE })
   /** Whether the mini-player is on screen. */
   const open = ref(false)
+  /**
+   * The `name` (e.g. `'NotAllowedError'`) of the most recent rejected `play()`
+   * call, or null. The engine clears this at the start of every play attempt and
+   * sets it on rejection instead of swallowing the promise silently — otherwise
+   * `loading` had nothing to ever clear it back to false, leaving a stuck spinner
+   * with no visible sign playback had actually stopped (see `useAudioEngine`).
+   */
+  const lastPlayError = ref<string | null>(null)
 
   const current = computed<PlaylistItem | null>(() => playlist.value[index.value] ?? null)
   /** The active ayah (verse grain only) — drives the reader highlight. */
@@ -62,6 +70,7 @@ export const useAudioStore = defineStore('audio', () => {
     isPlaying.value = false
     loading.value = false
     ab.value = { ...AB_NONE }
+    lastPlayError.value = null
   }
 
   return {
@@ -85,6 +94,7 @@ export const useAudioStore = defineStore('audio', () => {
     duration,
     ab,
     open,
+    lastPlayError,
     // derived
     current,
     activeVerse,

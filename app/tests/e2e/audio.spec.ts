@@ -12,6 +12,45 @@ async function openReaderPlayer(page: Page) {
   await expect(page.locator('.player')).toBeVisible()
 }
 
+/**
+ * A minimal valid mono PCM WAV (silence), long enough to actually let a real
+ * `<audio>` element's `currentTime` advance for a few seconds of real playback.
+ * Browsers determine playability from the response's `Content-Type`, not the
+ * request's URL suffix, so this can stand in for a `.mp3` request. Used to test
+ * real elapsed-time behavior (e.g. AB-repeat marking two genuinely different
+ * timestamps) without depending on the external CDNs actually being reachable
+ * from CI — this suite otherwise deliberately avoids relying on that (see the
+ * top-of-file note).
+ */
+function silentWav(seconds: number, sampleRate = 8000): Buffer {
+  const frames = seconds * sampleRate
+  const dataSize = frames * 2 // 16-bit mono
+  const buf = Buffer.alloc(44 + dataSize)
+  buf.write('RIFF', 0)
+  buf.writeUInt32LE(36 + dataSize, 4)
+  buf.write('WAVE', 8)
+  buf.write('fmt ', 12)
+  buf.writeUInt32LE(16, 16)
+  buf.writeUInt16LE(1, 20) // PCM
+  buf.writeUInt16LE(1, 22) // mono
+  buf.writeUInt32LE(sampleRate, 24)
+  buf.writeUInt32LE(sampleRate * 2, 28) // byte rate
+  buf.writeUInt16LE(2, 32) // block align
+  buf.writeUInt16LE(16, 34) // bits per sample
+  buf.write('data', 36)
+  buf.writeUInt32LE(dataSize, 40)
+  // Remaining bytes are already zeroed (silence) by Buffer.alloc.
+  return buf
+}
+
+/** Serve every recitation-audio request as real, locally-decodable silence. */
+async function mockPlayableAudio(page: Page, seconds = 5): Promise<void> {
+  const wav = silentWav(seconds)
+  await page.route(/\.mp3(\?.*)?$/, (route) =>
+    route.fulfill({ status: 200, contentType: 'audio/wav', body: wav }),
+  )
+}
+
 test('the headphones control opens the mini-player', async ({ page }) => {
   await openReaderPlayer(page)
   await expect(page.getByRole('radio', { name: 'Verse' })).toBeVisible()
@@ -24,6 +63,18 @@ test('the grain toggle switches between Verse and Page', async ({ page }) => {
   await expect(verse).toHaveAttribute('aria-checked', 'true')
   await pageGrain.click()
   await expect(pageGrain).toHaveAttribute('aria-checked', 'true')
+})
+
+test('the tray shows repeat/spaced-drill controls in verse grain and hides them in page grain', async ({ page }) => {
+  // BUG regression: these used to render unconditionally, including in page
+  // grain, where useQariPlayer never wires repeatCount/spaced into playback.
+  await openReaderPlayer(page)
+  await expect(page.getByRole('radio', { name: 'Verse' })).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByText('Repetition')).toBeVisible()
+
+  await page.getByRole('radio', { name: 'Page' }).click()
+  await expect(page.getByText('Repetition')).toHaveCount(0)
 })
 
 test('page mode is disabled in Indopak layout (decision 6)', async ({ page }) => {
@@ -45,13 +96,22 @@ test('the reciter picker lists reciters and selecting one updates the player', a
 })
 
 test('AB-repeat: setting A then B starts the loop (decision 7a)', async ({ page }) => {
+  // Marking A and B needs two genuinely different timestamps to produce a real,
+  // loopable region (a same-instant double-mark is a degenerate zero-width region
+  // and correctly does NOT arm a loop — see the abRepeat.ts zero-width-region
+  // fix). Real elapsed playback time is what a user would naturally produce, but
+  // this suite can't rely on the external CDNs being reachable from CI, so a
+  // locally-served silent WAV stands in for the recitation audio.
+  await mockPlayableAudio(page)
   await openReaderPlayer(page)
+  await page.getByRole('button', { name: 'Play', exact: true }).click()
   await page.getByRole('button', { name: 'More controls' }).click()
   const a = page.locator('.chip.ab').first()
   const b = page.locator('.chip.ab').nth(1)
   const loop = page.getByRole('button', { name: 'Loop' })
   await expect(loop).toHaveAttribute('aria-pressed', 'false')
   await a.click()
+  await page.waitForTimeout(1000)
   await b.click()
   await expect(loop).toHaveAttribute('aria-pressed', 'true') // auto-on when both set
 })

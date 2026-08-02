@@ -31,8 +31,17 @@ const props = withDefaults(
     reciterName: string
     /** The reader shows a verse/page grain toggle; Listen (page-only) hides it. */
     showGrain?: boolean
+    /**
+     * Whether the advanced tray's repeat-count/spaced-drill section applies here.
+     * Only reader/mushaf verse grain and Today's verses-of-day tab actually wire
+     * these into playback; everywhere else (any page grain; Listen, a
+     * straight-through whole-scope playthrough rather than a per-verse drill)
+     * leaves it false so the control is never shown implying an effect it
+     * doesn't have.
+     */
+    showRepeat?: boolean
   }>(),
-  { showGrain: true },
+  { showGrain: true, showRepeat: true },
 )
 const emit = defineEmits<{ start: []; rebuild: []; openPicker: []; close: [] }>()
 
@@ -189,7 +198,7 @@ function fmt(s: number) {
       </button>
     </div>
 
-    <AudioControlsTray v-if="trayOpen" @rebuild="emit('rebuild')" />
+    <AudioControlsTray v-if="trayOpen" :show-repeat="props.showRepeat" @rebuild="emit('rebuild')" />
   </section>
 </template>
 

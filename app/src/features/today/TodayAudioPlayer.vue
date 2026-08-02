@@ -107,6 +107,7 @@ defineExpose({ selectTab })
       :effective-grain="effectiveGrain"
       :reciter-name="reciterName"
       :show-grain="false"
+      :show-repeat="activeTab === 'versesOfDay'"
       @start="onRebuild"
       @rebuild="onRebuild"
       @open-picker="pickerOpen = true"

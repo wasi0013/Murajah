@@ -12,11 +12,40 @@
  * only right before `load()`: some WebViews (Android) silently reset `playbackRate`
  * back to 1 as part of the load algorithm, which otherwise leaves the UI showing the
  * chosen speed while the track actually plays at 1×.
+ *
+ * Media Session (7.1.3): lock-screen/notification "Now Playing" + hardware-button
+ * support, and — more importantly for mobile background/lock-screen playback — the
+ * standard signal the OS uses to treat this as a legitimate ongoing media session
+ * rather than a suspendable background page. Metadata is set per item load; the
+ * action handlers are registered once and simply delegate to this engine's own
+ * transport, so there is exactly one implementation of play/pause/next/prev/seek.
  */
 import { AB_NONE, abOnEnded, abSeekTarget, clearAb, setA, setB, toggleLoop } from '@/core/audio/abRepeat'
+import {
+  isSupported as mediaSessionSupported,
+  setActionHandlers as setMediaSessionActionHandlers,
+  setMetadata as setMediaSessionMetadata,
+  setPlaybackState as setMediaSessionPlaybackState,
+  setPositionState as setMediaSessionPositionState,
+} from '@/core/audio/mediaSession'
+import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { nextOnEnd, nextOnFailure, type Advance } from '@/core/audio/transport'
 import type { PlaylistItem } from '@/core/audio/playlist'
+import { t } from '@/core/i18n'
 import { useAudioStore } from '@/stores/audio'
+
+/** Lock-screen/notification artwork — the same icons the installed PWA itself uses. */
+const ARTWORK: MediaImage[] = [
+  { src: '/pwa-icon-192.png', sizes: '192x192', type: 'image/png' },
+  { src: '/pwa-icon-512.png', sizes: '512x512', type: 'image/png' },
+]
+
+/** The "Now Playing" title for an item — same label the mini-player shows. */
+function mediaSessionTitle(item: PlaylistItem): string {
+  return item.kind === 'verse' && item.verse
+    ? t('audio.ayahLabel', { surah: item.verse.surah, ayah: item.verse.ayah })
+    : item.label
+}
 
 interface AudioEngine {
   setPlaylistAndPlay(items: PlaylistItem[]): void
@@ -51,6 +80,53 @@ function createEngine(): AudioEngine {
   let triedFallback = false
   /** See `AudioEngine.setOnExhausted`. */
   let onExhausted: (() => void) | null = null
+  /**
+   * True only between an explicit `stop()` and the next real play attempt.
+   * `HTMLMediaElement.pause()` fires its `'pause'` event as a *queued* task, not
+   * synchronously — so `stopEl` setting Media Session to `'none'` would otherwise
+   * always be clobbered back to `'paused'` moments later when that queued event
+   * finally fires, leaving a stale "paused" Now Playing entry on the lock screen
+   * after the player was closed. This flag isn't about timing (it doesn't matter
+   * how long the queued event takes) — it just gates that one listener's side
+   * effect while genuinely stopped.
+   */
+  let stoppedForMediaSession = false
+
+  /**
+   * Call `play()` and, if the browser rejects the returned promise (an
+   * autoplay-policy block, a media session the OS suspended while backgrounded/
+   * screen-locked, etc.), recover instead of leaving the caller's `loading: true`
+   * stuck forever — the `'playing'` event is the *only* other place that ever
+   * clears it, and that event never fires on a rejected attempt. Previously every
+   * call site swallowed the rejection with `.catch(() => {})`, so a blocked replay
+   * looked identical to a hung spinner with no way out. This does not retry: a
+   * rejection typically means the browser wants a fresh user gesture, which
+   * silently calling `play()` again can't manufacture.
+   */
+  function attemptPlay(a: HTMLAudioElement): void {
+    store.lastPlayError = null
+    stoppedForMediaSession = false
+    a.play().then(
+      () => {},
+      (error: unknown) => {
+        store.loading = false
+        store.isPlaying = false
+        const reason = error instanceof Error ? error.name || error.message : 'unknown'
+        store.lastPlayError = reason
+        // The only diagnostic a future "it just stops" report has: distinguishes
+        // an autoplay-policy/background-suspension block (`NotAllowedError`) from
+        // a real media/network failure without needing to reproduce it live.
+        console.warn(`[audio] play() rejected: ${reason}`)
+      },
+    )
+  }
+
+  /** The "Now Playing" artist for an item — the reciter actually voicing it. */
+  function mediaSessionArtist(item: PlaylistItem): string {
+    return item.kind === 'verse'
+      ? verseReciter(store.verseReciterId).name
+      : pageReciter(store.pageReciterId).name
+  }
 
   function ensureEl(): HTMLAudioElement {
     if (el) return el
@@ -64,6 +140,7 @@ function createEngine(): AudioEngine {
     a.addEventListener('playing', () => {
       store.isPlaying = true
       store.loading = false
+      setMediaSessionPlaybackState('playing')
       // Belt-and-braces alongside `onMeta`: exactly *when* a WebView resets
       // `playbackRate` isn't something we can pin down from the outside, so
       // reassert here too, right as playback actually starts. Idempotent — a
@@ -73,10 +150,26 @@ function createEngine(): AudioEngine {
     })
     a.addEventListener('pause', () => {
       store.isPlaying = false
+      // Skip while `stopEl` is the reason we're paused — see `stoppedForMediaSession`.
+      if (!stoppedForMediaSession) setMediaSessionPlaybackState('paused')
     })
     a.addEventListener('waiting', () => {
       store.loading = true
     })
+    // Registered once, here, alongside the element itself — delegates to this
+    // engine's own transport (defined below) so there is exactly one
+    // implementation of each action, not a parallel copy for the lock screen.
+    if (mediaSessionSupported()) {
+      setMediaSessionActionHandlers({
+        play,
+        pause,
+        previoustrack: prev,
+        nexttrack: next,
+        seekto(seconds) {
+          if (store.duration > 0) a.currentTime = Math.max(0, Math.min(seconds, store.duration))
+        },
+      })
+    }
     el = a
     return a
   }
@@ -85,14 +178,26 @@ function createEngine(): AudioEngine {
     if (advance === 'stop') {
       store.isPlaying = false
       store.loading = false
+      setMediaSessionPlaybackState('paused')
       return
     }
     if (advance === 'exhausted') {
       store.isPlaying = false
       store.loading = false
+      setMediaSessionPlaybackState('paused')
       onExhausted?.()
       return
     }
+    // AB markers are scoped to the item they were set on (module doc). Clear them
+    // on every move to a (possibly different) index — covers autoplay-advance,
+    // manual next()/prev(), and the failure-skip alike — so a loop region from the
+    // outgoing item can never carry over onto whatever loads next. Safe even when
+    // `loopPlaylist` wraps a single-item list back to the same index: this branch
+    // is only ever reached while `ab.loop` is false (an active same-item AB loop is
+    // handled entirely by `onTimeUpdate`/`onEnded`'s `abOnEnded` short-circuit,
+    // which returns before `applyAdvance` is ever called), so there's no live loop
+    // here to lose — only stale markers left over from a previous item.
+    store.ab = { ...AB_NONE }
     store.index = advance.index
     loadCurrent(autoplay)
   }
@@ -113,7 +218,27 @@ function createEngine(): AudioEngine {
     store.currentTime = 0
     store.duration = 0
     store.loading = true
-    if (autoplay) void a.play().catch(() => {})
+    setMediaSessionMetadata({
+      title: mediaSessionTitle(item),
+      artist: mediaSessionArtist(item),
+      artwork: ARTWORK,
+    })
+    if (autoplay) attemptPlay(a)
+  }
+
+  /**
+   * Publish duration/position/rate for the lock-screen scrubber. Only once a
+   * duration is known — some platforms only expose the seek bar (and the
+   * `seekto` action registered above) once this has been called at least once.
+   */
+  function syncMediaSessionPosition(): void {
+    if (store.duration > 0) {
+      setMediaSessionPositionState({
+        duration: store.duration,
+        position: Math.min(store.currentTime, store.duration),
+        playbackRate: store.speed,
+      })
+    }
   }
 
   function onTimeUpdate(): void {
@@ -121,6 +246,7 @@ function createEngine(): AudioEngine {
     store.currentTime = a.currentTime
     const target = abSeekTarget(store.ab, a.currentTime)
     if (target !== null && Math.abs(a.currentTime - target) > 0.05) a.currentTime = target
+    syncMediaSessionPosition()
   }
 
   function onMeta(): void {
@@ -130,6 +256,7 @@ function createEngine(): AudioEngine {
     // Reassert rather than trust the pre-load() assignment in `loadCurrent` — see
     // the module doc: some WebViews reset `playbackRate` to 1 during load().
     if (a.playbackRate !== store.speed) a.playbackRate = store.speed
+    syncMediaSessionPosition()
   }
 
   function onEnded(): void {
@@ -138,7 +265,7 @@ function createEngine(): AudioEngine {
     if (seekTo !== null) {
       const a = ensureEl()
       a.currentTime = seekTo
-      void a.play().catch(() => {})
+      attemptPlay(a)
       return
     }
     applyAdvance(nextOnEnd(store.index, store.playlist.length, store.autoNext, store.loopPlaylist), true)
@@ -152,7 +279,7 @@ function createEngine(): AudioEngine {
       const a = ensureEl()
       a.src = item.urls.fallback
       a.load()
-      void a.play().catch(() => {})
+      attemptPlay(a)
       return
     }
     applyAdvance(nextOnFailure(store.index, store.playlist.length), true)
@@ -161,15 +288,26 @@ function createEngine(): AudioEngine {
   function play(): void {
     const a = ensureEl()
     if (!a.src && store.current) loadCurrent(true)
-    else void a.play().catch(() => {})
+    else attemptPlay(a)
   }
 
   function pause(): void {
     el?.pause()
   }
 
+  function next(): void {
+    if (store.hasNext) applyAdvance({ index: store.index + 1 }, true)
+  }
+
+  function prev(): void {
+    if (store.hasPrev) applyAdvance({ index: store.index - 1 }, true)
+  }
+
   /** Pause and rewind the element, clearing playback flags. */
   function stopEl(): void {
+    // Set before `el.pause()`, which fires its `'pause'` event asynchronously —
+    // without this, that later event would overwrite 'none' back to 'paused'.
+    stoppedForMediaSession = true
     if (el) {
       el.pause()
       el.currentTime = 0
@@ -177,6 +315,11 @@ function createEngine(): AudioEngine {
     store.currentTime = 0
     store.isPlaying = false
     store.loading = false
+    // The one case that should clear "Now Playing" entirely rather than just
+    // reflect a pause: an explicit stop/close, not merely reaching the end of
+    // an item or an item without autoplay-next (see `applyAdvance`'s 'stop' case).
+    setMediaSessionPlaybackState('none')
+    setMediaSessionPositionState(null)
   }
 
   return {
@@ -192,12 +335,8 @@ function createEngine(): AudioEngine {
       if (store.isPlaying) pause()
       else play()
     },
-    next() {
-      if (store.hasNext) applyAdvance({ index: store.index + 1 }, true)
-    },
-    prev() {
-      if (store.hasPrev) applyAdvance({ index: store.index - 1 }, true)
-    },
+    next,
+    prev,
     stop: stopEl,
     seekToFraction(fraction) {
       const a = ensureEl()
@@ -206,6 +345,7 @@ function createEngine(): AudioEngine {
     setSpeed(speed) {
       store.speed = speed
       if (el) el.playbackRate = speed
+      syncMediaSessionPosition() // keep the lock-screen clock honest at 0.5×/2×
     },
     markA() {
       // Read the element directly, not `store.currentTime` — that only updates on

@@ -19,8 +19,13 @@ import { useI18n } from '@/core/i18n'
  * away, without waiting for the item to finish playing once first.
  * Changing repeat-count or the spaced drill needs the playlist rebuilt, so those
  * emit `rebuild`; autoplay-next / loop-playlist are read live by the engine, so
- * they don't.
+ * they don't. That section only renders when `showRepeat` is true (BUG fix: it
+ * used to render unconditionally everywhere, including contexts — page grain;
+ * Listen's whole-scope playthrough — where no caller ever wires `repeatCount`/
+ * `spaced` into playback, so toggling it visibly changed state and rebuilt the
+ * playlist but had no audible effect).
  */
+withDefaults(defineProps<{ showRepeat?: boolean }>(), { showRepeat: true })
 const store = useAudioStore()
 const engine = useAudioEngine()
 const emit = defineEmits<{ rebuild: [] }>()
@@ -107,8 +112,13 @@ function toggleSpaced() {
       </div>
     </section>
 
-    <!-- Repeat count + spaced drill (verse grain) -->
-    <section class="group" aria-labelledby="drill-label">
+    <!-- Repeat count + spaced drill: only where a caller actually wires it into
+         playback (reader/mushaf verse grain, Today's verses-of-day tab) — hidden
+         elsewhere (page grain everywhere; Listen, which is a straight-through
+         whole-scope playthrough, not a per-verse drill, even when its current
+         item happens to be a verse) so the control never implies an effect it
+         doesn't have. See `showRepeat` prop. -->
+    <section v-if="showRepeat" class="group" aria-labelledby="drill-label">
       <span id="drill-label" class="group-label">{{ t('audio.repetition') }}</span>
       <div class="drill-row">
         <div class="stepper" role="group" :aria-label="t('audio.repeatEachAria')">

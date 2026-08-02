@@ -43,7 +43,12 @@ export function useTodayPlayer() {
         page: nav.ayahToPage[`${v.surah}:${v.ayah}`] ?? 0,
         arabic: '',
       }))
-      engine.setPlaylistAndPlay(buildVersePlaylist(verses, verseReciter(store.verseReciterId)))
+      engine.setPlaylistAndPlay(
+        buildVersePlaylist(verses, verseReciter(store.verseReciterId), {
+          repeatCount: store.repeatCount,
+          spaced: store.spaced,
+        }),
+      )
     } finally {
       store.loading = false
     }

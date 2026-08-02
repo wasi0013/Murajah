@@ -160,6 +160,7 @@ onBeforeUnmount(() => prefs.dispose())
       effective-grain="page"
       :reciter-name="reciterName"
       :show-grain="false"
+      :show-repeat="false"
       @start="onRebuild"
       @rebuild="onRebuild"
       @open-picker="pickerOpen = true"
