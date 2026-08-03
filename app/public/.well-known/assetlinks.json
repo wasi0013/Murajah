@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.murajah.webview",
+      "sha256_cert_fingerprints": [
+        "B2:4A:63:10:66:36:67:2E:5B:72:DD:FB:43:32:7E:46:6A:2C:57:44:5B:76:78:4A:74:61:78:8A:B6:FB:D4:85"
+      ]
+    }
+  }
+]
