@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import Dialog from '@/components/Dialog.vue'
+import Modal from '@/components/Modal.vue'
 
 let wrapper: VueWrapper | null = null
 
@@ -54,5 +55,48 @@ describe('Dialog', () => {
   it('renders a drag handle only for the bottom placement', () => {
     openDialog({ placement: 'bottom' })
     expect(document.body.querySelector('.dlg-handle')).not.toBeNull()
+  })
+
+  it('ignores Escape and scrim clicks when dismissible is false', () => {
+    const updates = openDialog({ dismissible: false })
+    const root = document.body.querySelector('.dlg-root')!
+    root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    ;(document.body.querySelector('.dlg-scrim') as HTMLElement).click()
+    expect(updates).toHaveLength(0)
+  })
+})
+
+// Regression coverage: Modal forwards `dismissible` to Dialog as
+// `:dismissible="dismissible"`. When a Modal caller doesn't pass the prop,
+// Modal's own value is `undefined` — Vue's Boolean-prop casting resolves a
+// *bound* `undefined` to `false` (only an absent attribute falls through to a
+// child's `withDefaults` default), so Modal must declare its own default of
+// `true` rather than relying on Dialog's. Without it, every ordinary Modal
+// (all of them, until onboarding introduced the first non-dismissible one)
+// would have silently stopped closing on Escape/scrim click.
+describe('Modal', () => {
+  it('is dismissible by default when the caller does not pass the prop', () => {
+    const updates: boolean[] = []
+    wrapper = mount(Modal, {
+      props: { open: true, label: 'Reset progress', 'onUpdate:open': (v: boolean) => updates.push(v) },
+      slots: { default: '<button>Inside</button>' },
+    })
+    ;(document.body.querySelector('.dlg-scrim') as HTMLElement).click()
+    expect(updates.at(-1)).toBe(false)
+  })
+
+  it('forwards an explicit dismissible={false}', () => {
+    const updates: boolean[] = []
+    wrapper = mount(Modal, {
+      props: {
+        open: true,
+        label: 'Choose your language',
+        dismissible: false,
+        'onUpdate:open': (v: boolean) => updates.push(v),
+      },
+      slots: { default: '<button>Inside</button>' },
+    })
+    ;(document.body.querySelector('.dlg-scrim') as HTMLElement).click()
+    expect(updates).toHaveLength(0)
   })
 })

@@ -4,23 +4,29 @@ import { useRouter } from 'vue-router'
 import { BookOpen, Brain, CalendarCheck, GraduationCap, Headphones, Home, ListOrdered, MessageCircle, Radio, Settings, Store } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings'
 import { useReaderStore } from '@/stores/reader'
+import { useOnboardingStore } from '@/stores/onboarding'
 import { hydrateLocale, useI18n } from '@/core/i18n'
 import { mushafLink } from '@/core/navigation/readerLinks'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
 import ToastContainer from '@/components/ToastContainer.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
+import OnboardingModal from '@/components/OnboardingModal.vue'
 import Icon from '@/components/Icon.vue'
 
 const { t } = useI18n()
 const settings = useSettingsStore()
 const router = useRouter()
 const reader = useReaderStore()
+const onboarding = useOnboardingStore()
 
 onMounted(() => {
   // Load and apply the saved theme and language (each falls back to its default).
   void settings.hydrate()
   void hydrateLocale()
+  // Never-onboarded (first visit) or a fresh install after "Reset app" — both
+  // leave no `onboardingCompleted` pref, so this decides whether to show it.
+  void onboarding.hydrate()
 })
 
 /**
@@ -99,6 +105,7 @@ function goMore(name: string) {
     />
   </div>
   <ToastContainer />
+  <OnboardingModal />
 
   <BottomSheet v-model:open="moreOpen" :label="t('common.tabs.more')">
     <div class="more-menu">

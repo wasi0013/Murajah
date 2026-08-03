@@ -34,3 +34,5 @@ export const idbGet = <T>(store: IDBObjectStore, key: IDBValidKey) =>
 
 export const idbGetAll = <T>(source: IDBObjectStore | IDBIndex) =>
   promisify<T[]>(source.getAll() as IDBRequest<T[]>)
+
+export const idbCount = (source: IDBObjectStore | IDBIndex) => promisify(source.count())

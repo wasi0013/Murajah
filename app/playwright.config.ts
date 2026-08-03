@@ -7,9 +7,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
+  // Pre-completes onboarding (see global-setup.ts) so specs land straight on
+  // the UI they're testing, not the first-run language modal.
+  globalSetup: './tests/e2e/global-setup.ts',
   use: {
     baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
+    storageState: './tests/e2e/.auth/onboarded.json',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

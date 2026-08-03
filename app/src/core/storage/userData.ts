@@ -2,7 +2,7 @@ import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
 import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { PlaybackScope } from '@/core/audio/scope'
-import { idbGet, openDb, txDone } from './idb'
+import { idbCount, idbGet, openDb, txDone } from './idb'
 
 /**
  * Persistence for migratable user data (mistakes now; memorized pages, perfect
@@ -642,6 +642,18 @@ export async function saveHabitVerseCursor(cursor: StoredHabitVerseCursor): Prom
     await txDone(tx)
   } catch {
     /* best-effort */
+  }
+}
+
+/** Whether any user data has ever been saved (a signal of prior app use). Errors read as `false`. */
+export async function hasAnyUserData(): Promise<boolean> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const count = await idbCount(tx.objectStore(STORE))
+    await txDone(tx)
+    return count > 0
+  } catch {
+    return false
   }
 }
 

@@ -51,6 +51,11 @@ const ar: Messages = {
       sat: 'سبت',
     },
   },
+  onboarding: {
+    title: 'اختر لغتك',
+    hint: 'يمكنك تغيير هذا لاحقًا من الإعدادات.',
+    continue: 'متابعة',
+  },
   settings: {
     title: 'الإعدادات',
     appearance: {

@@ -1,4 +1,4 @@
-import { idbGet, openDb, txDone } from './idb'
+import { idbCount, idbGet, openDb, txDone } from './idb'
 
 /**
  * Tiny key/value store for app preferences (reader view options, last page),
@@ -42,6 +42,18 @@ export async function setPref(key: string, value: unknown): Promise<void> {
     await txDone(tx)
   } catch {
     /* best-effort */
+  }
+}
+
+/** Whether any pref has ever been saved (a signal of prior app use). Errors read as `false`. */
+export async function hasAnyPref(): Promise<boolean> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const count = await idbCount(tx.objectStore(STORE))
+    await txDone(tx)
+    return count > 0
+  } catch {
+    return false
   }
 }
 

@@ -53,6 +53,11 @@ const en: Messages = {
       sat: 'Sat',
     },
   },
+  onboarding: {
+    title: 'Choose your language',
+    hint: 'You can change this anytime in Settings.',
+    continue: 'Continue',
+  },
   settings: {
     title: 'Settings',
     appearance: {

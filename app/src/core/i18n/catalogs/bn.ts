@@ -51,6 +51,11 @@ const bn: Messages = {
       sat: 'শনি',
     },
   },
+  onboarding: {
+    title: 'আপনার ভাষা বেছে নিন',
+    hint: 'আপনি পরে সেটিংস থেকে এটি পরিবর্তন করতে পারবেন।',
+    continue: 'চালিয়ে যান',
+  },
   settings: {
     title: 'সেটিংস',
     appearance: {

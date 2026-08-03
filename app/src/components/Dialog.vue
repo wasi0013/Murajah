@@ -8,9 +8,16 @@ import { useScrollLock } from '@/composables/useScrollLock'
 type Placement = 'bottom' | 'center'
 
 const open = defineModel<boolean>('open', { default: false })
-withDefaults(
-  defineProps<{ placement?: Placement; label?: string; labelledby?: string }>(),
-  { placement: 'center' },
+const props = withDefaults(
+  defineProps<{
+    placement?: Placement
+    label?: string
+    labelledby?: string
+    /** Set false for a flow the user must complete (e.g. required first-run
+     * setup) — Escape and scrim clicks stop closing it. */
+    dismissible?: boolean
+  }>(),
+  { placement: 'center', dismissible: true },
 )
 
 const panel = ref<HTMLElement>()
@@ -18,6 +25,7 @@ useFocusTrap(panel, open)
 useScrollLock(open)
 
 function close() {
+  if (!props.dismissible) return
   open.value = false
 }
 function onKeydown(e: KeyboardEvent) {
