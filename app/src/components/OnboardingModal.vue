@@ -36,7 +36,7 @@ function finish() {
 </script>
 
 <template>
-  <Modal :open="onboarding.active" :dismissible="false" :label="t('onboarding.title')">
+  <Modal :open="onboarding.active" :dismissible="false" :animate="false" :label="t('onboarding.title')">
     <div class="onboarding">
       <h2 class="onboarding-title">
         <span lang="en">Choose your language</span>

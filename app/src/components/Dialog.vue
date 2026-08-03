@@ -16,8 +16,16 @@ const props = withDefaults(
     /** Set false for a flow the user must complete (e.g. required first-run
      * setup) — Escape and scrim clicks stop closing it. */
     dismissible?: boolean
+    /** Set false to skip the fade/scale transition and render instantly.
+     * Chrome doesn't count an element for Largest Contentful Paint until an
+     * opacity/transform entrance animation settles — for a dialog that can
+     * open during the page's own initial load (e.g. a first-run onboarding
+     * gate), that pushed LCP out by the full transition duration. Ordinary
+     * dialogs open well after first paint, where this doesn't matter, so they
+     * keep the animation. */
+    animate?: boolean
   }>(),
-  { placement: 'center', dismissible: true },
+  { placement: 'center', dismissible: true, animate: true },
 )
 
 const panel = ref<HTMLElement>()
@@ -35,7 +43,7 @@ function onKeydown(e: KeyboardEvent) {
 
 <template>
   <Teleport to="body">
-    <Transition :name="placement === 'bottom' ? 'sheet' : 'modal'">
+    <Transition :name="placement === 'bottom' ? 'sheet' : 'modal'" :css="animate">
       <div
         v-if="open"
         class="dlg-root"

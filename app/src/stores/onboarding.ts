@@ -24,15 +24,25 @@ export const useOnboardingStore = defineStore('onboarding', () => {
    * first-time visitor does. Backfill it: if any other pref or user data is
    * already on disk, that's evidence of a prior visit, so treat onboarding as
    * already done (and record it, so this check is one-time).
+   *
+   * The three reads run concurrently, not chained — for a genuinely new
+   * visitor (nothing saved anywhere) every read has to complete before the
+   * answer is known, across two separate IndexedDB databases. Sequential
+   * awaits turn that into 3 round-trips on the boot path; since the modal
+   * this gates is a large, viewport-covering element, that delay was showing
+   * up directly as Largest Contentful Paint.
    */
   async function hydrate(): Promise<void> {
-    const done = await getPref<boolean>(ONBOARDING_PREF_KEY)
+    const [done, anyPref, anyUserData] = await Promise.all([
+      getPref<boolean>(ONBOARDING_PREF_KEY),
+      hasAnyPref(),
+      hasAnyUserData(),
+    ])
     if (done) {
       active.value = false
       return
     }
-    const returning = (await hasAnyPref()) || (await hasAnyUserData())
-    if (returning) {
+    if (anyPref || anyUserData) {
       active.value = false
       void setPref(ONBOARDING_PREF_KEY, true)
       return

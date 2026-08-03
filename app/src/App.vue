@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { BookOpen, Brain, CalendarCheck, GraduationCap, Headphones, Home, ListOrdered, MessageCircle, Radio, Settings, Store } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settings'
@@ -20,14 +20,17 @@ const router = useRouter()
 const reader = useReaderStore()
 const onboarding = useOnboardingStore()
 
-onMounted(() => {
-  // Load and apply the saved theme and language (each falls back to its default).
-  void settings.hydrate()
-  void hydrateLocale()
-  // Never-onboarded (first visit) or a fresh install after "Reset app" — both
-  // leave no `onboardingCompleted` pref, so this decides whether to show it.
-  void onboarding.hydrate()
-})
+// Kicked off here (component setup) rather than onMounted — these are pure
+// IndexedDB reads with no DOM dependency, so there's no reason to wait for
+// the initial mount to fire before starting them.
+// Load and apply the saved theme and language (each falls back to its default)
+// — these affect the reader's own paint, so they stay on the critical path.
+void settings.hydrate()
+void hydrateLocale()
+
+// Never-onboarded (first visit) or a fresh install after "Reset app" — both
+// leave no `onboardingCompleted` pref, so this decides whether to show it.
+void onboarding.hydrate()
 
 /**
  * Primary shell nav (redesign 2026 P1): every screen gets the same tab bar,

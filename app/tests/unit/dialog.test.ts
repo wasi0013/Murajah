@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { Transition } from 'vue'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import Dialog from '@/components/Dialog.vue'
 import Modal from '@/components/Modal.vue'
@@ -64,6 +65,22 @@ describe('Dialog', () => {
     ;(document.body.querySelector('.dlg-scrim') as HTMLElement).click()
     expect(updates).toHaveLength(0)
   })
+
+  // Regression coverage: Chrome doesn't count an element toward Largest
+  // Contentful Paint until an opacity/transform entrance transition settles.
+  // A dialog that can open during the page's own initial load (onboarding)
+  // was pushing LCP out by the full transition duration — `animate={false}`
+  // tells the wrapping `<Transition>` to skip CSS classes (`:css="animate"`)
+  // so it renders instantly. Default stays `true` so every other dialog keeps
+  // its fade/scale.
+  it('defaults to an animated Transition, and animate=false disables it', () => {
+    openDialog()
+    expect(wrapper!.findComponent(Transition).props('css')).toBe(true)
+    wrapper!.unmount()
+
+    openDialog({ animate: false })
+    expect(wrapper!.findComponent(Transition).props('css')).toBe(false)
+  })
 })
 
 // Regression coverage: Modal forwards `dismissible` to Dialog as
@@ -98,5 +115,20 @@ describe('Modal', () => {
     })
     ;(document.body.querySelector('.dlg-scrim') as HTMLElement).click()
     expect(updates).toHaveLength(0)
+  })
+
+  it('is animated by default, and forwards an explicit animate={false}', () => {
+    wrapper = mount(Modal, {
+      props: { open: true, label: 'Reset progress' },
+      slots: { default: '<button>Inside</button>' },
+    })
+    expect(wrapper.findComponent(Transition).props('css')).toBe(true)
+    wrapper.unmount()
+
+    wrapper = mount(Modal, {
+      props: { open: true, label: 'Choose your language', animate: false },
+      slots: { default: '<button>Inside</button>' },
+    })
+    expect(wrapper.findComponent(Transition).props('css')).toBe(false)
   })
 })
