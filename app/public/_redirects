@@ -7,4 +7,5 @@
 # into a persistent one.
 
 # SPA fallback: every unmatched path serves the app shell (client-side router).
+/android https://play.google.com/store/apps/details?id=com.murajah.webview 302
 /*    /index.html    200
