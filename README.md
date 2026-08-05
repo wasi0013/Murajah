@@ -1,12 +1,12 @@
-<p align="center"><img src="screenshots/title.png" alt="Murajah Logo" width=700></p>
+<p align="center"><a href="https://murajah.pages.dev/download/"><img src="screenshots/title.png" alt="Murajah Logo" width=700></a></p>
 
 # Murajah - Quran Memorization & Revision Tool
 
-[![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/)
+[![launch](https://img.shields.io/badge/check-website-purple?style=for-the-badge)](https://murajah.pages.dev/download/)
 [![version](https://img.shields.io/badge/V-26.07.24-blue?style=for-the-badge)](https://github.com/wasi0013/Murajah/releases)
 
 [![Playstore Link](https://img.shields.io/badge/Download%20App-black?logo=Google%20Play&logoColor=white&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.murajah.webview)
-[![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/)
+[![Cloudflare Demo](https://img.shields.io/badge/Cloudflare-F38020?logo=Cloudflare&logoColor=white&style=for-the-badge)](https://murajah.pages.dev/download/)
 [![Author](https://img.shields.io/badge/Author-Wasi-brightgreen?style=for-the-badge)](https://github.com/wasi0013)
 [![Free](https://img.shields.io/badge/Opensource-yes-lightgray?style=for-the-badge)](./LICENSE)
 ![JavaScript](https://img.shields.io/badge/Framework-Vue%20JS-yellow?style=for-the-badge)
@@ -86,10 +86,9 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 - A command palette (`⌘K` / `Ctrl+K`) for instant quick-jump
 - A responsive shell — a bottom tab bar on mobile, a full navigation rail on desktop
 
-### 📴 Offline & Installable
+### 📲 Installable
 
 - Installs as a real Progressive Web App on Android, iOS, and desktop
-- A resumable offline download manager — size shown up front, nothing downloads silently
 - An iOS-safe service worker that avoids the stale-cache issues common to WebKit PWAs
 
 ### 🔒 Data & Privacy
@@ -104,7 +103,7 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 ## 🚀 Getting Started
 
 ### Try It Now
-
+- 🍰 **Demo**: [Checkout some of the features](https://murajah.pages.dev/download)
 - 🌐 **Web app:** [murajah.pages.dev](https://murajah.pages.dev/)
 - 📱 **Android:** [Get it on Google Play](https://play.google.com/store/apps/details?id=com.murajah.webview)
 
