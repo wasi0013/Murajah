@@ -45,8 +45,14 @@ void onboarding.hydrate()
 const READER_ROUTE_NAMES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
 // The disabled-reader placeholder has nowhere useful for the tabs to lead.
 const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled'])
+// The install page (/download) is reached from outside links, so a first-time
+// visitor there has no saved prefs and would otherwise trip the non-dismissible
+// language-picker modal (OnboardingModal) right on top of the install buttons.
+// The tab bar stays, though — it's the download page's way back into the app.
+const NO_ONBOARDING_ROUTE_NAMES = new Set(['download'])
 
 const showShellNav = computed(() => !NO_SHELL_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
+const showOnboarding = computed(() => !NO_ONBOARDING_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
 
 const activeTab = computed(() => {
   const name = String(router.currentRoute.value.name)
@@ -108,7 +114,7 @@ function goMore(name: string) {
     />
   </div>
   <ToastContainer />
-  <OnboardingModal />
+  <OnboardingModal v-if="showOnboarding" />
 
   <BottomSheet v-model:open="moreOpen" :label="t('common.tabs.more')">
     <div class="more-menu">

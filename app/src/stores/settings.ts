@@ -15,7 +15,9 @@ export const THEMES: readonly ThemeName[] = ['light', 'dark', 'sepia']
  * persisted best-effort to the prefs KV so it survives a reload.
  */
 export const useSettingsStore = defineStore('settings', () => {
-  const theme = ref<ThemeName>('light')
+  // Sepia is the default for a new/never-configured install; hydrate() below
+  // overrides this from the saved pref for anyone who already picked a theme.
+  const theme = ref<ThemeName>('sepia')
 
   /** Reflect the current theme onto the document root (no persistence). */
   function apply(name: ThemeName) {

@@ -10,6 +10,15 @@ import { chromium, type FullConfig } from '@playwright/test'
  * that isn't specifically testing onboarding would need its own workaround.
  * `onboarding.spec.ts` opts back into a fresh, unseeded context to exercise
  * the real first-run flow.
+ *
+ * Deliberately does *not* seed a reader `mode` pref: doing so once made
+ * `restore()` flip `mode` away from its now-default 'mark-mistake' during the
+ * boot-time hydrate race in `useReaderRouteSync` (its store→URL watcher
+ * depends on the whole `reader.snapshot()`, mode included, even though only
+ * layout/page/tajweed/wbw/tafsir affect the URL) — silently redirecting a
+ * fresh '/' to '/read/qpc/1' in specs that never touch the reader at all.
+ * Specs that need read mode (morphology/wbw-tap tests) switch to it
+ * explicitly via the Settings UI instead — see reader-morphology.spec.ts etc.
  */
 export default async function globalSetup(config: FullConfig): Promise<void> {
   const { baseURL, storageState } = config.projects[0].use

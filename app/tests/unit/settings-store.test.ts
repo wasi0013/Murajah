@@ -28,17 +28,17 @@ describe('settings store theme', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('sepia')
   })
 
-  it('hydrate falls back to the default when nothing is saved', async () => {
+  it('hydrate falls back to the default (sepia) when nothing is saved', async () => {
     const s = useSettingsStore()
     await s.hydrate()
-    expect(s.theme).toBe('light')
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    expect(s.theme).toBe('sepia')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('sepia')
   })
 
   it('hydrate ignores a stored value that is not a known theme', async () => {
     await setPref('theme', 'neon')
     const s = useSettingsStore()
     await s.hydrate()
-    expect(s.theme).toBe('light')
+    expect(s.theme).toBe('sepia')
   })
 })

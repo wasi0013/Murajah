@@ -6,7 +6,7 @@ describe('foundation smoke', () => {
   it('resolves @/ alias and boots a Pinia store', () => {
     setActivePinia(createPinia())
     const settings = useSettingsStore()
-    expect(settings.theme).toBe('light')
+    expect(settings.theme).toBe('sepia')
     settings.setTheme('dark')
     expect(settings.theme).toBe('dark')
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')

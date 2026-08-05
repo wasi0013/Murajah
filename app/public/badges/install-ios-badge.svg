@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="155" height="60" viewBox="0 0 155 60" role="img" aria-labelledby="install-ios-badge-title">
+  <title id="install-ios-badge-title">Install on iOS</title>
+  <!--
+    Styled to match Apple's official "Download on the App Store" badge (same
+    black pill, gray hairline border, and Apple mark — the mark is sourced
+    from developer.apple.com's badge artwork) but with honest text: Murajah
+    has no App Store listing, so this links to the in-page "Add to Home
+    Screen" instructions instead, not an actual download. The canvas is sized
+    to the same aspect ratio as the official Google Play badge (646:250) so
+    the two sit at identical width and height in the CTA row.
+  -->
+  <rect x="0.5" y="0.5" width="154" height="59" rx="10" fill="#000" stroke="#a6a6a6"/>
+  <g transform="translate(5.6,4.7) scale(1.22)">
+    <path d="M24.76888,20.30068a4.94881,4.94881,0,0,1,2.35656-4.15206,5.06566,5.06566,0,0,0-3.99116-2.15768c-1.67924-.17626-3.30719,1.00483-4.1629,1.00483-.87227,0-2.18977-.98733-3.6085-.95814a5.31529,5.31529,0,0,0-4.47292,2.72787c-1.934,3.34842-.49141,8.26947,1.3612,10.97608.9269,1.32535,2.01018,2.8058,3.42763,2.7533,1.38706-.05753,1.9051-.88448,3.5794-.88448,1.65876,0,2.14479.88448,3.591.8511,1.48838-.02416,2.42613-1.33124,3.32051-2.66914a10.962,10.962,0,0,0,1.51842-3.09251A4.78205,4.78205,0,0,1,24.76888,20.30068Z" fill="#fff"/>
+    <path d="M22.03725,12.21089a4.87248,4.87248,0,0,0,1.11452-3.49062,4.95746,4.95746,0,0,0-3.20758,1.65961,4.63634,4.63634,0,0,0-1.14371,3.36139A4.09905,4.09905,0,0,0,22.03725,12.21089Z" fill="#fff"/>
+  </g>
+  <text x="48" y="27" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif" font-size="11" font-weight="500" letter-spacing="0.4" fill="#fff">INSTALL ON</text>
+  <text x="47" y="47" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif" font-size="24" font-weight="600" fill="#fff">iOS</text>
+</svg>

@@ -13,6 +13,12 @@
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Landing-page demo screencasts (see /download) and their poster frames —
+# unhashed filenames but content only ever changes by replacing the file
+# wholesale (re-running the screencast scripts), same convention as fonts.
+/videos/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # The two manifest files are the trust anchor those hashes are checked
 # against — they are NOT content-hashed (a hash can't describe itself) and
 # must always be revalidated, never served stale from any HTTP cache. Listed

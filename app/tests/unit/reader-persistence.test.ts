@@ -18,7 +18,7 @@ describe('reader store snapshot/restore', () => {
     r.setLayout('indopak')
     r.toggleWbw()
     r.setTextSizeStep(4)
-    r.toggleMode()
+    r.toggleMode() // default is mark-mistake, so this flips to read
     expect(r.snapshot()).toEqual({
       page: 120,
       layout: 'indopak',
@@ -28,7 +28,7 @@ describe('reader store snapshot/restore', () => {
       tafsir: false,
       tafsirLang: 'en',
       textSizeStep: 4,
-      mode: 'mark-mistake',
+      mode: 'read',
     })
   })
 
@@ -47,7 +47,7 @@ describe('reader store snapshot/restore', () => {
     expect(r.tajweed).toBe(false)
     expect(r.page).toBe(604) // clamped to QPC
     expect(r.textSizeStep).toBe(5) // clamped to scale max
-    expect(r.mode).toBe('read') // untouched
+    expect(r.mode).toBe('mark-mistake') // untouched (default)
   })
 })
 

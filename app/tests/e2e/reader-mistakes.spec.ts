@@ -33,3 +33,35 @@ test('mark mode toggles a persisted mistake; read mode still opens morphology', 
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeVisible({ timeout: 10_000 })
   await expect(firstWord(page)).not.toHaveClass(/state-mistake/)
 })
+
+// Every other spec runs against the shared onboarded storageState, so the
+// reader boots at its real default (mark-mistake) there too — this is the
+// one place exercising the real, unseeded first visit end to end.
+test.describe('first-time visitor (unseeded storage)', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  // A genuinely fresh visitor hits the non-dismissible language-picker
+  // onboarding modal first (see onboarding.spec.ts) — clear it before
+  // asserting anything about the reader underneath.
+  async function completeOnboarding(page: import('@playwright/test').Page) {
+    await page.getByRole('radio', { name: /English/ }).click()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page.locator('[role="dialog"]')).toBeHidden()
+  }
+
+  test('defaults to mark-mistake mode: a fresh tap marks a word, not morphology', async ({ page }) => {
+    await page.goto('/')
+    await completeOnboarding(page)
+    await expect(firstWord(page)).not.toBeEmpty({ timeout: 10_000 })
+
+    await firstWord(page).click()
+    await expect(firstWord(page)).toHaveClass(/state-mistake/)
+    await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeHidden()
+  })
+
+  test('defaults to the sepia theme', async ({ page }) => {
+    await page.goto('/')
+    await completeOnboarding(page)
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'sepia')
+  })
+})

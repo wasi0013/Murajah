@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings, closeSettings } from './helpers'
 
 test('tapping a word opens its morphology; popup is code-split and dismissible', async ({
   page,
@@ -10,6 +11,12 @@ test('tapping a word opens its morphology; popup is code-split and dismissible',
 
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  // A word tap opens morphology only in Read mode — the app now defaults to
+  // Mark mode (mistake-marking), so switch explicitly.
+  await openSettings(page)
+  await page.getByRole('radio', { name: 'Read' }).click()
+  await closeSettings(page)
 
   // The popup chunk is not in the initial bundle — nothing requested yet.
   expect(chunkReqs).toEqual([])
@@ -35,6 +42,9 @@ test('tapping a word opens its morphology; popup is code-split and dismissible',
 test('paging dismisses an open morphology popup', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await openSettings(page)
+  await page.getByRole('radio', { name: 'Read' }).click()
+  await closeSettings(page)
   await page.locator('.surface .word').first().click()
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toBeVisible({ timeout: 10_000 })
 

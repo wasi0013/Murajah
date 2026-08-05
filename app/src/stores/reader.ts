@@ -50,7 +50,9 @@ export const useReaderStore = defineStore('reader', () => {
   const tafsir = ref(false)
   const tafsirLang = ref<TafsirLang>('en')
   const textSizeStep = ref(DEFAULT_SIZE_STEP)
-  const mode = ref<ReaderMode>('read')
+  // 'mark-mistake' is the default for a new/never-configured install; restore()
+  // below overrides this from the saved pref for anyone who already chose a mode.
+  const mode = ref<ReaderMode>('mark-mistake')
 
   // Transient (never persisted/serialized): the `"s:a"` a deep-link asked to scroll
   // to (e.g. /2/255). Cleared once the user pages away so it can't re-fire.

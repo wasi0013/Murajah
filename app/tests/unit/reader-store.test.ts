@@ -9,12 +9,12 @@ import type { NavIndex } from '@/core/data/types'
 describe('reader store', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('defaults to QPC page 1 with tajweed on, read mode', () => {
+  it('defaults to QPC page 1 with tajweed on, mark-mistake mode', () => {
     const r = useReaderStore()
     expect(r.page).toBe(1)
     expect(r.layout).toBe('qpc')
     expect(r.tajweed).toBe(true)
-    expect(r.mode).toBe('read')
+    expect(r.mode).toBe('mark-mistake')
     expect(r.pageCount).toBe(604)
   })
 
@@ -82,10 +82,10 @@ describe('reader store', () => {
     expect(r.wbw).toBe(true)
     expect(r.tafsir).toBe(true)
     expect(r.tajweed).toBe(true) // untouched
-    r.toggleMode()
-    expect(r.mode).toBe('mark-mistake')
     r.setMode('read')
     expect(r.mode).toBe('read')
+    r.toggleMode()
+    expect(r.mode).toBe('mark-mistake')
   })
 })
 

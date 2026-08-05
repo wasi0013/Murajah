@@ -85,6 +85,17 @@ const routes: RouteRecordRaw[] = [
     name: 'gallery',
     component: () => import('@/features/gallery/GalleryView.vue'),
   },
+  {
+    // Standalone install page — Android → Play Store, iOS → in-page PWA
+    // "Add to Home Screen" instructions. Reached only from an outside link
+    // (never linked from in-app nav). A literal path, so it always outranks
+    // the `/:slug` catch-all below regardless of registration order (vue-router
+    // scores static segments over dynamic ones) — kept above it anyway for
+    // readability. Code-split → never in any other route's bundle.
+    path: '/download',
+    name: 'download',
+    component: () => import('@/features/download/DownloadView.vue'),
+  },
 
   // —— Friendly reader URLs (Phase 9.1) ————————————————————————————
   // Human-typable entry points, all rendered by the reader. Personal prefs

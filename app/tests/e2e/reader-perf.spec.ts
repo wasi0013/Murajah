@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSettings, closeSettings } from './helpers'
 
 // Deterministic proxies for the §3 interaction budgets (the throttled FCP/LCP/
 // TTI/CLS numbers are gated separately by Lighthouse CI, lighthouserc.json).
@@ -38,6 +39,11 @@ test('warm morphology tap is served from cache (no new fetch)', async ({ page })
 
   await page.goto('/read/qpc/2') // Al-Baqarah — all words share one morphology chunk
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  // A word tap opens morphology only in Read mode — the app now defaults to
+  // Mark mode (mistake-marking), so switch explicitly.
+  await openSettings(page)
+  await page.getByRole('radio', { name: 'Read' }).click()
+  await closeSettings(page)
   const words = page.locator('.surface .word')
 
   // First tap warms the surah's morphology.
