@@ -107,7 +107,17 @@ test.describe('first-time visitor (unseeded storage)', () => {
 
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/download')
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    // The YouTube Shorts embed is third-party markup we don't control — axe
+    // can reach into it via CDP even across origins, and its (Google-owned)
+    // DOM has its own a11y bugs unrelated to this page. Seen in CI: YouTube
+    // serves the mobile player template there (`ytm-…` classes) instead of
+    // the desktop one, which trips aria-allowed-attr/aria-prohibited-attr/
+    // button-name inside the iframe. Our own `title`/`allow` on the <iframe>
+    // are still exercised by the "lazy-loads" test above.
+    .exclude('.video-wrap iframe')
+    .analyze()
   const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
   expect(serious, JSON.stringify(serious.map((v) => v.id))).toEqual([])
 })
