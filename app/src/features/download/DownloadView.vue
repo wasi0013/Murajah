@@ -585,7 +585,14 @@ function scrollToIos() {
 }
 .video-wrap {
   width: 100%;
-  max-width: 18rem;
+  /* Sized to fill the section (34rem, see .ios-instructions) rather than the
+     old 18rem — a 9:16 Short at that width reads clearly instead of looking
+     like a thumbnail. Height is left to follow the aspect ratio (no
+     max-height clamp): capping it would shrink the *box* without shrinking
+     the *width* to match, silently breaking 9:16 and making YouTube crop the
+     embed to fill the mismatched box. The page already scrolls, so a taller
+     video on a short viewport just costs a bit more scroll, not a redesign. */
+  max-width: 30rem;
   aspect-ratio: 9 / 16;
   margin-inline: auto;
   border-radius: var(--radius-lg);
