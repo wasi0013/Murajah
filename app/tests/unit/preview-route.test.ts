@@ -8,6 +8,7 @@ import {
   resolveWordStates,
   toggleWordHighlight,
   specsByColorToQuery,
+  previewLink,
 } from '@/core/navigation/previewRoute'
 
 /**
@@ -30,6 +31,15 @@ describe('preview route registration', () => {
     const resolved = router.resolve('/preview/12/12')
     expect(resolved.name).toBe('preview')
     expect(resolved.params).toEqual({ surah: '12', ayah: '12' })
+  })
+
+  // The static landing page (`preview-landing`) — a beginner-friendly
+  // tutorial + link-builder — must never be shadowed by the reader's
+  // `/:slug([a-z][a-z0-9-]*)` catch-all, which would otherwise happily
+  // match the literal string "preview" as a surah slug.
+  it('resolves the bare /preview landing page, not the reader slug catch-all', () => {
+    const resolved = router.resolve('/preview')
+    expect(resolved.name).toBe('preview-landing')
   })
 
   // The example URL this feature was requested with had a trailing slash
@@ -284,5 +294,31 @@ describe('resolveWordStates', () => {
       const reparsed = parseHighlightParams(query as never)
       expect(reparsed).toEqual(original)
     })
+  })
+})
+
+describe('previewLink', () => {
+  it('a range (end > start) targets the two-param route with a stringified endAyah', () => {
+    expect(previewLink({ surah: 2, start: 12, end: 45 })).toEqual({
+      name: 'preview-range',
+      params: { surah: '2', ayah: '12', endAyah: '45' },
+    })
+  })
+
+  // The collapse that keeps PreviewJumpSheet and the /preview landing page's
+  // link builder from ever drifting on how a same-verse range is represented
+  // — a redundant `/preview/2/255-255` is never produced by either caller.
+  it('a single verse (end === start) collapses to the bare single-verse route', () => {
+    expect(previewLink({ surah: 2, start: 255, end: 255 })).toEqual({
+      name: 'preview',
+      params: { surah: '2', ayah: '255' },
+    })
+  })
+
+  it('resolves to the route registration it targets', () => {
+    const target = previewLink({ surah: 12, start: 1, end: 5 })
+    const resolved = router.resolve(target)
+    expect(resolved.name).toBe('preview-range')
+    expect(resolved.path).toBe('/preview/12/1-5')
   })
 })

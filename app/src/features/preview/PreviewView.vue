@@ -12,6 +12,7 @@ import {
   resolveWordStates,
   toggleWordHighlight,
   specsByColorToQuery,
+  previewLink,
   type PreviewRouteParams,
   type PreviewHighlightQuery,
   type HighlightColor,
@@ -97,11 +98,7 @@ function onGoTo({ surah, start, end }: { surah: number; start: number; end: numb
   // A fresh range's highlight query params belong to the *old* range's words
   // — carrying them over would point at the wrong verses, so navigating via
   // the picker always lands on a clean URL rather than a stale/misleading one.
-  void router.push(
-    end > start
-      ? { name: 'preview-range', params: { surah: String(surah), ayah: String(start), endAyah: String(end) } }
-      : { name: 'preview', params: { surah: String(surah), ayah: String(start) } },
-  )
+  void router.push(previewLink({ surah, start, end }))
 }
 
 /** location → highlight state for one loaded page's own words (Task 6). Not

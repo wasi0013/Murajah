@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { watch } from 'vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import type { SurahNames } from '@/core/data/types'
-import { ayahCount } from '@/core/quran/surahMeta'
+import { usePreviewRangeFields, surahOptionLabel } from '@/composables/usePreviewRangeFields'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -27,9 +27,11 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
 
-const surah = ref(props.surah ?? 1)
-const start = ref(props.start ?? 1)
-const end = ref(props.end ?? props.start ?? 1)
+const { surah, start, end, startOptions, endOptions, onSurahChange, onStartChange } = usePreviewRangeFields({
+  surah: props.surah ?? 1,
+  start: props.start ?? 1,
+  end: props.end ?? props.start ?? 1,
+})
 
 // Re-sync from the current route each time the sheet opens, so it never
 // shows a stale pick left over from a previous open-then-cancel.
@@ -41,18 +43,6 @@ watch(open, (isOpen) => {
 })
 
 const surahNumbers = Array.from({ length: 114 }, (_, i) => i + 1)
-const startOptions = computed(() => Array.from({ length: ayahCount(surah.value) }, (_, i) => i + 1))
-const endOptions = computed(() =>
-  Array.from({ length: ayahCount(surah.value) - start.value + 1 }, (_, i) => i + start.value),
-)
-
-function onSurahChange() {
-  start.value = 1
-  end.value = 1
-}
-function onStartChange() {
-  if (end.value < start.value) end.value = start.value
-}
 
 function submit() {
   emit('go', { surah: surah.value, start: start.value, end: end.value })
@@ -60,8 +50,7 @@ function submit() {
 }
 
 function surahLabel(n: number): string {
-  const name = props.surahNames[String(n)]
-  return name ? `${n}. ${name}` : String(n)
+  return surahOptionLabel(props.surahNames, n)
 }
 </script>
 
@@ -94,6 +83,14 @@ function surahLabel(n: number): string {
 
       <button type="submit" class="jump-go">{{ t('preview.jumpGo') }}</button>
     </form>
+
+    <!-- The person picking a range here is, more often than not, someone who
+         just received a shared /preview link and wants to make their own —
+         a one-tap path to the tutorial (see PreviewLandingView.vue), rather
+         than leaving that page undiscoverable outside a typed-in URL. -->
+    <RouterLink :to="{ name: 'preview-landing' }" class="jump-help" @click="open = false">
+      {{ t('preview.jumpHelp') }}
+    </RouterLink>
   </BottomSheet>
 </template>
 
@@ -149,6 +146,21 @@ function surahLabel(n: number): string {
   background: var(--color-accent-hover);
 }
 .jump-go:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.jump-help {
+  /* No horizontal padding of its own — BottomSheet's own `.dlg-sheet` already
+     pads the whole slot (1.25rem), same as `.jump-sheet` above it; adding more
+     here would inset this link relative to the "Go" button. */
+  display: block;
+  margin-top: 0.75rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  text-decoration: underline;
+}
+.jump-help:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }

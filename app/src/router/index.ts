@@ -97,6 +97,15 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/download/DownloadView.vue'),
   },
   {
+    // Bare /preview — a beginner-friendly landing page: a short tutorial on
+    // highlighting + sharing, plus surah/from/to dropdowns to build a link
+    // below without hand-editing a URL. Static path, so it's registered
+    // ahead of (and never shadowed by) the two parameterized routes below.
+    path: '/preview',
+    name: 'preview-landing',
+    component: () => import('@/features/preview/PreviewLandingView.vue'),
+  },
+  {
     // Shareable read-only verse-range preview, always Uthmani tajweed —
     // /preview/2/12-45 (a range) or /preview/2/255 (a single verse). Highlight
     // words via query params (see core/navigation/previewRoute.ts). Two routes,
@@ -161,6 +170,7 @@ const READER_ROUTES = new Set([
   'read-surah',
   'read-ayah',
   'read-slug',
+  'preview-landing',
   'preview',
   'preview-range',
 ])

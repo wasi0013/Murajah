@@ -1,11 +1,14 @@
+import type { RouteLocationRaw } from 'vue-router'
 import type { Word } from '@/core/data/types'
 import { ayahCount } from '@/core/quran/surahMeta'
 
 /**
  * Pure parsing/validation/resolution for the `/preview/:surah/:ayah(-:endAyah)?`
- * route (see plans task list in `tasks/plan.md`) — no router, no data client, so
- * it's fully unit-testable like `readerRoute.ts`/`resolveJump.ts`. Three
- * independent pieces, in the order a request flows through them:
+ * route (see plans task list in `tasks/plan.md`) — no router *instance*, no data
+ * client, so it's fully unit-testable like `readerRoute.ts`/`resolveJump.ts`.
+ * (`RouteLocationRaw` below is a type-only import — zero runtime coupling, same
+ * as `readerLinks.ts`'s own builders.) Four independent pieces, in the order a
+ * request flows through them:
  *
  *  1. {@link parsePreviewRange} — route params → a validated `{surah, startAyah,
  *     endAyah}`, or a typed error.
@@ -17,6 +20,9 @@ import { ayahCount } from '@/core/quran/surahMeta'
  *     `Word[]` is loaded (a bare "highlight this whole ayah" token can't
  *     resolve to concrete words before then — surah metadata only has ayah
  *     *counts*, not per-ayah word counts).
+ *  4. {@link previewLink} — the inverse of #1: a `{surah, start, end}` →
+ *     `{name, params}`, the one place that knows the two route names
+ *     (`preview`/`preview-range`), mirroring `readerLinks.ts`'s `readerLink`.
  */
 
 const MAX_SURAH = 114
@@ -330,4 +336,24 @@ export function specsByColorToQuery(
     query[color] = specs?.length ? specs.map(stringifySpec).join(',') : undefined
   }
   return query
+}
+
+// —— 5. Route target builder ————————————————————————————————————————
+
+/**
+ * Canonical `{name, params}` for a `/preview` link, given a surah + ayah
+ * range — the one place that knows the route names, same role `readerLink`
+ * plays for the friendly reader URLs. `end` equal to `start` collapses to the
+ * single-verse route (no `-endAyah` in the URL) rather than a redundant
+ * range — both `PreviewJumpSheet`'s in-page range switcher and the
+ * `/preview` landing page's link builder go through this, so the two never
+ * drift on how a same-verse range is represented.
+ */
+export function previewLink(range: { surah: number; start: number; end: number }): RouteLocationRaw {
+  return range.end > range.start
+    ? {
+        name: 'preview-range',
+        params: { surah: String(range.surah), ayah: String(range.start), endAyah: String(range.end) },
+      }
+    : { name: 'preview', params: { surah: String(range.surah), ayah: String(range.start) } }
 }

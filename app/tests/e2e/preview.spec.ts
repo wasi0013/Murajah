@@ -288,6 +288,20 @@ test('the jump sheet resets the ayah range when the surah changes', async ({ pag
   await expect(sheet.getByLabel('To ayah')).toHaveValue('1')
 })
 
+test('the jump sheet links out to the tutorial for a visitor who wants to make their own link', async ({
+  page,
+}) => {
+  await page.goto('/preview/2/12-45')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Choose a different range' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Go to a range' })
+  await sheet.getByRole('link', { name: 'New here? Learn how it works' }).click()
+
+  await expect(page).toHaveURL('/preview')
+  await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible()
+})
+
 // A shared link is the realistic case: no saved prefs, no completed
 // onboarding — a nested describe scopes the unauthenticated storageState to
 // just this test, leaving every test above on the suite's normal (onboarded)

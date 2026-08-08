@@ -44,17 +44,20 @@ void onboarding.hydrate()
  */
 const READER_ROUTE_NAMES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
 // The disabled-reader placeholder has nowhere useful for the tabs to lead.
-// /preview is a shareable, standalone verse-range link (reached from outside
-// the app, like /download) — its own minimal header is the way back, so the
-// full shell tab bar would just be unused chrome around someone else's link.
-const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview', 'preview-range'])
-// The install page (/download) and the /preview link are both reached from
+// /preview and /preview/:surah/:ayah are shareable, standalone verse-range
+// pages (reached from outside the app, like /download) — their own minimal
+// header is the way back, so the full shell tab bar would just be unused
+// chrome around someone else's link (or a beginner's first visit to the
+// tutorial). `preview-landing` is the bare `/preview` tutorial + link-builder
+// page; `preview`/`preview-range` are an actual shared link.
+const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview-landing', 'preview', 'preview-range'])
+// The install page (/download) and every /preview route are all reached from
 // outside links, so a first-time visitor there has no saved prefs and would
 // otherwise trip the non-dismissible language-picker modal (OnboardingModal)
 // right on top of the content they followed the link to see. /download keeps
-// the tab bar (it's the page's way back into the app); /preview has none, by
-// design — see NO_SHELL_ROUTE_NAMES above.
-const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview', 'preview-range'])
+// the tab bar (it's the page's way back into the app); the /preview routes
+// have none, by design — see NO_SHELL_ROUTE_NAMES above.
+const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview-landing', 'preview', 'preview-range'])
 
 const showShellNav = computed(() => !NO_SHELL_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
 const showOnboarding = computed(() => !NO_ONBOARDING_ROUTE_NAMES.has(String(router.currentRoute.value.name)))

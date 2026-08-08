@@ -521,6 +521,7 @@ const en: Messages = {
     jumpFrom: 'From ayah',
     jumpTo: 'To ayah',
     jumpGo: 'Go',
+    jumpHelp: 'New here? Learn how it works',
     colorGroup: 'Highlight color',
     color: {
       red: 'Red',
@@ -529,6 +530,31 @@ const en: Messages = {
       green: 'Green',
       purple: 'Purple',
       teal: 'Teal',
+    },
+    landing: {
+      title: 'Share a verse',
+      backHome: 'Back to home',
+      heroTitle: 'Share Highlighted Quranic Verses',
+      intro:
+        'Designed for Quran students and teachers, this tool allows you to highlight specific words, perfect for marking recitation mistakes or emphasizing key points. Generate a direct link to any passage and share it instantly. Recipients can view your highlights immediately without needing to download an app, create an account, or sign in.',
+      howItWorks: 'How it works',
+      step1Title: 'Select your verses',
+      step1Body: 'Use the dropdowns below to choose a surah and the range of ayahs you want to share.',
+      step2Title: 'Choose a color and mark words',
+      step2Body:
+        'Select a color, then tap any word to highlight it. Tap a highlighted word again to remove the highlight. Try it in the example below.',
+      step3Title: 'Share the link',
+      step3Body: 'Copy the link, or send it directly through WhatsApp, Telegram, or any platform you prefer.',
+      step4Title: 'Recipients view your highlights',
+      step4Body: 'Anyone who opens the link sees the exact verses and highlights you selected. No installation is required.',
+      demoLabel: 'Try it yourself',
+      demoHint: 'Tap a colored dot to select it, then tap a word below to mark it. This is for practice only. Nothing here is saved.',
+      exampleLink: 'View a live example',
+      createTitle: 'Create your own link',
+      createBody: 'Select a passage below, then open it. You will be able to highlight words and share the link from there.',
+      createHint:
+        'Pro Tip: Selecting one or two pages ensures the fastest loading times. Extremely long passages may be too large to open smoothly in the preview.',
+      createButton: 'Open preview',
     },
   },
   share: {
