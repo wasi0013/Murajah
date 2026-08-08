@@ -80,6 +80,24 @@ test('the first verse gets the focus wash and is scrolled into view', async ({ p
   await expect(firstVerse).toBeInViewport()
 })
 
+test('a requested highlight wins over the "first verse" wash on the same word', async ({ page }) => {
+  // 2:12 is the range's first verse (gets state-playing); also asking for a
+  // highlight there must still paint the requested colour, not the "you are
+  // here" accent wash underneath it — both classes can legally land on one
+  // word, only one `background` should win.
+  await page.goto('/preview/2/12-45?blue=12,20')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  const inFirstVerse = page.locator('[data-loc="2:12:1"]')
+  const elsewhere = page.locator('[data-loc="2:20:1"]')
+  await expect(inFirstVerse).toHaveClass(/state-hl-blue/)
+  await expect(inFirstVerse).toHaveClass(/state-playing/)
+
+  const bgIn = await inFirstVerse.evaluate((el) => getComputedStyle(el).backgroundColor)
+  const bgElsewhere = await elsewhere.evaluate((el) => getComputedStyle(el).backgroundColor)
+  // Same requested colour, on vs. off the first verse — must paint identically.
+  expect(bgIn).toBe(bgElsewhere)
+})
+
 test('invalid surah shows a friendly error and links home', async ({ page }) => {
   await page.goto('/preview/999/1')
   await expect(page.locator('.preview-error')).toBeVisible()

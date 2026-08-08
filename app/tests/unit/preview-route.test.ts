@@ -30,6 +30,15 @@ describe('preview route registration', () => {
     expect(resolved.params).toEqual({ surah: '12', ayah: '12' })
   })
 
+  // The example URL this feature was requested with had a trailing slash
+  // (/preview/2/12-45/) — vue-router's default (non-strict) matching should
+  // treat it the same as no slash, but that's worth proving, not assuming.
+  it('resolves the same with a trailing slash', () => {
+    const resolved = router.resolve('/preview/2/12-45/')
+    expect(resolved.name).toBe('preview-range')
+    expect(resolved.params).toEqual({ surah: '2', ayah: '12', endAyah: '45' })
+  })
+
   it('does not match a malformed range', () => {
     // No route matches → Vue Router falls back to its synthetic not-found match.
     expect(router.resolve('/preview/12/abc').matched).toHaveLength(0)
