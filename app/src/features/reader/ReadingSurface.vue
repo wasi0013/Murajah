@@ -380,27 +380,36 @@ watch(
   border-radius: var(--radius-sm);
 }
 /* /preview route's multi-color highlighter washes (core/navigation/previewRoute.ts).
-   Backgrounds only — never `color` — because the tajweed glyph font's ink is
-   baked-in COLR/CPAL (see the isTajweedFont note above), so `color` on `.arabic`
-   is a no-op there; a background on `.word` paints behind the glyph regardless.
-   The default/red highlight has no rule here — it reuses `.state-mistake` above.
-   Declared AFTER `.state-playing`: both can land on the same word (the range's
-   first verse can also carry a requested highlight), and the requested
-   annotation — the actual reason a preview link exists — must win the
-   `background` property over the "you are here" cue, not the other way round. */
+   Same technique as `.state-mistake` above (colour + wavy underline), not a
+   background — so every highlight colour, red included, reads as one visual
+   language. `color` is a no-op under the tajweed glyph font (its ink is baked-in
+   COLR/CPAL — see the isTajweedFont note above) exactly like it already is for
+   `.state-mistake`; the underline is what actually carries the colour there,
+   same as it always has for mistakes. The default/red highlight has no rule
+   here — it reuses `.state-mistake` above verbatim. */
 .state-hl-amber {
-  background: color-mix(in oklab, var(--hl-amber) 22%, transparent);
+  color: var(--hl-amber);
+  text-decoration: underline wavy var(--hl-amber);
+  text-underline-offset: 0.35em;
 }
 .state-hl-blue {
-  background: color-mix(in oklab, var(--hl-blue) 22%, transparent);
+  color: var(--hl-blue);
+  text-decoration: underline wavy var(--hl-blue);
+  text-underline-offset: 0.35em;
 }
 .state-hl-green {
-  background: color-mix(in oklab, var(--hl-green) 22%, transparent);
+  color: var(--hl-green);
+  text-decoration: underline wavy var(--hl-green);
+  text-underline-offset: 0.35em;
 }
 .state-hl-purple {
-  background: color-mix(in oklab, var(--hl-purple) 22%, transparent);
+  color: var(--hl-purple);
+  text-decoration: underline wavy var(--hl-purple);
+  text-underline-offset: 0.35em;
 }
 .state-hl-teal {
-  background: color-mix(in oklab, var(--hl-teal) 22%, transparent);
+  color: var(--hl-teal);
+  text-decoration: underline wavy var(--hl-teal);
+  text-underline-offset: 0.35em;
 }
 </style>

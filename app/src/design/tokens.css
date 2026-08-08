@@ -107,14 +107,18 @@
   --tajweed-ikhfa: #3b74d6;
   --tajweed-madd: #b4791f;
 
-  /* Preview highlighter washes (word-level, /preview route — see
-     core/navigation/previewRoute.ts). Backgrounds only, never glyph `color`
-     (the tajweed font's ink is baked-in COLR/CPAL, so `color` is a no-op on
-     it — see the tajweed-glyph-filter note below). Chosen distinct in hue
-     and/or lightness from the --tajweed-* rule colours above so a wash never
-     reads as a tajweed rule colour underneath it. "Red" (the default
-     highlight, aliased by a colorless `hl=` param) deliberately has no token
-     here — it reuses --color-danger via the existing .state-mistake class. */
+  /* Preview highlighter colours (word-level, /preview route — see
+     core/navigation/previewRoute.ts). Applied the same way as --color-danger
+     already is on a mistake mark: `color` + a wavy underline, not a
+     background — one visual language for every highlight colour, "red"
+     included. `color` is a no-op on glyph text under the tajweed font (its
+     ink is baked-in COLR/CPAL — see the tajweed-glyph-filter note below); the
+     underline is what actually carries the colour there, same as it always
+     has for mistakes. Chosen distinct in hue and/or lightness from the
+     --tajweed-* rule colours above so a highlight never reads as a tajweed
+     rule colour. "Red" (the default highlight, aliased by a colorless `hl=`
+     param) deliberately has no token here — it reuses --color-danger via the
+     existing .state-mistake class. */
   --hl-amber: #d9a441;
   --hl-blue: #4a90d9;
   --hl-green: #6aab52;

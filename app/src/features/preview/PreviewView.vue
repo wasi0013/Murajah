@@ -132,7 +132,9 @@ const sharedFitFactor = computed(() => {
     </div>
     <div v-else class="preview-pages">
       <template v-for="(page, i) in pages" :key="page">
-        <hr v-if="i > 0" class="page-divider" aria-hidden="true" />
+        <div v-if="i > 0" class="page-divider" role="separator" :aria-label="t('reader.mushafPageAlt', { page })">
+          <span class="page-divider-label">{{ t('reader.mushafPageAlt', { page }) }}</span>
+        </div>
         <ReadingSurface
           v-if="entry(page)?.status === 'ready'"
           :page="entry(page)!.chunk!"
@@ -231,10 +233,25 @@ const sharedFitFactor = computed(() => {
   padding-bottom: 2rem;
 }
 .page-divider {
-  border: none;
-  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin: 1.5rem auto;
+  padding: 0 1rem;
   max-width: 43rem;
+}
+.page-divider::before,
+.page-divider::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--color-border);
+}
+.page-divider-label {
+  flex: 0 0 auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 .page-skeleton {
   display: flex;

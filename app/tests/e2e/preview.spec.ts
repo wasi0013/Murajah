@@ -33,6 +33,10 @@ test('multi-page range stacks pages with a divider; a single page has none', asy
   await expect(page.locator('.surface').first()).toBeVisible()
   await expect.poll(() => page.locator('.surface').count(), { timeout: 15_000 }).toBe(3)
   await expect(page.locator('.page-divider')).toHaveCount(2)
+  // Each divider names the page it introduces, in order (pages 2-4 → the two
+  // dividers introduce pages 3 and 4).
+  await expect(page.locator('.page-divider').nth(0)).toContainText('3')
+  await expect(page.locator('.page-divider').nth(1)).toContainText('4')
 
   await page.goto('/preview/2/1-5') // page 2 only
   await expect(page.locator('.surface').first()).toBeVisible()
@@ -80,11 +84,12 @@ test('the first verse gets the focus wash and is scrolled into view', async ({ p
   await expect(firstVerse).toBeInViewport()
 })
 
-test('a requested highlight wins over the "first verse" wash on the same word', async ({ page }) => {
-  // 2:12 is the range's first verse (gets state-playing); also asking for a
-  // highlight there must still paint the requested colour, not the "you are
-  // here" accent wash underneath it — both classes can legally land on one
-  // word, only one `background` should win.
+test('a requested highlight\'s underline is still visible on the "first verse"', async ({ page }) => {
+  // 2:12 is the range's first verse (gets state-playing, a background wash);
+  // a highlight there is a colour + wavy underline (same channel as
+  // .state-mistake), a different visual property, so it never has to fight
+  // the wash for the same pixel — assert the underline colour actually
+  // renders identically on vs. off the first verse.
   await page.goto('/preview/2/12-45?blue=12,20')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
   const inFirstVerse = page.locator('[data-loc="2:12:1"]')
@@ -92,10 +97,10 @@ test('a requested highlight wins over the "first verse" wash on the same word', 
   await expect(inFirstVerse).toHaveClass(/state-hl-blue/)
   await expect(inFirstVerse).toHaveClass(/state-playing/)
 
-  const bgIn = await inFirstVerse.evaluate((el) => getComputedStyle(el).backgroundColor)
-  const bgElsewhere = await elsewhere.evaluate((el) => getComputedStyle(el).backgroundColor)
-  // Same requested colour, on vs. off the first verse — must paint identically.
-  expect(bgIn).toBe(bgElsewhere)
+  const underlineIn = await inFirstVerse.evaluate((el) => getComputedStyle(el).textDecorationColor)
+  const underlineElsewhere = await elsewhere.evaluate((el) => getComputedStyle(el).textDecorationColor)
+  expect(underlineIn).toBe(underlineElsewhere)
+  expect(underlineIn).not.toBe('rgba(0, 0, 0, 0)') // actually coloured, not the inherited default
 })
 
 test('invalid surah shows a friendly error and links home', async ({ page }) => {
