@@ -512,6 +512,18 @@ const bn: Messages = {
     rangeTooLarge: 'এই পরিসরটি এখানে দেখানোর জন্য অনেক বেশি পৃষ্ঠাব্যাপী।',
     openInReader: 'পরিবর্তে রিডারে খুলুন',
   },
+  share: {
+    button: 'শেয়ার করুন',
+    title: 'এই লিংকটি শেয়ার করুন',
+    copy: 'লিংক কপি করুন',
+    copied: 'লিংক কপি হয়েছে',
+    copyFailed: 'লিংক কপি করা যায়নি',
+    more: 'আরও শেয়ার অপশন',
+    whatsapp: 'হোয়াটসঅ্যাপ',
+    telegram: 'টেলিগ্রাম',
+    facebook: 'ফেসবুক',
+    twitter: 'এক্স (টুইটার)',
+  },
 }
 
 export default bn

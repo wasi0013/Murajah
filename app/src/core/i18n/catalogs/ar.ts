@@ -512,6 +512,18 @@ const ar: Messages = {
     rangeTooLarge: 'هذا النطاق يمتد على صفحات كثيرة جدًا لعرضه هنا.',
     openInReader: 'افتح في القارئ بدلاً من ذلك',
   },
+  share: {
+    button: 'مشاركة',
+    title: 'شارك هذا الرابط',
+    copy: 'نسخ الرابط',
+    copied: 'تم نسخ الرابط',
+    copyFailed: 'تعذّر نسخ الرابط',
+    more: 'خيارات مشاركة أخرى',
+    whatsapp: 'واتساب',
+    telegram: 'تيليجرام',
+    facebook: 'فيسبوك',
+    twitter: 'إكس (تويتر)',
+  },
 }
 
 export default ar

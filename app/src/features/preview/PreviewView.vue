@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
-import { ArrowLeft, AlertTriangle } from 'lucide-vue-next'
+import { ArrowLeft, AlertTriangle, Share2 } from 'lucide-vue-next'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import { readerLink } from '@/core/navigation/readerLinks'
@@ -17,6 +17,7 @@ import { usePreviewPages } from '@/composables/usePreviewPages'
 import ReadingSurface from '@/features/reader/ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import Icon from '@/components/Icon.vue'
+import ShareSheet from '@/components/ShareSheet.vue'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -33,6 +34,12 @@ const route = useRoute()
 const parsed = computed(() => parsePreviewRange(route.params as PreviewRouteParams))
 const range = computed(() => (parsed.value.ok ? parsed.value.value : undefined))
 const highlightSpecs = computed(() => parseHighlightParams(route.query as PreviewHighlightQuery))
+
+// The whole point of this link is that it's self-contained — `route.fullPath`
+// (reactive) carries the highlight query params verbatim, so sharing always
+// hands out exactly what's on screen, not a reconstructed/simplified version.
+const shareOpen = ref(false)
+const shareUrl = computed(() => window.location.origin + route.fullPath)
 
 // Route params already guarantee 1-3 digits for :surah; a 'range' parse error
 // still leaves a syntactically valid (if semantically out-of-range) surah to
@@ -110,6 +117,15 @@ const sharedFitFactor = computed(() => {
         <span class="preview-surah">{{ surahName }}</span>
         <span class="preview-range">{{ rangeLabel }}</span>
       </div>
+
+      <div class="preview-actions">
+        <button type="button" class="icon-btn" :aria-label="t('share.button')" @click="shareOpen = true">
+          <Icon :icon="Share2" :size="20" />
+        </button>
+        <RouterLink :to="{ name: 'download' }" class="icon-btn logo-link" :aria-label="t('pwa.installTitle')">
+          <img src="/pwa-icon-192.png" alt="" width="20" height="20" class="logo-img" />
+        </RouterLink>
+      </div>
     </header>
 
     <div v-if="!parsed.ok" class="preview-error" role="alert">
@@ -158,6 +174,8 @@ const sharedFitFactor = computed(() => {
         </div>
       </template>
     </div>
+
+    <ShareSheet v-model:open="shareOpen" :url="shareUrl" :title="`${surahName} ${rangeLabel}`.trim()" />
   </main>
 </template>
 
@@ -200,10 +218,37 @@ const sharedFitFactor = computed(() => {
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 .preview-surah {
   font-size: var(--text-base);
   font-weight: 600;
+}
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  flex: 0 0 auto;
+}
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: var(--color-elevated);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.logo-img {
+  border-radius: var(--radius-sm);
 }
 .preview-range {
   font-size: var(--text-sm);

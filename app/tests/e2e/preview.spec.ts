@@ -163,6 +163,35 @@ test('no shell chrome, and a word tap is inert', async ({ page }) => {
   expect(await page.locator('[data-loc="2:1:1"]').getAttribute('class')).toBe(before)
 })
 
+test('the header logo links to /download', async ({ page }) => {
+  await page.goto('/preview/2/1-5')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await expect(page.locator('.preview-header .logo-link')).toHaveAttribute('href', '/download')
+})
+
+test('share sheet: the URL includes the highlight params, and copy works', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/preview/2/12-45?red=12:1&blue=20')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Share' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Share this link' })
+  await expect(sheet).toBeVisible()
+
+  const shareUrl = await sheet.locator('.share-url').inputValue()
+  expect(shareUrl).toContain('/preview/2/12-45')
+  expect(shareUrl).toContain('red=12:1')
+  expect(shareUrl).toContain('blue=20')
+
+  // Social targets carry the same URL, not a reconstructed/simplified one.
+  const whatsappHref = await sheet.getByRole('link', { name: 'WhatsApp' }).getAttribute('href')
+  expect(whatsappHref).toContain(encodeURIComponent(shareUrl))
+
+  await sheet.getByRole('button', { name: 'Copy link' }).click()
+  await expect(page.getByText('Link copied')).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shareUrl)
+})
+
 // A shared link is the realistic case: no saved prefs, no completed
 // onboarding — a nested describe scopes the unauthenticated storageState to
 // just this test, leaving every test above on the suite's normal (onboarded)

@@ -516,6 +516,18 @@ const en: Messages = {
     rangeTooLarge: 'That range spans too many pages to preview here.',
     openInReader: 'Open in the reader instead',
   },
+  share: {
+    button: 'Share',
+    title: 'Share this link',
+    copy: 'Copy link',
+    copied: 'Link copied',
+    copyFailed: 'Could not copy the link',
+    more: 'More share options',
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    facebook: 'Facebook',
+    twitter: 'X (Twitter)',
+  },
 }
 
 export default en
