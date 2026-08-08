@@ -2,6 +2,7 @@ import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
 import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { PlaybackScope } from '@/core/audio/scope'
+import type { HighlightColor } from '@/core/navigation/previewRoute'
 import { idbCount, idbGet, openDb, txDone } from './idb'
 
 /**
@@ -15,6 +16,7 @@ const DB_NAME = 'murajah-userdata'
 const DB_VERSION = 1
 const STORE = 'data'
 const MISTAKES_KEY = 'mistakes'
+const MISTAKE_COLORS_KEY = 'mistakeColors'
 const PROGRESS_KEY = 'progress'
 const PLAN_KEY = 'plan'
 const DAYLOG_KEY = 'dayLog'
@@ -26,6 +28,11 @@ const HABIT_VERSES_KEY = 'habitVerses'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
+
+/** On-disk mark-color shape: `{ "<wordId>": color }` — a new, additive key
+ * (see stores/mistakeColors.ts); absent entirely from legacy backups, which
+ * just means every restored mark renders as plain red until re-painted. */
+export type StoredMistakeColors = Record<string, HighlightColor>
 
 /** SM-2 defaults for a page that has never had a scheduled recall (Phase 5.0). */
 const DEFAULT_INTERVAL = 1
@@ -140,6 +147,41 @@ export async function saveMistakes(map: Map<number, Set<number>>): Promise<void>
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeMistakes(map), MISTAKES_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+export function serializeMistakeColors(map: Map<number, HighlightColor>): StoredMistakeColors {
+  const out: StoredMistakeColors = {}
+  for (const [id, color] of map) out[String(id)] = color
+  return out
+}
+
+export function deserializeMistakeColors(stored: StoredMistakeColors | undefined): Map<number, HighlightColor> {
+  const map = new Map<number, HighlightColor>()
+  for (const [id, color] of Object.entries(stored ?? {})) map.set(Number(id), color)
+  return map
+}
+
+/** Load persisted mark colors (empty map if none / on error). */
+export async function loadMistakeColors(): Promise<Map<number, HighlightColor>> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredMistakeColors>(tx.objectStore(STORE), MISTAKE_COLORS_KEY)
+    await txDone(tx)
+    return deserializeMistakeColors(stored)
+  } catch {
+    return new Map()
+  }
+}
+
+/** Persist mark colors (best-effort). */
+export async function saveMistakeColors(map: Map<number, HighlightColor>): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    tx.objectStore(STORE).put(serializeMistakeColors(map), MISTAKE_COLORS_KEY)
     await txDone(tx)
   } catch {
     /* best-effort */

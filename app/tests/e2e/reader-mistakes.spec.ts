@@ -34,6 +34,60 @@ test('mark mode toggles a persisted mistake; read mode still opens morphology', 
   await expect(firstWord(page)).not.toHaveClass(/state-mistake/)
 })
 
+test.describe('mark-color palette', () => {
+  test('shows 6 swatches with red selected by default, and hides in read mode', async ({ page }) => {
+    await page.goto('/')
+    await expect(firstWord(page)).not.toBeEmpty({ timeout: 10_000 })
+
+    const bar = page.getByRole('radiogroup', { name: 'Mark color' })
+    await expect(bar).toBeVisible()
+    await expect(bar.getByRole('radio')).toHaveCount(6)
+    await expect(bar.getByRole('radio', { name: 'Red' })).toHaveAttribute('aria-checked', 'true')
+
+    await openSettings(page)
+    await page.getByRole('radio', { name: 'Read' }).click()
+    await closeSettings(page)
+    await expect(bar).toBeHidden()
+  })
+
+  test('paints a tap with the selected color; an already-marked word un-marks regardless of selection', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await expect(firstWord(page)).not.toBeEmpty({ timeout: 10_000 })
+
+    const bar = page.getByRole('radiogroup', { name: 'Mark color' })
+    await bar.getByRole('radio', { name: 'Amber' }).click()
+    await firstWord(page).click()
+    await expect(firstWord(page)).toHaveClass(/state-hl-amber/)
+    await expect(firstWord(page)).not.toHaveClass(/state-mistake\b/)
+
+    // Switching the active swatch doesn't repaint an existing mark — tapping
+    // the already-marked word just un-marks it, ignoring 'Teal' being active.
+    await bar.getByRole('radio', { name: 'Teal' }).click()
+    await firstWord(page).click()
+    await expect(firstWord(page)).not.toHaveClass(/state-hl-amber|state-hl-teal|state-mistake/)
+  })
+
+  test('a mark color survives reload', async ({ page }) => {
+    await page.goto('/')
+    await expect(firstWord(page)).not.toBeEmpty({ timeout: 10_000 })
+
+    const bar = page.getByRole('radiogroup', { name: 'Mark color' })
+    await bar.getByRole('radio', { name: 'Green' }).click()
+    await firstWord(page).click()
+    await expect(firstWord(page)).toHaveClass(/state-hl-green/)
+
+    await page.waitForTimeout(500) // debounced persistence
+    await page.reload()
+    await expect(firstWord(page)).not.toBeEmpty({ timeout: 10_000 })
+    await expect(firstWord(page)).toHaveClass(/state-hl-green/)
+
+    // The active-swatch selection itself is session-only — back to Red.
+    await expect(bar.getByRole('radio', { name: 'Red' })).toHaveAttribute('aria-checked', 'true')
+  })
+})
+
 // Every other spec runs against the shared onboarded storageState, so the
 // reader boots at its real default (mark-mistake) there too — this is the
 // one place exercising the real, unseeded first visit end to end.

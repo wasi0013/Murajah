@@ -381,6 +381,15 @@ const ar: Messages = {
     tapMode: 'وضع اللمس',
     read: 'قراءة',
     mark: 'تعليم',
+    markColorGroup: 'لون التعليم',
+    color: {
+      red: 'أحمر',
+      amber: 'كهرماني',
+      blue: 'أزرق',
+      green: 'أخضر',
+      purple: 'بنفسجي',
+      teal: 'فيروزي',
+    },
   },
   listen: {
     title: 'استماع',

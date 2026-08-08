@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Layout, TafsirLang, WbwLang } from '@/core/data/types'
+import type { HighlightColor } from '@/core/navigation/previewRoute'
 
 export type ReaderMode = 'read' | 'mark-mistake'
 
@@ -57,6 +58,14 @@ export const useReaderStore = defineStore('reader', () => {
   // Transient (never persisted/serialized): the `"s:a"` a deep-link asked to scroll
   // to (e.g. /2/255). Cleared once the user pages away so it can't re-fire.
   const focusVerse = ref<string | null>(null)
+
+  // Transient (never persisted/serialized): the color a mark-mistake tap paints
+  // a word with — always starts back at 'red' each session, matching the
+  // color-bar's own default-selected swatch (see MistakeColorBar.vue).
+  const markColor = ref<HighlightColor>('red')
+  function setMarkColor(color: HighlightColor) {
+    markColor.value = color
+  }
 
   const pageCount = computed(() => pageCounts.value[layout.value])
   const readingWidth = computed(() => READING_WIDTHS[textSizeStep.value])
@@ -166,6 +175,7 @@ export const useReaderStore = defineStore('reader', () => {
     textSizeStep,
     mode,
     focusVerse,
+    markColor,
     // derived
     pageCount,
     readingWidth,
@@ -185,6 +195,7 @@ export const useReaderStore = defineStore('reader', () => {
     setMode,
     toggleMode,
     setFocusVerse,
+    setMarkColor,
     snapshot,
     restore,
   }

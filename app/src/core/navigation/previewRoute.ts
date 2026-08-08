@@ -98,7 +98,10 @@ export function withinPageCap(startPage: number, endPage: number, cap = PAGE_CAP
  */
 export type HighlightColor = 'red' | 'amber' | 'blue' | 'green' | 'purple' | 'teal'
 
-const HIGHLIGHT_COLORS: HighlightColor[] = ['red', 'amber', 'blue', 'green', 'purple', 'teal']
+/** Fixed display/priority order, exported so other callers (e.g. the reader's
+ * own mark-color palette — a distinct feature that happens to reuse this exact
+ * 6-color vocabulary) iterate the same canonical order rather than redeclaring it. */
+export const HIGHLIGHT_COLORS: HighlightColor[] = ['red', 'amber', 'blue', 'green', 'purple', 'teal']
 
 /** One highlight token, resolved to an ayah + an optional word sub-range within
  * it. No `wordStart`/`wordEnd` means "the whole ayah" — deliberately left
@@ -180,6 +183,13 @@ const STATE_FOR_COLOR: Record<HighlightColor, PreviewWordState> = {
   green: 'hl-green',
   purple: 'hl-purple',
   teal: 'hl-teal',
+}
+
+/** The `ReadingSurface` state class a given color renders as — exported for the
+ * reader's mark-color feature, which paints the same 6 colors onto marked
+ * words rather than /preview's URL-driven highlights. */
+export function stateForColor(color: HighlightColor): PreviewWordState {
+  return STATE_FOR_COLOR[color]
 }
 
 /**

@@ -384,6 +384,15 @@ const en: Messages = {
     tapMode: 'Tap mode',
     read: 'Read',
     mark: 'Mark',
+    markColorGroup: 'Mark color',
+    color: {
+      red: 'Red',
+      amber: 'Amber',
+      blue: 'Blue',
+      green: 'Green',
+      purple: 'Purple',
+      teal: 'Teal',
+    },
   },
   listen: {
     title: 'Listen',
