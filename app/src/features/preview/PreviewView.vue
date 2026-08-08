@@ -67,7 +67,9 @@ const rangeLabel = computed(() => {
  * otherwise the surah page, otherwise home (no valid surah at all). */
 const fallbackLink = computed<RouteLocationRaw>(() => {
   if (range.value) return readerLink({ surah: range.value.surah, ayah: range.value.startAyah })
-  if (rawSurah.value >= 1 && rawSurah.value <= 114) return readerLink({ surah: rawSurah.value })
+  // An invalid *range* still leaves a valid surah (parsePreviewRange checks
+  // surah first) — land on its first ayah rather than the bare surah page.
+  if (rawSurah.value >= 1 && rawSurah.value <= 114) return readerLink({ surah: rawSurah.value, ayah: 1 })
   return { name: 'home' }
 })
 
