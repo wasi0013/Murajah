@@ -199,10 +199,18 @@ export function stateForColor(color: HighlightColor): PreviewWordState {
  * and a word already claimed by a higher-priority color is left alone, so a
  * single-word `red` spec correctly carves a hole out of a whole-ayah `blue`
  * spec covering the same ayah, rather than one flattening the other.
+ *
+ * `surah` scopes the match — a highlight token only ever carries an ayah
+ * number (see {@link HighlightSpec}), and `words` is a whole mushaf *page*,
+ * which routinely holds more than one surah (short surahs share pages). Without
+ * this, `red=3:9` on a `/preview/103/3` link would also paint surah 104's
+ * ayah 3 word 9 if both landed on the same page — this is the fix for exactly
+ * that bug.
  */
 export function resolveWordStates(
   specsByColor: HighlightSpecsByColor,
   words: Word[],
+  surah: number,
 ): Record<string, PreviewWordState> {
   const result: Record<string, PreviewWordState> = {}
   for (const color of HIGHLIGHT_COLORS) {
@@ -210,6 +218,7 @@ export function resolveWordStates(
     if (!specs?.length) continue
     const state = STATE_FOR_COLOR[color]
     for (const w of words) {
+      if (Number(w.surah) !== surah) continue
       if (w.location in result) continue // higher-priority color already claimed it
       const ayah = Number(w.ayah)
       const wordIndex = Number(w.word)

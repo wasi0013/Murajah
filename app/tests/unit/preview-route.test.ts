@@ -161,13 +161,13 @@ describe('parseHighlightParams', () => {
 
 describe('resolveWordStates', () => {
   /** A hand-built fixture — no data-layer dependency, per the plan. */
-  function word(ayah: number, wordIdx: number): Word {
+  function word(ayah: number, wordIdx: number, surah = '2'): Word {
     return {
       id: ayah * 100 + wordIdx,
-      surah: '2',
+      surah,
       ayah: String(ayah),
       word: String(wordIdx),
-      location: `2:${ayah}:${wordIdx}`,
+      location: `${surah}:${ayah}:${wordIdx}`,
       text: `w${ayah}.${wordIdx}`,
     }
   }
@@ -178,6 +178,7 @@ describe('resolveWordStates', () => {
     const states = resolveWordStates(
       { red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }], blue: [{ ayah: 20 }] },
       [...ayah12, ...ayah20],
+      2,
     )
     expect(states).toEqual({
       '2:12:1': 'mistake',
@@ -193,6 +194,7 @@ describe('resolveWordStates', () => {
         amber: [{ ayah: 12, wordStart: 3, wordEnd: 3 }],
       },
       ayah12,
+      2,
     )
     expect(states['2:12:3']).toBe('mistake')
   })
@@ -201,6 +203,7 @@ describe('resolveWordStates', () => {
     const states = resolveWordStates(
       { red: [{ ayah: 12, wordStart: 3, wordEnd: 3 }], blue: [{ ayah: 12 }] },
       ayah12,
+      2,
     )
     expect(states).toEqual({
       '2:12:1': 'hl-blue',
@@ -213,8 +216,23 @@ describe('resolveWordStates', () => {
   })
 
   it('a word matching no spec is absent from the map', () => {
-    const states = resolveWordStates({ red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }] }, ayah12)
+    const states = resolveWordStates({ red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }] }, ayah12, 2)
     expect(Object.keys(states)).toEqual(['2:12:1'])
+  })
+
+  // Regression for the reported bug: a shared mushaf page can hold more than
+  // one surah's verses (short surahs routinely share a page), and a highlight
+  // token only ever carries an ayah number — e.g. /preview/103/3?red=3:9 must
+  // not also paint surah 104's ayah 3 word 9 on the same page.
+  it('scopes matches to the given surah, ignoring a same-numbered ayah on a neighboring surah', () => {
+    const surah103 = [1, 2].map((i) => word(3, i, '103'))
+    const surah104 = [1, 2].map((i) => word(3, i, '104'))
+    const states = resolveWordStates(
+      { red: [{ ayah: 3, wordStart: 1, wordEnd: 1 }] },
+      [...surah103, ...surah104],
+      103,
+    )
+    expect(states).toEqual({ '103:3:1': 'mistake' })
   })
 
   describe('toggleWordHighlight (the /preview color-bar tap editor)', () => {

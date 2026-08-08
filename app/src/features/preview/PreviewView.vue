@@ -107,10 +107,14 @@ function onGoTo({ surah, start, end }: { surah: number; start: number; end: numb
 /** location → highlight state for one loaded page's own words (Task 6). Not
  * memoized — cheap for a ≤12-page, single-surah range, and re-evaluates
  * correctly as each page's chunk streams in since `entry()` reads the
- * composable's reactive cache. */
+ * composable's reactive cache. `range.value.surah` scopes the match to this
+ * link's own surah — a shared page can also hold a neighboring surah's verses
+ * (short surahs routinely share a page), and a highlight token only carries
+ * an ayah number, so without this an ayah:word match on the wrong surah would
+ * light up too. */
 function wordStatesForPage(page: number) {
   const chunk = entry(page)?.chunk
-  return chunk ? resolveWordStates(highlightSpecs.value, chunk.words) : {}
+  return chunk && range.value ? resolveWordStates(highlightSpecs.value, chunk.words, range.value.surah) : {}
 }
 
 // —— Tap-to-paint editing ————————————————————————————————————————
@@ -121,20 +125,34 @@ function wordStatesForPage(page: number) {
 // truth with zero extra plumbing.
 const activeColor = ref<HighlightColor>('red')
 
-// Every loaded page's words, not just the tapped word's own page — a whole-
-// ayah spec being edited down to one word needs that ayah's *complete* word
-// list to expand correctly, and on the rare page-spanning ayah that list
-// isn't all on one page.
-const allLoadedWords = computed(() => pages.value.flatMap((p) => entry(p)?.chunk?.words ?? []))
+// Every loaded page's words for *this link's own surah*, not just the tapped
+// word's own page — a whole-ayah spec being edited down to one word needs
+// that ayah's *complete* word list to expand correctly, and on the rare
+// page-spanning ayah that list isn't all on one page. Scoped to `range.surah`
+// for the same reason `wordStatesForPage` is: a shared page can carry a
+// neighboring surah's words too, and `HighlightSpec` only carries an ayah
+// number, so an unfiltered list would let `expandSpec` pick up the wrong
+// surah's same-numbered ayah.
+const allLoadedWords = computed(() => {
+  const surah = range.value?.surah
+  if (surah == null) return []
+  return pages.value.flatMap((p) => (entry(p)?.chunk?.words ?? []).filter((w) => Number(w.surah) === surah))
+})
 
 function onWordTap(e: PointerEvent) {
   const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-loc]')
   const loc = el?.dataset.loc
   if (!loc) return
-  const [, ayahStr, wordStr] = loc.split(':')
+  const [surahStr, ayahStr, wordStr] = loc.split(':')
+  const surah = Number(surahStr)
   const ayah = Number(ayahStr)
   const word = Number(wordStr)
-  if (!Number.isFinite(ayah) || !Number.isFinite(word)) return
+  if (!Number.isFinite(surah) || !Number.isFinite(ayah) || !Number.isFinite(word)) return
+  // A shared page can show a neighboring surah's verses too (Task: the same
+  // fix as `wordStatesForPage`) — this link only edits its own surah's
+  // highlights, so a tap landing on the other surah's text is a no-op rather
+  // than silently painting/clearing a same-numbered ayah:word on this one.
+  if (surah !== range.value?.surah) return
 
   const next = toggleWordHighlight(highlightSpecs.value, { ayah, word }, activeColor.value, allLoadedWords.value)
   void router.replace({
