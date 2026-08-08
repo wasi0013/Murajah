@@ -113,13 +113,19 @@ export interface HighlightSpec {
 
 export type HighlightSpecsByColor = Partial<Record<HighlightColor, HighlightSpec[]>>
 
-/** Raw query shape this route reads — every other param is ignored, not an error. */
-export type PreviewHighlightQuery = Partial<Record<HighlightColor | 'hl', string | string[]>>
+/** Raw query shape this route reads — every other param is ignored, not an
+ * error. Value type mirrors vue-router's actual `LocationQuery` (a bare
+ * `?red` with no `=value` resolves to `null`, not `''`), so `route.query` can
+ * be passed straight through with no cast. */
+export type PreviewHighlightQuery = Partial<
+  Record<HighlightColor | 'hl', string | (string | null)[] | null>
+>
 
-function toTokenList(v: string | string[] | undefined): string[] {
+function toTokenList(v: string | (string | null)[] | null | undefined): string[] {
   if (v == null) return []
   const values = Array.isArray(v) ? v : [v]
   return values
+    .filter((s): s is string => s != null)
     .flatMap((s) => s.split(','))
     .map((s) => s.trim())
     .filter(Boolean)
