@@ -17,8 +17,14 @@ const props = defineProps<{
   surahNames?: Record<string, string>
   /** Mushaf page-column width (from the text-size setting); lines scale to fill it. */
   pageWidth?: string
-  /** location (`s:a:w`) → state class suffix */
-  wordStates?: Record<string, 'mistake' | 'morphology' | 'selected'>
+  /** location (`s:a:w`) → state class suffix. `hl-*` are the /preview route's
+   * multi-color highlighter washes (core/navigation/previewRoute.ts); `mistake`
+   * doubles as that route's default/red highlight, reusing the same class the
+   * real mistake-marking feature uses. */
+  wordStates?: Record<
+    string,
+    'mistake' | 'morphology' | 'selected' | 'hl-amber' | 'hl-blue' | 'hl-green' | 'hl-purple' | 'hl-teal'
+  >
   /** word ids currently marked as mistakes (global, layout-independent). */
   mistakeIds?: Set<number>
   /** Word-by-word: show a per-word gloss beneath each word. */
@@ -31,6 +37,11 @@ const props = defineProps<{
   activeVerse?: string | null
   /** Follow the recited ayah by scrolling it into view (audio player preference). */
   autoScroll?: boolean
+  /** Whether words look tappable (pointer cursor). Default `true`, matching every
+   * existing consumer; the /preview route sets this `false` since it wires no tap
+   * handler at all and shouldn't imply one. Purely visual — this component never
+   * handles taps itself either way, callers do. */
+  interactive?: boolean
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -188,7 +199,7 @@ watch(
   <div
     ref="surfaceEl"
     class="surface"
-    :class="{ 'surface-indopak': layout === 'indopak' }"
+    :class="{ 'surface-indopak': layout === 'indopak', 'surface-inert': interactive === false }"
     dir="rtl"
     lang="ar"
     :style="{
@@ -295,6 +306,11 @@ watch(
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard);
 }
+/* interactive=false (e.g. the /preview route, which wires no tap handler at
+   all): words shouldn't look tappable. */
+.surface-inert .word {
+  cursor: default;
+}
 /* Some Indopak tokens carry a trailing waqf mark after a space (e.g. "عَلَیْهَا ؕ").
    Keep the word + its mark on one line so the mark never wraps into the gap. */
 .arabic {
@@ -334,6 +350,26 @@ watch(
 .state-selected {
   background: var(--color-elevated);
   box-shadow: 0 0 0 1px var(--color-border);
+}
+/* /preview route's multi-color highlighter washes (core/navigation/previewRoute.ts).
+   Backgrounds only — never `color` — because the tajweed glyph font's ink is
+   baked-in COLR/CPAL (see the isTajweedFont note above), so `color` on `.arabic`
+   is a no-op there; a background on `.word` paints behind the glyph regardless.
+   The default/red highlight has no rule here — it reuses `.state-mistake` above. */
+.state-hl-amber {
+  background: color-mix(in oklab, var(--hl-amber) 30%, transparent);
+}
+.state-hl-blue {
+  background: color-mix(in oklab, var(--hl-blue) 30%, transparent);
+}
+.state-hl-green {
+  background: color-mix(in oklab, var(--hl-green) 30%, transparent);
+}
+.state-hl-purple {
+  background: color-mix(in oklab, var(--hl-purple) 30%, transparent);
+}
+.state-hl-teal {
+  background: color-mix(in oklab, var(--hl-teal) 30%, transparent);
 }
 /* The ayah being recited (7.4): a soft accent wash plus a hairline baseline rule,
    so the cue is subtle yet not carried by colour alone. */
