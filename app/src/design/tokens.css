@@ -107,6 +107,20 @@
   --tajweed-ikhfa: #3b74d6;
   --tajweed-madd: #b4791f;
 
+  /* Preview highlighter washes (word-level, /preview route — see
+     core/navigation/previewRoute.ts). Backgrounds only, never glyph `color`
+     (the tajweed font's ink is baked-in COLR/CPAL, so `color` is a no-op on
+     it — see the tajweed-glyph-filter note below). Chosen distinct in hue
+     and/or lightness from the --tajweed-* rule colours above so a wash never
+     reads as a tajweed rule colour underneath it. "Red" (the default
+     highlight, aliased by a colorless `hl=` param) deliberately has no token
+     here — it reuses --color-danger via the existing .state-mistake class. */
+  --hl-amber: #d9a441;
+  --hl-blue: #4a90d9;
+  --hl-green: #6aab52;
+  --hl-purple: #9b6fd1;
+  --hl-teal: #2ea9a0;
+
   /* The tajweed glyph font (tj-p{n}) is a COLR/CPAL colour font: its base,
      non-rule-colored strokes are baked-in near-black, matching a printed page
      on a light background — CSS `color` can't repaint them. On a dark surface
@@ -146,6 +160,12 @@
   --tajweed-ikhfa: #6f9ff0;
   --tajweed-madd: #e0b45f;
 
+  --hl-amber: #f0c674;
+  --hl-blue: #7ab6f0;
+  --hl-green: #8fd18a;
+  --hl-purple: #c3a3f0;
+  --hl-teal: #5fd6cc;
+
   --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -179,6 +199,12 @@
   --tajweed-ikhfa: #35609e;
   --tajweed-madd: #9a6716;
 
+  --hl-amber: #d9a441;
+  --hl-blue: #4a90d9;
+  --hl-green: #6aab52;
+  --hl-purple: #9b6fd1;
+  --hl-teal: #2ea9a0;
+
   --shadow-sm: 0 1px 2px rgba(58, 48, 32, 0.08);
   --shadow-md: 0 4px 12px -4px rgba(58, 48, 32, 0.14);
   --shadow-lg: 0 12px 28px -10px rgba(58, 48, 32, 0.2);
@@ -206,6 +232,11 @@
     --tajweed-qalqalah: #ec7a74;
     --tajweed-ikhfa: #6f9ff0;
     --tajweed-madd: #e0b45f;
+    --hl-amber: #f0c674;
+    --hl-blue: #7ab6f0;
+    --hl-green: #8fd18a;
+    --hl-purple: #c3a3f0;
+    --hl-teal: #5fd6cc;
     --tajweed-glyph-filter: invert(1) hue-rotate(180deg);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 6px 16px -6px rgba(0, 0, 0, 0.55);
@@ -236,6 +267,11 @@
   --color-tajweed-qalqalah: var(--tajweed-qalqalah);
   --color-tajweed-ikhfa: var(--tajweed-ikhfa);
   --color-tajweed-madd: var(--tajweed-madd);
+  --color-hl-amber: var(--hl-amber);
+  --color-hl-blue: var(--hl-blue);
+  --color-hl-green: var(--hl-green);
+  --color-hl-purple: var(--hl-purple);
+  --color-hl-teal: var(--hl-teal);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
