@@ -190,7 +190,7 @@ watch(range, () => fitFactors.clear())
 <template>
   <main class="preview">
     <header class="preview-header">
-      <RouterLink :to="fallbackLink" class="back-link" :aria-label="t('preview.back')">
+      <RouterLink :to="fallbackLink" class="back-link icon-btn" :aria-label="t('preview.back')">
         <Icon :icon="ArrowLeft" :size="20" />
       </RouterLink>
       <button type="button" class="preview-title" :aria-label="t('preview.jumpButton')" @click="jumpOpen = true">
@@ -295,7 +295,9 @@ watch(range, () => fitFactors.clear())
   background: var(--color-bg);
   z-index: var(--z-sticky);
 }
-.back-link {
+/* .back-link reuses .icon-btn's own box/hover/focus rules verbatim (see the
+   template — it carries both classes) rather than redeclaring them. */
+.icon-btn {
   display: grid;
   place-items: center;
   width: 2.75rem;
@@ -303,14 +305,6 @@ watch(range, () => fitFactors.clear())
   border-radius: var(--radius-md);
   color: var(--color-text);
   flex: 0 0 auto;
-}
-.back-link:hover,
-.back-link:focus-visible {
-  background: var(--color-elevated);
-}
-.back-link:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
 }
 .preview-title {
   display: flex;
@@ -322,10 +316,13 @@ watch(range, () => fitFactors.clear())
   border-radius: var(--radius-md);
   text-align: start;
 }
+.icon-btn:hover,
+.icon-btn:focus-visible,
 .preview-title:hover,
 .preview-title:focus-visible {
   background: var(--color-elevated);
 }
+.icon-btn:focus-visible,
 .preview-title:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
@@ -350,23 +347,6 @@ watch(range, () => fitFactors.clear())
   gap: 0.25rem;
   flex: 0 0 auto;
 }
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  flex: 0 0 auto;
-}
-.icon-btn:hover,
-.icon-btn:focus-visible {
-  background: var(--color-elevated);
-}
-.icon-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
-}
 .logo-img {
   border-radius: var(--radius-sm);
 }
@@ -389,10 +369,6 @@ watch(range, () => fitFactors.clear())
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-accent);
-}
-.preview-error-link:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
 }
 .preview-pages {
   padding-bottom: 2rem;
@@ -439,6 +415,7 @@ watch(range, () => fitFactors.clear())
   color: var(--color-text-muted);
   max-width: 32ch;
 }
+.preview-error-link:focus-visible,
 .page-error:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
