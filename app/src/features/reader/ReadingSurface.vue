@@ -42,6 +42,20 @@ const props = defineProps<{
    * handler at all and shouldn't imply one. Purely visual — this component never
    * handles taps itself either way, callers do. */
   interactive?: boolean
+  /** Override the measured font-scale factor from `fitLines()` below with this
+   * value instead (still clamped to the same [0.35, 1.6] range). Unset by every
+   * existing consumer, so their behavior is unchanged; the /preview route uses
+   * this to keep several stacked pages at one shared size — see the `fit` emit. */
+  fitFactor?: number
+}>()
+
+const emit = defineEmits<{
+  /** Fires on every `fitLines()` run (mount + ResizeObserver refit) with the
+   * factor *this* surface's own widest line measured — always the measured
+   * value, never `fitFactor` echoed back, so a parent computing a shared
+   * minimum across several mounted surfaces never feeds back a shrinking
+   * loop. */
+  fit: [factor: number]
 }>()
 
 // Indopak Nastaleeq needs more line-height and tighter tracking than QPC.
@@ -146,8 +160,14 @@ function fitLines() {
     return
   }
   factor = Math.min(Math.max(factor, 0.35), 1.6)
+  emit('fit', factor)
+  // A parent coordinating several stacked surfaces (the /preview route) can
+  // override the applied size with a shared minimum; every other consumer
+  // leaves `fitFactor` unset, so `applied` is just `factor` and behavior is
+  // identical to before this prop existed.
+  const applied = props.fitFactor != null ? Math.min(Math.max(props.fitFactor, 0.35), 1.6) : factor
   for (const { row, base } of measured) {
-    row.style.fontSize = `${base * factor}px` // identical size on every line
+    row.style.fontSize = `${base * applied}px` // identical size on every line
     row.style.justifyContent = '' // restore space-between to absorb the residual
   }
 }
@@ -163,9 +183,10 @@ onMounted(() => {
   }
 })
 onBeforeUnmount(() => ro?.disconnect())
-// Re-fit when the page, script, column width, font, or WBW state changes.
+// Re-fit when the page, script, column width, font, WBW state, or a parent's
+// coordinated fitFactor override changes.
 watch(
-  () => [props.page, props.layout, props.pageWidth, props.fontFamily, props.wbw],
+  () => [props.page, props.layout, props.pageWidth, props.fontFamily, props.wbw, props.fitFactor],
   scheduleFit,
 )
 
