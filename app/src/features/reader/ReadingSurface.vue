@@ -195,9 +195,15 @@ watch(
 // deep-link/surah/juz jump — which remounts this surface (`:key="reader.page"`
 // in ReaderPager.vue) with `activeVerse` already set — still scrolls: a
 // non-immediate watch only fires on a later *change*, and there isn't one here.
+//
+// Also re-checks on `fitFactor` (the /preview route's cross-page size
+// coordination — see the `fit` emit above): that value can still be settling
+// for a few beats after mount as slower sibling pages report in, rescaling
+// *this* surface's own line heights and moving the target verse — a single
+// page's own reader usage never sets `fitFactor`, so this is a no-op there.
 watch(
-  () => props.activeVerse,
-  (key) => {
+  () => [props.activeVerse, props.fitFactor] as const,
+  ([key]) => {
     if (!key || props.autoScroll === false) return
     void nextTick(() => {
       const root = surfaceEl.value

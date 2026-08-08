@@ -517,6 +517,15 @@ const ar: Messages = {
     jumpFrom: 'من الآية',
     jumpTo: 'إلى الآية',
     jumpGo: 'انتقال',
+    colorGroup: 'لون التظليل',
+    color: {
+      red: 'أحمر',
+      amber: 'كهرماني',
+      blue: 'أزرق',
+      green: 'أخضر',
+      purple: 'بنفسجي',
+      teal: 'فيروزي',
+    },
   },
   share: {
     button: 'مشاركة',

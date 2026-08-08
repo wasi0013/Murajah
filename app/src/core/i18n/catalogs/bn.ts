@@ -517,6 +517,15 @@ const bn: Messages = {
     jumpFrom: 'যে আয়াত থেকে',
     jumpTo: 'যে আয়াত পর্যন্ত',
     jumpGo: 'যান',
+    colorGroup: 'হাইলাইট রং',
+    color: {
+      red: 'লাল',
+      amber: 'অ্যাম্বার',
+      blue: 'নীল',
+      green: 'সবুজ',
+      purple: 'বেগুনি',
+      teal: 'টিল',
+    },
   },
   share: {
     button: 'শেয়ার করুন',

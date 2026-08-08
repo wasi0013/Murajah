@@ -521,6 +521,15 @@ const en: Messages = {
     jumpFrom: 'From ayah',
     jumpTo: 'To ayah',
     jumpGo: 'Go',
+    colorGroup: 'Highlight color',
+    color: {
+      red: 'Red',
+      amber: 'Amber',
+      blue: 'Blue',
+      green: 'Green',
+      purple: 'Purple',
+      teal: 'Teal',
+    },
   },
   share: {
     button: 'Share',

@@ -6,6 +6,8 @@ import {
   withinPageCap,
   parseHighlightParams,
   resolveWordStates,
+  toggleWordHighlight,
+  specsByColorToQuery,
 } from '@/core/navigation/previewRoute'
 
 /**
@@ -213,5 +215,56 @@ describe('resolveWordStates', () => {
   it('a word matching no spec is absent from the map', () => {
     const states = resolveWordStates({ red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }] }, ayah12)
     expect(Object.keys(states)).toEqual(['2:12:1'])
+  })
+
+  describe('toggleWordHighlight (the /preview color-bar tap editor)', () => {
+    it('adds an unclaimed word to the active color', () => {
+      const next = toggleWordHighlight({}, { ayah: 12, word: 3 }, 'amber', ayah12)
+      expect(next).toEqual({ amber: [{ ayah: 12, wordStart: 3, wordEnd: 3 }] })
+    })
+
+    it('removes an already-claimed word, regardless of the active color', () => {
+      const specs = { red: [{ ayah: 12, wordStart: 3, wordEnd: 3 }] }
+      const next = toggleWordHighlight(specs, { ayah: 12, word: 3 }, 'teal', ayah12)
+      expect(next.red).toBeUndefined()
+      expect(next.teal).toBeUndefined() // never added — the tap only un-marked
+    })
+
+    it('removing one word from a whole-ayah spec keeps its ayah-mates highlighted', () => {
+      const specs = { blue: [{ ayah: 12 }] } // whole ayah — all 6 words
+      const next = toggleWordHighlight(specs, { ayah: 12, word: 3 }, 'red', ayah12)
+      expect(next.blue).toEqual(
+        [1, 2, 4, 5, 6].map((w) => ({ ayah: 12, wordStart: w, wordEnd: w })),
+      )
+    })
+
+    it('a higher-priority color is treated as the owner over a lower one on the same word', () => {
+      const specs = {
+        red: [{ ayah: 12, wordStart: 3, wordEnd: 3 }],
+        amber: [{ ayah: 12, wordStart: 3, wordEnd: 3 }],
+      }
+      const next = toggleWordHighlight(specs, { ayah: 12, word: 3 }, 'blue', ayah12)
+      expect(next.red).toBeUndefined() // removed — red wins ownership
+      expect(next.amber).toEqual([{ ayah: 12, wordStart: 3, wordEnd: 3 }]) // untouched
+    })
+  })
+
+  describe('specsByColorToQuery', () => {
+    it('joins multi-word specs back into comma tokens, omits empty colors', () => {
+      const query = specsByColorToQuery({
+        red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }, { ayah: 12, wordStart: 3, wordEnd: 5 }],
+        blue: [{ ayah: 20 }],
+      })
+      expect(query.red).toBe('12:1,12:3-5')
+      expect(query.blue).toBe('20')
+      expect(query.amber).toBeUndefined()
+    })
+
+    it('round-trips through parseHighlightParams', () => {
+      const original = parseHighlightParams({ red: '12:1,12:3-5', blue: '20' })
+      const query = specsByColorToQuery(original)
+      const reparsed = parseHighlightParams(query as never)
+      expect(reparsed).toEqual(original)
+    })
   })
 })

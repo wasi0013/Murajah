@@ -98,7 +98,10 @@ export function withinPageCap(startPage: number, endPage: number, cap = PAGE_CAP
  */
 export type HighlightColor = 'red' | 'amber' | 'blue' | 'green' | 'purple' | 'teal'
 
-const HIGHLIGHT_COLORS: HighlightColor[] = ['red', 'amber', 'blue', 'green', 'purple', 'teal']
+/** Fixed display/priority order — exported so the color-picker bar (Task: the
+ * preview page's own tap-to-paint editor) iterates the same canonical order
+ * rather than redeclaring it. */
+export const HIGHLIGHT_COLORS: HighlightColor[] = ['red', 'amber', 'blue', 'green', 'purple', 'teal']
 
 /** One highlight token, resolved to an ayah + an optional word sub-range within
  * it. No `wordStart`/`wordEnd` means "the whole ayah" — deliberately left
@@ -182,6 +185,12 @@ const STATE_FOR_COLOR: Record<HighlightColor, PreviewWordState> = {
   teal: 'hl-teal',
 }
 
+/** The `ReadingSurface` state class a given color renders as — exported for
+ * the color-picker bar, which needs it to render its own swatches/labels. */
+export function stateForColor(color: HighlightColor): PreviewWordState {
+  return STATE_FOR_COLOR[color]
+}
+
 /**
  * Turn parsed highlight specs into a `location → state` map for
  * ReadingSurface's `word-states` prop, against one page's actually-loaded
@@ -213,4 +222,103 @@ export function resolveWordStates(
     }
   }
   return result
+}
+
+// —— 4. Tap-to-paint editing (Task: the color bar on /preview itself) ————
+//
+// /preview's highlights are entirely URL-driven, so "marking a word" here
+// means editing the current URL's query params, not writing to any store —
+// there is nothing to persist and nothing that touches the visitor's own
+// local data. `toggleWordHighlight` finds whichever color (if any) currently
+// claims a word — same priority order `resolveWordStates` renders with — and
+// either removes it from that color, or (if unclaimed) adds it to whichever
+// color is active on the bar.
+
+/** A single word to toggle, addressed the same way a highlight token is. */
+export interface WordRef {
+  ayah: number
+  word: number
+}
+
+/** Expand a spec into one-token-per-word against a known word list — needed
+ * so removing a single word from a whole-ayah (or ranged) spec never removes
+ * its ayah-mates too. Falls back to the spec itself if `words` doesn't cover
+ * it (e.g. a whole-ayah spec whose ayah spans a page boundary this call
+ * wasn't given words for) — imperfect for that rare case, but never wrong in
+ * the common one. */
+function expandSpec(spec: HighlightSpec, words: Word[]): HighlightSpec[] {
+  if (spec.wordStart != null) {
+    if (spec.wordStart === spec.wordEnd) return [spec]
+    const out: HighlightSpec[] = []
+    for (let w = spec.wordStart; w <= (spec.wordEnd ?? spec.wordStart); w++) {
+      out.push({ ayah: spec.ayah, wordStart: w, wordEnd: w })
+    }
+    return out
+  }
+  const ayahWords = words.filter((w) => Number(w.ayah) === spec.ayah).map((w) => Number(w.word))
+  if (!ayahWords.length) return [spec] // no data for this ayah — can't safely expand
+  return ayahWords.map((w) => ({ ayah: spec.ayah, wordStart: w, wordEnd: w }))
+}
+
+/** Which color (if any) currently claims `target`, in the same red-first
+ * priority `resolveWordStates` applies. */
+function ownerColor(specsByColor: HighlightSpecsByColor, target: WordRef): HighlightColor | null {
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    if (!specs?.length) continue
+    const hit = specs.some(
+      (spec) =>
+        spec.ayah === target.ayah &&
+        (spec.wordStart == null || (target.word >= spec.wordStart && target.word <= (spec.wordEnd ?? spec.wordStart))),
+    )
+    if (hit) return color
+  }
+  return null
+}
+
+/**
+ * Toggle one word: unclaimed → added to `activeColor`; already claimed by any
+ * color → removed from that color (regardless of `activeColor`), matching
+ * "tap an unmarked word to paint it, tap a marked word to clear it". `words`
+ * is the tapped word's own page's loaded `Word[]` (used only to expand a
+ * whole-ayah spec when removing one word from it).
+ */
+export function toggleWordHighlight(
+  specsByColor: HighlightSpecsByColor,
+  target: WordRef,
+  activeColor: HighlightColor,
+  words: Word[],
+): HighlightSpecsByColor {
+  const owner = ownerColor(specsByColor, target)
+  const result: HighlightSpecsByColor = { ...specsByColor }
+
+  if (owner) {
+    const expanded = (result[owner] ?? []).flatMap((spec) => expandSpec(spec, words))
+    const kept = expanded.filter((spec) => !(spec.ayah === target.ayah && spec.wordStart === target.word))
+    if (kept.length) result[owner] = kept
+    else delete result[owner]
+  } else {
+    result[activeColor] = [...(result[activeColor] ?? []), { ayah: target.ayah, wordStart: target.word, wordEnd: target.word }]
+  }
+  return result
+}
+
+function stringifySpec(spec: HighlightSpec): string {
+  if (spec.wordStart == null) return String(spec.ayah)
+  if (spec.wordStart === spec.wordEnd) return `${spec.ayah}:${spec.wordStart}`
+  return `${spec.ayah}:${spec.wordStart}-${spec.wordEnd}`
+}
+
+/** Serialize parsed specs back into the six query-param values (`undefined`
+ * for a color with nothing to show — merge this into `route.query` and Vue
+ * Router drops the key entirely, rather than writing `?amber=`). */
+export function specsByColorToQuery(
+  specsByColor: HighlightSpecsByColor,
+): Record<HighlightColor, string | undefined> {
+  const query = {} as Record<HighlightColor, string | undefined>
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    query[color] = specs?.length ? specs.map(stringifySpec).join(',') : undefined
+  }
+  return query
 }

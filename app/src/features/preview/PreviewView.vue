@@ -10,8 +10,11 @@ import {
   parsePreviewRange,
   parseHighlightParams,
   resolveWordStates,
+  toggleWordHighlight,
+  specsByColorToQuery,
   type PreviewRouteParams,
   type PreviewHighlightQuery,
+  type HighlightColor,
 } from '@/core/navigation/previewRoute'
 import { usePreviewPages } from '@/composables/usePreviewPages'
 import ReadingSurface from '@/features/reader/ReadingSurface.vue'
@@ -19,6 +22,7 @@ import Skeleton from '@/components/Skeleton.vue'
 import Icon from '@/components/Icon.vue'
 import ShareSheet from '@/components/ShareSheet.vue'
 import PreviewJumpSheet from '@/features/preview/PreviewJumpSheet.vue'
+import PreviewColorBar from '@/features/preview/PreviewColorBar.vue'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -109,6 +113,62 @@ function wordStatesForPage(page: number) {
   return chunk ? resolveWordStates(highlightSpecs.value, chunk.words) : {}
 }
 
+// —— Tap-to-paint editing ————————————————————————————————————————
+// /preview's highlights are pure URL state — there's no store to write to.
+// Tapping a word edits the current route's query params directly (via
+// `toggleWordHighlight`/`specsByColorToQuery`), so the on-screen render, the
+// address bar, and the Share sheet's URL all stay the same single source of
+// truth with zero extra plumbing.
+const activeColor = ref<HighlightColor>('red')
+
+// Every loaded page's words, not just the tapped word's own page — a whole-
+// ayah spec being edited down to one word needs that ayah's *complete* word
+// list to expand correctly, and on the rare page-spanning ayah that list
+// isn't all on one page.
+const allLoadedWords = computed(() => pages.value.flatMap((p) => entry(p)?.chunk?.words ?? []))
+
+function onWordTap(e: PointerEvent) {
+  const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-loc]')
+  const loc = el?.dataset.loc
+  if (!loc) return
+  const [, ayahStr, wordStr] = loc.split(':')
+  const ayah = Number(ayahStr)
+  const word = Number(wordStr)
+  if (!Number.isFinite(ayah) || !Number.isFinite(word)) return
+
+  const next = toggleWordHighlight(highlightSpecs.value, { ayah, word }, activeColor.value, allLoadedWords.value)
+  void router.replace({
+    query: { ...route.query, ...specsByColorToQuery(next), hl: undefined },
+  })
+}
+
+// Same tap-vs-scroll distinction the reader uses: a stationary press is a
+// tap, any movement past the slop — or a scroll the browser takes over
+// (pointercancel) — is not, so scrolling a long multi-page stack never
+// mistakenly paints a word.
+const TAP_SLOP = 10
+let startX = 0
+let startY = 0
+let pointerActive = false
+let pointerMoved = false
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  pointerActive = true
+  pointerMoved = false
+  startX = e.clientX
+  startY = e.clientY
+}
+function onPointerMove(e: PointerEvent) {
+  if (!pointerActive || pointerMoved) return
+  if (Math.abs(e.clientX - startX) > TAP_SLOP || Math.abs(e.clientY - startY) > TAP_SLOP) pointerMoved = true
+}
+function onPointerUp(e: PointerEvent, canceled = false) {
+  if (!pointerActive) return
+  pointerActive = false
+  if (!canceled && !pointerMoved) onWordTap(e)
+}
+
 // Cross-instance font-scale coordination (task 9): each mounted surface
 // reports the factor *it* measured; the shared minimum is fed back to all of
 // them so a multi-page stack reads at one consistent size instead of each
@@ -141,6 +201,8 @@ watch(range, () => fitFactors.clear())
         <Icon :icon="ChevronDown" :size="16" class="preview-title-chevron" />
       </button>
 
+      <PreviewColorBar v-if="parsed.ok" v-model="activeColor" />
+
       <div class="preview-actions">
         <button type="button" class="icon-btn" :aria-label="t('share.button')" @click="shareOpen = true">
           <Icon :icon="Share2" :size="24" />
@@ -169,7 +231,14 @@ watch(range, () => fitFactors.clear())
     <div v-else-if="resolving && pages.length === 0" class="page-skeleton" role="status" aria-label="Loading">
       <Skeleton v-for="n in 8" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
     </div>
-    <div v-else class="preview-pages">
+    <div
+      v-else
+      class="preview-pages"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp($event)"
+      @pointercancel="onPointerUp($event, true)"
+    >
       <template v-for="(page, i) in pages" :key="page">
         <div v-if="i > 0" class="page-divider" role="separator" :aria-label="t('reader.mushafPageAlt', { page })">
           <span class="page-divider-label">{{ t('reader.mushafPageAlt', { page }) }}</span>
@@ -183,7 +252,6 @@ watch(range, () => fitFactors.clear())
           :word-states="wordStatesForPage(page)"
           :active-verse="i === 0 ? firstVerse : null"
           :auto-scroll="true"
-          :interactive="false"
           :fit-factor="sharedFitFactor"
           @fit="(f: number) => onFit(page, f)"
         />
@@ -219,7 +287,7 @@ watch(range, () => fitFactors.clear())
 .preview-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
   position: sticky;

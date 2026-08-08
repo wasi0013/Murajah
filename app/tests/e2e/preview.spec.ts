@@ -152,15 +152,77 @@ test('an oversized range shows a friendly error and links into the reader', asyn
   await expect(page).toHaveURL(/\/2\/1$/)
 })
 
-test('no shell chrome, and a word tap is inert', async ({ page }) => {
+test('no shell chrome, and a word tap never opens morphology', async ({ page }) => {
   await page.goto('/preview/2/1-5')
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
   await expect(page.locator('.shell-tabbar')).toHaveCount(0)
 
-  const before = await page.locator('[data-loc="2:1:1"]').getAttribute('class')
+  // A tap now paints (see the color-bar suite below) — morphology, the main
+  // reader's *other* tap behavior, is still never wired here.
   await page.locator('[data-loc="2:1:1"]').click()
   await expect(page.getByRole('dialog', { name: 'Word morphology' })).toHaveCount(0)
-  expect(await page.locator('[data-loc="2:1:1"]').getAttribute('class')).toBe(before)
+})
+
+test.describe('color-bar tap-to-paint editor', () => {
+  test('sits compact in the header next to the surah button; red is selected by default', async ({ page }) => {
+    await page.goto('/preview/2/1-5')
+    await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+    const bar = page.getByRole('radiogroup', { name: 'Highlight color' })
+    await expect(bar).toBeVisible()
+    await expect(bar.getByRole('radio')).toHaveCount(6)
+    await expect(bar.getByRole('radio', { name: 'Red' })).toHaveAttribute('aria-checked', 'true')
+
+    // One sticky header row, not a second bar underneath it — the dots live
+    // inside the same row as the surah button, vertically aligned with it.
+    const header = page.locator('.preview-header')
+    await expect(header).toHaveCSS('position', 'sticky')
+    const headerBox = await header.boundingBox()
+    const dotsBox = await bar.boundingBox()
+    expect(Math.abs(dotsBox!.y - headerBox!.y)).toBeLessThan(headerBox!.height)
+  })
+
+  test('tapping an unmarked word paints it with the active color and edits the URL', async ({ page }) => {
+    await page.goto('/preview/2/1-5')
+    await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+    // Default (red) tap.
+    await page.locator('[data-loc="2:1:1"]').click()
+    await expect(page.locator('[data-loc="2:1:1"]')).toHaveClass(/state-mistake/)
+    await expect(page).toHaveURL(/red=1%3A1|red=1:1/)
+
+    // Switch color, tap a different word.
+    const bar = page.getByRole('radiogroup', { name: 'Highlight color' })
+    await bar.getByRole('radio', { name: 'Amber' }).click()
+    await page.locator('[data-loc="2:1:2"]').click()
+    await expect(page.locator('[data-loc="2:1:2"]')).toHaveClass(/state-hl-amber/)
+    await expect(page).toHaveURL(/amber=1%3A2|amber=1:2/)
+  })
+
+  test('tapping an already-highlighted word un-marks it, regardless of the active color', async ({ page }) => {
+    await page.goto('/preview/2/1-5?red=1:1')
+    await expect(page.locator('[data-loc="2:1:1"]')).toHaveClass(/state-mistake/)
+
+    const bar = page.getByRole('radiogroup', { name: 'Highlight color' })
+    await bar.getByRole('radio', { name: 'Teal' }).click()
+    await page.locator('[data-loc="2:1:1"]').click()
+
+    await expect(page.locator('[data-loc="2:1:1"]')).not.toHaveClass(/state-mistake|state-hl-/)
+    await expect(page).not.toHaveURL(/red=/)
+    await expect(page).not.toHaveURL(/teal=/) // the tap only un-marked — never painted teal
+  })
+
+  test('an edited URL is what the share sheet copies', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.goto('/preview/2/1-5')
+    await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+    await page.locator('[data-loc="2:1:1"]').click()
+    await page.getByRole('button', { name: 'Share' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Share this link' })
+    const shareUrl = await sheet.locator('.share-url').inputValue()
+    expect(shareUrl).toMatch(/red=1[:%3A]1/)
+  })
 })
 
 test('the header logo links to /download', async ({ page }) => {
