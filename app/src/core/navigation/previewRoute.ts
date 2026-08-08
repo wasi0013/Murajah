@@ -86,3 +86,75 @@ export function parsePreviewRange(params: PreviewRouteParams): PreviewRangeResul
 export function withinPageCap(startPage: number, endPage: number, cap = PAGE_CAP): boolean {
   return endPage - startPage + 1 <= cap
 }
+
+// —— 3a. Highlight query parsing ————————————————————————————————
+
+/**
+ * The six highlighter slots. `red` is the default — it's also what a
+ * colorless `hl=` param aliases into (see {@link parseHighlightParams}) — and
+ * is the only one that reuses an existing visual (ReadingSurface's
+ * `.state-mistake`) rather than getting a new `.state-hl-*` wash.
+ */
+export type HighlightColor = 'red' | 'amber' | 'blue' | 'green' | 'purple' | 'teal'
+
+const HIGHLIGHT_COLORS: HighlightColor[] = ['red', 'amber', 'blue', 'green', 'purple', 'teal']
+
+/** One highlight token, resolved to an ayah + an optional word sub-range within
+ * it. No `wordStart`/`wordEnd` means "the whole ayah" — deliberately left
+ * unresolved to concrete words here; that needs the page's loaded `Word[]`
+ * (see {@link resolveWordStates}), since ayah metadata only has word *counts*
+ * nowhere in this app, let alone per-word text. */
+export interface HighlightSpec {
+  ayah: number
+  wordStart?: number
+  wordEnd?: number
+}
+
+export type HighlightSpecsByColor = Partial<Record<HighlightColor, HighlightSpec[]>>
+
+/** Raw query shape this route reads — every other param is ignored, not an error. */
+export type PreviewHighlightQuery = Partial<Record<HighlightColor | 'hl', string | string[]>>
+
+function toTokenList(v: string | string[] | undefined): string[] {
+  if (v == null) return []
+  const values = Array.isArray(v) ? v : [v]
+  return values
+    .flatMap((s) => s.split(','))
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+// `ayah`, `ayah:word`, or `ayah:word-word` — anything else (letters, a bare
+// colon, an inverted word range, stray punctuation) doesn't match and the
+// token is dropped by the caller, not the whole param.
+const TOKEN_RE = /^(\d+)(?::(\d+)(?:-(\d+))?)?$/
+
+function parseToken(token: string): HighlightSpec | null {
+  const m = TOKEN_RE.exec(token)
+  if (!m) return null
+  const ayah = Number(m[1])
+  if (ayah < 1) return null
+  if (m[2] == null) return { ayah }
+  const wordStart = Number(m[2])
+  if (wordStart < 1) return null
+  const wordEnd = m[3] == null ? wordStart : Number(m[3])
+  if (wordEnd < wordStart) return null
+  return { ayah, wordStart, wordEnd }
+}
+
+/**
+ * Parse the six color query params (plus the colorless `hl=` alias, which
+ * merges into `red`) into per-color highlight specs. Individual malformed
+ * tokens are dropped silently — a typo in one token never blanks the rest of
+ * that param, let alone the page.
+ */
+export function parseHighlightParams(query: PreviewHighlightQuery): HighlightSpecsByColor {
+  const result: HighlightSpecsByColor = {}
+  for (const color of HIGHLIGHT_COLORS) {
+    const tokens = toTokenList(query[color])
+    if (color === 'red') tokens.push(...toTokenList(query.hl))
+    const specs = tokens.map(parseToken).filter((s): s is HighlightSpec => s !== null)
+    if (specs.length) result[color] = specs
+  }
+  return result
+}

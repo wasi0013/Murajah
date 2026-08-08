@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { router } from '@/router'
-import { parsePreviewRange, withinPageCap } from '@/core/navigation/previewRoute'
+import { parsePreviewRange, withinPageCap, parseHighlightParams } from '@/core/navigation/previewRoute'
 
 /**
  * Route-level wiring for `/preview/:surah/:ayah(-:endAyah)?` (task 1 of the
@@ -96,5 +96,48 @@ describe('withinPageCap', () => {
     expect(withinPageCap(1, 11)).toBe(true) // 11 pages
     expect(withinPageCap(1, 12)).toBe(true) // 12 pages — exact boundary
     expect(withinPageCap(1, 13)).toBe(false) // 13 pages
+  })
+})
+
+describe('parseHighlightParams', () => {
+  it('parses word and word-range tokens', () => {
+    expect(parseHighlightParams({ red: '12:1,12:3-5' })).toEqual({
+      red: [
+        { ayah: 12, wordStart: 1, wordEnd: 1 },
+        { ayah: 12, wordStart: 3, wordEnd: 5 },
+      ],
+    })
+  })
+
+  it('a bare ayah token has no word bound', () => {
+    expect(parseHighlightParams({ blue: '20' })).toEqual({ blue: [{ ayah: 20 }] })
+  })
+
+  it('drops malformed tokens individually, keeps valid siblings', () => {
+    expect(parseHighlightParams({ red: 'abc,12:1,12:,12:5-3,,12:3-5' })).toEqual({
+      red: [
+        { ayah: 12, wordStart: 1, wordEnd: 1 },
+        { ayah: 12, wordStart: 3, wordEnd: 5 },
+      ],
+    })
+  })
+
+  it('merges hl= into red rather than overwriting it', () => {
+    expect(parseHighlightParams({ hl: '12:1', red: '12:2' })).toEqual({
+      red: [
+        { ayah: 12, wordStart: 2, wordEnd: 2 },
+        { ayah: 12, wordStart: 1, wordEnd: 1 },
+      ],
+    })
+  })
+
+  it('ignores unknown query params', () => {
+    expect(parseHighlightParams({ amber: '5', foo: 'bar' } as never)).toEqual({
+      amber: [{ ayah: 5 }],
+    })
+  })
+
+  it('returns nothing for an empty query', () => {
+    expect(parseHighlightParams({})).toEqual({})
   })
 })
