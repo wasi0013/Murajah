@@ -44,12 +44,17 @@ void onboarding.hydrate()
  */
 const READER_ROUTE_NAMES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
 // The disabled-reader placeholder has nowhere useful for the tabs to lead.
-const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled'])
-// The install page (/download) is reached from outside links, so a first-time
-// visitor there has no saved prefs and would otherwise trip the non-dismissible
-// language-picker modal (OnboardingModal) right on top of the install buttons.
-// The tab bar stays, though — it's the download page's way back into the app.
-const NO_ONBOARDING_ROUTE_NAMES = new Set(['download'])
+// /preview is a shareable, standalone verse-range link (reached from outside
+// the app, like /download) — its own minimal header is the way back, so the
+// full shell tab bar would just be unused chrome around someone else's link.
+const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview', 'preview-range'])
+// The install page (/download) and the /preview link are both reached from
+// outside links, so a first-time visitor there has no saved prefs and would
+// otherwise trip the non-dismissible language-picker modal (OnboardingModal)
+// right on top of the content they followed the link to see. /download keeps
+// the tab bar (it's the page's way back into the app); /preview has none, by
+// design — see NO_SHELL_ROUTE_NAMES above.
+const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview', 'preview-range'])
 
 const showShellNav = computed(() => !NO_SHELL_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
 const showOnboarding = computed(() => !NO_ONBOARDING_ROUTE_NAMES.has(String(router.currentRoute.value.name)))

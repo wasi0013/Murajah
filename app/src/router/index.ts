@@ -96,6 +96,26 @@ const routes: RouteRecordRaw[] = [
     name: 'download',
     component: () => import('@/features/download/DownloadView.vue'),
   },
+  {
+    // Shareable read-only verse-range preview, always Uthmani tajweed —
+    // /preview/2/12-45 (a range) or /preview/2/255 (a single verse). Highlight
+    // words via query params (see core/navigation/previewRoute.ts). Two routes,
+    // not one `(\d+(-\d+)?)` custom-regex param: vue-router's own path tokenizer
+    // (not path-to-regexp) can't handle a nested group inside a custom param
+    // regex — it closes the param at the *first* `)` it finds, unbalanced, and
+    // throws "Unterminated group" at router creation (confirmed empirically).
+    // `:ayah-:endAyah` (two params sharing one segment, joined by a literal
+    // dash) is a supported shape and sidesteps the parser entirely.
+    path: '/preview/:surah(\\d{1,3})/:ayah(\\d+)-:endAyah(\\d+)',
+    name: 'preview-range',
+    component: () => import('@/features/preview/PreviewView.vue'),
+  },
+  {
+    // The single-verse form of the above (no dash).
+    path: '/preview/:surah(\\d{1,3})/:ayah(\\d+)',
+    name: 'preview',
+    component: () => import('@/features/preview/PreviewView.vue'),
+  },
 
   // —— Friendly reader URLs (Phase 9.1) ————————————————————————————
   // Human-typable entry points, all rendered by the reader. Personal prefs
@@ -134,7 +154,16 @@ export const router = createRouter({
 })
 
 // Gate the reader behind the feature flag; when off, show the disabled placeholder.
-const READER_ROUTES = new Set(['home', 'reader', 'read-page', 'read-surah', 'read-ayah', 'read-slug'])
+const READER_ROUTES = new Set([
+  'home',
+  'reader',
+  'read-page',
+  'read-surah',
+  'read-ayah',
+  'read-slug',
+  'preview',
+  'preview-range',
+])
 router.beforeEach((to) => {
   if (READER_ROUTES.has(String(to.name)) && !readerEnabled()) {
     return { name: 'reader-disabled' }
