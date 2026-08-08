@@ -1,6 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { router } from '@/router'
-import { parsePreviewRange, withinPageCap, parseHighlightParams } from '@/core/navigation/previewRoute'
+import type { Word } from '@/core/data/types'
+import {
+  parsePreviewRange,
+  withinPageCap,
+  parseHighlightParams,
+  resolveWordStates,
+} from '@/core/navigation/previewRoute'
 
 /**
  * Route-level wiring for `/preview/:surah/:ayah(-:endAyah)?` (task 1 of the
@@ -139,5 +145,64 @@ describe('parseHighlightParams', () => {
 
   it('returns nothing for an empty query', () => {
     expect(parseHighlightParams({})).toEqual({})
+  })
+})
+
+describe('resolveWordStates', () => {
+  /** A hand-built fixture — no data-layer dependency, per the plan. */
+  function word(ayah: number, wordIdx: number): Word {
+    return {
+      id: ayah * 100 + wordIdx,
+      surah: '2',
+      ayah: String(ayah),
+      word: String(wordIdx),
+      location: `2:${ayah}:${wordIdx}`,
+      text: `w${ayah}.${wordIdx}`,
+    }
+  }
+  const ayah12 = [1, 2, 3, 4, 5, 6].map((i) => word(12, i)) // a 6-word ayah
+  const ayah20 = [1, 2].map((i) => word(20, i))
+
+  it('surfaces non-overlapping specs from different colors', () => {
+    const states = resolveWordStates(
+      { red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }], blue: [{ ayah: 20 }] },
+      [...ayah12, ...ayah20],
+    )
+    expect(states).toEqual({
+      '2:12:1': 'mistake',
+      '2:20:1': 'hl-blue',
+      '2:20:2': 'hl-blue',
+    })
+  })
+
+  it('a higher-priority color wins an exact overlap', () => {
+    const states = resolveWordStates(
+      {
+        red: [{ ayah: 12, wordStart: 3, wordEnd: 3 }],
+        amber: [{ ayah: 12, wordStart: 3, wordEnd: 3 }],
+      },
+      ayah12,
+    )
+    expect(states['2:12:3']).toBe('mistake')
+  })
+
+  it('mixed-grain overlap: a single word carves a hole out of a whole-ayah color', () => {
+    const states = resolveWordStates(
+      { red: [{ ayah: 12, wordStart: 3, wordEnd: 3 }], blue: [{ ayah: 12 }] },
+      ayah12,
+    )
+    expect(states).toEqual({
+      '2:12:1': 'hl-blue',
+      '2:12:2': 'hl-blue',
+      '2:12:3': 'mistake',
+      '2:12:4': 'hl-blue',
+      '2:12:5': 'hl-blue',
+      '2:12:6': 'hl-blue',
+    })
+  })
+
+  it('a word matching no spec is absent from the map', () => {
+    const states = resolveWordStates({ red: [{ ayah: 12, wordStart: 1, wordEnd: 1 }] }, ayah12)
+    expect(Object.keys(states)).toEqual(['2:12:1'])
   })
 })

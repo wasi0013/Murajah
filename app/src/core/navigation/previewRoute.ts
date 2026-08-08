@@ -1,3 +1,4 @@
+import type { Word } from '@/core/data/types'
 import { ayahCount } from '@/core/quran/surahMeta'
 
 /**
@@ -155,6 +156,55 @@ export function parseHighlightParams(query: PreviewHighlightQuery): HighlightSpe
     if (color === 'red') tokens.push(...toTokenList(query.hl))
     const specs = tokens.map(parseToken).filter((s): s is HighlightSpec => s !== null)
     if (specs.length) result[color] = specs
+  }
+  return result
+}
+
+// —— 3b. Resolving specs against a loaded page ——————————————————————
+
+/** The subset of ReadingSurface's `wordStates` values this route ever produces.
+ * `red` deliberately maps to `'mistake'` — no separate state, it reuses the
+ * existing mistake-mark visual (see ReadingSurface.vue's `.state-mistake`). */
+export type PreviewWordState = 'mistake' | 'hl-amber' | 'hl-blue' | 'hl-green' | 'hl-purple' | 'hl-teal'
+
+const STATE_FOR_COLOR: Record<HighlightColor, PreviewWordState> = {
+  red: 'mistake',
+  amber: 'hl-amber',
+  blue: 'hl-blue',
+  green: 'hl-green',
+  purple: 'hl-purple',
+  teal: 'hl-teal',
+}
+
+/**
+ * Turn parsed highlight specs into a `location → state` map for
+ * ReadingSurface's `word-states` prop, against one page's actually-loaded
+ * `Word[]` (this is the step that resolves a bare "whole ayah" spec to
+ * concrete words). Colors are applied in fixed priority order — `red` first —
+ * and a word already claimed by a higher-priority color is left alone, so a
+ * single-word `red` spec correctly carves a hole out of a whole-ayah `blue`
+ * spec covering the same ayah, rather than one flattening the other.
+ */
+export function resolveWordStates(
+  specsByColor: HighlightSpecsByColor,
+  words: Word[],
+): Record<string, PreviewWordState> {
+  const result: Record<string, PreviewWordState> = {}
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    if (!specs?.length) continue
+    const state = STATE_FOR_COLOR[color]
+    for (const w of words) {
+      if (w.location in result) continue // higher-priority color already claimed it
+      const ayah = Number(w.ayah)
+      const wordIndex = Number(w.word)
+      const matches = specs.some((spec) => {
+        if (spec.ayah !== ayah) return false
+        if (spec.wordStart == null) return true // whole ayah
+        return wordIndex >= spec.wordStart && wordIndex <= (spec.wordEnd ?? spec.wordStart)
+      })
+      if (matches) result[w.location] = state
+    }
   }
   return result
 }
