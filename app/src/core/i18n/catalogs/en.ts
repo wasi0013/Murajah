@@ -507,6 +507,15 @@ const en: Messages = {
     install: 'Install',
     iosInstallHint: 'Tap the Share icon, then “Add to Home Screen”.',
   },
+  preview: {
+    ayah: 'Ayah {surah}:{ayah}',
+    range: 'Ayahs {surah}:{start}–{end}',
+    back: 'Back to reader',
+    invalidSurah: 'That surah doesn’t exist.',
+    invalidRange: 'That verse range isn’t valid.',
+    rangeTooLarge: 'That range spans too many pages to preview here.',
+    openInReader: 'Open in the reader instead',
+  },
 }
 
 export default en

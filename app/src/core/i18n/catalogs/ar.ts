@@ -503,6 +503,15 @@ const ar: Messages = {
     install: 'تثبيت',
     iosInstallHint: 'اضغط على أيقونة المشاركة، ثم «إضافة إلى الشاشة الرئيسية».',
   },
+  preview: {
+    ayah: 'الآية {surah}:{ayah}',
+    range: 'الآيات {surah}:{start}–{end}',
+    back: 'العودة إلى القارئ',
+    invalidSurah: 'هذه السورة غير موجودة.',
+    invalidRange: 'نطاق الآيات هذا غير صالح.',
+    rangeTooLarge: 'هذا النطاق يمتد على صفحات كثيرة جدًا لعرضه هنا.',
+    openInReader: 'افتح في القارئ بدلاً من ذلك',
+  },
 }
 
 export default ar

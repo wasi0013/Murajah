@@ -503,6 +503,15 @@ const bn: Messages = {
     install: 'ইনস্টল করুন',
     iosInstallHint: 'শেয়ার আইকনে ট্যাপ করুন, তারপর "Add to Home Screen" নির্বাচন করুন।',
   },
+  preview: {
+    ayah: 'আয়াত {surah}:{ayah}',
+    range: 'আয়াত {surah}:{start}–{end}',
+    back: 'রিডারে ফিরে যান',
+    invalidSurah: 'এই সূরাটি নেই।',
+    invalidRange: 'আয়াতের এই পরিসর সঠিক নয়।',
+    rangeTooLarge: 'এই পরিসরটি এখানে দেখানোর জন্য অনেক বেশি পৃষ্ঠাব্যাপী।',
+    openInReader: 'পরিবর্তে রিডারে খুলুন',
+  },
 }
 
 export default bn
