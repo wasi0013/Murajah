@@ -192,6 +192,40 @@ test('share sheet: the URL includes the highlight params, and copy works', async
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shareUrl)
 })
 
+test('the jump sheet navigates to a different surah/range and drops stale highlight params', async ({
+  page,
+}) => {
+  await page.goto('/preview/2/12-45?red=12:1')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Choose a different range' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Go to a range' })
+  await expect(sheet).toBeVisible()
+
+  await sheet.getByLabel('Surah').selectOption('1')
+  await sheet.getByLabel('From ayah').selectOption('2')
+  await sheet.getByLabel('To ayah').selectOption('4')
+  await sheet.getByRole('button', { name: 'Go' }).click()
+
+  await expect(page).toHaveURL('/preview/1/2-4')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  // The old range's highlight query is gone — it belonged to different words.
+  await expect(page).not.toHaveURL(/red=/)
+})
+
+test('the jump sheet resets the ayah range when the surah changes', async ({ page }) => {
+  await page.goto('/preview/2/12-45')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Choose a different range' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Go to a range' })
+  const fromSelect = sheet.getByLabel('From ayah')
+  await fromSelect.selectOption('20')
+  await sheet.getByLabel('Surah').selectOption('1') // only 7 ayahs — 20 is no longer valid
+  await expect(fromSelect).toHaveValue('1')
+  await expect(sheet.getByLabel('To ayah')).toHaveValue('1')
+})
+
 // A shared link is the realistic case: no saved prefs, no completed
 // onboarding — a nested describe scopes the unauthenticated storageState to
 // just this test, leaving every test above on the suite's normal (onboarded)

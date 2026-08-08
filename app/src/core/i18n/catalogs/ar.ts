@@ -511,6 +511,12 @@ const ar: Messages = {
     invalidRange: 'نطاق الآيات هذا غير صالح.',
     rangeTooLarge: 'هذا النطاق يمتد على صفحات كثيرة جدًا لعرضه هنا.',
     openInReader: 'افتح في القارئ بدلاً من ذلك',
+    jumpButton: 'اختر نطاقًا مختلفًا',
+    jumpTitle: 'الانتقال إلى نطاق',
+    jumpSurah: 'السورة',
+    jumpFrom: 'من الآية',
+    jumpTo: 'إلى الآية',
+    jumpGo: 'انتقال',
   },
   share: {
     button: 'مشاركة',

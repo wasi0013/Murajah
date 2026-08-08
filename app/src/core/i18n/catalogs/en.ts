@@ -515,6 +515,12 @@ const en: Messages = {
     invalidRange: 'That verse range isn’t valid.',
     rangeTooLarge: 'That range spans too many pages to preview here.',
     openInReader: 'Open in the reader instead',
+    jumpButton: 'Choose a different range',
+    jumpTitle: 'Go to a range',
+    jumpSurah: 'Surah',
+    jumpFrom: 'From ayah',
+    jumpTo: 'To ayah',
+    jumpGo: 'Go',
   },
   share: {
     button: 'Share',

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
-import { ArrowLeft, AlertTriangle, Share2 } from 'lucide-vue-next'
+import { ArrowLeft, AlertTriangle, ChevronDown, Share2 } from 'lucide-vue-next'
 import { getDataClient } from '@/core/data'
 import type { SurahNames } from '@/core/data/types'
 import { readerLink } from '@/core/navigation/readerLinks'
@@ -18,6 +18,7 @@ import ReadingSurface from '@/features/reader/ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import Icon from '@/components/Icon.vue'
 import ShareSheet from '@/components/ShareSheet.vue'
+import PreviewJumpSheet from '@/features/preview/PreviewJumpSheet.vue'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -30,6 +31,7 @@ import { useI18n } from '@/core/i18n'
  */
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const parsed = computed(() => parsePreviewRange(route.params as PreviewRouteParams))
 const range = computed(() => (parsed.value.ok ? parsed.value.value : undefined))
@@ -84,6 +86,20 @@ const { resolving, rangeTooLarge, navError, pages, entry, retry } = usePreviewPa
 
 const firstVerse = computed(() => (range.value ? `${range.value.surah}:${range.value.startAyah}` : null))
 
+// In-page range picker (surah + from/to ayah), so a visitor doesn't have to
+// hand-edit the URL to look at a different passage.
+const jumpOpen = ref(false)
+function onGoTo({ surah, start, end }: { surah: number; start: number; end: number }) {
+  // A fresh range's highlight query params belong to the *old* range's words
+  // — carrying them over would point at the wrong verses, so navigating via
+  // the picker always lands on a clean URL rather than a stale/misleading one.
+  void router.push(
+    end > start
+      ? { name: 'preview-range', params: { surah: String(surah), ayah: String(start), endAyah: String(end) } }
+      : { name: 'preview', params: { surah: String(surah), ayah: String(start) } },
+  )
+}
+
 /** location → highlight state for one loaded page's own words (Task 6). Not
  * memoized — cheap for a ≤12-page, single-surah range, and re-evaluates
  * correctly as each page's chunk streams in since `entry()` reads the
@@ -105,6 +121,10 @@ const sharedFitFactor = computed(() => {
   const values = [...fitFactors.values()]
   return values.length ? Math.min(...values) : undefined
 })
+// The jump picker (or any other route-param change) swaps in a whole new set
+// of page numbers — old entries would otherwise linger forever and drag the
+// shared minimum down using a page that's no longer even on screen.
+watch(range, () => fitFactors.clear())
 </script>
 
 <template>
@@ -113,17 +133,20 @@ const sharedFitFactor = computed(() => {
       <RouterLink :to="fallbackLink" class="back-link" :aria-label="t('preview.back')">
         <Icon :icon="ArrowLeft" :size="20" />
       </RouterLink>
-      <div class="preview-title">
-        <span class="preview-surah">{{ surahName }}</span>
-        <span class="preview-range">{{ rangeLabel }}</span>
-      </div>
+      <button type="button" class="preview-title" :aria-label="t('preview.jumpButton')" @click="jumpOpen = true">
+        <span class="preview-title-text">
+          <span class="preview-surah">{{ surahName }}</span>
+          <span class="preview-range">{{ rangeLabel }}</span>
+        </span>
+        <Icon :icon="ChevronDown" :size="16" class="preview-title-chevron" />
+      </button>
 
       <div class="preview-actions">
         <button type="button" class="icon-btn" :aria-label="t('share.button')" @click="shareOpen = true">
-          <Icon :icon="Share2" :size="20" />
+          <Icon :icon="Share2" :size="24" />
         </button>
         <RouterLink :to="{ name: 'download' }" class="icon-btn logo-link" :aria-label="t('pwa.installTitle')">
-          <img src="/pwa-icon-192.png" alt="" width="20" height="20" class="logo-img" />
+          <img src="/pwa-icon-192.png" alt="" width="28" height="28" class="logo-img" />
         </RouterLink>
       </div>
     </header>
@@ -176,6 +199,14 @@ const sharedFitFactor = computed(() => {
     </div>
 
     <ShareSheet v-model:open="shareOpen" :url="shareUrl" :title="`${surahName} ${rangeLabel}`.trim()" />
+    <PreviewJumpSheet
+      v-model:open="jumpOpen"
+      :surah-names="surahNames"
+      :surah="range?.surah ?? rawSurah"
+      :start="range?.startAyah"
+      :end="range?.endAyah"
+      @go="onGoTo"
+    />
   </main>
 </template>
 
@@ -199,8 +230,8 @@ const sharedFitFactor = computed(() => {
 .back-link {
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--radius-md);
   color: var(--color-text);
   flex: 0 0 auto;
@@ -215,10 +246,31 @@ const sharedFitFactor = computed(() => {
 }
 .preview-title {
   display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-md);
+  text-align: start;
+}
+.preview-title:hover,
+.preview-title:focus-visible {
+  background: var(--color-elevated);
+}
+.preview-title:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.preview-title-text {
+  display: flex;
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
-  flex: 1 1 auto;
+}
+.preview-title-chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
 }
 .preview-surah {
   font-size: var(--text-base);
@@ -233,8 +285,8 @@ const sharedFitFactor = computed(() => {
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--radius-md);
   color: var(--color-text);
   flex: 0 0 auto;

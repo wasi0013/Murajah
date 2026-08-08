@@ -511,6 +511,12 @@ const bn: Messages = {
     invalidRange: 'আয়াতের এই পরিসর সঠিক নয়।',
     rangeTooLarge: 'এই পরিসরটি এখানে দেখানোর জন্য অনেক বেশি পৃষ্ঠাব্যাপী।',
     openInReader: 'পরিবর্তে রিডারে খুলুন',
+    jumpButton: 'ভিন্ন একটি পরিসর বেছে নিন',
+    jumpTitle: 'একটি পরিসরে যান',
+    jumpSurah: 'সূরা',
+    jumpFrom: 'যে আয়াত থেকে',
+    jumpTo: 'যে আয়াত পর্যন্ত',
+    jumpGo: 'যান',
   },
   share: {
     button: 'শেয়ার করুন',
