@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
 import { useMistakesStore } from '@/stores/mistakes'
-import { useMistakeColorsStore } from '@/stores/mistakeColors'
 import { useMistakes } from '@/composables/useMistakes'
-import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { useReaderStore } from '@/stores/reader'
 import { useProgressStore } from '@/stores/progress'
 import {
@@ -12,10 +10,6 @@ import {
   deserializeMistakes,
   loadMistakes,
   saveMistakes,
-  serializeMistakeColors,
-  deserializeMistakeColors,
-  loadMistakeColors,
-  saveMistakeColors,
   _resetUserDataDb,
 } from '@/core/storage/userData'
 import { calculateAllWeaknesses } from '@/core/memorization/weaknessScorer'
@@ -79,7 +73,7 @@ describe('useMistakes marking', () => {
     const reader = useReaderStore()
     reader.goToPage(50)
     const { store, markWord } = useMistakes(reader, mockData({}))
-    await markWord('2:200:3', 1234, 'red')
+    await markWord('2:200:3', 1234)
     expect(store.byPage.get(50)?.has(1234)).toBe(true)
   })
 
@@ -89,7 +83,7 @@ describe('useMistakes marking', () => {
     reader.goToPage(52)
     // Nav says ayah 2:255 lives on QPC page 42.
     const { store, markWord } = useMistakes(reader, mockData({ '2:255': 42 }))
-    await markWord('2:255:1', 5436, 'red')
+    await markWord('2:255:1', 5436)
     expect(store.byPage.get(42)?.has(5436)).toBe(true) // QPC page, not Indopak 52
   })
 
@@ -100,66 +94,10 @@ describe('useMistakes marking', () => {
     progress.bumpStrength(50, 5) // strong page
     const { markWord } = useMistakes(reader, mockData({}))
 
-    await markWord('2:200:3', 1234, 'red') // mark → strength -1
+    await markWord('2:200:3', 1234) // mark → strength -1
     expect(progress.strengthOf(50)).toBe(4)
-    await markWord('2:200:3', 1234, 'red') // un-mark → NO restore
+    await markWord('2:200:3', 1234) // un-mark → NO restore
     expect(progress.strengthOf(50)).toBe(4)
-  })
-})
-
-describe('useMistakes color layer (mistakeColors.ts)', () => {
-  it('paints a newly-marked word with the given color, and clears it on un-mark', async () => {
-    const reader = useReaderStore()
-    reader.goToPage(50)
-    const colors = useMistakeColorsStore()
-    const { markWord } = useMistakes(reader, mockData({}))
-
-    await markWord('2:200:3', 1234, 'amber')
-    expect(colors.byWord.get(1234)).toBe('amber')
-
-    await markWord('2:200:3', 1234, 'teal') // already marked — un-marks, ignoring 'teal'
-    expect(colors.byWord.has(1234)).toBe(false)
-  })
-
-  it('mistakes.ts membership stays binary regardless of color — weaknessScorer is unaffected', async () => {
-    const reader = useReaderStore()
-    reader.goToPage(50)
-    const { store, markWord } = useMistakes(reader, mockData({}))
-
-    await markWord('2:200:1', 1, 'green') // "correct" is still a mark, not a positive signal
-    await markWord('2:200:2', 2, 'red')
-    expect(store.snapshot().get(50)?.size).toBe(2) // plain count — color never enters scoring
-  })
-})
-
-describe('userData mistake-color persistence', () => {
-  it('serialize/deserialize round-trips word id → color', () => {
-    const map = new Map<number, 'red' | 'amber'>([
-      [1, 'red'],
-      [2, 'amber'],
-    ])
-    const stored = serializeMistakeColors(map)
-    expect(stored).toEqual({ '1': 'red', '2': 'amber' })
-    expect(deserializeMistakeColors(stored)).toEqual(map)
-  })
-
-  it('persists to IndexedDB and reloads', async () => {
-    await saveMistakeColors(new Map([[10, 'blue']]))
-    const reloaded = await loadMistakeColors()
-    expect(reloaded.get(10)).toBe('blue')
-  })
-
-  it('useMistakesPersistence hydrates and saves colors alongside marks', async () => {
-    await saveMistakes(new Map([[4, new Set([99])]]))
-    await saveMistakeColors(new Map([[99, 'purple']]))
-
-    const store = useMistakesStore()
-    const colors = useMistakeColorsStore()
-    const { hydrate } = useMistakesPersistence(store, colors)
-    await hydrate()
-
-    expect(store.mistakeIds.has(99)).toBe(true)
-    expect(colors.byWord.get(99)).toBe('purple')
   })
 })
 

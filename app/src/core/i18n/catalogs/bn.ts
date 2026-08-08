@@ -381,15 +381,6 @@ const bn: Messages = {
     tapMode: 'ট্যাপ মোড',
     read: 'পড়া',
     mark: 'চিহ্ন',
-    markColorGroup: 'চিহ্নের রং',
-    color: {
-      red: 'লাল',
-      amber: 'অ্যাম্বার',
-      blue: 'নীল',
-      green: 'সবুজ',
-      purple: 'বেগুনি',
-      teal: 'টিল',
-    },
   },
   listen: {
     title: 'শুনুন',

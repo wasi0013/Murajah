@@ -21,7 +21,6 @@ import { useVerseStudy } from '@/composables/useVerseStudy'
 import { useQuickJump } from '@/composables/useQuickJump'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
-import MistakeColorBar from './MistakeColorBar.vue'
 import RecordCountdown from './RecordCountdown.vue'
 import Slider from '@/components/Slider.vue'
 import Icon from '@/components/Icon.vue'
@@ -233,12 +232,6 @@ watch(
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
     </header>
-
-    <MistakeColorBar
-      v-if="reader.mode === 'mark-mistake' && !reader.tafsir"
-      :model-value="reader.markColor"
-      @update:model-value="reader.setMarkColor($event)"
-    />
 
     <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
          it off brings the normal layout (and its options) back. -->

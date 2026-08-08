@@ -27,11 +27,6 @@ const props = defineProps<{
   >
   /** word ids currently marked as mistakes (global, layout-independent). */
   mistakeIds?: Set<number>
-  /** word id → which of the 6 states to paint a mistake-marked word with (the
-   * reader's color-palette feature). A word in `mistakeIds` but absent here
-   * renders as plain `state-mistake` (red) — every existing caller that only
-   * ever passed `mistakeIds` is unaffected. */
-  mistakeColors?: Map<number, 'mistake' | 'hl-amber' | 'hl-blue' | 'hl-green' | 'hl-purple' | 'hl-teal'>
   /** Word-by-word: show a per-word gloss beneath each word. */
   wbw?: boolean
   /** location → gloss text (for the active WBW language). */
@@ -248,7 +243,7 @@ watch(
           :key="w.id"
           class="word"
           :class="[
-            mistakeIds?.has(w.id) ? `state-${mistakeColors?.get(w.id) ?? 'mistake'}` : '',
+            mistakeIds?.has(w.id) ? 'state-mistake' : '',
             wordStates?.[w.location] ? `state-${wordStates[w.location]}` : '',
             { wbw, 'state-playing': activeVerse && `${w.surah}:${w.ayah}` === activeVerse },
           ]"

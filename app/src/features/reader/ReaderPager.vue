@@ -5,11 +5,9 @@ import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { useMorphology } from '@/composables/useMorphology'
 import { useMistakes } from '@/composables/useMistakes'
-import { useMistakeColorsStore } from '@/stores/mistakeColors'
 import { useAudioStore } from '@/stores/audio'
 import { getDataClient } from '@/core/data'
 import { mushafLink } from '@/core/navigation/readerLinks'
-import { stateForColor } from '@/core/navigation/previewRoute'
 import type { SurahNames } from '@/core/data/types'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
@@ -54,17 +52,6 @@ const wordStates = computed<Record<string, 'morphology'>>(() =>
 const mistakes = useMistakes(reader)
 onMounted(() => void mistakes.hydrate())
 onBeforeUnmount(() => mistakes.dispose())
-
-// word id → the ReadingSurface state its stored color paints (see
-// stores/mistakeColors.ts + MistakeColorBar.vue). A word with no entry here
-// (marked before this feature existed, or persisted from a legacy backup)
-// still renders — ReadingSurface falls back to plain red for it.
-const mistakeColorsStore = useMistakeColorsStore()
-const mistakeStates = computed(() => {
-  const map = new Map<number, 'mistake' | 'hl-amber' | 'hl-blue' | 'hl-green' | 'hl-purple' | 'hl-teal'>()
-  for (const [id, color] of mistakeColorsStore.byWord) map.set(id, stateForColor(color))
-  return map
-})
 
 // The verse to highlight/scroll: the recited ayah (verse grain) when audio is
 // playing, otherwise a deep-linked ayah (/2/255 → reader.focusVerse, Phase 9.1).
@@ -132,7 +119,7 @@ function handleTap(e: PointerEvent) {
   if (!el || !loc) return
   if (reader.mode === 'mark-mistake') {
     const id = Number(el.dataset.id)
-    if (Number.isFinite(id)) void mistakes.markWord(loc, id, reader.markColor)
+    if (Number.isFinite(id)) void mistakes.markWord(loc, id)
   } else {
     void openMorphology(loc, el)
   }
@@ -162,7 +149,6 @@ function handleTap(e: PointerEvent) {
       :wbw-lang="reader.wbwLang"
       :word-states="wordStates"
       :mistake-ids="mistakes.store.mistakeIds"
-      :mistake-colors="mistakeStates"
       :active-verse="activeVerseKey"
       :auto-scroll="surfaceAutoScroll"
     />

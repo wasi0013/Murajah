@@ -1,13 +1,11 @@
 import { watch } from 'vue'
 import type { useReaderStore } from '@/stores/reader'
 import { useMistakesStore } from '@/stores/mistakes'
-import { useMistakeColorsStore } from '@/stores/mistakeColors'
 import { useProgressStore } from '@/stores/progress'
 import type { DataClient } from '@/core/data'
 import type { NavIndex } from '@/core/data/types'
-import type { HighlightColor } from '@/core/navigation/previewRoute'
 import { getDataClient } from '@/core/data'
-import { loadMistakes, saveMistakes, loadMistakeColors, saveMistakeColors } from '@/core/storage/userData'
+import { loadMistakes, saveMistakes } from '@/core/storage/userData'
 
 /**
  * Binds the mistakes store to the reader and to persistence. Marking always
@@ -21,7 +19,6 @@ export function useMistakes(
   data: DataClient = getDataClient(),
 ) {
   const store = useMistakesStore()
-  const colors = useMistakeColorsStore()
   const progress = useProgressStore()
   let qpcNav: NavIndex | undefined
 
@@ -39,34 +36,23 @@ export function useMistakes(
   }
 
   /**
-   * Toggle the tapped word's mistake mark (resolving its QPC page), painting it
-   * with `color` (the reader's currently active palette swatch — see
-   * MistakeColorBar.vue) when the tap newly marks it. An already-marked word
-   * (any color) just un-marks — the color that was there is dropped, not
-   * reused. Marking a new mistake also drops that page's memorization strength
-   * by 1 (Phase 4.1.4); un-marking never restores it (strength only rises via a
-   * clean recitation) — unchanged by which color a mark carries.
+   * Toggle the tapped word's mistake mark (resolving its QPC page). Marking a new
+   * mistake also drops that page's memorization strength by 1 (Phase 4.1.4);
+   * un-marking never restores it (strength only rises via a clean recitation).
    */
-  async function markWord(location: string, wordId: number, color: HighlightColor): Promise<void> {
+  async function markWord(location: string, wordId: number): Promise<void> {
     const qpcPage =
       reader.layout === 'qpc' ? reader.page : ((await qpcPageFor(location)) ?? reader.page)
     const marked = store.toggle(qpcPage, wordId)
-    if (marked) {
-      colors.set(wordId, color)
-      progress.penalizeMistake(qpcPage)
-    } else {
-      colors.clear(wordId)
-    }
+    if (marked) progress.penalizeMistake(qpcPage)
   }
 
   async function hydrate(): Promise<void> {
-    const [map, colorMap] = await Promise.all([loadMistakes(), loadMistakeColors()])
+    const map = await loadMistakes()
     if (map.size) store.setAll(map)
-    if (colorMap.size) colors.setAll(colorMap)
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined
-  let colorTimer: ReturnType<typeof setTimeout> | undefined
   const stop = watch(
     () => store.snapshot(),
     (snap) => {
@@ -74,19 +60,10 @@ export function useMistakes(
       timer = setTimeout(() => void saveMistakes(snap), 300)
     },
   )
-  const stopColors = watch(
-    () => colors.snapshot(),
-    (snap) => {
-      clearTimeout(colorTimer)
-      colorTimer = setTimeout(() => void saveMistakeColors(snap), 300)
-    },
-  )
 
   function dispose(): void {
     clearTimeout(timer)
-    clearTimeout(colorTimer)
     stop()
-    stopColors()
   }
 
   return { store, markWord, hydrate, dispose }
