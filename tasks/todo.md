@@ -15,9 +15,9 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 1: Route registration, shell-chrome guards, and a stub view
-- [ ] Register `preview` route (`/preview/:surah(\d{1,3})/:range(\d+(?:-\d+)?)`) in `src/router/index.ts`, add to `READER_ROUTES`.
-- [ ] Add `'preview'` to `App.vue`'s `NO_SHELL_ROUTE_NAMES` and `NO_ONBOARDING_ROUTE_NAMES`.
-- [ ] Stub `src/features/preview/PreviewView.vue` (renders raw route params), code-split like every other route.
+- [x] Register `preview` route (`/preview/:surah(\d{1,3})/:range(\d+(?:-\d+)?)`) in `src/router/index.ts`, add to `READER_ROUTES`.
+- [x] Add `'preview'` to `App.vue`'s `NO_SHELL_ROUTE_NAMES` and `NO_ONBOARDING_ROUTE_NAMES`.
+- [x] Stub `src/features/preview/PreviewView.vue` (renders raw route params), code-split like every other route.
 
 **Acceptance:**
 - `router.resolve('/preview/12/12-45')` → `{ name: 'preview', params: { surah: '12', range: '12-45' } }`; same for bare `12`.
@@ -31,7 +31,7 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 2: Highlight design tokens
-- [ ] Add `--hl-amber/blue/green/purple/teal` to all 4 theme blocks in `src/design/tokens.css` (`:root`/light, `dark`, `sepia`, prefers-color-scheme dark) + `@theme inline` bridge.
+- [x] Add `--hl-amber/blue/green/purple/teal` to all 4 theme blocks in `src/design/tokens.css` (`:root`/light, `dark`, `sepia`, prefers-color-scheme dark) + `@theme inline` bridge.
 
 **Acceptance:**
 - All 5 tokens present in all 4 blocks + bridge (10 insertion points).
@@ -45,9 +45,9 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 3: Widen `ReadingSurface.vue` — highlight states + inert-cursor support
-- [ ] Widen `wordStates` prop union with `'hl-amber'|'hl-blue'|'hl-green'|'hl-purple'|'hl-teal'`.
-- [ ] Add matching `.state-hl-*` CSS on `.word` (not `.arabic`), modeled on `.state-morphology`.
-- [ ] Add `interactive?: boolean` prop (default `true`); `false` drops the `.word` pointer cursor.
+- [x] Widen `wordStates` prop union with `'hl-amber'|'hl-blue'|'hl-green'|'hl-purple'|'hl-teal'`.
+- [x] Add matching `.state-hl-*` CSS on `.word` (not `.arabic`), modeled on `.state-morphology`.
+- [x] Add `interactive?: boolean` prop (default `true`); `false` drops the `.word` pointer cursor.
 
 **Acceptance:**
 - Type includes all 6 states (`mistake` reused for red/default).
@@ -62,8 +62,8 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 4: `previewRoute.ts` — surah/range parsing & validation
-- [ ] Pure function: `{surah, range}` params → `{surah, startAyah, endAyah}` or a typed error (`'surah'|'range'`), validated against `ayahCount()` from `core/quran/surahMeta.ts`.
-- [ ] Separate pure page-cap function: `(startPage, endPage) => boolean`, cap 12.
+- [x] Pure function: `{surah, range}` params → `{surah, startAyah, endAyah}` or a typed error (`'surah'|'range'`), validated against `ayahCount()` from `core/quran/surahMeta.ts`.
+- [x] Separate pure page-cap function: `(startPage, endPage) => boolean`, cap 12.
 
 **Acceptance:**
 - Valid `12` and `12-45` parse correctly; inverted `45-12` rejected.
@@ -78,9 +78,9 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 5: `previewRoute.ts` — highlight token parsing
-- [ ] Pure function: six color query params → per-color `{ayah, wordStart?, wordEnd?}[]` specs.
-- [ ] Tokens: `ayah`, `ayah:word`, `ayah:word-word`, comma-separated. `hl=` merges into `red` (both may coexist).
-- [ ] Malformed tokens dropped individually, siblings survive.
+- [x] Pure function: six color query params → per-color `{ayah, wordStart?, wordEnd?}[]` specs.
+- [x] Tokens: `ayah`, `ayah:word`, `ayah:word-word`, comma-separated. `hl=` merges into `red` (both may coexist).
+- [x] Malformed tokens dropped individually, siblings survive.
 
 **Acceptance:**
 - `red=12:1,12:3-5` → two specs as expected.
@@ -96,7 +96,7 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 6: `previewRoute.ts` — `resolveWordStates` priority resolution
-- [ ] `resolveWordStates(specsByColor, words: Word[]) → Record<location, WordState>`, fixed priority `red > amber > blue > green > purple > teal`.
+- [x] `resolveWordStates(specsByColor, words: Word[]) → Record<location, WordState>`, fixed priority `red > amber > blue > green > purple > teal`.
 
 **Acceptance:**
 - Non-overlapping specs both surface correctly.
@@ -111,7 +111,7 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 7: i18n strings
-- [ ] Add `preview.*` keys to `en`/`ar`/`bn` catalogs: title/range label, invalid-surah, invalid-range, range-too-large, open-in-reader link text, back label.
+- [x] Add `preview.*` keys to `en`/`ar`/`bn` catalogs: title/range label, invalid-surah, invalid-range, range-too-large, open-in-reader link text, back label.
 
 **Acceptance:**
 - Identical key set across all three catalogs.
@@ -124,9 +124,9 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 8: `usePreviewPages.ts` composable
-- [ ] Given `{surah, startAyah, endAyah}`: resolve pages via `getNavIndex('qpc').ayahToPage`, apply Task 4's page-cap check (no fetch if over cap), load each page via `data.getPage('qpc', p)` + `fonts.ensure({layout:'qpc', page:p, tajweed:true})`.
-- [ ] Reactive per-page `{status:'loading'|'ready'|'error', chunk, family}` (mirrors `useReaderPages`'s `PageEntry`), plus `retry(page)`.
-- [ ] Injectable `data`/`fonts`, default real singletons. **Never** reads `useReaderStore`. **No** dedicated `FontLoader` instance — reuse `getFontLoader()`.
+- [x] Given `{surah, startAyah, endAyah}`: resolve pages via `getNavIndex('qpc').ayahToPage`, apply Task 4's page-cap check (no fetch if over cap), load each page via `data.getPage('qpc', p)` + `fonts.ensure({layout:'qpc', page:p, tajweed:true})`.
+- [x] Reactive per-page `{status:'loading'|'ready'|'error', chunk, family}` (mirrors `useReaderPages`'s `PageEntry`), plus `retry(page)`.
+- [x] Injectable `data`/`fonts`, default real singletons. **Never** reads `useReaderStore`. **No** dedicated `FontLoader` instance — reuse `getFontLoader()`.
 
 **Acceptance:**
 - >12 pages → error state, zero `getPage`/`fonts.ensure` calls (assert via spy call count).
@@ -142,9 +142,9 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 9: `ReadingSurface.vue` cross-instance `fitFactor` coordination
-- [ ] Add optional `fitFactor?: number` prop — when present, `fitLines()` applies it instead of the locally measured factor (still clamped to `[0.35, 1.6]`).
-- [ ] `emit('fit', measuredFactor)` — always the measured value, never the applied one, on every `fitLines()` run (mount + ResizeObserver refit).
-- [ ] No prop/listener → behavior identical to today.
+- [x] Add optional `fitFactor?: number` prop — when present, `fitLines()` applies it instead of the locally measured factor (still clamped to `[0.35, 1.6]`).
+- [x] `emit('fit', measuredFactor)` — always the measured value, never the applied one, on every `fitLines()` run (mount + ResizeObserver refit).
+- [x] No prop/listener → behavior identical to today.
 
 **Acceptance:**
 - `reader-tajweed.spec.ts` passes unmodified (the actual regression proof).
@@ -157,11 +157,11 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 10: `PreviewView.vue` — chrome, route wire-up, error states
-- [ ] Parse route via Task 4/5 functions.
-- [ ] Surah name via `getDataClient().getSurahNames()` (pattern: `useReaderLocation.ts`).
-- [ ] Slim header: surah name + range label + back control → `readerLink({surah, ayah: startAyah})`.
-- [ ] Three error states (invalid surah, invalid/inverted range, range-too-large), each with an "open in reader" link via `readerLink`. Invalid-surah fallback: `{name: 'home'}` (no valid `readerLink` target exists).
-- [ ] **No** `@/stores/reader` import anywhere in this file.
+- [x] Parse route via Task 4/5 functions.
+- [x] Surah name via `getDataClient().getSurahNames()` (pattern: `useReaderLocation.ts`).
+- [x] Slim header: surah name + range label + back control → `readerLink({surah, ayah: startAyah})`.
+- [x] Three error states (invalid surah, invalid/inverted range, range-too-large), each with an "open in reader" link via `readerLink`. Invalid-surah fallback: `{name: 'home'}` (no valid `readerLink` target exists).
+- [x] **No** `@/stores/reader` import anywhere in this file.
 
 **Acceptance:**
 - `/preview/999/1` → invalid-surah state, no fetch attempted, links to home.
@@ -177,12 +177,12 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 11: `PreviewView.vue` — page stack, highlights, active-verse, inert taps
-- [ ] Use `usePreviewPages` (Task 8); one `ReadingSurface` per page, stacked, divider between pages (omitted if single page).
-- [ ] Wire `fitFactor`/`@fit` (Task 9) across all mounted surfaces.
-- [ ] `word-states` from `resolveWordStates` (Task 6) per page's own `Word[]`.
-- [ ] `active-verse` = `"{surah}:{startAyah}"` on first page only; unset elsewhere.
-- [ ] **Never** pass `mistake-ids`. `interactive={false}` on every surface.
-- [ ] Per-page loading/error UI reuses `ReaderPager.vue`'s `Skeleton`/retry pattern.
+- [x] Use `usePreviewPages` (Task 8); one `ReadingSurface` per page, stacked, divider between pages (omitted if single page).
+- [x] Wire `fitFactor`/`@fit` (Task 9) across all mounted surfaces.
+- [x] `word-states` from `resolveWordStates` (Task 6) per page's own `Word[]`.
+- [x] `active-verse` = `"{surah}:{startAyah}"` on first page only; unset elsewhere.
+- [x] **Never** pass `mistake-ids`. `interactive={false}` on every surface.
+- [x] Per-page loading/error UI reuses `ReaderPager.vue`'s `Skeleton`/retry pattern.
 
 **Acceptance:**
 - Single-page range: no divider. Multi-page: divider between each pair.
@@ -199,7 +199,7 @@ All commands run from `app/`. See `tasks/plan.md` for architecture context.
 ---
 
 ## Task 12: E2E test suite
-- [ ] New `tests/e2e/preview.spec.ts` (style: `tests/e2e/reader-tajweed.spec.ts`).
+- [x] New `tests/e2e/preview.spec.ts` (style: `tests/e2e/reader-tajweed.spec.ts`).
 
 **Cases:**
 - Single-page highlight rendering (`.state-mistake` for red/`hl`, `.state-hl-*` for others) at correct `data-loc`s.

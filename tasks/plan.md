@@ -19,41 +19,41 @@ Full context, the four product decisions this was scoped against, and the code-l
 ## Task List
 
 ### Phase 1: Foundation (parallelizable)
-- [ ] Task 1: Route registration, shell-chrome guards, stub view
-- [ ] Task 2: Highlight design tokens in `tokens.css`
-- [ ] Task 3: Widen `ReadingSurface.vue` (`wordStates` + `.state-hl-*` + `interactive` prop)
-- [ ] Task 4: `previewRoute.ts` — surah/range parsing & validation
-- [ ] Task 5: `previewRoute.ts` — highlight token parsing
-- [ ] Task 6: `previewRoute.ts` — `resolveWordStates` priority resolution
-- [ ] Task 7: i18n strings (en/ar/bn)
+- [x] Task 1: Route registration, shell-chrome guards, stub view
+- [x] Task 2: Highlight design tokens in `tokens.css`
+- [x] Task 3: Widen `ReadingSurface.vue` (`wordStates` + `.state-hl-*` + `interactive` prop)
+- [x] Task 4: `previewRoute.ts` — surah/range parsing & validation
+- [x] Task 5: `previewRoute.ts` — highlight token parsing
+- [x] Task 6: `previewRoute.ts` — `resolveWordStates` priority resolution
+- [x] Task 7: i18n strings (en/ar/bn)
 
 ### Checkpoint: Phase 1
-- [ ] `npm run test:unit` and `npm run build` (in `app/`) green
-- [ ] `/preview/12/1-5` resolves via `router.resolve()` to the stub with correct params; no tab bar / onboarding block on that route
+- [x] `npm run test:unit` and `npm run build` (in `app/`) green
+- [x] `/preview/12/1-5` resolves via `router.resolve()` to the stub with correct params; no tab bar / onboarding block on that route
 
 ### Phase 2: Data loading & the fit fix
-- [ ] Task 8: `usePreviewPages.ts` composable
-- [ ] Task 9: `ReadingSurface.vue` cross-instance `fitFactor` coordination
+- [x] Task 8: `usePreviewPages.ts` composable
+- [x] Task 9: `ReadingSurface.vue` cross-instance `fitFactor` coordination
 
 ### Checkpoint: Phase 2
-- [ ] Composable unit tests green (page-cap short-circuit via call-count spy; independent per-page readiness)
-- [ ] `npx playwright test tests/e2e/reader-tajweed.spec.ts` passes unmodified
+- [x] Composable unit tests green (page-cap short-circuit via call-count spy; independent per-page readiness)
+- [x] `npx playwright test tests/e2e/reader-tajweed.spec.ts` passes unmodified
 
 ### Phase 3: Rendering
-- [ ] Task 10: `PreviewView.vue` — chrome, route wire-up, error states
-- [ ] Task 11: `PreviewView.vue` — page stack, highlights, active-verse, inert taps
+- [x] Task 10: `PreviewView.vue` — chrome, route wire-up, error states
+- [x] Task 11: `PreviewView.vue` — page stack, highlights, active-verse, inert taps
 
 ### Checkpoint: Phase 3
-- [ ] `npm run build` clean
-- [ ] Manual: single-page range, multi-page range, overlapping multi-color query
+- [x] `npm run build` clean
+- [x] Manual: single-page range, multi-page range, overlapping multi-color query
 
 ### Phase 4: Test coverage
-- [ ] Task 12: `tests/e2e/preview.spec.ts`
+- [x] Task 12: `tests/e2e/preview.spec.ts`
 
 ### Checkpoint: Complete
-- [ ] `npm run test` (unit + e2e) green end-to-end
-- [ ] `npm run build` clean
-- [ ] Manual: `/preview/2/255`, `/preview/2/1-5` (multi-page), `/preview/999/1` (invalid surah), `/preview/2/9999` (invalid range), a >12-page range, and an overlapping multi-color highlight query
+- [x] `npm run test` (unit + e2e) green end-to-end
+- [x] `npm run build` clean
+- [x] Manual: `/preview/2/255`, `/preview/2/1-5` (multi-page), `/preview/999/1` (invalid surah), `/preview/2/9999` (invalid range), a >12-page range, and an overlapping multi-color highlight query
 
 ## Risks and Mitigations
 
