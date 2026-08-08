@@ -2,6 +2,16 @@
 
 All commands run from `app/`. See `tasks/plan.md` for architecture context.
 
+> **Deviation found during Task 1**: vue-router's path tokenizer can't parse a
+> nested group inside a custom param regex (`:range(\d+(-\d+)?)` throws
+> "Unterminated group" at router creation — confirmed empirically, exactly the
+> risk the plan flagged). Implemented as **two route records** instead:
+> `preview-range` (`/preview/:surah/:ayah-:endAyah`) and `preview`
+> (`/preview/:surah/:ayah`). Downstream tasks work with resolved
+> `{surah, ayah, endAyah?}` params, not a single `range` string — read
+> `route.params` accordingly; `previewRoute.ts`'s parse function takes
+> `{surah, ayah, endAyah?}`, not `{surah, range}`.
+
 ---
 
 ## Task 1: Route registration, shell-chrome guards, and a stub view
