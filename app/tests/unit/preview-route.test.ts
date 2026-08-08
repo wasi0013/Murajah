@@ -1,5 +1,11 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { router } from '@/router'
+
+// This file navigates the real router, which (via router/index.ts's
+// afterEach) calls into core/analytics.ts — real network code, irrelevant to
+// what these tests check. Mocked the same way use-pwa-update.test.ts mocks
+// it, so route-registration/redirect assertions below stay focused.
+vi.mock('@/core/analytics', () => ({ trackEvent: vi.fn(), trackPageView: vi.fn() }))
 import type { Word } from '@/core/data/types'
 import {
   parsePreviewRange,

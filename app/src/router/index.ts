@@ -1,7 +1,14 @@
-import { createRouter, createWebHistory, type RouteLocationNormalized, type RouteRecordRaw } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+  START_LOCATION,
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+} from 'vue-router'
 import { readerEnabled } from '@/core/flags'
 import { toast } from '@/composables/useToast'
 import { t } from '@/core/i18n'
+import { trackEvent, trackPageView } from '@/core/analytics'
 
 // Routes are lazy-loaded (code-split) so each feature ships its own chunk
 // and never bloats the initial reader bundle. See plans/redesign-2026.md §3.
@@ -181,6 +188,53 @@ router.beforeEach((to) => {
   if (to.name === 'reader-disabled' && readerEnabled()) {
     return { name: 'home' }
   }
+})
+
+// Route names that are the *same* logical page for analytics even though
+// several distinct routes render them (e.g. /preview, /preview/2/255 and
+// /preview/2/12-45 are all "the preview page"). Keyed by name rather than
+// path so a future URL rename can't silently stop counting these — /download
+// and /preview are the two must-have signals (share links and the install
+// funnel land directly on them, often before anything else in the app has
+// run), everything else still gets the generic page_view below either way.
+const KEY_PAGES: Record<string, string> = {
+  download: 'download',
+  'preview-landing': 'preview',
+  preview: 'preview',
+  'preview-range': 'preview',
+}
+
+// Fires on every completed navigation, including the app's very first one on
+// boot (a hard-loaded /preview or /download share link is exactly that) —
+// this is the sole source of pageview data now that GA's own automatic
+// pageview is disabled (see core/analytics.ts). Deliberately its own
+// `afterEach`, independent of the reload-guard one below and of PWA/SW state
+// entirely, so neither can take analytics down with it.
+//
+// Tracks `to.path` (never `.fullPath`/query) and skips when only the query
+// changed — /preview's tap-to-paint color editor rewrites the query on every
+// single word tap (see PreviewView.vue's `router.replace`), which would
+// otherwise inflate "preview" pageviews into dozens per real visit and
+// fragment the Pages report into one row per highlight combination. `from`
+// is `START_LOCATION` (not a real route) only on the very first navigation,
+// which must always be tracked even though its path incidentally matches —
+// a fresh visit to `/` must not be skipped for "looking like" the synthetic
+// start location's own path.
+//
+// vue-router matches a trailing slash the same as without one (confirmed in
+// preview-route.test.ts) but does NOT normalize it out of `.path` — left
+// as-is, a `/download/` link would both dodge the dedupe check above and
+// count as a distinct page from `/download` in reports. Strip it once here.
+function trackedPath(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+router.afterEach((to, from) => {
+  const toPath = trackedPath(to.path)
+  if (from !== START_LOCATION && toPath === trackedPath(from.path)) return
+  trackPageView(toPath)
+  const keyPage = KEY_PAGES[String(to.name)]
+  if (keyPage) trackEvent('key_page_view', { page: keyPage })
 })
 
 // Every route is a lazy chunk, so a navigation can fail if its chunk doesn't
