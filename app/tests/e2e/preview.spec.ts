@@ -84,6 +84,31 @@ test('the first verse gets the focus wash and is scrolled into view', async ({ p
   await expect(firstVerse).toBeInViewport()
 })
 
+test('the scroll to the first verse is unaffected by a slower later page', async ({ page }) => {
+  // Pages load independently and in parallel (usePreviewPages), and the range's
+  // first verse is always on the first (topmost) page in the stack. A slower
+  // page further down staying a skeleton longer can never shift anything
+  // above it (ordinary block layout), so the first page's own scroll-into-view
+  // — fired as soon as *it* is ready, the same mechanism a surah/juz jump uses
+  // — settles correctly regardless of how long a later page takes. Delaying
+  // page 4's fetch is the regression guard for that invariant.
+  await page.route(/\/pages\/4\.json/, async (route) => {
+    await new Promise((r) => setTimeout(r, 800))
+    await route.continue()
+  })
+  await page.goto('/preview/2/1-17') // pages 2-4
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  // Still mid-flight: the slow page's skeleton is up right now — the checks
+  // below happen while that's true, not after everything has settled.
+  await expect(page.locator('.page-skeleton')).toHaveCount(1)
+
+  const firstVerse = page.locator('[data-verse="2:1"]').first()
+  await expect(firstVerse).toHaveClass(/state-playing/)
+  await expect(firstVerse).toBeInViewport()
+
+  await expect.poll(() => page.locator('.surface').count(), { timeout: 15_000 }).toBe(3)
+})
+
 test('a requested highlight\'s underline is still visible on the "first verse"', async ({ page }) => {
   // 2:12 is the range's first verse (gets state-playing, a background wash);
   // a highlight there is a colour + wavy underline (same channel as
