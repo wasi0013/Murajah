@@ -13,6 +13,7 @@ import {
   Store,
 } from 'lucide-vue-next'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
+import { trackEvent } from '@/core/analytics'
 import Icon from '@/components/Icon.vue'
 import LazyLoopVideo from '@/components/LazyLoopVideo.vue'
 
@@ -95,7 +96,16 @@ const steps = [
   },
 ]
 
+// Both CTAs are outbound (Play Store) or an in-page scroll (iOS has no store
+// listing — see the component docstring), so this is the only signal we ever
+// get for "someone acted on the install funnel"; the /download page_view
+// alone can't distinguish a bounce from an actual install attempt.
+function trackInstallClick(platform: 'android' | 'ios'): void {
+  trackEvent('install_cta_click', { platform })
+}
+
 function scrollToIos() {
+  trackInstallClick('ios')
   instructionsEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
@@ -115,7 +125,13 @@ function scrollToIos() {
       <p class="tagline">Your daily companion for Qur'an memorization &amp; revision.</p>
 
       <div class="cta-row">
-        <a class="cta cta-android" :href="PLAY_STORE_URL" target="_blank" rel="noopener noreferrer">
+        <a
+          class="cta cta-android"
+          :href="PLAY_STORE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="trackInstallClick('android')"
+        >
           <Icon :icon="Store" :size="20" />
           <span>Install for Android</span>
         </a>
@@ -173,6 +189,7 @@ function scrollToIos() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Get it on Google Play"
+          @click="trackInstallClick('android')"
         >
           <img src="/badges/google-play-badge.png" alt="Get it on Google Play" class="badge-img" />
         </a>
