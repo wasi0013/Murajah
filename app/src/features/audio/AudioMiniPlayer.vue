@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   ChevronDown,
   ChevronUp,
@@ -98,10 +98,33 @@ function fmt(s: number) {
   const sec = Math.floor(s % 60)
   return `${m}:${String(sec).padStart(2, '0')}`
 }
+
+// Publish the player's actual rendered height as a CSS custom property so any
+// view can reserve exactly enough space to keep its content clear of this
+// fixed-position dock — e.g. the mushaf's page image (MushafView.vue), which
+// would otherwise size itself against the raw viewport and let this cover its
+// bottom. Written to `documentElement` (not a local ref) since the dock
+// itself is fixed/global, not scoped to whichever view happens to render it.
+// Tracks the tray expanding/collapsing and safe-area changes for free; reset
+// on unmount so a closed player never leaves stale reserved space behind.
+const rootEl = ref<HTMLElement>()
+let ro: ResizeObserver | undefined
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined' || !rootEl.value) return
+  ro = new ResizeObserver(([entry]) => {
+    const h = entry?.borderBoxSize?.[0]?.blockSize ?? entry?.contentRect.height
+    if (h) document.documentElement.style.setProperty('--audio-player-h', `${h}px`)
+  })
+  ro.observe(rootEl.value)
+})
+onBeforeUnmount(() => {
+  ro?.disconnect()
+  document.documentElement.style.removeProperty('--audio-player-h')
+})
 </script>
 
 <template>
-  <section class="player" :class="{ expanded: trayOpen }" :aria-label="t('audio.player')">
+  <section ref="rootEl" class="player" :class="{ expanded: trayOpen }" :aria-label="t('audio.player')">
     <div class="top">
       <div class="meta">
         <span class="now">{{ nowLabel }}</span>

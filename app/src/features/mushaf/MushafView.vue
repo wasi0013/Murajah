@@ -356,7 +356,7 @@ function backToReader() {
       <div
         v-else
         class="spread"
-        :class="{ 'is-spread': store.visible.length === 2 }"
+        :class="{ 'is-spread': store.visible.length === 2, 'player-open': audio.open }"
         :style="zoom.transformStyle.value"
       >
         <div
@@ -570,6 +570,17 @@ function backToReader() {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-surface);
+}
+/* Desktop spread only (mobile pages live in .vslot .spread, not here — the
+   vertical pager has its own scroll and isn't covered edge-to-edge the same
+   way). The mini-player (AudioMiniPlayer.vue) is `position: fixed; bottom: 0`
+   and floats above this view's flow, so without this the page image sizes
+   itself against the raw viewport and the player hides its bottom rows.
+   `--audio-player-h` is the player's own measured height (ResizeObserver,
+   tracks the advanced tray expanding/collapsing); the fallback covers the
+   first frame before that measurement lands. */
+.spread.player-open .page-box {
+  max-height: calc(100dvh - 5rem - var(--audio-player-h, 10rem));
 }
 .page-img {
   display: block;
