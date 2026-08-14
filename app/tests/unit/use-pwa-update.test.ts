@@ -16,8 +16,6 @@ vi.mock('@/core/pwa/registerServiceWorker', () => ({
   }),
 }))
 
-vi.mock('@/core/analytics', () => ({ trackEvent: vi.fn() }))
-
 describe('usePwaUpdate', () => {
   beforeEach(() => {
     checkForUpdate.mockClear()

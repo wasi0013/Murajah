@@ -1,5 +1,4 @@
 import { registerServiceWorker, type PwaController } from '@/core/pwa/registerServiceWorker'
-import { trackEvent } from '@/core/analytics'
 import { toast } from '@/composables/useToast'
 import { t } from '@/core/i18n'
 
@@ -61,7 +60,6 @@ export function usePwaUpdate() {
     })
 
     if (controller) {
-      trackEvent('pwa_boot', { migrated: controller.isFirstHandoff })
       document.addEventListener('visibilitychange', throttledCheck)
       window.addEventListener('focus', throttledCheck)
     }
