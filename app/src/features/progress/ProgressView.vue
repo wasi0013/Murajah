@@ -10,6 +10,7 @@ import { usePlanStore } from '@/stores/plan'
 import { TOTAL_PAGES } from '@/stores/progress'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { estimateCompletion } from '@/core/memorization/completion'
+import { formatReadingTime } from '@/core/memorization/progressView'
 import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -99,6 +100,8 @@ function bulkMark(on: boolean) {
 const pickOpen = ref(false)
 
 const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US'))
+const readingTimeFmt = computed(() => formatReadingTime(stats.value.readingSeconds))
+const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningSeconds))
 </script>
 
 <template>
@@ -123,6 +126,14 @@ const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US
       <div class="stat">
         <span class="stat-n">{{ hasanahFmt }}</span>
         <span class="stat-l">{{ t('progress.stats.hasanah') }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n">{{ readingTimeFmt }}</span>
+        <span class="stat-l">{{ t('progress.stats.readingTime') }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n">{{ listeningTimeFmt }}</span>
+        <span class="stat-l">{{ t('progress.stats.listeningTime') }}</span>
       </div>
       <div class="stat">
         <span class="stat-n">{{ stats.mistakePages }}</span>

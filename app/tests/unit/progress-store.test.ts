@@ -196,6 +196,8 @@ describe('progress persistence', () => {
       memorized: [1, 2, 3],
       perfectRevisions: { '3': 4 },
       hasanah: 12345,
+      readingSeconds: 0,
+      listeningSeconds: 0,
       reviewData: { '3': schedule3 },
     })
     const back = deserializeProgress(stored)

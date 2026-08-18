@@ -250,6 +250,8 @@ const bn: Messages = {
     stats: {
       pagesPercent: 'পৃষ্ঠা · {percent}%',
       hasanah: 'নেকি',
+      readingTime: 'পাঠের সময়',
+      listeningTime: 'শোনার সময়',
       mistakePages: 'ভুলসহ পৃষ্ঠা',
       avgStrength: 'গড় শক্তি',
     },

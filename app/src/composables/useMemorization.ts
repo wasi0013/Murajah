@@ -39,6 +39,8 @@ export function useMemorization(data: DataClient = getDataClient()) {
       strength: progress.strength,
       mistakes: mistakes.byPage,
       hasanah: progress.hasanah,
+      readingSeconds: progress.readingSeconds,
+      listeningSeconds: progress.listeningSeconds,
       totalPages: TOTAL_PAGES,
     }),
   )

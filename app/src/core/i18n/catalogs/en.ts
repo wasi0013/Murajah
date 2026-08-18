@@ -253,6 +253,8 @@ const en: Messages = {
     stats: {
       pagesPercent: 'Pages · {percent}%',
       hasanah: 'Hasanah',
+      readingTime: 'Reading time',
+      listeningTime: 'Listening time',
       mistakePages: 'Pages with mistakes',
       avgStrength: 'Avg. strength',
     },

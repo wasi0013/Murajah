@@ -250,6 +250,8 @@ const ar: Messages = {
     stats: {
       pagesPercent: 'صفحات · {percent}٪',
       hasanah: 'حسنات',
+      readingTime: 'وقت القراءة',
+      listeningTime: 'وقت الاستماع',
       mistakePages: 'صفحات بها أخطاء',
       avgStrength: 'متوسط القوة',
     },

@@ -43,6 +43,8 @@ export const useProgressStore = defineStore('progress', () => {
   const memorized = reactive(new Set<number>())
   const strength = reactive(new Map<number, number>())
   const hasanah = ref(0)
+  const readingSeconds = ref(0)
+  const listeningSeconds = ref(0)
   const reviewData = reactive(new Map<number, ReviewSchedule>())
 
   const memorizedCount = computed(() => memorized.size)
@@ -76,6 +78,16 @@ export const useProgressStore = defineStore('progress', () => {
   /** Add to the cumulative hasanah total (positive only — hasanah never drops). */
   function awardHasanah(amount: number): void {
     if (amount > 0) hasanah.value += amount
+  }
+
+  /** Accumulate active reading time (positive integer seconds only). */
+  function addReadingSeconds(n: number): void {
+    if (n > 0) readingSeconds.value += Math.floor(n)
+  }
+
+  /** Accumulate active listening time (positive integer seconds only). */
+  function addListeningSeconds(n: number): void {
+    if (n > 0) listeningSeconds.value += Math.floor(n)
   }
 
   /**
@@ -167,6 +179,8 @@ export const useProgressStore = defineStore('progress', () => {
     reviewData.clear()
     for (const [page, r] of p.reviewData) if (inRange(page)) reviewData.set(page, r)
     hasanah.value = Math.max(0, p.hasanah)
+    readingSeconds.value = Math.max(0, Math.floor(p.readingSeconds ?? 0))
+    listeningSeconds.value = Math.max(0, Math.floor(p.listeningSeconds ?? 0))
   }
 
   /** A plain (non-reactive) copy for persistence. */
@@ -175,6 +189,8 @@ export const useProgressStore = defineStore('progress', () => {
       memorized: new Set(memorized),
       strength: new Map(strength),
       hasanah: hasanah.value,
+      readingSeconds: readingSeconds.value,
+      listeningSeconds: listeningSeconds.value,
       reviewData: new Map(reviewData),
     }
   }
@@ -183,6 +199,8 @@ export const useProgressStore = defineStore('progress', () => {
     memorized,
     strength,
     hasanah,
+    readingSeconds,
+    listeningSeconds,
     reviewData,
     memorizedCount,
     isMemorized,
@@ -191,6 +209,8 @@ export const useProgressStore = defineStore('progress', () => {
     toggleMemorized,
     bumpStrength,
     awardHasanah,
+    addReadingSeconds,
+    addListeningSeconds,
     markReviewed,
     recordReview,
     recordPerfectRevision,

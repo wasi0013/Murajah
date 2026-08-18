@@ -38,6 +38,7 @@ export function useReadingReward(
     if (page == null) return
     if (page !== session) resetFor(page)
     if (!isActive()) return
+    progress.addReadingSeconds(1)
     const r = tickReadingReward(state, 1)
     state = r.state
     if (r.units > 0) {

@@ -83,12 +83,14 @@ export function normalizeSchedule(
  * and `perfectRevisions` reuse the legacy export keys; `hasanah` is the new
  * cumulative reward counter (Phase 4). `perfectRevisions` is the UI "memorization
  * strength". `reviewData` is the lightweight review history (Phase 4.8; absent in
- * legacy backups → empty).
+ * legacy backups → empty). `readingSeconds` is cumulative active reading time.
  */
 export interface StoredProgress {
   memorized: number[]
   perfectRevisions: Record<string, number>
   hasanah: number
+  readingSeconds?: number
+  listeningSeconds?: number
   reviewData?: Record<string, ReviewSchedule>
 }
 
@@ -96,6 +98,8 @@ export interface Progress {
   memorized: Set<number>
   strength: Map<number, number>
   hasanah: number
+  readingSeconds?: number
+  listeningSeconds?: number
   reviewData: Map<number, ReviewSchedule>
 }
 
@@ -166,6 +170,8 @@ export function serializeProgress(p: Progress): StoredProgress {
     memorized: [...p.memorized].sort((a, b) => a - b),
     perfectRevisions,
     hasanah: p.hasanah,
+    readingSeconds: p.readingSeconds ?? 0,
+    listeningSeconds: p.listeningSeconds ?? 0,
     reviewData,
   }
 }
@@ -181,6 +187,8 @@ export function deserializeProgress(stored: StoredProgress | undefined): Progres
     memorized: new Set((stored?.memorized ?? []).map(Number)),
     strength,
     hasanah: stored?.hasanah ?? 0,
+    readingSeconds: stored?.readingSeconds ?? 0,
+    listeningSeconds: stored?.listeningSeconds ?? 0,
     reviewData,
   }
 }

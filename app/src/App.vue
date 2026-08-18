@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useReaderStore } from '@/stores/reader'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { hydrateLocale, useI18n } from '@/core/i18n'
+import { useListeningTime } from '@/composables/useListeningTime'
 import { mushafLink } from '@/core/navigation/readerLinks'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -27,6 +28,7 @@ const onboarding = useOnboardingStore()
 // — these affect the reader's own paint, so they stay on the critical path.
 void settings.hydrate()
 void hydrateLocale()
+useListeningTime()
 
 // Never-onboarded (first visit) or a fresh install after "Reset app" — both
 // leave no `onboardingCompleted` pref, so this decides whether to show it.
