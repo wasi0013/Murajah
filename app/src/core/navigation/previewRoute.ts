@@ -1,6 +1,7 @@
 import type { RouteLocationRaw } from 'vue-router'
 import type { Word } from '@/core/data/types'
 import { ayahCount } from '@/core/quran/surahMeta'
+import { PAGE_COUNT_QPC } from '@/core/quran/surahPages'
 
 /**
  * Pure parsing/validation/resolution for the `/preview/:surah/:ayah(-:endAyah)?`
@@ -356,4 +357,175 @@ export function previewLink(range: { surah: number; start: number; end: number }
         params: { surah: String(range.surah), ayah: String(range.start), endAyah: String(range.end) },
       }
     : { name: 'preview', params: { surah: String(range.surah), ayah: String(range.start) } }
+}
+
+// —— Page-based preview (/preview/page/:page) ————————————————————
+
+export type PreviewPageResult =
+  | { ok: true; value: number }
+  | { ok: false; error: 'page' }
+
+/** Validate a raw `:page` param from `/preview/page/:page` (1–604). */
+export function parsePreviewPage(raw: string | string[] | undefined): PreviewPageResult {
+  const n = toInt(first(raw))
+  if (n == null || n < 1 || n > PAGE_COUNT_QPC) return { ok: false, error: 'page' }
+  return { ok: true, value: n }
+}
+
+/** Canonical `{name, params}` for a `/preview/page/:page` link. */
+export function previewPageLink(page: number): RouteLocationRaw {
+  return { name: 'preview-page', params: { page: String(page) } }
+}
+
+// —— Page highlight spec (surah.ayah[:word[-word]] format) —————————
+
+/** Like `HighlightSpec` but carries an explicit `surah` — a QPC page can hold
+ * verses from more than one surah, so the ayah number alone is ambiguous. */
+export interface PageHighlightSpec {
+  surah: number
+  ayah: number
+  wordStart?: number
+  wordEnd?: number
+}
+
+export type PageHighlightSpecsByColor = Partial<Record<HighlightColor, PageHighlightSpec[]>>
+
+// Token format: `surah.ayah`, `surah.ayah:word`, `surah.ayah:word-word`
+const PAGE_TOKEN_RE = /^(\d{1,3})\.(\d+)(?::(\d+)(?:-(\d+))?)?$/
+
+function parsePageToken(token: string): PageHighlightSpec | null {
+  const m = PAGE_TOKEN_RE.exec(token)
+  if (!m) return null
+  const surah = Number(m[1])
+  if (surah < 1 || surah > MAX_SURAH) return null
+  const ayah = Number(m[2])
+  if (ayah < 1) return null
+  if (m[3] == null) return { surah, ayah }
+  const wordStart = Number(m[3])
+  if (wordStart < 1) return null
+  const wordEnd = m[4] == null ? wordStart : Number(m[4])
+  if (wordEnd < wordStart) return null
+  return { surah, ayah, wordStart, wordEnd }
+}
+
+/** Parse the six color params (plus `hl=` alias) for the page-based route.
+ * Token format: `surah.ayah`, `surah.ayah:word`, or `surah.ayah:word-word`. */
+export function parsePageHighlightParams(query: PreviewHighlightQuery): PageHighlightSpecsByColor {
+  const result: PageHighlightSpecsByColor = {}
+  for (const color of HIGHLIGHT_COLORS) {
+    const tokens = toTokenList(query[color])
+    if (color === 'red') tokens.push(...toTokenList(query.hl))
+    const specs = tokens.map(parsePageToken).filter((s): s is PageHighlightSpec => s !== null)
+    if (specs.length) result[color] = specs
+  }
+  return result
+}
+
+/** Resolve page highlight specs against a page's loaded `Word[]`. Each spec
+ * carries its own `surah`, so no external filter is needed — a multi-surah
+ * page is handled correctly without any cross-surah pollution. */
+export function resolvePageWordStates(
+  specsByColor: PageHighlightSpecsByColor,
+  words: Word[],
+): Record<string, PreviewWordState> {
+  const result: Record<string, PreviewWordState> = {}
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    if (!specs?.length) continue
+    const state = STATE_FOR_COLOR[color]
+    for (const w of words) {
+      if (w.location in result) continue
+      const wSurah = Number(w.surah)
+      const wAyah = Number(w.ayah)
+      const wWord = Number(w.word)
+      const matches = specs.some((spec) => {
+        if (spec.surah !== wSurah || spec.ayah !== wAyah) return false
+        if (spec.wordStart == null) return true
+        return wWord >= spec.wordStart && wWord <= (spec.wordEnd ?? spec.wordStart)
+      })
+      if (matches) result[w.location] = state
+    }
+  }
+  return result
+}
+
+// —— Page tap-to-paint ——————————————————————————————————————————
+
+export interface PageWordRef {
+  surah: number
+  ayah: number
+  word: number
+}
+
+function pageOwnerColor(specsByColor: PageHighlightSpecsByColor, target: PageWordRef): HighlightColor | null {
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    if (!specs?.length) continue
+    const hit = specs.some(
+      (spec) =>
+        spec.surah === target.surah &&
+        spec.ayah === target.ayah &&
+        (spec.wordStart == null || (target.word >= spec.wordStart && target.word <= (spec.wordEnd ?? spec.wordStart))),
+    )
+    if (hit) return color
+  }
+  return null
+}
+
+function expandPageSpec(spec: PageHighlightSpec, words: Word[]): PageHighlightSpec[] {
+  if (spec.wordStart != null) {
+    if (spec.wordStart === spec.wordEnd) return [spec]
+    const out: PageHighlightSpec[] = []
+    for (let w = spec.wordStart; w <= (spec.wordEnd ?? spec.wordStart); w++) {
+      out.push({ surah: spec.surah, ayah: spec.ayah, wordStart: w, wordEnd: w })
+    }
+    return out
+  }
+  const ayahWords = words
+    .filter((w) => Number(w.surah) === spec.surah && Number(w.ayah) === spec.ayah)
+    .map((w) => Number(w.word))
+  if (!ayahWords.length) return [spec]
+  return ayahWords.map((w) => ({ surah: spec.surah, ayah: spec.ayah, wordStart: w, wordEnd: w }))
+}
+
+export function togglePageWordHighlight(
+  specsByColor: PageHighlightSpecsByColor,
+  target: PageWordRef,
+  activeColor: HighlightColor,
+  words: Word[],
+): PageHighlightSpecsByColor {
+  const owner = pageOwnerColor(specsByColor, target)
+  const result: PageHighlightSpecsByColor = { ...specsByColor }
+  if (owner) {
+    const expanded = (result[owner] ?? []).flatMap((spec) => expandPageSpec(spec, words))
+    const kept = expanded.filter(
+      (spec) => !(spec.surah === target.surah && spec.ayah === target.ayah && spec.wordStart === target.word),
+    )
+    if (kept.length) result[owner] = kept
+    else delete result[owner]
+  } else {
+    result[activeColor] = [
+      ...(result[activeColor] ?? []),
+      { surah: target.surah, ayah: target.ayah, wordStart: target.word, wordEnd: target.word },
+    ]
+  }
+  return result
+}
+
+function stringifyPageSpec(spec: PageHighlightSpec): string {
+  const prefix = `${spec.surah}.${spec.ayah}`
+  if (spec.wordStart == null) return prefix
+  if (spec.wordStart === spec.wordEnd) return `${prefix}:${spec.wordStart}`
+  return `${prefix}:${spec.wordStart}-${spec.wordEnd}`
+}
+
+export function pageSpecsByColorToQuery(
+  specsByColor: PageHighlightSpecsByColor,
+): Record<HighlightColor, string | undefined> {
+  const query = {} as Record<HighlightColor, string | undefined>
+  for (const color of HIGHLIGHT_COLORS) {
+    const specs = specsByColor[color]
+    query[color] = specs?.length ? specs.map(stringifyPageSpec).join(',') : undefined
+  }
+  return query
 }

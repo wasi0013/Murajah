@@ -512,9 +512,11 @@ const en: Messages = {
   preview: {
     ayah: 'Ayah {surah}:{ayah}',
     range: 'Ayahs {surah}:{start}–{end}',
+    page: 'Page {page}',
     back: 'Back to reader',
-    invalidSurah: 'That surah doesn’t exist.',
-    invalidRange: 'That verse range isn’t valid.',
+    invalidSurah: "That surah doesn't exist.",
+    invalidRange: "That verse range isn't valid.",
+    invalidPage: "That page number isn't valid.",
     rangeTooLarge: 'That range spans too many pages to preview here.',
     openInReader: 'Open in the reader instead',
     jumpButton: 'Choose a different range',

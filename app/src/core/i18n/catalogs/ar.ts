@@ -508,9 +508,11 @@ const ar: Messages = {
   preview: {
     ayah: 'الآية {surah}:{ayah}',
     range: 'الآيات {surah}:{start}–{end}',
+    page: 'الصفحة {page}',
     back: 'العودة إلى القارئ',
     invalidSurah: 'هذه السورة غير موجودة.',
     invalidRange: 'نطاق الآيات هذا غير صالح.',
+    invalidPage: 'رقم الصفحة هذا غير صالح.',
     rangeTooLarge: 'هذا النطاق يمتد على صفحات كثيرة جدًا لعرضه هنا.',
     openInReader: 'افتح في القارئ بدلاً من ذلك',
     jumpButton: 'اختر نطاقًا مختلفًا',

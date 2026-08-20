@@ -52,14 +52,14 @@ const READER_ROUTE_NAMES = new Set(['home', 'reader', 'read-page', 'read-surah',
 // chrome around someone else's link (or a beginner's first visit to the
 // tutorial). `preview-landing` is the bare `/preview` tutorial + link-builder
 // page; `preview`/`preview-range` are an actual shared link.
-const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview-landing', 'preview', 'preview-range'])
+const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview-landing', 'preview', 'preview-range', 'preview-page'])
 // The install page (/download) and every /preview route are all reached from
 // outside links, so a first-time visitor there has no saved prefs and would
 // otherwise trip the non-dismissible language-picker modal (OnboardingModal)
 // right on top of the content they followed the link to see. /download keeps
 // the tab bar (it's the page's way back into the app); the /preview routes
 // have none, by design — see NO_SHELL_ROUTE_NAMES above.
-const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview-landing', 'preview', 'preview-range'])
+const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview-landing', 'preview', 'preview-range', 'preview-page'])
 
 const showShellNav = computed(() => !NO_SHELL_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
 const showOnboarding = computed(() => !NO_ONBOARDING_ROUTE_NAMES.has(String(router.currentRoute.value.name)))

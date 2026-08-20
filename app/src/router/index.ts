@@ -111,6 +111,15 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/preview/PreviewLandingView.vue'),
   },
   {
+    // Page-based shareable preview — /preview/page/100 opens QPC page 100 with
+    // all the same tap-to-paint highlighting as the verse-range preview.
+    // Registered before the surah-parameterized routes; "page" is alphabetic so
+    // it never matches the \d{1,3} surah regex, but explicit ordering is clearer.
+    path: '/preview/page/:page(\\d+)',
+    name: 'preview-page',
+    component: () => import('@/features/preview/PreviewPageView.vue'),
+  },
+  {
     // Shareable read-only verse-range preview, always Uthmani tajweed —
     // /preview/2/12-45 (a range) or /preview/2/255 (a single verse). Highlight
     // words via query params (see core/navigation/previewRoute.ts). Two routes,
@@ -178,6 +187,7 @@ const READER_ROUTES = new Set([
   'preview-landing',
   'preview',
   'preview-range',
+  'preview-page',
 ])
 router.beforeEach((to) => {
   if (READER_ROUTES.has(String(to.name)) && !readerEnabled()) {
