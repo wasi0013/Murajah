@@ -81,19 +81,39 @@ function bandVars(level: StrengthRank): { bg: string; text: string; border: stri
   if (level === 6) {
     return { bg: 'var(--color-mutqan-bg)', text: 'var(--color-mutqan-text)', border: 'var(--color-mutqan-border)' }
   }
-  const bg: Record<Exclude<StrengthRank, 6>, string> = {
-    0: 'var(--color-border)',
-    1: 'var(--hl-amber)',
-    2: 'var(--color-danger)',
-    3: 'var(--hl-teal)',
-    4: 'var(--hl-blue)',
-    5: 'var(--color-success)',
+  // Not used by cellStyle (guarded out before calling) or the legend (which
+  // starts at rank 1 — band 0 is the separate "not started" swatch) — kept
+  // as a defensive fallback so an out-of-guard call degrades to the muted
+  // empty look rather than undefined CSS values.
+  if (level === 0) {
+    return { bg: 'var(--color-surface)', text: 'var(--color-text-muted)', border: 'var(--color-border)' }
   }
-  return { bg: bg[level], text: 'var(--color-on-status)', border: 'transparent' }
+  // Unlike the old monotonic lightness ramp, these hues vary widely in
+  // contrast against a single blanket text colour. --color-danger/
+  // --color-success are dark/saturated enough in every theme for
+  // --color-on-status; the amber/teal/blue highlight tokens are light-to-mid
+  // toned in every theme (light, dark, and sepia all pick pastel-ish hl-*
+  // values), so they need a text colour that stays dark regardless of theme
+  // — --color-band-ink, not --color-text (which itself flips to a near-white
+  // value in dark theme and would fail contrast there). Verified against all
+  // 3 themes; band 0 is handled by cellStyle before this is ever called.
+  const vars: Record<Exclude<StrengthRank, 0 | 6>, { bg: string; text: string }> = {
+    1: { bg: 'var(--hl-amber)', text: 'var(--color-band-ink)' },
+    2: { bg: 'var(--color-danger)', text: 'var(--color-on-status)' },
+    3: { bg: 'var(--hl-teal)', text: 'var(--color-band-ink)' },
+    4: { bg: 'var(--hl-blue)', text: 'var(--color-band-ink)' },
+    5: { bg: 'var(--color-success)', text: 'var(--color-on-status)' },
+  }
+  return { ...vars[level as Exclude<StrengthRank, 0 | 6>], border: 'transparent' }
 }
 
 function cellStyle(c: PageCell): Record<string, string> {
-  if (!c.memorized) return {}
+  // Band 0 ("Not Memorized") renders as a plain, uncoloured cell even in the
+  // rare memorized-but-strength-0 case (reachable via the sheet's Toggle
+  // without ever setting a level) — there's no readable single text colour
+  // for --color-border's very pale/very dark bg across every theme, and
+  // "memorized + Not Memorized" would be a confusing label anyway.
+  if (!c.memorized || c.level === 0) return {}
   const v = bandVars(c.level)
   return { background: v.bg, color: v.text, borderColor: v.border }
 }
@@ -105,7 +125,7 @@ function bandLabel(level: StrengthRank): string {
 function cellLabel(c: PageCell): string {
   const parts = [t('common.page', { n: c.page })]
   parts.push(c.memorized ? t('grid.cell.memorized') : t('grid.cell.notMemorized'))
-  if (c.memorized) parts.push(bandLabel(c.level))
+  if (c.memorized && c.level > 0) parts.push(bandLabel(c.level))
   if (c.mistakes > 0) parts.push(t('grid.cell.mistakes', { n: c.mistakes }))
   return parts.join(', ')
 }

@@ -110,6 +110,13 @@
   --color-mutqan-text: #ffffff;
   --color-mutqan-border: transparent;
 
+  /* Fixed dark "ink" for text over the amber/teal/blue memorization-band
+     fills (strengthBands.ts) — those --hl-* tokens are light-to-mid toned in
+     every theme (including dark, where they're deliberately pastel), so
+     they need text that stays dark regardless of theme, unlike --color-text
+     which itself flips to a near-white value in dark theme. */
+  --color-band-ink: #161d1a;
+
   /* Tajweed rule colours (functional; finalized vs font in 2.7.3) */
   --tajweed-ghunnah: #2e9e5b;
   --tajweed-qalqalah: #d0453f;
@@ -175,6 +182,11 @@
   --color-mutqan-text: #ffffff;
   --color-mutqan-border: #e2a44b;
 
+  /* Same fixed dark ink as light theme — dark theme's --hl-* values are
+     deliberately pastel/light, so they still need dark text, not the
+     theme's own (near-white) --color-text. */
+  --color-band-ink: #161d1a;
+
   --tajweed-ghunnah: #56c983;
   --tajweed-qalqalah: #ec7a74;
   --tajweed-ikhfa: #6f9ff0;
@@ -217,6 +229,7 @@
   --color-mutqan-bg: #161d1a;
   --color-mutqan-text: #ffffff;
   --color-mutqan-border: transparent;
+  --color-band-ink: #161d1a;
 
   --tajweed-ghunnah: #2c8f52;
   --tajweed-qalqalah: #c0403a;
@@ -255,6 +268,7 @@
     --color-mutqan-bg: #000000;
     --color-mutqan-text: #ffffff;
     --color-mutqan-border: #e2a44b;
+    --color-band-ink: #161d1a;
     --tajweed-ghunnah: #56c983;
     --tajweed-qalqalah: #ec7a74;
     --tajweed-ikhfa: #6f9ff0;
@@ -293,6 +307,7 @@
   --color-mutqan-bg: var(--color-mutqan-bg);
   --color-mutqan-text: var(--color-mutqan-text);
   --color-mutqan-border: var(--color-mutqan-border);
+  --color-band-ink: var(--color-band-ink);
   --color-tajweed-ghunnah: var(--tajweed-ghunnah);
   --color-tajweed-qalqalah: var(--tajweed-qalqalah);
   --color-tajweed-ikhfa: var(--tajweed-ikhfa);

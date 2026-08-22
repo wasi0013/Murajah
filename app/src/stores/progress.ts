@@ -167,15 +167,19 @@ export const useProgressStore = defineStore('progress', () => {
 
   /**
    * A mistake on a page: strength −1 (floor 0); hasanah untouched, never
-   * restored. Also stamps `lastReviewDate` — a plain reading mistake (outside
-   * a scheduled `recordReview`, e.g. marking a word wrong while reading) is
-   * the one strength-mutating path that previously never touched `reviewData`
-   * at all, leaving the decay clock stale for pages only ever touched this way.
+   * restored.
+   *
+   * Deliberately does **not** call {@link touchReviewDate}. `weaknessScorer`
+   * reads `reviewData.lastReviewDate` for its recency factor (weight 0.30,
+   * `min(days/30, 1)`) — stamping "today" on a mistake would zero that term
+   * and could push a page *below* `WEAK_THRESHOLD`, dropping it out of the
+   * weak-reinforcement lane exactly when the user signalled they got it
+   * wrong. It also isn't a "revision" by the user's own definition of what
+   * resets the memorization-level decay clock (recorded revisions, formal or
+   * informal) — a mistake is neither.
    */
-  function penalizeMistake(page: number, date: string = todayISODate()): number {
-    const next = bumpStrength(page, -1)
-    touchReviewDate(page, date)
-    return next
+  function penalizeMistake(page: number): number {
+    return bumpStrength(page, -1)
   }
 
   /**

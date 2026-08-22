@@ -295,11 +295,11 @@ describe('setStrengthBand', () => {
 })
 
 describe('decay-clock stamping on strength-mutating actions', () => {
-  it('penalizeMistake stamps lastReviewDate (previously the only strength action that never did)', () => {
+  it('penalizeMistake deliberately does NOT stamp lastReviewDate (a mistake is not a "revision", and would zero weaknessScorer\'s recency term)', () => {
     const p = useProgressStore()
     expect(p.reviewData.has(5)).toBe(false)
-    p.penalizeMistake(5, '2026-08-23')
-    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+    p.penalizeMistake(5)
+    expect(p.reviewData.has(5)).toBe(false)
   })
 
   it('bulkMarkMemorized stamps only the pages it actually bumps', () => {
@@ -310,9 +310,9 @@ describe('decay-clock stamping on strength-mutating actions', () => {
     expect(p.reviewData.has(2)).toBe(false) // left alone -> not stamped
   })
 
-  it('penalizeMistake immediately followed by recordReview (useToday.ts complete()) leaves the later stamp as final', () => {
+  it('penalizeMistake immediately followed by recordReview (useToday.ts complete()) is stamped by recordReview alone', () => {
     const p = useProgressStore()
-    p.penalizeMistake(5, '2020-01-01')
+    p.penalizeMistake(5)
     p.recordReview(5, 'needs_work', new Date('2026-08-23T00:00:00Z'))
     expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
   })
