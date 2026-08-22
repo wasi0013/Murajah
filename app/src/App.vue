@@ -7,6 +7,7 @@ import { useReaderStore } from '@/stores/reader'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { hydrateLocale, useI18n } from '@/core/i18n'
 import { useListeningTime } from '@/composables/useListeningTime'
+import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { mushafLink } from '@/core/navigation/readerLinks'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -28,6 +29,11 @@ const onboarding = useOnboardingStore()
 // — these affect the reader's own paint, so they stay on the critical path.
 void settings.hydrate()
 void hydrateLocale()
+// Load once here and keep its debounced save watcher alive for the app's
+// whole lifetime — every view's own `hydrate()` call (see useProgressPersistence)
+// just awaits this same load, so no route can be missing a save path for
+// progress mutated from outside its own lifetime (e.g. useListeningTime below).
+void useProgressPersistence().hydrate()
 useListeningTime()
 
 // Never-onboarded (first visit) or a fresh install after "Reset app" — both
@@ -210,6 +216,33 @@ function goMore(name: string) {
   bottom: 0;
   z-index: var(--z-sticky);
 }
+/*
+ * The mini-player (`AudioMiniPlayer.vue`) is `position: fixed; bottom: 0` with
+ * a higher z-index than this bar (--z-dropdown > --z-sticky, deliberately, so
+ * the player's own controls stay clickable over page content) — but with
+ * nothing reserving space for it, that also means it fully covers this bar's
+ * Today/Progress/etc. buttons whenever it's docked, since both anchor to the
+ * same bottom:0. Shift the bar up by the player's own measured height
+ * instead, the same fix MushafView already applies to its page image
+ * (`.player-open`/`--audio-player-h`) — just missing here for primary nav.
+ *
+ * Deliberately keyed on `--audio-player-h` itself, not on the audio store's
+ * `open` flag (a global "is something playing" bit that's true on every
+ * route once anything is playing, including the many routes — Surahs,
+ * Progress, Quiz, Settings, … — that never render an `AudioMiniPlayer` at
+ * all). `AudioMiniPlayer` sets this var on mount and reliably clears it in
+ * its own `onBeforeUnmount`, so it's only ever non-empty while a player is
+ * actually occupying screen space on the *current* view — an earlier version
+ * of this rule kept the bar's space reserved on every other route too,
+ * leaving a permanent empty gap above the tab bar (e.g. Today/Progress)
+ * whenever playback had been started elsewhere (Home/Mushaf) and was still
+ * going in the background. The `0px` fallback only ever matters for the
+ * single frame between a player mounting and its first ResizeObserver
+ * measurement landing — not worth a larger placeholder for.
+ */
+.shell-tabbar {
+  margin-bottom: var(--audio-player-h, 0px);
+}
 @media (min-width: 1024px) {
   .app-shell {
     flex-direction: row;
@@ -221,6 +254,12 @@ function goMore(name: string) {
     top: 0;
     bottom: auto;
     height: 100dvh;
+  }
+  .shell-tabbar {
+    /* Desktop reflows into a left rail (above) — the bottom-fixed player
+       only ever reaches the rail's own foot (Discord/Play Store links), never
+       the primary tabs at its top, so no reservation is needed here. */
+    margin-bottom: 0;
   }
 }
 
