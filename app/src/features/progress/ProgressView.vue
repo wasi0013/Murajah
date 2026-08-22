@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, BookOpen, ListChecks, Minus, Plus } from 'lucide-vue-next'
+import { ArrowLeft, BookOpen, ListChecks, Plus } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
@@ -11,6 +11,7 @@ import { TOTAL_PAGES } from '@/stores/progress'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { estimateCompletion } from '@/core/memorization/completion'
 import { formatReadingTime } from '@/core/memorization/progressView'
+import { STRENGTH_BANDS, bandForStrength, bandByRank, effectiveRank, daysSince, type StrengthRank } from '@/core/memorization/strengthBands'
 import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -85,6 +86,56 @@ function openPage(page: number) {
 function openInReader(page: number) {
   void router.push(readerLink({ page }))
 }
+
+// —— Memorization level (7-band dropdown, replaces the raw-number stepper) ——
+function levelLabel(rank: StrengthRank): string {
+  return t(`strengthBand.${bandByRank(rank).labelKey}`)
+}
+const selectedRawRank = computed<StrengthRank>(() =>
+  selectedPage.value === null ? 0 : bandForStrength(progress.strengthOf(selectedPage.value)).rank,
+)
+const selectedDaysSince = computed(() =>
+  selectedPage.value === null
+    ? Infinity
+    : daysSince(progress.reviewData.get(selectedPage.value)?.lastReviewDate),
+)
+const selectedEffectiveRank = computed<StrengthRank>(() =>
+  selectedPage.value === null
+    ? 0
+    : effectiveRank(progress.strengthOf(selectedPage.value), selectedDaysSince.value),
+)
+// The dropdown is bound to the *raw* band, never the effective/capped one —
+// binding to the capped value would risk writing the cap's lower bound back
+// over a legitimately higher raw strength the moment the sheet re-renders.
+const levelSelection = computed<StrengthRank>({
+  get: () => selectedRawRank.value,
+  set: (rank) => {
+    if (selectedPage.value !== null) progress.setStrengthBand(selectedPage.value, rank)
+  },
+})
+const lastRevisedLabel = computed(() => {
+  const page = selectedPage.value
+  const iso = page === null ? undefined : progress.reviewData.get(page)?.lastReviewDate
+  if (!iso) return ''
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+})
+// Never phrased as "downgraded from X to Y" — a single lastReviewDate can't
+// reconstruct which bands a page passed through, only whether it's capped now.
+const levelNote = computed(() => {
+  if (selectedPage.value === null) return ''
+  if (!lastRevisedLabel.value) return t('progress.sheet.noRevisionNote')
+  if (selectedEffectiveRank.value !== selectedRawRank.value) {
+    return t('progress.sheet.decayedNote', {
+      level: levelLabel(selectedEffectiveRank.value),
+      date: lastRevisedLabel.value,
+    })
+  }
+  return t('progress.sheet.currentNote', { date: lastRevisedLabel.value })
+})
 
 // —— Bulk range mark ————————————————————————————————
 const rangeStart = ref(1)
@@ -252,25 +303,32 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
           />
         </div>
 
+        <div class="row level-row">
+          <label class="level-field" for="page-level-select">
+            <span>{{ t('progress.sheet.level') }}</span>
+            <select
+              id="page-level-select"
+              v-model.number="levelSelection"
+              class="level-select"
+              :aria-label="t('strengthBand.aria')"
+            >
+              <option v-for="band in STRENGTH_BANDS" :key="band.rank" :value="band.rank">
+                {{ levelLabel(band.rank) }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">{{ levelNote }} {{ t('progress.sheet.levelHint') }}</p>
+
         <div class="row">
-          <span>{{ t('progress.sheet.strength') }}</span>
-          <div class="stepper">
-            <button
-              class="step"
-              :aria-label="t('progress.sheet.decrease')"
-              @click="progress.bumpStrength(selectedPage, -1)"
-            >
-              <Icon :icon="Minus" :size="16" />
-            </button>
-            <span class="step-val">{{ progress.strengthOf(selectedPage) }}</span>
-            <button
-              class="step"
-              :aria-label="t('progress.sheet.recordClean')"
-              @click="progress.recordPerfectRevision(selectedPage)"
-            >
-              <Icon :icon="Plus" :size="16" />
-            </button>
-          </div>
+          <span>{{ t('progress.sheet.recordClean') }}</span>
+          <button
+            class="record-btn"
+            :aria-label="t('progress.sheet.recordClean')"
+            @click="progress.recordPerfectRevision(selectedPage)"
+          >
+            <Icon :icon="Plus" :size="16" />
+          </button>
         </div>
         <p class="hint">{{ t('progress.sheet.hint') }}</p>
 
@@ -548,12 +606,31 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
   justify-content: space-between;
   gap: 1rem;
 }
-.stepper {
+.level-row {
+  justify-content: flex-start;
+}
+.level-field {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
+  justify-content: space-between;
 }
-.step {
+.level-select {
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-elevated);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.level-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.record-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -563,15 +640,9 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
   background: var(--color-elevated);
   color: var(--color-text);
 }
-.step:focus-visible {
+.record-btn:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-}
-.step-val {
-  min-width: 1.5rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
 }
 .hint {
   font-size: var(--text-xs);
