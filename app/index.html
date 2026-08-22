@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
@@ -9,6 +9,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Murajah — Quran memorization & revision" />
     <meta name="theme-color" content="#3b82f6" />
+    <!-- Opt out of Chrome/Google Translate's auto-translate prompt (both the
+         "google" meta and the translate="no" attribute above — belt and
+         braces, different browsers/extensions honor one or the other). The
+         mushaf reader renders Quranic text through the QPC per-page glyph
+         fonts, which encode each page's exact typesetting as Arabic
+         Presentation-Form ligature codepoints (U+FB50-FDFF, U+FE70-FEFF) —
+         real Unicode, correct rendering, but a codepoint distribution
+         Chrome's statistical language detector (trained on ordinary text)
+         doesn't recognize, so it occasionally misreads the page as some
+         other language (Chinese has been reported) and offers/auto-triggers
+         a translation. The app already ships its own EN/AR/BN localization
+         and keeps <html lang> in sync with it (see core/i18n), so a browser
+         translating the surrounding UI on top of that would be redundant
+         even when detection guesses right — hence opting out entirely
+         rather than only around the Quran text. -->
+    <meta name="google" content="notranslate" />
     <title>Murajah — Quran Memorization</title>
   </head>
   <body>
