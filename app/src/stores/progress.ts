@@ -210,11 +210,15 @@ export const useProgressStore = defineStore('progress', () => {
    * strengthBands.ts doc comment), no-oping the strength write when the page
    * is already in the target band (so re-picking the currently-displayed
    * band never clobbers a legitimately higher raw value, e.g. 150 → 98).
-   * Always stamps `lastReviewDate`, even on that no-op branch: picking a
-   * level is a deliberate "this is accurate as of today" confirmation, so
-   * resetting the neglect clock is correct regardless of whether the raw
-   * number moved. Does **not** touch the `memorized` boolean — that stays
-   * the separate Toggle's job. Returns the resulting raw strength.
+   * Always stamps `lastReviewDate`, even on that no-op branch, on the
+   * principle that picking a level is itself a "this is accurate as of
+   * today" confirmation — though in practice a native `<select>` never
+   * fires `change` for re-picking the option already shown, so that branch
+   * isn't reachable from the current dropdown UI. The actual way to clear a
+   * decay cap today is the "+" (record a clean revision) button, not
+   * re-selecting the capped label. Does **not** touch the `memorized`
+   * boolean — that stays the separate Toggle's job. Returns the resulting
+   * raw strength.
    */
   function setStrengthBand(page: number, rank: StrengthRank, date: string = todayISODate()): number {
     if (!inRange(page)) return 0
