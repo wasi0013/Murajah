@@ -227,7 +227,12 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
       <p v-if="!juzGroups.length" class="loading-hint">{{ t('common.loading') }}</p>
       <template v-else>
         <p class="panel-lead">{{ t('progress.pagesLead') }}</p>
-        <PageDotsGrid :groups="juzGroups" :strength="progress.strength" @select="openInReader" />
+        <PageDotsGrid
+          :groups="juzGroups"
+          :strength="progress.strength"
+          :review-data="progress.reviewData"
+          @select="openInReader"
+        />
       </template>
     </section>
 

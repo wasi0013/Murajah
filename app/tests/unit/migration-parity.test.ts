@@ -14,13 +14,14 @@ import {
 } from '@/core/storage/userData'
 import { useProgressStore } from '@/stores/progress'
 import { useMistakesStore } from '@/stores/mistakes'
-import { memorizationStats, pageCell, strengthTier } from '@/core/memorization/progressView'
+import { memorizationStats, pageCell } from '@/core/memorization/progressView'
+import { effectiveRank, bandForStrength, daysSince } from '@/core/memorization/strengthBands'
 
 /**
  * Migration-parity (headline, Phase 4.10.1). Exercises the REAL migration path end
  * to end on a committed legacy v2.0.0 backup: parse → progressFromLegacy → persist
  * to IndexedDB → reload into fresh stores → assert the rendered view-model shows
- * identical memorized pages, strength tiers, mistakes, and a hasanah seeded to
+ * identical memorized pages, strength levels, mistakes, and a hasanah seeded to
  * Σ pageHasanah × strength. No hand-computed expectations — derived from the fixture.
  */
 describe('migration parity on a committed legacy export', () => {
@@ -79,18 +80,25 @@ describe('migration parity on a committed legacy export', () => {
     expect(stats.mistakePages).toBe(expectedMistakePages)
 
     // Cell parity: each memorized page renders memorized, with the migrated strength
-    // tier and any mistake count — the grid's per-cell inputs.
+    // level (decay-capped by whatever reviewData migration/backfill produced) and
+    // any mistake count — the grid's per-cell inputs.
     for (const page of expectedMemorized) {
       const strength = expectedStrength.get(page) ?? 0
       const mistakeCount = (legacyBackup.mistakes as Record<string, number[]>)[String(page)]?.length ?? 0
-      const cell = pageCell(page, progress.isMemorized(page), progress.strengthOf(page), mistakeCount)
+      const days = daysSince(progress.reviewData.get(page)?.lastReviewDate)
+      const cell = pageCell(page, progress.isMemorized(page), progress.strengthOf(page), mistakeCount, days)
       expect(cell.memorized).toBe(true)
       expect(cell.strength).toBe(strength)
-      expect(cell.tier).toBe(strengthTier(strength))
+      expect(cell.level).toBe(effectiveRank(strength, days))
       expect(cell.mistakes).toBe(mistakeCount)
     }
 
-    // A high-strength page saturates the ramp (tier caps at 6) — page 604 strength 12.
-    expect(pageCell(604, true, progress.strengthOf(604), 0).tier).toBe(6)
+    // A legacy page with a small raw strength (604 → 12, "Jadid") no longer
+    // saturates the old broken 0–6 ramp — it renders its real band, not "mastered".
+    const days604 = daysSince(progress.reviewData.get(604)?.lastReviewDate)
+    expect(pageCell(604, true, progress.strengthOf(604), 0, days604).level).toBe(
+      bandForStrength(progress.strengthOf(604)).rank,
+    )
+    expect(bandForStrength(progress.strengthOf(604)).rank).toBe(1) // 12 → Jadid, not Mutqan
   })
 })

@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { strengthTier, type JuzGroup } from '@/core/memorization/progressView'
+import { type JuzGroup } from '@/core/memorization/progressView'
+import { effectiveRank, daysSince, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
+import type { ReviewSchedule } from '@/core/storage/userData'
 import { useI18n } from '@/core/i18n'
 
 const { t } = useI18n()
 
 /**
  * Page-by-Page revision heatmap (9.2) — 30 juz boxes, each a grid of page dots
- * shaded by revision strength (ported from the legacy "Page by Page" tab). The
- * legacy hand-interpolated RGB ramp becomes seven token-based `color-mix` steps
- * (tier 0 = not started → tier 6 = mastered), theme-aware by construction. Tap a
- * dot → that page in the reader.
+ * shaded by memorization band (see strengthBands.ts), effective/decay-capped so
+ * a page neglected for years shows its true, lower band. Tap a dot → that page
+ * in the reader.
  */
-defineProps<{ groups: JuzGroup[]; strength: Map<number, number> }>()
+const props = defineProps<{
+  groups: JuzGroup[]
+  strength: Map<number, number>
+  reviewData: Map<number, ReviewSchedule>
+}>()
 const emit = defineEmits<{ select: [page: number] }>()
 
-function tier(page: number, strength: Map<number, number>): number {
-  return strengthTier(strength.get(page) ?? 0)
+function level(page: number): StrengthRank {
+  const days = daysSince(props.reviewData.get(page)?.lastReviewDate)
+  return effectiveRank(props.strength.get(page) ?? 0, days)
 }
-function label(page: number, tier: number): string {
-  if (tier === 0) return t('heatmap.labelNotStarted', { page })
-  if (tier === 1) return t('heatmap.labelOne', { page })
-  return t('heatmap.labelOther', { page, n: tier })
+function label(page: number, level: StrengthRank): string {
+  if (level === 0) return t('heatmap.labelNotStarted', { page })
+  return t('heatmap.labelBand', { page, band: t(`strengthBand.${bandByRank(level).labelKey}`) })
 }
+
+const ALL_RANKS: StrengthRank[] = [0, 1, 2, 3, 4, 5, 6]
 </script>
 
 <template>
@@ -35,9 +42,9 @@ function label(page: number, tier: number): string {
             :key="p"
             type="button"
             class="dot"
-            :class="`tier-${tier(p, strength)}`"
-            :aria-label="label(p, tier(p, strength))"
-            :title="label(p, tier(p, strength))"
+            :class="`band-${level(p)}`"
+            :aria-label="label(p, level(p))"
+            :title="label(p, level(p))"
             @click="emit('select', p)"
           ></button>
         </div>
@@ -45,9 +52,10 @@ function label(page: number, tier: number): string {
     </div>
 
     <p class="legend">
-      <span class="leg"><span class="dot tier-0" aria-hidden="true"></span>{{ t('common.notStarted') }}</span>
-      <span class="leg"><span class="dot tier-1" aria-hidden="true"></span>{{ t('heatmap.revisionOne') }}</span>
-      <span class="leg"><span class="dot tier-4" aria-hidden="true"></span>{{ t('heatmap.revisionsMany') }}</span>
+      <span v-for="band in ALL_RANKS" :key="band" class="leg">
+        <span class="dot" :class="`band-${band}`" aria-hidden="true"></span>
+        {{ band === 0 ? t('common.notStarted') : t(`strengthBand.${bandByRank(band).labelKey}`) }}
+      </span>
     </p>
   </div>
 </template>
@@ -87,27 +95,28 @@ function label(page: number, tier: number): string {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
-/* Seven-step ramp: tier 0 = not started (muted), 1→6 light→dark success. */
-.tier-0 {
+/* 7 memorization bands (see strengthBands.ts) — distinct hues, not a ramp. */
+.band-0 {
   background: color-mix(in oklab, var(--color-text-muted) 28%, transparent);
 }
-.tier-1 {
-  background: color-mix(in oklab, var(--color-success) 40%, var(--color-surface));
+.band-1 {
+  background: var(--hl-amber);
 }
-.tier-2 {
-  background: color-mix(in oklab, var(--color-success) 52%, var(--color-surface));
+.band-2 {
+  background: var(--color-danger);
 }
-.tier-3 {
-  background: color-mix(in oklab, var(--color-success) 64%, var(--color-surface));
+.band-3 {
+  background: var(--hl-teal);
 }
-.tier-4 {
-  background: color-mix(in oklab, var(--color-success) 76%, var(--color-surface));
+.band-4 {
+  background: var(--hl-blue);
 }
-.tier-5 {
-  background: color-mix(in oklab, var(--color-success) 88%, var(--color-surface));
-}
-.tier-6 {
+.band-5 {
   background: var(--color-success);
+}
+.band-6 {
+  background: var(--color-mutqan-bg);
+  border-color: var(--color-mutqan-border);
 }
 .legend {
   display: flex;

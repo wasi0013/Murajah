@@ -1,21 +1,19 @@
 import { getPageHasanah } from './pageHasanah.js'
+import { effectiveRank, type StrengthRank } from './strengthBands'
 
 /**
  * Pure view-model helpers for the Progress screen (canonical 604 scheme). No Vue
  * / no DOM, so fully unit-testable. Colours are decided in the component via
- * design tokens; here we only classify status + tier and slice by juz.
+ * design tokens; here we only classify status + level and slice by juz.
  */
-
-/** Strength → tier 0–6 (0 = none, 6 = mastered). Drives the cell colour ramp. */
-export function strengthTier(strength: number): number {
-  return Math.max(0, Math.min(6, Math.floor(strength)))
-}
 
 export interface PageCell {
   page: number
   memorized: boolean
+  /** Raw perfectRevisions counter (unbounded) — some callers still want it, e.g. an aria-label. */
   strength: number
-  tier: number
+  /** Effective (decay-capped) band rank 0–6 — what the cell is actually coloured/labelled by. */
+  level: StrengthRank
   mistakes: number
 }
 
@@ -24,8 +22,9 @@ export function pageCell(
   memorized: boolean,
   strength: number,
   mistakes: number,
+  daysSinceLastRevision: number,
 ): PageCell {
-  return { page, memorized, strength, tier: strengthTier(strength), mistakes }
+  return { page, memorized, strength, level: effectiveRank(strength, daysSinceLastRevision), mistakes }
 }
 
 export interface JuzGroup {
@@ -89,6 +88,10 @@ export function memorizationStats(params: {
     remaining: Math.max(0, totalPages - memorizedCount),
     totalHasanah: hasanah,
     mistakePages: [...mistakes.values()].filter((s) => s.size > 0).length,
+    // Raw average — deliberately NOT decay-adjusted (see strengthBands.ts). A
+    // neglected page can show a lower band in the grid/dropdown while still
+    // counting its full raw strength here; that's the documented scope
+    // boundary of display-only decay, not a bug to reconcile.
     averageStrength: memorizedCount > 0 ? Math.round((strengthSum / memorizedCount) * 10) / 10 : 0,
     readingSeconds: params.readingSeconds ?? 0,
     listeningSeconds: params.listeningSeconds ?? 0,
