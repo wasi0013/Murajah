@@ -78,6 +78,11 @@ describe('recoverLegacyData', () => {
     const mistakes = await loadMistakes()
     expect(mistakes.get(3)).toEqual(new Set([1, 4, 7]))
 
+    // Recovered pages get a decay-clock anchor even though the legacy format
+    // never carried one — backfilled to today at recovery time.
+    expect(progress.reviewData.get(1)?.lastReviewDate).toBeTruthy()
+    expect(progress.reviewData.get(2)?.lastReviewDate).toBeTruthy()
+
     // The legacy database is gone afterward.
     expect(await hasLegacyData()).toBe(false)
   })
@@ -115,6 +120,8 @@ describe('recoverLegacyData', () => {
     expect(progress.strength.get(50)).toBe(8)
     // Hasanah already earned in the new app is preserved, not reset to 0.
     expect(progress.hasanah).toBe(12_000)
+    // Page 1 (legacy-only) gets a backfilled decay anchor.
+    expect(progress.reviewData.get(1)?.lastReviewDate).toBeTruthy()
   })
 
   it('is a no-op the second time, once the legacy database is already gone', async () => {

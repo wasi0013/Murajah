@@ -193,13 +193,44 @@ export function deserializeProgress(stored: StoredProgress | undefined): Progres
   }
 }
 
-/** Load persisted progress (empty if none / on error). */
+/**
+ * One-time, idempotent backfill for the memorization-level decay clock
+ * (strengthBands.ts): any page with `strength > 0` that has no
+ * `reviewData[page].lastReviewDate` — legacy data predates that field
+ * entirely — gets stamped with `today`, so decay has a real anchor instead of
+ * treating every such page as `Infinity` days unrevised forever. Reuses
+ * `normalizeSchedule()` for the rest of the record, matching every other
+ * partial/legacy-record hydration in this file. Pure (returns a new
+ * `Progress`, never mutates the input) — callers must persist the result
+ * themselves when `changedCount > 0`, or the stamp never sticks and decay
+ * silently never engages (the same "today" would be recomputed and rewritten
+ * on every subsequent load).
+ */
+export function backfillReviewDates(
+  progress: Progress,
+  today: string = isoToday(),
+): { progress: Progress; changedCount: number } {
+  const reviewData = new Map(progress.reviewData)
+  let changedCount = 0
+  for (const [page, strength] of progress.strength) {
+    if (strength <= 0) continue
+    const existing = reviewData.get(page)
+    if (existing?.lastReviewDate) continue
+    reviewData.set(page, normalizeSchedule({ lastReviewDate: today, reviewCount: existing?.reviewCount ?? 0 }))
+    changedCount++
+  }
+  return { progress: { ...progress, reviewData }, changedCount }
+}
+
+/** Load persisted progress (empty if none / on error), backfilling missing review dates. */
 export async function loadProgress(): Promise<Progress> {
   try {
     const tx = (await db()).transaction(STORE, 'readonly')
     const stored = await idbGet<StoredProgress>(tx.objectStore(STORE), PROGRESS_KEY)
     await txDone(tx)
-    return deserializeProgress(stored)
+    const { progress, changedCount } = backfillReviewDates(deserializeProgress(stored))
+    if (changedCount > 0) await saveProgress(progress)
+    return progress
   } catch {
     return deserializeProgress(undefined)
   }
