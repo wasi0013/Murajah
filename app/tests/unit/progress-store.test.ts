@@ -255,3 +255,65 @@ describe('progress persistence', () => {
     expect(loaded.reviewData.size).toBe(0)
   })
 })
+
+describe('setStrengthBand', () => {
+  it('writes the band lower bound and stamps lastReviewDate', () => {
+    const p = useProgressStore()
+    expect(p.setStrengthBand(5, 4, '2026-08-23')).toBe(75) // Qawiy
+    expect(p.strengthOf(5)).toBe(75)
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+
+  it('rank 0 (Not Memorized) clears strength rather than storing 0', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    p.setStrengthBand(5, 0)
+    expect(p.strength.has(5)).toBe(false)
+    expect(p.strengthOf(5)).toBe(0)
+  })
+
+  it('no-ops the strength write when already in the target band, but still stamps the date', () => {
+    const p = useProgressStore()
+    p.bumpStrength(5, 150) // deep into Mutqan (rank 6), well above its 98 lower bound
+    expect(p.setStrengthBand(5, 6, '2026-08-23')).toBe(150) // unchanged, not clobbered to 98
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+
+  it('does not touch the memorized boolean', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    expect(p.isMemorized(5)).toBe(false)
+    p.setStrengthBand(5, 0)
+    expect(p.isMemorized(5)).toBe(false)
+  })
+
+  it('out of range page is a no-op', () => {
+    const p = useProgressStore()
+    expect(p.setStrengthBand(0, 4)).toBe(0)
+    expect(p.reviewData.has(0)).toBe(false)
+  })
+})
+
+describe('decay-clock stamping on strength-mutating actions', () => {
+  it('penalizeMistake stamps lastReviewDate (previously the only strength action that never did)', () => {
+    const p = useProgressStore()
+    expect(p.reviewData.has(5)).toBe(false)
+    p.penalizeMistake(5, '2026-08-23')
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+
+  it('bulkMarkMemorized stamps only the pages it actually bumps', () => {
+    const p = useProgressStore()
+    p.bumpStrength(2, 10) // page 2 already has strength — bulk-mark must not touch it
+    p.bulkMarkMemorized([1, 2], true)
+    expect(p.reviewData.get(1)?.lastReviewDate).toBeTruthy() // bumped -> stamped
+    expect(p.reviewData.has(2)).toBe(false) // left alone -> not stamped
+  })
+
+  it('penalizeMistake immediately followed by recordReview (useToday.ts complete()) leaves the later stamp as final', () => {
+    const p = useProgressStore()
+    p.penalizeMistake(5, '2020-01-01')
+    p.recordReview(5, 'needs_work', new Date('2026-08-23T00:00:00Z'))
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+})
