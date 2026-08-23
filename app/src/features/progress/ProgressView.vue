@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, BookOpen, CalendarCheck, ListChecks } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
@@ -49,6 +49,18 @@ const VALID_TABS: readonly ProgressTab[] = ['overview', 'juz', 'pages', 'journal
 // (`/progress?tab=journal`) instead of always opening on Overview.
 const initialTab = VALID_TABS.includes(route.query.tab as ProgressTab) ? (route.query.tab as ProgressTab) : 'overview'
 const tab = ref<ProgressTab>(initialTab)
+// Vue Router reuses this component instance across navigations that stay on
+// the same route record (only `query` differs), so `initialTab` above being
+// read once at setup only works because every current caller of `?tab=`
+// navigates in from a *different* route (a fresh instance). Watch the query
+// too, so a future same-route `?tab=` push (e.g. an in-page action while
+// already on /progress) isn't silently ignored — caught in review.
+watch(
+  () => route.query.tab,
+  (value) => {
+    if (VALID_TABS.includes(value as ProgressTab)) tab.value = value as ProgressTab
+  },
+)
 const tabOptions = computed(() => [
   { value: 'overview', label: t('progress.tabs.overview') },
   { value: 'juz', label: t('progress.tabs.juz') },

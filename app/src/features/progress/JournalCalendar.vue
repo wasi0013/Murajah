@@ -19,6 +19,11 @@ const props = defineProps<{
   year: number
   month: number // 1–12
   days: JournalDaySummary[]
+  /** True while `useJournalMonth` is fetching the visible month — surfaced as
+   * a subtle `aria-live` hint, not a blocking overlay, since the grid itself
+   * still renders correctly from whatever `days` already holds (a prior
+   * month's stale reactive value briefly, not a broken/empty one). */
+  loading?: boolean
   selectedDate?: string | null
   todayDate: string
 }>()
@@ -74,6 +79,7 @@ const weeks = computed<Array<Array<JournalDaySummary | null>>>(() => {
         <Icon :icon="ChevronRight" :size="18" />
       </button>
     </div>
+    <p v-if="loading" class="loading-hint" aria-live="polite">{{ t('common.loading') }}</p>
 
     <table class="grid" :aria-label="t('journal.weeksAria', { month: monthLabel, year })">
       <thead>
@@ -115,6 +121,12 @@ const weeks = computed<Array<Array<JournalDaySummary | null>>>(() => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+.loading-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: -0.25rem 0 0;
 }
 .sr-only {
   position: absolute;

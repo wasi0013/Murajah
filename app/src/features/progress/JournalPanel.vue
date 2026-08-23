@@ -26,7 +26,7 @@ const today = useLocalDay()
 const todayDate = computed(() => getTodayDate(today.value))
 
 const streak = useStreak({ today })
-const { year, month, days, goToMonth, nextMonth, prevMonth } = useJournalMonth({ today })
+const { year, month, days, loading, goToMonth, nextMonth, prevMonth } = useJournalMonth({ today })
 const completedThisMonth = computed(() => days.value.filter((d) => d.dayState === 'completed').length)
 
 const dayLogPersistence = useDayLogPersistence()
@@ -75,6 +75,7 @@ defineExpose({ goToMonth })
       :year="year"
       :month="month"
       :days="days"
+      :loading="loading"
       :selected-date="selectedDate"
       :today-date="todayDate"
       @select="openDay"
