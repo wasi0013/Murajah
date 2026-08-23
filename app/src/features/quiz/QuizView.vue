@@ -108,8 +108,8 @@ function leave(): void {
       </header>
 
       <div class="setup">
-        <section class="block">
-          <h2 class="block-title">{{ t('quiz.practiceFrom') }}</h2>
+        <section class="setup-block">
+          <h2 class="setup-block-title">{{ t('quiz.practiceFrom') }}</h2>
           <div class="chips" role="radiogroup" :aria-label="t('quiz.practiceFromAria')">
             <button
               v-for="s in scopeSources"
@@ -136,8 +136,8 @@ function leave(): void {
           />
         </section>
 
-        <section class="block">
-          <h2 class="block-title">{{ t('quiz.questionStyle') }}</h2>
+        <section class="setup-block">
+          <h2 class="setup-block-title">{{ t('quiz.questionStyle') }}</h2>
           <div class="mode-grid" role="radiogroup" :aria-label="t('quiz.questionStyle')">
             <button
               v-for="m in modes"
@@ -302,12 +302,12 @@ function leave(): void {
   padding: 0.5rem 1.25rem 1.5rem;
   overflow-y: auto;
 }
-.block {
+.setup-block {
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
 }
-.block-title {
+.setup-block-title {
   font-size: var(--text-sm);
   font-weight: 600;
   text-transform: uppercase;

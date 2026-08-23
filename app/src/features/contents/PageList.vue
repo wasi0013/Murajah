@@ -12,7 +12,7 @@ const pages = Array.from({ length: props.pageCount }, (_, i) => i + 1)
 </script>
 
 <template>
-  <div class="grid" role="group" :aria-label="t('contents.tabs.page')">
+  <div class="page-grid" role="group" :aria-label="t('contents.tabs.page')">
     <button
       v-for="p in pages"
       :key="p"
@@ -27,7 +27,7 @@ const pages = Array.from({ length: props.pageCount }, (_, i) => i + 1)
 </template>
 
 <style scoped>
-.grid {
+.page-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
   gap: 0.4rem;
