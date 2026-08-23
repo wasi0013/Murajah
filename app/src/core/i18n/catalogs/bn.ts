@@ -332,12 +332,12 @@ const bn: Messages = {
   strengthBand: {
     aria: 'মুখস্থের স্তর',
     notMemorized: 'মুখস্থ হয়নি',
-    jadid: 'জাদীদ (নতুন)',
-    daif: 'দ্বাঈফ (দুর্বল)',
-    mutawassit: 'মুতাওয়াসসিত (উন্নতিশীল)',
-    qawiy: 'ক্বাবি (শক্তিশালী)',
-    rasikh: 'রাসিখ (মজবুত)',
-    mutqan: 'মুতক্বন (দক্ষ)',
+    jadid: 'নতুন (جديد)',
+    daif: 'দুর্বল (ضعيف)',
+    mutawassit: 'উন্নতিশীল (متوسط)',
+    qawiy: 'শক্তিশালী (قوي)',
+    rasikh: 'মজবুত (راسخ)',
+    mutqan: 'দক্ষ (متقن)',
   },
   contents: {
     title: 'ব্রাউজ',

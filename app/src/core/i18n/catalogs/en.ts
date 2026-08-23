@@ -335,12 +335,12 @@ const en: Messages = {
   strengthBand: {
     aria: 'Memorization level',
     notMemorized: 'Not Memorized',
-    jadid: 'Jadid (New)',
-    daif: "Da'if (Weak)",
-    mutawassit: 'Mutawassit (Developing)',
-    qawiy: 'Qawiy (Strong)',
-    rasikh: 'Rasikh (Solid)',
-    mutqan: 'Mutqan (Mastered)',
+    jadid: 'New (جديد)',
+    daif: 'Weak (ضعيف)',
+    mutawassit: 'Developing (متوسط)',
+    qawiy: 'Strong (قوي)',
+    rasikh: 'Solid (راسخ)',
+    mutqan: 'Mastered (متقن)',
   },
   contents: {
     title: 'Browse',
