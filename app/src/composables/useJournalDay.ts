@@ -3,7 +3,7 @@ import { useDayLogStore } from '@/stores/dayLog'
 import { useJournalStore } from '@/stores/journal'
 import { useRecordingsStore } from '@/stores/recordings'
 import { getHabit, type HabitDef } from '@/core/memorization/streaks'
-import type { JournalEvent } from '@/core/storage/userData'
+import type { JournalEvent } from '@/core/storage/journalStorage'
 import type { Recording } from '@/core/audio/recorder'
 
 export interface JournalDaySections {

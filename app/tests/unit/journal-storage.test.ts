@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { IDBFactory, IDBDatabase } from 'fake-indexeddb'
+import { _resetUserDataDb } from '@/core/storage/userData'
 import {
   serializeJournalEntry,
   deserializeJournalEntry,
@@ -13,11 +14,10 @@ import {
   saveFullJournal,
   MAX_EVENTS_PER_DAY,
   JOURNAL_NOTE_MAX_LEN,
-  _resetUserDataDb,
   type JournalEntry,
   type JournalEvent,
   type JournalLog,
-} from '@/core/storage/userData'
+} from '@/core/storage/journalStorage'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -111,13 +111,19 @@ describe('journal storage — write (read-modify-write, never a blind put)', () 
     expect(stored.note.length).toBe(JOURNAL_NOTE_MAX_LEN)
   })
 
-  it('appendJournalEvent stops growing the array past the cap and counts overflow instead', async () => {
+  it('appendJournalEvent past the cap evicts the oldest event and counts it as overflow, keeping the most recent (matches mergeJournal\'s re-cap policy)', async () => {
     for (let i = 0; i < MAX_EVENTS_PER_DAY + 5; i++) {
       await appendJournalEvent('2026-08-23', event({ id: `band-up:${i}`, page: i }))
     }
     const stored = await loadJournalEntry('2026-08-23')
     expect(stored.events.length).toBe(MAX_EVENTS_PER_DAY)
     expect(stored.eventsOverflow).toBe(5)
+    // The most recently-appended 20 survive (ids 5..24), the earliest 5 (0..4)
+    // were evicted, not the other way around — a day already at the cap must
+    // still surface what just happened, not go stale on its oldest events.
+    expect(stored.events.map((e) => e.id)).toEqual(
+      Array.from({ length: MAX_EVENTS_PER_DAY }, (_, i) => `band-up:${i + 5}`),
+    )
   })
 
   it('the same page crossing the same band direction twice in a day replaces, not appends (12.2.3)', async () => {

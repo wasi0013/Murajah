@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useJournalDay } from '@/composables/useJournalDay'
 import { useDayLogStore } from '@/stores/dayLog'
 import { useRecordingsStore } from '@/stores/recordings'
 import * as userData from '@/core/storage/userData'
-import { saveJournalNote, appendJournalEvent, _resetUserDataDb } from '@/core/storage/userData'
+import { _resetUserDataDb } from '@/core/storage/userData'
 import type { DayRecord } from '@/core/storage/userData'
+import { saveJournalNote, appendJournalEvent } from '@/core/storage/journalStorage'
 import type { Recording } from '@/core/audio/recorder'
 
 beforeEach(() => {
@@ -132,5 +133,32 @@ describe('useJournalDay', () => {
     date.value = '2026-08-24'
     await wait(10)
     expect(detail.value.sections.newMemorization).toEqual([23])
+  })
+
+  // `loading` was flagged in review as built and tested only for its settled
+  // (false) state — never proven to actually go true during the fetch, which
+  // is the only state a UI loading indicator (now wired into JournalDaySheet)
+  // needs to react to.
+  it('loading is true synchronously on call, before the day fetch resolves', async () => {
+    const { loading } = useJournalDay(ref('2026-08-23'))
+    expect(loading.value).toBe(true)
+    await wait(10)
+    expect(loading.value).toBe(false)
+  })
+
+  it('loading goes true again on a date switch and settles back to false', async () => {
+    const date = ref('2026-08-23')
+    const { loading } = useJournalDay(date)
+    await wait(10)
+    expect(loading.value).toBe(false)
+
+    date.value = '2026-08-24'
+    // The `date` watcher isn't {immediate: true} on this trigger — Vue
+    // batches a watcher's reactive re-fire onto the next tick, unlike its one
+    // synchronous immediate:true call at creation (covered by the test above).
+    await nextTick()
+    expect(loading.value).toBe(true)
+    await wait(10)
+    expect(loading.value).toBe(false)
   })
 })

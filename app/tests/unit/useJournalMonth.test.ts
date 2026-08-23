@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useJournalMonth } from '@/composables/useJournalMonth'
 import { useDayLogStore } from '@/stores/dayLog'
 import { useJournalStore } from '@/stores/journal'
-import { saveJournalNote, appendJournalEvent, _resetUserDataDb } from '@/core/storage/userData'
+import { _resetUserDataDb } from '@/core/storage/userData'
+import { saveJournalNote, appendJournalEvent } from '@/core/storage/journalStorage'
 import type { DayRecord } from '@/core/storage/userData'
 
 beforeEach(() => {
@@ -117,5 +118,31 @@ describe('useJournalMonth', () => {
     await wait(10)
     expect(days.value.find((d) => d.date === '2026-09-05')!.hasNote).toBe(true)
     expect(journal.get('2026-09-05')!.note).toBe('september')
+  })
+
+  // `loading` was flagged in review as built and tested only for its settled
+  // (false) state — never proven to actually go true during the fetch, which
+  // is the only state a UI loading indicator (now wired into JournalCalendar)
+  // needs to react to.
+  it('loading is true synchronously on call, before the month fetch resolves', async () => {
+    const { loading } = useJournalMonth({ today: ref(new Date('2026-08-10T00:00:00')) })
+    expect(loading.value).toBe(true)
+    await wait(10)
+    expect(loading.value).toBe(false)
+  })
+
+  it('loading goes true again on a month change and settles back to false', async () => {
+    const { loading, nextMonth } = useJournalMonth({ today: ref(new Date('2026-08-10T00:00:00')) })
+    await wait(10)
+    expect(loading.value).toBe(false)
+
+    nextMonth()
+    // The [year, month] watcher isn't {immediate: true} on this trigger — Vue
+    // batches a watcher's reactive re-fire onto the next tick, unlike its one
+    // synchronous immediate:true call at creation (covered by the test above).
+    await nextTick()
+    expect(loading.value).toBe(true)
+    await wait(10)
+    expect(loading.value).toBe(false)
   })
 })

@@ -9,7 +9,7 @@ import {
   type JournalEntry,
   type JournalEvent,
   type JournalLog,
-} from '@/core/storage/userData'
+} from '@/core/storage/journalStorage'
 
 function emptyEntry(date: string): JournalEntry {
   return { date, note: '', noteUpdatedAt: null, events: [], eventsOverflow: 0 }

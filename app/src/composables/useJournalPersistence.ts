@@ -1,5 +1,5 @@
 import { useJournalStore } from '@/stores/journal'
-import { saveJournalNote } from '@/core/storage/userData'
+import { saveJournalNote } from '@/core/storage/journalStorage'
 
 const DEBOUNCE_MS = 300
 

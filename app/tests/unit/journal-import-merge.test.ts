@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { importUserData, exportUserData, type ExportSnapshot } from '@/core/storage/exportImport'
-import { saveJournalNote, appendJournalEvent, loadJournalEntry, _resetUserDataDb } from '@/core/storage/userData'
+import { _resetUserDataDb } from '@/core/storage/userData'
+import { saveJournalNote, appendJournalEvent, loadJournalEntry } from '@/core/storage/journalStorage'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

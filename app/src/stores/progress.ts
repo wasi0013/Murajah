@@ -11,7 +11,7 @@ import {
 } from '@/core/memorization/reviewScheduler'
 import { bandForStrength, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
 import { useJournalStore } from '@/stores/journal'
-import type { JournalEvent } from '@/core/storage/userData'
+import type { JournalEvent } from '@/core/storage/journalStorage'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
 export const TOTAL_PAGES = 604
@@ -43,6 +43,8 @@ export function todayISODate(d: Date = new Date()): string {
  * Phase 4.1 composables; this store is the state + primitive mutations.
  */
 export const useProgressStore = defineStore('progress', () => {
+  const journal = useJournalStore()
+
   const memorized = reactive(new Set<number>())
   const strength = reactive(new Map<number, number>())
   const hasanah = ref(0)
@@ -115,7 +117,7 @@ export const useProgressStore = defineStore('progress', () => {
       toRank,
       createdAt,
     }
-    useJournalStore().addEvent(todayISODate(), event)
+    journal.addEvent(todayISODate(), event)
   }
 
   /**
@@ -261,7 +263,7 @@ export const useProgressStore = defineStore('progress', () => {
     if (creditedCount > 0) {
       const createdAt = new Date().toISOString()
       const event: JournalEvent = { id: `bulk-memorized:${createdAt}`, type: 'bulk-memorized', count: creditedCount, createdAt }
-      useJournalStore().addEvent(todayISODate(), event)
+      journal.addEvent(todayISODate(), event)
     }
   }
 

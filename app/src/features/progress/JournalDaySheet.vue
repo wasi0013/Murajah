@@ -8,7 +8,7 @@ import { useJournalStore } from '@/stores/journal'
 import { useJournalPersistence } from '@/composables/useJournalPersistence'
 import { bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
 import { readerLink } from '@/core/navigation/readerLinks'
-import type { JournalEvent } from '@/core/storage/userData'
+import type { JournalEvent } from '@/core/storage/journalStorage'
 import BottomSheet from '@/components/BottomSheet.vue'
 import Icon from '@/components/Icon.vue'
 
@@ -29,7 +29,7 @@ const journal = useJournalStore()
 const persistence = useJournalPersistence(journal)
 
 const dateRef = computed(() => props.date)
-const { detail } = useJournalDay(dateRef)
+const { detail, loading } = useJournalDay(dateRef)
 
 const dateLabel = computed(() =>
   new Date(`${props.date}T00:00:00`).toLocaleDateString(locale.value, {
@@ -128,7 +128,8 @@ function fmtDuration(ms: number): string {
     <div class="sheet">
       <h2 class="sheet-title">{{ dateLabel }}</h2>
 
-      <p v-if="!hasAnything" class="empty">{{ t('journal.empty') }}</p>
+      <p v-if="loading" class="empty">{{ t('common.loading') }}</p>
+      <p v-else-if="!hasAnything" class="empty">{{ t('journal.empty') }}</p>
 
       <section v-if="detail.sections.newMemorization.length" class="block block-new">
         <h3 class="block-title">{{ t('journal.sections.newMemorization') }}</h3>

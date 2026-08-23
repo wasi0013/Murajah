@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeJournal, MAX_EVENTS_PER_DAY, type JournalEntry, type JournalEvent, type JournalLog } from '@/core/storage/userData'
+import { mergeJournal, MAX_EVENTS_PER_DAY, type JournalEntry, type JournalEvent, type JournalLog } from '@/core/storage/journalStorage'
 
 const entry = (date: string, over: Partial<JournalEntry> = {}): JournalEntry => ({
   date,
@@ -121,14 +121,43 @@ describe('mergeJournal — the backup-import merge (Phase 12.6.2)', () => {
     expect(result.events[0].id).not.toBe('c0')
   })
 
-  it('sums pre-existing eventsOverflow from both sides (real prior loss, not fabricated)', () => {
+  it('takes the larger side\'s pre-existing eventsOverflow, not the sum (there is no way to know the two counts refer to distinct lost events)', () => {
     const current = log(entry('2026-08-01', { events: [event('c1', '2026-08-01T09:00:00.000Z')], eventsOverflow: 3 }))
     const incoming = log(entry('2026-08-01', { events: [event('i1', '2026-08-01T10:00:00.000Z')], eventsOverflow: 2 }))
 
     const merged = mergeJournal(current, incoming)
 
-    expect(merged.get('2026-08-01')!.eventsOverflow).toBe(5)
+    expect(merged.get('2026-08-01')!.eventsOverflow).toBe(3)
     expect(merged.get('2026-08-01')!.events).toHaveLength(2)
+  })
+
+  it('re-merging the same overflowing backup twice does not inflate eventsOverflow (idempotency, not just of note/events)', () => {
+    // A day that already exceeded the cap on the "incoming" side (e.g. a heavy
+    // bulk-mark session), merged into a fresh local journal, then the SAME
+    // backup file imported again later — an ordinary "did that work?" retry.
+    const heavyDay = entry('2026-08-01', {
+      events: Array.from({ length: MAX_EVENTS_PER_DAY }, (_, i) => event(`e${i}`, `2026-08-01T${String(i).padStart(2, '0')}:00:00.000Z`)),
+      eventsOverflow: 5,
+    })
+    const incoming = log(heavyDay)
+
+    const firstMerge = mergeJournal(new Map(), incoming)
+    expect(firstMerge.get('2026-08-01')!.eventsOverflow).toBe(5)
+
+    const secondMerge = mergeJournal(firstMerge, incoming) // re-import of the identical backup
+    expect(secondMerge.get('2026-08-01')!.eventsOverflow).toBe(5) // NOT 10
+
+    const thirdMerge = mergeJournal(secondMerge, incoming)
+    expect(thirdMerge.get('2026-08-01')!.eventsOverflow).toBe(5) // stays stable, not 15
+  })
+
+  it('a genuinely larger incoming overflow (independent devices, both accumulating loss) still surfaces as the larger, honest count', () => {
+    const current = log(entry('2026-08-01', { events: [event('c1', '2026-08-01T09:00:00.000Z')], eventsOverflow: 2 }))
+    const incoming = log(entry('2026-08-01', { events: [event('i1', '2026-08-01T10:00:00.000Z')], eventsOverflow: 9 }))
+
+    const merged = mergeJournal(current, incoming)
+
+    expect(merged.get('2026-08-01')!.eventsOverflow).toBe(9)
   })
 
   it('an empty incoming journal (no backup journal key at all) leaves the current journal completely untouched', () => {

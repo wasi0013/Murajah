@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
 import { useJournalStore } from '@/stores/journal'
-import { loadJournalEntry, saveJournalNote, _resetUserDataDb, type JournalEvent } from '@/core/storage/userData'
+import { _resetUserDataDb } from '@/core/storage/userData'
+import { loadJournalEntry, saveJournalNote, type JournalEvent } from '@/core/storage/journalStorage'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -55,13 +56,14 @@ describe('journal store — in-memory state', () => {
     expect(events[0].id).toBe('second')
   })
 
-  it('addEvent past the cap increments eventsOverflow in memory, not the array', () => {
+  it('addEvent past the cap evicts the oldest event in memory too, mirroring appendJournalEvent exactly', () => {
     const journal = useJournalStore()
     journal.ensure('2026-08-23')
     for (let i = 0; i < 25; i++) journal.addEvent('2026-08-23', event({ id: `e${i}`, page: i }))
     const entry = journal.get('2026-08-23')!
     expect(entry.events.length).toBe(20)
     expect(entry.eventsOverflow).toBe(5)
+    expect(entry.events.map((e) => e.id)).toEqual(Array.from({ length: 20 }, (_, i) => `e${i + 5}`))
   })
 
   it('setAll / snapshot round-trip a whole log', () => {

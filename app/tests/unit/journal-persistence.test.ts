@@ -3,7 +3,8 @@ import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
 import { useJournalStore } from '@/stores/journal'
 import { useJournalPersistence } from '@/composables/useJournalPersistence'
-import { loadJournalEntry, _resetUserDataDb } from '@/core/storage/userData'
+import { _resetUserDataDb } from '@/core/storage/userData'
+import { loadJournalEntry } from '@/core/storage/journalStorage'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
