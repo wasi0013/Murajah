@@ -169,6 +169,27 @@ function onLastRevisedChange(e: Event): void {
   progress.touchReviewDate(page, value)
 }
 
+/**
+ * The invisible `<input type="date">` overlaying the visible date text
+ * already receives clicks (it focuses on click), but on desktop that alone
+ * doesn't open the calendar dropdown — browsers only auto-open it for a
+ * click on the control's own little calendar-icon affordance, invisible
+ * here since the whole input is transparent. `showPicker()` opens it
+ * explicitly from this click handler (same user gesture, so it's allowed).
+ * Not supported everywhere (older Firefox/Safari) — falls through to a
+ * plain focus there, so keyboard/typed entry still works.
+ */
+function openDatePicker(e: MouseEvent): void {
+  const input = e.currentTarget as HTMLInputElement
+  if (typeof input.showPicker === 'function') {
+    try {
+      input.showPicker()
+    } catch {
+      /* not focused via a trusted gesture in this browser — input still has focus */
+    }
+  }
+}
+
 /** "Revised today" — replaces the old raw stepper's "+"; a full clean-revision completion. */
 function recordRevisedToday(): void {
   const page = selectedPage.value
@@ -379,6 +400,7 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
                 :value="lastRevisedISO"
                 :max="todayISODate()"
                 :aria-label="t('progress.sheet.lastRevised')"
+                @click="openDatePicker"
                 @change="onLastRevisedChange"
               />
             </span>

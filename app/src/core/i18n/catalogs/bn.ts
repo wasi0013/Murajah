@@ -249,7 +249,7 @@ const bn: Messages = {
     summaryAria: 'সারসংক্ষেপ',
     stats: {
       pagesPercent: 'পৃষ্ঠা · {percent}%',
-      hasanah: 'নেকি',
+      hasanah: 'সম্ভাব্য নেকি',
       readingTime: 'পাঠের সময়',
       listeningTime: 'শোনার সময়',
       mistakePages: 'ভুলসহ পৃষ্ঠা',
@@ -305,7 +305,7 @@ const bn: Messages = {
       lastRevised: 'সর্বশেষ রিভিশন',
       noRevisionYet: 'কোনো রিভিশন রেকর্ড নেই — সেট করতে ট্যাপ করুন',
       revisedToday: 'আজ রিভিশন হয়েছে',
-      revisedTodayHint: 'রিভিশন শিডিউল এগিয়ে নেয় এবং নেকি দেয়।',
+      revisedTodayHint: 'রিভিশন শিডিউল এগিয়ে নেয়।',
       openReader: 'রিডারে খুলুন',
     },
   },
