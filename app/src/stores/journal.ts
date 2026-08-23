@@ -3,6 +3,7 @@ import { reactive } from 'vue'
 import {
   appendJournalEvent,
   applyJournalEvent,
+  loadJournalEntry,
   loadJournalRange,
   JOURNAL_NOTE_MAX_LEN,
   type JournalEntry,
@@ -80,6 +81,17 @@ export const useJournalStore = defineStore('journal', () => {
     void appendJournalEvent(date, event)
   }
 
+  /**
+   * Fetch a single date's entry on demand if it isn't already resident —
+   * a no-op when it is. Covers the day-detail view (`useJournalDay`, 12.3.2)
+   * being opened for a date outside any month `loadMonth` has fetched (e.g. a
+   * future deep link) with one cheap single-key `get`, not a range scan.
+   */
+  async function loadOne(date: string): Promise<void> {
+    if (byDate.has(date)) return
+    byDate.set(date, await loadJournalEntry(date))
+  }
+
   /** Fetch one calendar month's entries (1–12) and merge them into `byDate`. */
   async function loadMonth(year: number, month: number): Promise<void> {
     const start = `${year}-${pad2(month)}-01`
@@ -110,5 +122,5 @@ export const useJournalStore = defineStore('journal', () => {
     return copy
   }
 
-  return { byDate, get, ensure, setNote, addEvent, loadMonth, setAll, snapshot }
+  return { byDate, get, ensure, setNote, addEvent, loadOne, loadMonth, setAll, snapshot }
 })
