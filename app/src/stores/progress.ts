@@ -240,15 +240,28 @@ export const useProgressStore = defineStore('progress', () => {
    * over pages that already have real review history never overwrites it, and
    * re-running it over a page the bug already left at 0 backfills it. Unmarking
    * never touches strength/hasanah, matching the single-page toggle.
+   *
+   * Logs **one** coalesced `'bulk-memorized'` journal event for the whole call
+   * (Phase 12.2.2), not one per page — a single tap over a large range (up to
+   * all 604 pages) must never turn into hundreds of per-page events; that's
+   * the concrete "event storm" `recordBandChange` is deliberately not wired
+   * into `bumpStrength` to avoid (see that function's doc comment).
    */
   function bulkMarkMemorized(pages: number[], on: boolean): void {
+    let creditedCount = 0
     for (const page of pages) {
       setMemorized(page, on)
       if (on && strengthOf(page) === 0) {
         bumpStrength(page, BULK_MARK_STRENGTH)
         awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
         touchReviewDate(page)
+        creditedCount++
       }
+    }
+    if (creditedCount > 0) {
+      const createdAt = new Date().toISOString()
+      const event: JournalEvent = { id: `bulk-memorized:${createdAt}`, type: 'bulk-memorized', count: creditedCount, createdAt }
+      useJournalStore().addEvent(todayISODate(), event)
     }
   }
 

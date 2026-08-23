@@ -95,3 +95,49 @@ describe('progress store → journal event capture (12.2.1)', () => {
     expect(journal.get(todayISODate())!.events).toHaveLength(1) // still just the first
   })
 })
+
+describe('progress store → journal event capture (12.2.2 — bulkMarkMemorized coalescing)', () => {
+  it('one call over many freshly-marked pages appends exactly one bulk-memorized event', () => {
+    const journal = residentToday()
+    const p = useProgressStore()
+    const pages = Array.from({ length: 300 }, (_, i) => i + 1)
+
+    p.bulkMarkMemorized(pages, true)
+
+    const events = journal.get(todayISODate())!.events
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: 'bulk-memorized', count: 300 })
+    expect(events[0].page).toBeUndefined()
+  })
+
+  it('count reflects only pages actually credited (already-strong pages skipped)', () => {
+    const journal = residentToday()
+    const p = useProgressStore()
+    p.strength.set(2, 50) // page 2 already has real strength — bulkMark must not re-credit it
+
+    p.bulkMarkMemorized([1, 2, 3], true)
+
+    const events = journal.get(todayISODate())!.events
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: 'bulk-memorized', count: 2 })
+  })
+
+  it('unmarking (on=false) credits nothing and appends no event', () => {
+    const journal = residentToday()
+    const p = useProgressStore()
+    p.bulkMarkMemorized([1, 2], true)
+
+    p.bulkMarkMemorized([1, 2], false)
+
+    expect(journal.get(todayISODate())!.events).toHaveLength(1) // only the earlier mark-on event
+  })
+
+  it('an empty page list appends no event', () => {
+    const journal = residentToday()
+    const p = useProgressStore()
+
+    p.bulkMarkMemorized([], true)
+
+    expect(journal.get(todayISODate())?.events ?? []).toHaveLength(0)
+  })
+})
