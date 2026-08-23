@@ -13,7 +13,9 @@ import { idbCount, idbGet, openDb, txDone } from './idb'
  */
 const DB_NAME = 'murajah-userdata'
 const DB_VERSION = 1
-const STORE = 'data'
+/** Exported so `journalStorage.ts` shares this exact object store — never a
+ * second one — for its own reads/writes. */
+export const STORE = 'data'
 const MISTAKES_KEY = 'mistakes'
 const PROGRESS_KEY = 'progress'
 const PLAN_KEY = 'plan'
@@ -104,7 +106,10 @@ export interface Progress {
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
-function db(): Promise<IDBDatabase> {
+/** Exported so `journalStorage.ts` reuses this exact singleton connection —
+ * calling this function from either module resolves the same cached
+ * `dbPromise`, preserving the "one shared connection" invariant. */
+export function db(): Promise<IDBDatabase> {
   if (!dbPromise) {
     dbPromise = openDb(DB_NAME, DB_VERSION, (d) => {
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE)

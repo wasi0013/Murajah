@@ -190,7 +190,7 @@ Two beginner-friendly surfaces built on Phases 3 + 7, no new machinery:
 
 - **Contents browser** — the stubbed "Surahs" tab becomes a real, tappable index with **Surah | Juz | Page** lenses (over `NavIndex` + names), so newcomers navigate without knowing quick-jump syntax. The command palette stays as the power path.
 - **Listen** — a "More" entry + full-view route that plays a whole **surah / juz / entire Quran** through the **existing audio engine** from **page audio** (honouring the page-reciter preference + speed; no grain toggle). Juz/whole-Quran are page-aligned straight sequences; surahs reconstruct seamlessly — Alafasy via its surah-parts, other reciters via full pages + same-qari verse audio at the partial-page edges (curated single-voice reciter list). Reuses the Phase 7 mini-player; adds only a scope→playlist builder and a scope picker.
-- **Notes / journal is dropped** (no longer a requirement).
+- **Notes / journal is dropped** (no longer a requirement). *Reversed 2026-08-23 — see Phase 12 below.*
 
 **Acceptance:** Surahs tab navigates to any surah/juz/page (both layouts); Listen plays a full scope through the shared engine; reader/mushaf audio unregressed; initial bundles unchanged (both features code-split).
 
@@ -222,6 +222,12 @@ Reframed from "the usual PWA/offline task list" once it became clear this ships 
 - Suggest Deletion of `source/` monolith and other dead assets, list them and write a command in the doc but do not execute the command.
 - Final full-suite Lighthouse + Playwright run against §3 budgets; staged rollout with rollback plan (built on Phase 10's rehearsal + rollout-health signal).
 **Acceptance:** New app serves 100% of traffic under budget; legacy removed; rollback documented and tested.
+
+### Phase 12 — Practice Journal (new 2026-08-23) → [phase-12-journal.md](./phase-12-journal.md)
+
+Post-launch feature request, reversing Phase 8's "notes/journal dropped" call: an automatic daily journal — a calendar surfaced as `/progress`'s 4th segment (`Overview | Juz | Pages | Journal`), showing each day's memorization/revision/weak-page activity, recordings, and memorization-strength band changes, plus an optional 280-character reflection note per day. Retires `HistorySheet.vue` (its streak-heatmap job becomes a strict subset of the new calendar). Built on per-date IndexedDB keys rather than a whole-blob rewrite per note edit — the feature's central performance constraint given `userData.ts`'s existing debounced-deep-watch pattern doesn't scale to per-day text edits over a growing history. Backup import gets a dedicated `mergeJournal` (union by date, last-write-wins by edit timestamp) — the one deliberate exception to every other key's "import replaces" semantics, needed because notes are editable on any past day across devices.
+
+**Acceptance:** Journal calendar renders and navigates months (RTL-correct); day-expand shows every populated section with no heavy computation in the grid path; note autosaves and survives reload; backup import merges journal entries instead of clobbering newer local edits (fixture-tested); no `DB_VERSION` bump; bundle budget covers the new panel.
 
 ---
 

@@ -517,9 +517,15 @@ test('an abandoned edit leaves the live plan untouched', async ({ page }) => {
   await expect(section(page, 'Revision').locator('.row')).toHaveCount(3) // still 3
 })
 
-// —— History (5.6.1) ————————————————————————————————
+// —— History → Journal (Phase 12.4.4) ————————————————————————————
+// HistorySheet is retired — its streak numbers + heatmap are a strict subset
+// of the Journal calendar (Phase 12), reached by the same button, which now
+// navigates to `/progress?tab=journal` instead of opening a dialog. See
+// tests/e2e/journal.spec.ts for the calendar's own dedicated coverage
+// (month nav, day-expand, note persistence); these two cover only the
+// entry-point wiring + that the seeded/session dayLog reaches the calendar.
 
-const history = (page: Page) => page.getByRole('dialog', { name: 'Practice history' })
+const journal = (page: Page) => page.getByRole('region', { name: 'Journal' })
 
 /** `YYYY-MM-DD` N days before the pinned Wednesday. */
 function before(n: number): string {
@@ -532,8 +538,9 @@ function dayRecord(date: string, completed: boolean, revision: number[] = []) {
   return { date, completed, newMemorization: [], revision, weak: [], habits: [] }
 }
 
-test('the streak opens a history calendar of the seeded day log', async ({ page }) => {
+test('the streak button opens the Journal calendar of the seeded day log', async ({ page }) => {
   // Three completed days ending yesterday, a partial day before them, and a gap.
+  // All within July 2026 (the pinned WEDNESDAY's month) — no month nav needed.
   const dayLog = {
     [before(5)]: dayRecord(before(5), true, [1]),
     [before(4)]: dayRecord(before(4), false, [1]), // worked, didn't finish
@@ -544,35 +551,35 @@ test('the streak opens a history calendar of the seeded day log', async ({ page 
   await open(page, { progress: PROGRESS, plan: plan(), dayLog })
 
   await page.getByRole('button', { name: 'View your practice history' }).click()
-  await expect(history(page)).toBeVisible()
+  await expect(page).toHaveURL(/\/progress\?tab=journal/)
+  await expect(journal(page)).toBeVisible()
 
   // Streak survives today being outstanding; the gap caps it at 3.
-  await expect(history(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('3')
-  await expect(history(page).locator('.stat', { hasText: 'Longest streak' }).locator('.stat-n')).toHaveText('3')
-  await expect(history(page).locator('.stat', { hasText: 'Days completed' }).locator('.stat-n')).toHaveText('4')
+  await expect(journal(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('3')
+  await expect(journal(page).locator('.stat', { hasText: 'Longest streak' }).locator('.stat-n')).toHaveText('3')
 
-  // 90 days rendered, with the right states in the right cells.
-  await expect(history(page).locator('td[data-date]')).toHaveCount(90)
-  await expect(history(page).locator('.cell-completed')).toHaveCount(4 + 1) // + legend swatch
-  await expect(history(page).locator('.cell-partial')).toHaveCount(1 + 1)
-  await expect(history(page).locator(`[data-date="${before(1)}"] .cell-completed`)).toBeAttached()
-  await expect(history(page).locator(`[data-date="${before(4)}"] .cell-partial`)).toBeAttached()
-  await expect(history(page).locator(`[data-date="${before(0)}"] .cell-today`)).toBeAttached()
+  // July 2026 has 31 days, each a real cell.
+  await expect(journal(page).locator('td[data-date]')).toHaveCount(31)
+  await expect(journal(page).locator('.cell-completed')).toHaveCount(4)
+  await expect(journal(page).locator('.cell-partial')).toHaveCount(1)
+  await expect(journal(page).locator(`[data-date="${before(1)}"] .cell-completed`)).toBeAttached()
+  await expect(journal(page).locator(`[data-date="${before(4)}"] .cell-partial`)).toBeAttached()
+  await expect(journal(page).locator(`[data-date="${before(0)}"] .cell-today`)).toBeAttached()
 
   // Each day's state is spelled out for screen readers — never colour alone.
-  await expect(history(page).locator(`[data-date="${before(1)}"]`)).toContainText('completed')
-  await expect(history(page).locator(`[data-date="${before(4)}"]`)).toContainText('partly done')
-  await expect(history(page).locator(`[data-date="${before(0)}"]`)).toContainText('nothing recorded')
+  await expect(journal(page).locator(`[data-date="${before(1)}"]`)).toContainText('completed')
+  await expect(journal(page).locator(`[data-date="${before(4)}"]`)).toContainText('partly done')
+  await expect(journal(page).locator(`[data-date="${before(0)}"]`)).toContainText('nothing recorded')
 })
 
-test('history reflects work done in the session', async ({ page }) => {
+test('the Journal calendar reflects work done in the session', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan() })
 
   await page.getByRole('button', { name: 'Page 1 recited cleanly' }).click() // 1 of 3
   await page.getByRole('button', { name: 'View your practice history' }).click()
 
-  await expect(history(page).locator(`[data-date="${before(0)}"]`)).toContainText('partly done')
-  await expect(history(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('0')
+  await expect(journal(page).locator(`[data-date="${before(0)}"]`)).toContainText('partly done')
+  await expect(journal(page).locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('0')
 })
 
 // Today is the app's primary surface — it must be axe-clean in all three themes.
@@ -599,11 +606,15 @@ for (const theme of themes) {
 
     // The calendar encodes state as colour, so it carries the most contrast risk
     // on the surface — and its text alternatives are the reason it's readable at all.
+    // (HistorySheet retired, Phase 12.4.4/12.8.2 — the button now navigates to
+    // the Journal calendar; its own themed a11y coverage lives in journal.spec.ts,
+    // but this scan stays here too since it's reached from Today's own button.)
     await page.getByRole('button', { name: 'View your practice history' }).click()
-    await expect(history(page)).toBeVisible()
-    await expectAxeClean(page, `${theme} — history`)
-    await page.keyboard.press('Escape')
-    await expect(history(page)).toBeHidden()
+    await expect(page).toHaveURL(/\/progress\?tab=journal/)
+    await expect(page.getByRole('region', { name: 'Journal' })).toBeVisible()
+    await expectAxeClean(page, `${theme} — journal`)
+    await page.goBack()
+    await expect(page.getByRole('heading', { name: 'Revision' })).toBeVisible({ timeout: 10_000 })
 
     // The setup sheet is the other half of the surface: a juz grid, weekday
     // toggles and number fields, all of which have to be reachable and labelled.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, BookOpen, CalendarCheck, ListChecks } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
@@ -22,15 +22,20 @@ import MemorizedGrid from './MemorizedGrid.vue'
 import JuzProgressGrid from './JuzProgressGrid.vue'
 import PageDotsGrid from './PageDotsGrid.vue'
 import MarkMemorizedModal from './MarkMemorizedModal.vue'
+import JournalPanel from './JournalPanel.vue'
 
 /**
- * Memorization progress. Three lenses (9.2): **Overview** — summary stats, bulk
+ * Memorization progress. Four lenses: **Overview** — summary stats, bulk
  * range-mark, the 604-page grid, weakest-page suggestions; **Juz** — per-juz
- * progress + a completion estimate; **Pages** — the per-page revision heatmap.
- * Tapping a page opens a sheet to toggle memorized, adjust its strength (a clean
- * revision awards hasanah), or open it in the reader. Canonical 604 scheme.
+ * progress + a completion estimate; **Pages** — the per-page revision heatmap;
+ * **Journal** (Phase 12) — the daily practice calendar + reflection notes,
+ * reached directly via `/progress?tab=journal` from Today's repointed streak
+ * button. Tapping a page opens a sheet to toggle memorized, adjust its
+ * strength (a clean revision awards hasanah), or open it in the reader.
+ * Canonical 604 scheme.
  */
 const router = useRouter()
+const route = useRoute()
 const { progress, stats, weakestPages, juzGroups } = useMemorization()
 const plan = usePlanStore()
 const persistence = useProgressPersistence(progress)
@@ -38,11 +43,29 @@ const mistakesPersistence = useMistakesPersistence()
 const planPersistence = usePlanPersistence()
 const { t, locale } = useI18n()
 
-const tab = ref<'overview' | 'juz' | 'pages'>('overview')
+type ProgressTab = 'overview' | 'juz' | 'pages' | 'journal'
+const VALID_TABS: readonly ProgressTab[] = ['overview', 'juz', 'pages', 'journal']
+// Deep-linkable so Today's streak button can land directly on Journal
+// (`/progress?tab=journal`) instead of always opening on Overview.
+const initialTab = VALID_TABS.includes(route.query.tab as ProgressTab) ? (route.query.tab as ProgressTab) : 'overview'
+const tab = ref<ProgressTab>(initialTab)
+// Vue Router reuses this component instance across navigations that stay on
+// the same route record (only `query` differs), so `initialTab` above being
+// read once at setup only works because every current caller of `?tab=`
+// navigates in from a *different* route (a fresh instance). Watch the query
+// too, so a future same-route `?tab=` push (e.g. an in-page action while
+// already on /progress) isn't silently ignored — caught in review.
+watch(
+  () => route.query.tab,
+  (value) => {
+    if (VALID_TABS.includes(value as ProgressTab)) tab.value = value as ProgressTab
+  },
+)
 const tabOptions = computed(() => [
   { value: 'overview', label: t('progress.tabs.overview') },
   { value: 'juz', label: t('progress.tabs.juz') },
   { value: 'pages', label: t('progress.tabs.pages') },
+  { value: 'journal', label: t('progress.tabs.journal') },
 ])
 
 // Completion estimate uses the plan's new-memorization pace, and only when a new
@@ -335,7 +358,7 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
       </template>
     </section>
 
-    <section v-else class="panel" :aria-label="t('progress.pagesAria')">
+    <section v-else-if="tab === 'pages'" class="panel" :aria-label="t('progress.pagesAria')">
       <p v-if="!juzGroups.length" class="loading-hint">{{ t('common.loading') }}</p>
       <template v-else>
         <p class="panel-lead">{{ t('progress.pagesLead') }}</p>
@@ -346,6 +369,10 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
           @select="openInReader"
         />
       </template>
+    </section>
+
+    <section v-else class="panel" :aria-label="t('journal.title')">
+      <JournalPanel />
     </section>
 
     <BottomSheet

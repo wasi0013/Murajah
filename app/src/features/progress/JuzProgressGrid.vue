@@ -43,7 +43,7 @@ const cells = computed<Cell[]>(() =>
 
 <template>
   <div class="juz-progress">
-    <ul class="grid" role="list">
+    <ul class="juz-grid" role="list">
       <li v-for="c in cells" :key="c.juz">
         <button
           type="button"
@@ -73,7 +73,7 @@ const cells = computed<Cell[]>(() =>
 </template>
 
 <style scoped>
-.grid {
+.juz-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
   gap: 0.5rem;

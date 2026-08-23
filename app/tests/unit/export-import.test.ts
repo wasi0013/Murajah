@@ -57,6 +57,17 @@ const fullSnapshot: ExportSnapshot = {
       habits: ['recite'],
     },
   },
+  journal: {
+    '2026-07-01': {
+      date: '2026-07-01',
+      note: 'Alhamdulillah, smooth today',
+      noteUpdatedAt: '2026-07-01T09:00:00.000Z',
+      events: [
+        { id: 'e1', type: 'band-up', page: 51, fromRank: 0, toRank: 1, createdAt: '2026-07-01T09:00:00.000Z' },
+      ],
+      eventsOverflow: 0,
+    },
+  },
   quiz: { '1': [1, 0, 1], '2': [1, 1] },
   audio: { grain: 'verse', verseReciterId: 'alafasy', speed: 1.25, autoScroll: true },
   reader: { layout: 'indopak', tajweed: false, textSizeStep: 4, page: 50 },
@@ -123,6 +134,9 @@ describe('legacy v2.0.0 backup import', () => {
     // The legacy goal/plan model doesn't map to the new shapes, so it's left out.
     expect(snap.plan).toBeUndefined()
     expect(snap.dayLog).toBeUndefined()
+    // Legacy v2.0.0 backups predate the journal entirely (Phase 12.6.4) — never
+    // populated, so importUserData's merge branch is a no-op for these.
+    expect(snap.journal).toBeUndefined()
   })
 })
 

@@ -10,6 +10,8 @@ import {
   type ReviewRating,
 } from '@/core/memorization/reviewScheduler'
 import { bandForStrength, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
+import { useJournalStore } from '@/stores/journal'
+import type { JournalEvent } from '@/core/storage/journalStorage'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
 export const TOTAL_PAGES = 604
@@ -41,6 +43,8 @@ export function todayISODate(d: Date = new Date()): string {
  * Phase 4.1 composables; this store is the state + primitive mutations.
  */
 export const useProgressStore = defineStore('progress', () => {
+  const journal = useJournalStore()
+
   const memorized = reactive(new Set<number>())
   const strength = reactive(new Map<number, number>())
   const hasanah = ref(0)
@@ -85,6 +89,35 @@ export const useProgressStore = defineStore('progress', () => {
     if (next === 0) strength.delete(page)
     else strength.set(page, next)
     return next
+  }
+
+  /**
+   * Log a journal event (Phase 12.2) when a page's *displayed band* — not its
+   * raw strength — actually crosses a `strengthBands.ts` boundary. Called from
+   * the three mutation points that can move a page across a band
+   * (`recordReview`, `penalizeMistake`, `setStrengthBand`) — deliberately
+   * **not** from inside `bumpStrength` itself, since `bulkMarkMemorized` also
+   * calls `bumpStrength` and needs its own single coalesced event (12.2.2), not
+   * one `bumpStrength` call's worth of band-change noise per page.
+   *
+   * A no-op when the band didn't actually change (e.g. a strength bump that
+   * stays within the same band). Fire-and-forget, matching `journal.addEvent`
+   * itself — none of `recordReview`/`penalizeMistake`/`setStrengthBand` await
+   * anything else in this store, so this can't become the one exception that
+   * turns them async.
+   */
+  function recordBandChange(page: number, fromRank: StrengthRank, toRank: StrengthRank): void {
+    if (fromRank === toRank) return
+    const createdAt = new Date().toISOString()
+    const event: JournalEvent = {
+      id: `${toRank > fromRank ? 'band-up' : 'band-down'}:${page}:${createdAt}`,
+      type: toRank > fromRank ? 'band-up' : 'band-down',
+      page,
+      fromRank,
+      toRank,
+      createdAt,
+    }
+    journal.addEvent(todayISODate(), event)
   }
 
   /**
@@ -164,7 +197,10 @@ export const useProgressStore = defineStore('progress', () => {
     )
     if (performance >= PASSING_THRESHOLD) {
       awardHasanah(getPageHasanah(page))
-      return bumpStrength(page, +1)
+      const fromRank = bandForStrength(strengthOf(page)).rank
+      const next = bumpStrength(page, +1)
+      recordBandChange(page, fromRank, bandForStrength(next).rank)
+      return next
     }
     return strengthOf(page)
   }
@@ -192,7 +228,10 @@ export const useProgressStore = defineStore('progress', () => {
    * informal) — a mistake is neither.
    */
   function penalizeMistake(page: number): number {
-    return bumpStrength(page, -1)
+    const fromRank = bandForStrength(strengthOf(page)).rank
+    const next = bumpStrength(page, -1)
+    recordBandChange(page, fromRank, bandForStrength(next).rank)
+    return next
   }
 
   /**
@@ -203,15 +242,28 @@ export const useProgressStore = defineStore('progress', () => {
    * over pages that already have real review history never overwrites it, and
    * re-running it over a page the bug already left at 0 backfills it. Unmarking
    * never touches strength/hasanah, matching the single-page toggle.
+   *
+   * Logs **one** coalesced `'bulk-memorized'` journal event for the whole call
+   * (Phase 12.2.2), not one per page — a single tap over a large range (up to
+   * all 604 pages) must never turn into hundreds of per-page events; that's
+   * the concrete "event storm" `recordBandChange` is deliberately not wired
+   * into `bumpStrength` to avoid (see that function's doc comment).
    */
   function bulkMarkMemorized(pages: number[], on: boolean): void {
+    let creditedCount = 0
     for (const page of pages) {
       setMemorized(page, on)
       if (on && strengthOf(page) === 0) {
         bumpStrength(page, BULK_MARK_STRENGTH)
         awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
         touchReviewDate(page)
+        creditedCount++
       }
+    }
+    if (creditedCount > 0) {
+      const createdAt = new Date().toISOString()
+      const event: JournalEvent = { id: `bulk-memorized:${createdAt}`, type: 'bulk-memorized', count: creditedCount, createdAt }
+      journal.addEvent(todayISODate(), event)
     }
   }
 
@@ -235,10 +287,12 @@ export const useProgressStore = defineStore('progress', () => {
    */
   function setStrengthBand(page: number, rank: StrengthRank): number {
     if (!inRange(page)) return 0
-    if (bandForStrength(strengthOf(page)).rank !== rank) {
+    const fromRank = bandForStrength(strengthOf(page)).rank
+    if (fromRank !== rank) {
       const minStrength = bandByRank(rank).minStrength
       if (minStrength <= 0) strength.delete(page)
       else strength.set(page, minStrength)
+      recordBandChange(page, fromRank, rank)
     }
     return strengthOf(page)
   }

@@ -25,7 +25,6 @@ import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import TaskRow from './TaskRow.vue'
 import PlanSetup from './PlanSetup.vue'
-import HistorySheet from './HistorySheet.vue'
 import TodayAudioPlayer from './TodayAudioPlayer.vue'
 
 /**
@@ -176,7 +175,13 @@ function createSmartPlan() {
 }
 
 const setupOpen = ref(false)
-const historyOpen = ref(false)
+
+/** The streak button used to open `HistorySheet` (retired, Phase 12.4.4/12.8.2
+ * — its streak numbers + heatmap are a strict subset of the Journal calendar
+ * now). Routes straight to Journal instead of a generic Overview landing. */
+function openJournal(): void {
+  void router.push({ path: '/progress', query: { tab: 'journal' } })
+}
 </script>
 
 <template>
@@ -240,7 +245,7 @@ const historyOpen = ref(false)
             type="button"
             :class="{ 'streak-lit': streak.isTodayComplete.value }"
             :aria-label="t('today.viewHistory')"
-            @click="historyOpen = true"
+            @click="openJournal"
           >
             <Icon :icon="Flame" :size="18" class="streak-icon" />
             <span class="streak-n">{{ streakLabel }}</span>
@@ -389,7 +394,6 @@ const historyOpen = ref(false)
     </template>
 
     <PlanSetup v-model:open="setupOpen" />
-    <HistorySheet v-model:open="historyOpen" />
   </main>
 </template>
 

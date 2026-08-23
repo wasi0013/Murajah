@@ -106,3 +106,32 @@ test('progress surface has no serious a11y violations in RTL', async ({ page }) 
   )
   expect(serious, JSON.stringify(serious.map((v) => v.id))).toEqual([])
 })
+
+// Journal (Phase 12.4.2/12.7.2) — the calendar's own RTL coverage. Mirroring
+// comes from the page's own `direction: rtl` (no JS-level weekday reordering,
+// see JournalCalendar.vue), so this mainly proves the catalog is wired
+// end-to-end (tab label, section headers, event/note copy) and that the
+// mirrored grid stays a11y-clean, not just visually plausible.
+test('the Journal segment renders in Arabic and stays a11y-clean under RTL', async ({ page }) => {
+  await switchToArabic(page)
+  const journal = page.getByRole('region', { name: 'اليوميات' })
+
+  await page.goto('/progress?tab=journal')
+  await expect(journal).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  await expect(journal.getByText('السلسلة الحالية')).toBeVisible()
+
+  // A day cell opens the (Arabic) detail sheet — proves the day-sheet's own
+  // catalog wiring, not just the calendar shell.
+  const anyCell = journal.locator('td[data-date] button').first()
+  await anyCell.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+  await expect(sheet.getByText('خاطرة')).toBeVisible() // the reflection-note section header
+  await page.keyboard.press('Escape')
+
+  await page.waitForTimeout(300)
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+  const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+  expect(serious, JSON.stringify(serious.map((v) => v.id))).toEqual([])
+})
