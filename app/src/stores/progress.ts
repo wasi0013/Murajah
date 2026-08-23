@@ -87,11 +87,24 @@ export const useProgressStore = defineStore('progress', () => {
     return next
   }
 
-  /** Stamp `lastReviewDate` without counting a review (unlike `markReviewed`). */
+  /**
+   * Stamp `lastReviewDate` without counting a review (unlike `markReviewed`).
+   * Exposed publicly (not just an internal helper) as the write path for the
+   * Progress-tab sheet's manual "last revised" date editor and its "Revised
+   * today" button — so it validates its input rather than trusting every
+   * caller: rejects a malformed date and clamps a future date to today (the
+   * calendar picker's `max` already prevents this client-side, but the store
+   * shouldn't rely on the UI alone to keep the decay clock honest).
+   */
   function touchReviewDate(page: number, date: string = todayISODate()): void {
     if (!inRange(page)) return
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return
+    const safeDate = date > todayISODate() ? todayISODate() : date
     const prev = reviewData.get(page)
-    reviewData.set(page, normalizeSchedule({ ...prev, lastReviewDate: date, reviewCount: prev?.reviewCount ?? 0 }))
+    reviewData.set(
+      page,
+      normalizeSchedule({ ...prev, lastReviewDate: safeDate, reviewCount: prev?.reviewCount ?? 0 }),
+    )
   }
 
   /** Add to the cumulative hasanah total (positive only — hasanah never drops). */
@@ -207,27 +220,26 @@ export const useProgressStore = defineStore('progress', () => {
    * (see strengthBands.ts) — the human-readable alternative to the raw
    * stepper. Writes the band's *lower bound* as the raw strength (a
    * deliberate minimum-commitment choice, not a midpoint or max — see the
-   * strengthBands.ts doc comment), no-oping the strength write when the page
-   * is already in the target band (so re-picking the currently-displayed
-   * band never clobbers a legitimately higher raw value, e.g. 150 → 98).
-   * Always stamps `lastReviewDate`, even on that no-op branch, on the
-   * principle that picking a level is itself a "this is accurate as of
-   * today" confirmation — though in practice a native `<select>` never
-   * fires `change` for re-picking the option already shown, so that branch
-   * isn't reachable from the current dropdown UI. The actual way to clear a
-   * decay cap today is the "+" (record a clean revision) button, not
-   * re-selecting the capped label. Does **not** touch the `memorized`
-   * boolean — that stays the separate Toggle's job. Returns the resulting
-   * raw strength.
+   * strengthBands.ts doc comment), no-oping when the page is already in the
+   * target band (so re-picking the currently-displayed band never clobbers a
+   * legitimately higher raw value, e.g. 150 → 98). Does **not** touch the
+   * `memorized` boolean — that stays the separate Toggle's job.
+   *
+   * Deliberately does **not** stamp `lastReviewDate` itself. A fat-fingered
+   * level pick is easy (one dropdown tap) and easy to flip back — unlike a
+   * revision, which is a deliberate act — so resetting the decay clock on
+   * every pick would let an accidental change-then-revert silently mark a
+   * stale page as freshly revised. The caller (the sheet UI) is responsible
+   * for stamping only after the picked level has actually stuck — see
+   * `ProgressView.vue`'s cooldown-debounced stamp.
    */
-  function setStrengthBand(page: number, rank: StrengthRank, date: string = todayISODate()): number {
+  function setStrengthBand(page: number, rank: StrengthRank): number {
     if (!inRange(page)) return 0
     if (bandForStrength(strengthOf(page)).rank !== rank) {
       const minStrength = bandByRank(rank).minStrength
       if (minStrength <= 0) strength.delete(page)
       else strength.set(page, minStrength)
     }
-    touchReviewDate(page, date)
     return strengthOf(page)
   }
 
@@ -270,6 +282,7 @@ export const useProgressStore = defineStore('progress', () => {
     toggleMemorized,
     bumpStrength,
     setStrengthBand,
+    touchReviewDate,
     awardHasanah,
     addReadingSeconds,
     addListeningSeconds,

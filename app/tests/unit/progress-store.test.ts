@@ -257,11 +257,16 @@ describe('progress persistence', () => {
 })
 
 describe('setStrengthBand', () => {
-  it('writes the band lower bound and stamps lastReviewDate', () => {
+  it('writes the band lower bound', () => {
     const p = useProgressStore()
-    expect(p.setStrengthBand(5, 4, '2026-08-23')).toBe(75) // Qawiy
+    expect(p.setStrengthBand(5, 4)).toBe(75) // Qawiy
     expect(p.strengthOf(5)).toBe(75)
-    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+
+  it('does NOT stamp lastReviewDate — the sheet UI owns the debounced stamp', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    expect(p.reviewData.has(5)).toBe(false)
   })
 
   it('rank 0 (Not Memorized) clears strength rather than storing 0', () => {
@@ -272,11 +277,10 @@ describe('setStrengthBand', () => {
     expect(p.strengthOf(5)).toBe(0)
   })
 
-  it('no-ops the strength write when already in the target band, but still stamps the date', () => {
+  it('no-ops the strength write when already in the target band', () => {
     const p = useProgressStore()
     p.bumpStrength(5, 150) // deep into Mutqan (rank 6), well above its 98 lower bound
-    expect(p.setStrengthBand(5, 6, '2026-08-23')).toBe(150) // unchanged, not clobbered to 98
-    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+    expect(p.setStrengthBand(5, 6)).toBe(150) // unchanged, not clobbered to 98
   })
 
   it('does not touch the memorized boolean', () => {
@@ -290,6 +294,45 @@ describe('setStrengthBand', () => {
   it('out of range page is a no-op', () => {
     const p = useProgressStore()
     expect(p.setStrengthBand(0, 4)).toBe(0)
+    expect(p.reviewData.has(0)).toBe(false)
+  })
+})
+
+describe('touchReviewDate', () => {
+  it('stamps a well-formed past/present date as given', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(5, '2026-01-01')
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-01-01')
+  })
+
+  it('preserves the existing reviewCount/SM-2 fields rather than resetting them', () => {
+    const p = useProgressStore()
+    p.recordReview(5, 'perfect', new Date('2026-01-01T00:00:00Z'))
+    const before = p.reviewData.get(5)
+    p.touchReviewDate(5, '2026-02-01')
+    const after = p.reviewData.get(5)
+    expect(after?.lastReviewDate).toBe('2026-02-01')
+    expect(after?.reviewCount).toBe(before?.reviewCount)
+    expect(after?.interval).toBe(before?.interval)
+  })
+
+  it('rejects a malformed date rather than storing garbage', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(5, 'not-a-date')
+    expect(p.reviewData.has(5)).toBe(false)
+  })
+
+  it('clamps a future date to today (the calendar picker\'s max should prevent this client-side, but the store does not trust it alone)', () => {
+    const p = useProgressStore()
+    const farFuture = '2999-01-01'
+    p.touchReviewDate(5, farFuture)
+    expect(p.reviewData.get(5)?.lastReviewDate).not.toBe(farFuture)
+    expect(p.reviewData.get(5)?.lastReviewDate).toBeTruthy()
+  })
+
+  it('out of range page is a no-op', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(0, '2026-01-01')
     expect(p.reviewData.has(0)).toBe(false)
   })
 })
