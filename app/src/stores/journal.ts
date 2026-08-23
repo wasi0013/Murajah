@@ -2,9 +2,9 @@ import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 import {
   appendJournalEvent,
+  applyJournalEvent,
   loadJournalRange,
   JOURNAL_NOTE_MAX_LEN,
-  MAX_EVENTS_PER_DAY,
   type JournalEntry,
   type JournalEvent,
   type JournalLog,
@@ -64,20 +64,19 @@ export const useJournalStore = defineStore('journal', () => {
 
   /**
    * Persists immediately via `appendJournalEvent`, which owns the real
-   * cap/overflow decision on disk (12.1.1/12.1.4 — a read-modify-write that
-   * never touches `note`). This only *mirrors* that decision into the
-   * in-memory map when the date is already resident, so a visible calendar
-   * cell updates instantly without waiting on the round trip; a non-resident
-   * date is still written through correctly (the storage layer doesn't need
-   * this store's cooperation to do so) — it simply isn't reflected here until
-   * the next `loadMonth()` covering that date.
+   * cap/overflow/dedup decision on disk (`applyJournalEvent` — 12.1.1/12.1.4/
+   * 12.2.3 — a read-modify-write that never touches `note`). This only
+   * *mirrors* that same decision (via the identical `applyJournalEvent`
+   * helper, not a re-implementation that could drift) into the in-memory map
+   * when the date is already resident, so a visible calendar cell updates
+   * instantly without waiting on the round trip; a non-resident date is still
+   * written through correctly (the storage layer doesn't need this store's
+   * cooperation to do so) — it simply isn't reflected here until the next
+   * `loadMonth()` covering that date.
    */
   function addEvent(date: string, event: JournalEvent): void {
     const entry = byDate.get(date)
-    if (entry) {
-      if (entry.events.length < MAX_EVENTS_PER_DAY) entry.events.push(event)
-      else entry.eventsOverflow += 1
-    }
+    if (entry) applyJournalEvent(entry, event)
     void appendJournalEvent(date, event)
   }
 

@@ -141,3 +141,19 @@ describe('progress store → journal event capture (12.2.2 — bulkMarkMemorized
     expect(journal.get(todayISODate())?.events ?? []).toHaveLength(0)
   })
 })
+
+describe('progress store → journal event capture (12.2.3 — same-page/same-day dedup)', () => {
+  it('crossing the same band direction twice in one day (with a dip between) replaces, not appends', () => {
+    const journal = residentToday()
+    const p = useProgressStore()
+
+    p.recordReview(10, 'perfect') // 0 → 1: band-up #1
+    p.penalizeMistake(10) // 1 → 0: band-down
+    p.recordReview(10, 'perfect') // 0 → 1 again: band-up #2 (same page/type as #1)
+
+    const events = journal.get(todayISODate())!.events
+    expect(events).toHaveLength(2) // one band-down, one band-up (replaced, not tripled)
+    expect(events.filter((e) => e.type === 'band-up')).toHaveLength(1)
+    expect(events.filter((e) => e.type === 'band-down')).toHaveLength(1)
+  })
+})

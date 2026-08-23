@@ -103,6 +103,44 @@ describe('journal storage — write (read-modify-write, never a blind put)', () 
     expect(stored.eventsOverflow).toBe(5)
   })
 
+  it('the same page crossing the same band direction twice in a day replaces, not appends (12.2.3)', async () => {
+    await appendJournalEvent('2026-08-23', event({ id: 'first', createdAt: '2026-08-23T09:00:00.000Z' }))
+    await appendJournalEvent(
+      '2026-08-23',
+      event({ id: 'second', fromRank: 0, toRank: 1, createdAt: '2026-08-23T15:00:00.000Z' }),
+    )
+
+    const stored = await loadJournalEntry('2026-08-23')
+    expect(stored.events).toHaveLength(1)
+    expect(stored.events[0]).toMatchObject({ id: 'second', createdAt: '2026-08-23T15:00:00.000Z' })
+  })
+
+  it('the same page crossing both directions in a day keeps both events', async () => {
+    await appendJournalEvent('2026-08-23', event({ id: 'up', type: 'band-up' }))
+    await appendJournalEvent('2026-08-23', event({ id: 'down', type: 'band-down' }))
+
+    const stored = await loadJournalEntry('2026-08-23')
+    expect(stored.events.map((e) => e.id).sort()).toEqual(['down', 'up'])
+  })
+
+  it('two separate bulk-memorized events in one day are never deduped against each other', async () => {
+    await appendJournalEvent('2026-08-23', {
+      id: 'bulk-1',
+      type: 'bulk-memorized',
+      count: 5,
+      createdAt: '2026-08-23T09:00:00.000Z',
+    })
+    await appendJournalEvent('2026-08-23', {
+      id: 'bulk-2',
+      type: 'bulk-memorized',
+      count: 3,
+      createdAt: '2026-08-23T15:00:00.000Z',
+    })
+
+    const stored = await loadJournalEntry('2026-08-23')
+    expect(stored.events).toHaveLength(2)
+  })
+
   it('the blocker: appending an event for a date never resident in memory preserves that date\'s existing note', async () => {
     // A note was saved earlier (e.g. from the Journal panel, in an earlier session).
     await saveJournalNote('2026-08-23', 'wrote this earlier', '2026-08-23T09:00:00.000Z')

@@ -44,6 +44,17 @@ describe('journal store — in-memory state', () => {
     expect(journal.get('2026-08-23')!.events).toEqual([event()])
   })
 
+  it('addEvent replaces a same-page/same-type event in memory instead of appending (12.2.3)', () => {
+    const journal = useJournalStore()
+    journal.ensure('2026-08-23')
+    journal.addEvent('2026-08-23', event({ id: 'first', createdAt: '2026-08-23T09:00:00.000Z' }))
+    journal.addEvent('2026-08-23', event({ id: 'second', createdAt: '2026-08-23T15:00:00.000Z' }))
+
+    const events = journal.get('2026-08-23')!.events
+    expect(events).toHaveLength(1)
+    expect(events[0].id).toBe('second')
+  })
+
   it('addEvent past the cap increments eventsOverflow in memory, not the array', () => {
     const journal = useJournalStore()
     journal.ensure('2026-08-23')

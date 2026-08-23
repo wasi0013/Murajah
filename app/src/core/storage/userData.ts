@@ -598,24 +598,47 @@ export async function saveJournalNote(date: string, note: string, noteUpdatedAt:
 }
 
 /**
+ * Apply one event to an entry's event list **in place** — the single cap +
+ * dedup decision shared by `appendJournalEvent` (below) and the journal
+ * store's in-memory mirror (`stores/journal.ts`'s `addEvent`), so the two
+ * never diverge on what counts as "this happened again" (Phase 12.2.3).
+ *
+ * De-dupes by `(page, type)`: a page crossing the *same* band direction twice
+ * in one day (e.g. two separate passing reviews, with a mistake pulling it
+ * back down in between) replaces the earlier same-typed event rather than
+ * appending a second row — same page/type is the same *kind* of news
+ * repeating, not two distinct facts. A page crossing **both** directions in
+ * one day (`band-up` and `band-down`) keeps both — that genuinely is two
+ * facts. `'bulk-memorized'` events (no `page`) are never deduped against each
+ * other — each coalesced bulk action is already one event (12.2.2); two
+ * separate bulk actions in one day are two separate facts.
+ *
+ * Past {@link MAX_EVENTS_PER_DAY}, increments `eventsOverflow` instead of
+ * growing the array without bound (a dedup replacement never counts against
+ * this — it doesn't grow the array).
+ */
+export function applyJournalEvent(entry: JournalEntry, event: JournalEvent): void {
+  const dupIndex =
+    event.page !== undefined ? entry.events.findIndex((e) => e.page === event.page && e.type === event.type) : -1
+  if (dupIndex !== -1) entry.events[dupIndex] = event
+  else if (entry.events.length < MAX_EVENTS_PER_DAY) entry.events.push(event)
+  else entry.eventsOverflow += 1
+}
+
+/**
  * Append one band-change/bulk-mark event as a **read-modify-write inside one
  * transaction** — the write path progress.ts's mutations call into (Phase 12.2).
  * Only ever touches `events`/`eventsOverflow`; an existing note for the date is
  * read back and passed through unmodified, even from a caller (any route, not
- * just the Journal panel) that has no idea whether one exists. Past
- * {@link MAX_EVENTS_PER_DAY}, increments `eventsOverflow` instead of growing the
- * array without bound.
+ * just the Journal panel) that has no idea whether one exists.
  */
 export async function appendJournalEvent(date: string, event: JournalEvent): Promise<void> {
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     const store = tx.objectStore(STORE)
     const existing = deserializeJournalEntry(date, await idbGet<StoredJournalEntry>(store, journalKey(date)))
-    const events = [...existing.events]
-    let eventsOverflow = existing.eventsOverflow
-    if (events.length < MAX_EVENTS_PER_DAY) events.push(event)
-    else eventsOverflow += 1
-    store.put({ ...existing, events, eventsOverflow } satisfies StoredJournalEntry, journalKey(date))
+    applyJournalEvent(existing, event)
+    store.put(serializeJournalEntry(existing), journalKey(date))
     await txDone(tx)
   } catch {
     /* best-effort */
