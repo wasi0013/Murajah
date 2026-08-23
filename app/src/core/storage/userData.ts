@@ -1,8 +1,9 @@
 import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
 import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
+import type { StrengthRank } from '@/core/memorization/strengthBands'
 import type { PlaybackScope } from '@/core/audio/scope'
-import { idbCount, idbGet, openDb, txDone } from './idb'
+import { idbCount, idbGet, idbGetAll, openDb, txDone } from './idb'
 
 /**
  * Persistence for migratable user data (mistakes now; memorized pages, perfect
@@ -427,6 +428,214 @@ export async function saveDayLog(log: DayLog): Promise<void> {
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(serializeDayLog(log), DAYLOG_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * The practice journal (Phase 12): one automatic-history entry per calendar day —
+ * an optional short reflection note plus memorization-strength band-change events
+ * (page-level "weak → strong" moments that `progress.strength` can't reconstruct
+ * after the fact, since it only holds the *current* value). Everything else the
+ * Journal view shows (reading/revision/weak-page completions, recordings, habits)
+ * already has a durable, date-addressable home elsewhere (`dayLog`, `recordings`)
+ * and is read, not duplicated, by this feature — see plans/phase-12-journal.md.
+ *
+ * Unlike every other key in this file, journal entries are **not** one whole-blob
+ * value under a single key. `useDayLogPersistence`'s pattern — a debounced
+ * `watch(() => store.snapshot(), …, { deep: true })` that rewrites the *entire*
+ * history on every change — is the wrong shape for free-text notes edited one day
+ * at a time: a single keystroke would otherwise deep-clone and rewrite every day
+ * the user has ever journaled. Instead each day is its own key, `journal:<date>`,
+ * inside the *same* `data` object store this file already opens — no new object
+ * store, no `DB_VERSION` bump, no `upgradeneeded` migration, and (since `idb.ts`'s
+ * `openDb` has no `onblocked`/`onversionchange` handling and this file shares one
+ * `dbPromise` across every key) no multi-tab blocked-connection hazard either. A
+ * write touches exactly the one date it changed — O(1), not O(history length).
+ */
+const JOURNAL_KEY_PREFIX = 'journal:'
+const journalKey = (date: string): string => `${JOURNAL_KEY_PREFIX}${date}`
+/** Lexicographic range covering every `journal:*` key — `YYYY-MM-DD` sorts as a string. */
+const JOURNAL_RANGE_ALL = IDBKeyRange.bound(JOURNAL_KEY_PREFIX, `${JOURNAL_KEY_PREFIX}￿`)
+
+/** Reflection notes are capped short ("tweet-sized" per the brief), not a free-form journal. */
+export const JOURNAL_NOTE_MAX_LEN = 280
+/**
+ * Per-day event cap. A heavy single day (e.g. a bulk-mark session touching many
+ * bands) gets one honest overflow count instead of an unbounded per-day array —
+ * years of history must never turn one date's record into an ever-growing list.
+ */
+export const MAX_EVENTS_PER_DAY = 20
+
+/** One page crossing a memorization-strength band (see `strengthBands.ts`), or a
+ * coalesced bulk-mark — never one event per page for a bulk action (that would be
+ * an unbounded write per tap, the exact growth this module's cap exists to avoid).
+ */
+export interface JournalEvent {
+  /** `${type}:${page}:${createdAt}` (or equivalent) — stable identity for import dedupe. */
+  id: string
+  type: 'band-up' | 'band-down' | 'bulk-memorized'
+  /** Absent only for `'bulk-memorized'`, which is a whole-action aggregate. */
+  page?: number
+  fromRank?: StrengthRank
+  toRank?: StrengthRank
+  /** `'bulk-memorized'` only — how many pages the action credited. */
+  count?: number
+  /** ISO instant — sort order and the import-merge dedupe tie-break. */
+  createdAt: string
+}
+
+/** One calendar day's journal entry. `date` matches `DayRecord.date` (`YYYY-MM-DD`). */
+export interface JournalEntry {
+  date: string
+  /** `''` = no note. */
+  note: string
+  /** ISO instant of the note's last edit — `null` if never written; the backup-merge tie-breaker. */
+  noteUpdatedAt: string | null
+  events: JournalEvent[]
+  /** Count of events beyond `MAX_EVENTS_PER_DAY`, so a heavy day reads "+N more", never silent loss. */
+  eventsOverflow: number
+}
+
+/** On-disk shape is identical to {@link JournalEntry} (already JSON-safe). */
+export type StoredJournalEntry = JournalEntry
+export type JournalLog = Map<string, JournalEntry>
+export type StoredJournal = Record<string, JournalEntry>
+
+function emptyJournalEntry(date: string): JournalEntry {
+  return { date, note: '', noteUpdatedAt: null, events: [], eventsOverflow: 0 }
+}
+
+export function serializeJournalEntry(e: JournalEntry): StoredJournalEntry {
+  return {
+    date: e.date,
+    note: e.note,
+    noteUpdatedAt: e.noteUpdatedAt,
+    events: e.events.map((ev) => ({ ...ev })),
+    eventsOverflow: e.eventsOverflow,
+  }
+}
+
+/** Normalize a partial/corrupt stored value to safe defaults, matching every other
+ * deserializer's `?? []` / `?? 0` defensiveness in this file — never throws. */
+export function deserializeJournalEntry(
+  date: string,
+  stored: Partial<StoredJournalEntry> | undefined,
+): JournalEntry {
+  return {
+    date: stored?.date ?? date,
+    note: stored?.note ?? '',
+    noteUpdatedAt: stored?.noteUpdatedAt ?? null,
+    events: [...(stored?.events ?? [])],
+    eventsOverflow: stored?.eventsOverflow ?? 0,
+  }
+}
+
+/** Load one day's entry (an empty, unsaved-shaped entry if none / on error). */
+export async function loadJournalEntry(date: string): Promise<JournalEntry> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredJournalEntry>(tx.objectStore(STORE), journalKey(date))
+    await txDone(tx)
+    return stored ? deserializeJournalEntry(date, stored) : emptyJournalEntry(date)
+  } catch {
+    return emptyJournalEntry(date)
+  }
+}
+
+/** Load every entry whose date falls within `[startDate, endDate]` (inclusive), e.g.
+ * a visible calendar month — a cheap `IDBKeyRange` scan, not a full-history load. */
+export async function loadJournalRange(startDate: string, endDate: string): Promise<JournalLog> {
+  const map: JournalLog = new Map()
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const range = IDBKeyRange.bound(journalKey(startDate), journalKey(endDate))
+    const stored = await idbGetAll<StoredJournalEntry>(tx.objectStore(STORE), range)
+    await txDone(tx)
+    for (const entry of stored) map.set(entry.date, deserializeJournalEntry(entry.date, entry))
+  } catch {
+    /* best-effort — an empty range on error, matching every other loader here */
+  }
+  return map
+}
+
+/** Load the whole journal (every date ever recorded) — the export/import path
+ * (Phase 12.6) only; bounded by how many distinct days the user has practiced on,
+ * never by the per-day event cap (that bounds one entry's size, not this count). */
+export async function loadFullJournal(): Promise<JournalLog> {
+  const map: JournalLog = new Map()
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGetAll<StoredJournalEntry>(tx.objectStore(STORE), JOURNAL_RANGE_ALL)
+    await txDone(tx)
+    for (const entry of stored) map.set(entry.date, deserializeJournalEntry(entry.date, entry))
+  } catch {
+    /* best-effort */
+  }
+  return map
+}
+
+/**
+ * Persist a day's reflection note as a **read-modify-write inside one transaction**
+ * — never a blind `put` of a whole entry. This function only ever touches the note
+ * fields; whatever events already exist on disk for this date pass through
+ * untouched, even if the caller has never loaded them (e.g. a route that only
+ * knows about notes, never events). Truncates to {@link JOURNAL_NOTE_MAX_LEN}.
+ */
+export async function saveJournalNote(date: string, note: string, noteUpdatedAt: string): Promise<void> {
+  try {
+    const trimmed = note.length > JOURNAL_NOTE_MAX_LEN ? note.slice(0, JOURNAL_NOTE_MAX_LEN) : note
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    const existing = deserializeJournalEntry(date, await idbGet<StoredJournalEntry>(store, journalKey(date)))
+    store.put({ ...existing, note: trimmed, noteUpdatedAt } satisfies StoredJournalEntry, journalKey(date))
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Append one band-change/bulk-mark event as a **read-modify-write inside one
+ * transaction** — the write path progress.ts's mutations call into (Phase 12.2).
+ * Only ever touches `events`/`eventsOverflow`; an existing note for the date is
+ * read back and passed through unmodified, even from a caller (any route, not
+ * just the Journal panel) that has no idea whether one exists. Past
+ * {@link MAX_EVENTS_PER_DAY}, increments `eventsOverflow` instead of growing the
+ * array without bound.
+ */
+export async function appendJournalEvent(date: string, event: JournalEvent): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    const existing = deserializeJournalEntry(date, await idbGet<StoredJournalEntry>(store, journalKey(date)))
+    const events = [...existing.events]
+    let eventsOverflow = existing.eventsOverflow
+    if (events.length < MAX_EVENTS_PER_DAY) events.push(event)
+    else eventsOverflow += 1
+    store.put({ ...existing, events, eventsOverflow } satisfies StoredJournalEntry, journalKey(date))
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Write a whole journal (every date in `log`) in **one** transaction — the
+ * backup-import path (Phase 12.6), after `mergeJournal` has already computed each
+ * date's final state. Deliberately not N calls to `saveJournalNote`/
+ * `appendJournalEvent`: those exist to protect a single date's concurrent field
+ * writes, not to bulk-import an already-resolved snapshot, and N separate
+ * transactions here would be exactly the per-key write storm the key scheme
+ * exists to avoid.
+ */
+export async function saveFullJournal(log: JournalLog): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    for (const [date, entry] of log) store.put(serializeJournalEntry(entry), journalKey(date))
     await txDone(tx)
   } catch {
     /* best-effort */

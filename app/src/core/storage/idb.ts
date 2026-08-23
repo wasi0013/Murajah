@@ -32,7 +32,7 @@ export function txDone(tx: IDBTransaction): Promise<void> {
 export const idbGet = <T>(store: IDBObjectStore, key: IDBValidKey) =>
   promisify<T>(store.get(key) as IDBRequest<T>)
 
-export const idbGetAll = <T>(source: IDBObjectStore | IDBIndex) =>
-  promisify<T[]>(source.getAll() as IDBRequest<T[]>)
+export const idbGetAll = <T>(source: IDBObjectStore | IDBIndex, query?: IDBValidKey | IDBKeyRange) =>
+  promisify<T[]>(source.getAll(query) as IDBRequest<T[]>)
 
 export const idbCount = (source: IDBObjectStore | IDBIndex) => promisify(source.count())
