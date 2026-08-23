@@ -135,11 +135,17 @@ test('the streak survives migration and shows on day one', async ({ page }) => {
   await expect(page.locator('.streak-n')).toHaveText('2 days', { timeout: 10_000 })
   await expect(page.locator('.streak-sub')).toContainText('Finish today to keep it')
 
+  // HistorySheet is retired (Phase 12.4.4/12.8.2) — the same button now
+  // navigates to the Journal calendar on /progress instead of opening a dialog.
   await page.getByRole('button', { name: 'View your practice history' }).click()
-  const history = page.getByRole('dialog', { name: 'Practice history' })
-  await expect(history.locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('2')
-  await expect(history.locator('[data-date="2026-04-30"] .cell-completed')).toBeAttached()
-  await expect(history.locator('[data-date="2026-04-29"] .cell-completed')).toBeAttached()
+  await expect(page).toHaveURL(/\/progress\?tab=journal/)
+  const journal = page.getByRole('region', { name: 'Journal' })
+  await expect(journal.locator('.stat', { hasText: 'Current streak' }).locator('.stat-n')).toHaveText('2')
+
+  // The calendar opens on "today"'s month (May); April 29/30 are the previous month.
+  await journal.getByRole('button', { name: 'Previous month' }).click()
+  await expect(journal.locator('[data-date="2026-04-30"] .cell-completed')).toBeAttached()
+  await expect(journal.locator('[data-date="2026-04-29"] .cell-completed')).toBeAttached()
 })
 
 test('completing a task on a migrated plan advances it and persists', async ({ page }) => {
