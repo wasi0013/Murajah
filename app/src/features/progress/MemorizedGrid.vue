@@ -3,6 +3,7 @@ import { nextTick, ref } from 'vue'
 import { useMemorization } from '@/composables/useMemorization'
 import { TOTAL_PAGES } from '@/stores/progress'
 import { juzProgress, type PageCell } from '@/core/memorization/progressView'
+import { STRENGTH_BANDS, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
 import { useI18n } from '@/core/i18n'
 
 const { t } = useI18n()
@@ -70,28 +71,61 @@ function jumpToJuz(juz: number, startPage: number): void {
   activePage.value = startPage
 }
 
-/** Success-ramp background for a strength tier (0…6): 22% → 94% mix. */
-function tierBg(tier: number): string {
-  return `color-mix(in oklab, var(--color-success) ${22 + tier * 12}%, var(--color-surface))`
+/**
+ * Background/text CSS vars for a band (see strengthBands.ts). Band 6 (Mutqan)
+ * is a fixed "ink" pair rather than a themed hue — a deliberately different
+ * visual language for the top level — and carries its own border var (visible
+ * in dark theme so it doesn't merge into the already near-black surface).
+ */
+function bandVars(level: StrengthRank): { bg: string; text: string; border: string } {
+  if (level === 6) {
+    return { bg: 'var(--color-mutqan-bg)', text: 'var(--color-mutqan-text)', border: 'var(--color-mutqan-border)' }
+  }
+  // Not used by cellStyle (guarded out before calling) or the legend (which
+  // starts at rank 1 — band 0 is the separate "not started" swatch) — kept
+  // as a defensive fallback so an out-of-guard call degrades to the muted
+  // empty look rather than undefined CSS values.
+  if (level === 0) {
+    return { bg: 'var(--color-surface)', text: 'var(--color-text-muted)', border: 'var(--color-border)' }
+  }
+  // Unlike the old monotonic lightness ramp, these hues vary widely in
+  // contrast against a single blanket text colour. --color-danger/
+  // --color-success are dark/saturated enough in every theme for
+  // --color-on-status; the amber/teal/blue highlight tokens are light-to-mid
+  // toned in every theme (light, dark, and sepia all pick pastel-ish hl-*
+  // values), so they need a text colour that stays dark regardless of theme
+  // — --color-band-ink, not --color-text (which itself flips to a near-white
+  // value in dark theme and would fail contrast there). Verified against all
+  // 3 themes; band 0 is handled by cellStyle before this is ever called.
+  const vars: Record<Exclude<StrengthRank, 0 | 6>, { bg: string; text: string }> = {
+    1: { bg: 'var(--hl-amber)', text: 'var(--color-band-ink)' },
+    2: { bg: 'var(--color-danger)', text: 'var(--color-on-status)' },
+    3: { bg: 'var(--hl-teal)', text: 'var(--color-band-ink)' },
+    4: { bg: 'var(--hl-blue)', text: 'var(--color-band-ink)' },
+    5: { bg: 'var(--color-success)', text: 'var(--color-on-status)' },
+  }
+  return { ...vars[level as Exclude<StrengthRank, 0 | 6>], border: 'transparent' }
 }
 
 function cellStyle(c: PageCell): Record<string, string> {
-  if (!c.memorized) return {}
-  return {
-    background: tierBg(c.tier),
-    color: c.tier >= 3 ? 'var(--color-on-status)' : 'var(--color-text)',
-    borderColor: 'transparent',
-  }
+  // Band 0 ("Not Memorized") renders as a plain, uncoloured cell even in the
+  // rare memorized-but-strength-0 case (reachable via the sheet's Toggle
+  // without ever setting a level) — there's no readable single text colour
+  // for --color-border's very pale/very dark bg across every theme, and
+  // "memorized + Not Memorized" would be a confusing label anyway.
+  if (!c.memorized || c.level === 0) return {}
+  const v = bandVars(c.level)
+  return { background: v.bg, color: v.text, borderColor: v.border }
 }
 
-function rampStyle(tier: number): Record<string, string> {
-  return { background: tierBg(tier) }
+function bandLabel(level: StrengthRank): string {
+  return t(`strengthBand.${bandByRank(level).labelKey}`)
 }
 
 function cellLabel(c: PageCell): string {
   const parts = [t('common.page', { n: c.page })]
   parts.push(c.memorized ? t('grid.cell.memorized') : t('grid.cell.notMemorized'))
-  if (c.strength > 0) parts.push(t('grid.cell.strength', { n: c.strength }))
+  if (c.memorized && c.level > 0) parts.push(bandLabel(c.level))
   if (c.mistakes > 0) parts.push(t('grid.cell.mistakes', { n: c.mistakes }))
   return parts.join(', ')
 }
@@ -117,11 +151,9 @@ function cellLabel(c: PageCell): string {
         <span class="swatch swatch-empty" />
         {{ t('common.notStarted') }}
       </span>
-      <span class="legend-item">
-        <span class="ramp">
-          <span v-for="step in 7" :key="step" class="ramp-step" :style="rampStyle(step - 1)" />
-        </span>
-        {{ t('grid.legendRamp') }}
+      <span v-for="band in STRENGTH_BANDS.slice(1)" :key="band.rank" class="legend-item">
+        <span class="swatch" :style="{ background: bandVars(band.rank).bg, borderColor: bandVars(band.rank).border }" />
+        {{ bandLabel(band.rank) }}
       </span>
       <span class="legend-item">
         <span class="swatch swatch-mistake"><span class="dot" /></span>
@@ -232,6 +264,7 @@ function cellLabel(c: PageCell): string {
   width: 1rem;
   height: 1rem;
   border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   position: relative;
 }
 .swatch-empty {
@@ -249,15 +282,6 @@ function cellLabel(c: PageCell): string {
   height: 4px;
   border-radius: 50%;
   background: var(--color-danger);
-}
-.ramp {
-  display: inline-flex;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.ramp-step {
-  width: 0.6rem;
-  height: 1rem;
 }
 .juz {
   display: flex;

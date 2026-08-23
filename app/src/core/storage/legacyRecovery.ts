@@ -29,6 +29,7 @@ import {
   loadProgress,
   saveProgress,
   deserializeProgress,
+  backfillReviewDates,
   loadMistakes,
   saveMistakes,
   deserializeMistakes,
@@ -106,11 +107,18 @@ async function mergeProgress(incoming: Progress | null): Promise<void> {
   for (const [page, n] of incoming.strength) {
     strength.set(page, Math.max(strength.get(page) ?? 0, n))
   }
+  // Carry over incoming review dates (backfilled to today by the caller, since
+  // legacy exports never carry `reviewData`) for pages the current session
+  // doesn't already track — never overwrite real, already-tracked history.
+  const reviewData = new Map(current.reviewData)
+  for (const [page, r] of incoming.reviewData) {
+    if (!reviewData.has(page)) reviewData.set(page, r)
+  }
   await saveProgress({
     memorized: new Set([...current.memorized, ...incoming.memorized]),
     strength,
     hasanah: current.hasanah,
-    reviewData: current.reviewData,
+    reviewData,
   })
 }
 
@@ -180,7 +188,9 @@ export async function recoverLegacyData(): Promise<RecoveryResult> {
     return { status: 'error' }
   }
 
-  const incomingProgress = snap.progress ? deserializeProgress(snap.progress) : null
+  const incomingProgress = snap.progress
+    ? backfillReviewDates(deserializeProgress(snap.progress)).progress
+    : null
   const incomingMistakes = snap.mistakes ? deserializeMistakes(snap.mistakes) : null
 
   try {

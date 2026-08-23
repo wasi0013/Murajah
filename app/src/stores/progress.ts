@@ -9,6 +9,7 @@ import {
   PASSING_THRESHOLD,
   type ReviewRating,
 } from '@/core/memorization/reviewScheduler'
+import { bandForStrength, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
 export const TOTAL_PAGES = 604
@@ -66,13 +67,44 @@ export const useProgressStore = defineStore('progress', () => {
     return next
   }
 
-  /** Adjust a page's memorization strength; clamped to ≥ 0. Returns the new value. */
+  /**
+   * Adjust a page's memorization strength; clamped to ≥ 0. Returns the new value.
+   *
+   * Deliberately does **not** stamp `reviewData[page].lastReviewDate` — unlike
+   * `penalizeMistake`/`setStrengthBand`/`bulkMarkMemorized`, which call
+   * {@link touchReviewDate} explicitly. `recordReview` calls this *after*
+   * already writing `reviewData` with its own caller-supplied *logical* date
+   * (the Today engine's clock, not necessarily wall-clock now); an
+   * unconditional stamp here would silently clobber that. Any future direct
+   * caller of `bumpStrength` that wants the decay clock reset must call
+   * `touchReviewDate` itself.
+   */
   function bumpStrength(page: number, delta: number): number {
     if (!inRange(page)) return 0
     const next = Math.max(0, strengthOf(page) + delta)
     if (next === 0) strength.delete(page)
     else strength.set(page, next)
     return next
+  }
+
+  /**
+   * Stamp `lastReviewDate` without counting a review (unlike `markReviewed`).
+   * Exposed publicly (not just an internal helper) as the write path for the
+   * Progress-tab sheet's manual "last revised" date editor and its "Revised
+   * today" button — so it validates its input rather than trusting every
+   * caller: rejects a malformed date and clamps a future date to today (the
+   * calendar picker's `max` already prevents this client-side, but the store
+   * shouldn't rely on the UI alone to keep the decay clock honest).
+   */
+  function touchReviewDate(page: number, date: string = todayISODate()): void {
+    if (!inRange(page)) return
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return
+    const safeDate = date > todayISODate() ? todayISODate() : date
+    const prev = reviewData.get(page)
+    reviewData.set(
+      page,
+      normalizeSchedule({ ...prev, lastReviewDate: safeDate, reviewCount: prev?.reviewCount ?? 0 }),
+    )
   }
 
   /** Add to the cumulative hasanah total (positive only — hasanah never drops). */
@@ -146,7 +178,19 @@ export const useProgressStore = defineStore('progress', () => {
     return recordReview(page, 'perfect')
   }
 
-  /** A mistake on a page: strength −1 (floor 0); hasanah untouched, never restored. */
+  /**
+   * A mistake on a page: strength −1 (floor 0); hasanah untouched, never
+   * restored.
+   *
+   * Deliberately does **not** call {@link touchReviewDate}. `weaknessScorer`
+   * reads `reviewData.lastReviewDate` for its recency factor (weight 0.30,
+   * `min(days/30, 1)`) — stamping "today" on a mistake would zero that term
+   * and could push a page *below* `WEAK_THRESHOLD`, dropping it out of the
+   * weak-reinforcement lane exactly when the user signalled they got it
+   * wrong. It also isn't a "revision" by the user's own definition of what
+   * resets the memorization-level decay clock (recorded revisions, formal or
+   * informal) — a mistake is neither.
+   */
   function penalizeMistake(page: number): number {
     return bumpStrength(page, -1)
   }
@@ -166,8 +210,37 @@ export const useProgressStore = defineStore('progress', () => {
       if (on && strengthOf(page) === 0) {
         bumpStrength(page, BULK_MARK_STRENGTH)
         awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
+        touchReviewDate(page)
       }
     }
+  }
+
+  /**
+   * Set a page's memorization level directly from the Progress-tab dropdown
+   * (see strengthBands.ts) — the human-readable alternative to the raw
+   * stepper. Writes the band's *lower bound* as the raw strength (a
+   * deliberate minimum-commitment choice, not a midpoint or max — see the
+   * strengthBands.ts doc comment), no-oping when the page is already in the
+   * target band (so re-picking the currently-displayed band never clobbers a
+   * legitimately higher raw value, e.g. 150 → 98). Does **not** touch the
+   * `memorized` boolean — that stays the separate Toggle's job.
+   *
+   * Deliberately does **not** stamp `lastReviewDate` itself. A fat-fingered
+   * level pick is easy (one dropdown tap) and easy to flip back — unlike a
+   * revision, which is a deliberate act — so resetting the decay clock on
+   * every pick would let an accidental change-then-revert silently mark a
+   * stale page as freshly revised. The caller (the sheet UI) is responsible
+   * for stamping only after the picked level has actually stuck — see
+   * `ProgressView.vue`'s cooldown-debounced stamp.
+   */
+  function setStrengthBand(page: number, rank: StrengthRank): number {
+    if (!inRange(page)) return 0
+    if (bandForStrength(strengthOf(page)).rank !== rank) {
+      const minStrength = bandByRank(rank).minStrength
+      if (minStrength <= 0) strength.delete(page)
+      else strength.set(page, minStrength)
+    }
+    return strengthOf(page)
   }
 
   /** Replace all progress (migration / hydrate). */
@@ -208,6 +281,8 @@ export const useProgressStore = defineStore('progress', () => {
     setMemorized,
     toggleMemorized,
     bumpStrength,
+    setStrengthBand,
+    touchReviewDate,
     awardHasanah,
     addReadingSeconds,
     addListeningSeconds,

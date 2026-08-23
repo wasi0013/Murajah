@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, BookOpen, ListChecks, Minus, Plus } from 'lucide-vue-next'
+import { ArrowLeft, BookOpen, CalendarCheck, ListChecks } from 'lucide-vue-next'
 import { useMemorization } from '@/composables/useMemorization'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useMistakesPersistence } from '@/composables/useMistakesPersistence'
 import { usePlanPersistence } from '@/composables/usePlanPersistence'
 import { usePlanStore } from '@/stores/plan'
-import { TOTAL_PAGES } from '@/stores/progress'
+import { TOTAL_PAGES, todayISODate } from '@/stores/progress'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { estimateCompletion } from '@/core/memorization/completion'
 import { formatReadingTime } from '@/core/memorization/progressView'
+import { STRENGTH_BANDS, bandForStrength, bandByRank, effectiveRank, daysSince, type StrengthRank } from '@/core/memorization/strengthBands'
+import { createLevelEditController } from '@/core/memorization/levelEditController'
 import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -84,6 +86,116 @@ function openPage(page: number) {
 }
 function openInReader(page: number) {
   void router.push(readerLink({ page }))
+}
+
+// —— Memorization level (7-band dropdown, replaces the raw-number stepper) ——
+function levelLabel(rank: StrengthRank): string {
+  return t(`strengthBand.${bandByRank(rank).labelKey}`)
+}
+const selectedRawRank = computed<StrengthRank>(() =>
+  selectedPage.value === null ? 0 : bandForStrength(progress.strengthOf(selectedPage.value)).rank,
+)
+const selectedDaysSince = computed(() =>
+  selectedPage.value === null
+    ? Infinity
+    : daysSince(progress.reviewData.get(selectedPage.value)?.lastReviewDate),
+)
+const selectedEffectiveRank = computed<StrengthRank>(() =>
+  selectedPage.value === null
+    ? 0
+    : effectiveRank(progress.strengthOf(selectedPage.value), selectedDaysSince.value),
+)
+
+// —— Manual level picks: exact-restore on revert + debounced decay-clock stamp ——
+// Picking a level always applies immediately, but two things are protected
+// against a fat-fingered pick: (1) flipping back to the band a page started
+// this run in restores the *exact* prior raw strength rather than flooring
+// it (setStrengthBand always writes a band's floor, which would otherwise be
+// lossy for real revision history built up above that floor), and (2) the
+// "last revised" stamp only commits 60s after the *last* edit in a run, and
+// only if the level actually netted out different — see levelEditController.ts.
+// Deliberately not cancelled on unmount so a pending stamp survives
+// navigating away from this view within the same app session (the Pinia
+// store is app-global) — only a full reload within the 60s window loses it.
+const levelEdits = createLevelEditController({
+  currentStrength: (page) => progress.strengthOf(page),
+  writeBandFloor: (page, rank) => progress.setStrengthBand(page, rank),
+  restoreStrength: (page, value) => progress.bumpStrength(page, value - progress.strengthOf(page)),
+  stamp: (page, date) => progress.touchReviewDate(page, date),
+  today: todayISODate,
+})
+
+// The dropdown is bound to the *raw* band, never the effective/capped one —
+// binding to the capped value would risk writing the cap's lower bound back
+// over a legitimately higher raw strength the moment the sheet re-renders.
+const levelSelection = computed<StrengthRank>({
+  get: () => selectedRawRank.value,
+  set: (rank) => {
+    const page = selectedPage.value
+    if (page === null) return
+    levelEdits.pickLevel(page, rank)
+  },
+})
+
+const lastRevisedISO = computed(() => {
+  const page = selectedPage.value
+  return page === null ? '' : (progress.reviewData.get(page)?.lastReviewDate ?? '')
+})
+const lastRevisedLabel = computed(() => {
+  const iso = lastRevisedISO.value
+  if (!iso) return ''
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+})
+// Shows the EFFECTIVE (decay-capped) level, not the raw one — the dropdown
+// above already shows the raw band, so repeating it here would be circular
+// and would leave the decayed level invisible anywhere in the sheet. Never
+// phrased as "downgraded from X to Y" — a single lastReviewDate can't
+// reconstruct which bands a page passed through, only whether it's capped now.
+const levelNote = computed(() => {
+  if (selectedPage.value === null || selectedEffectiveRank.value === selectedRawRank.value) return ''
+  return t('progress.sheet.decayedNote', { level: levelLabel(selectedEffectiveRank.value) })
+})
+
+/** Calendar (native date input) — an explicit manual date edit, applied immediately, no cooldown. */
+function onLastRevisedChange(e: Event): void {
+  const page = selectedPage.value
+  const value = (e.target as HTMLInputElement).value
+  if (page === null || !value) return
+  levelEdits.cancel(page) // an explicit date edit supersedes any pending auto-stamp
+  progress.touchReviewDate(page, value)
+}
+
+/**
+ * The invisible `<input type="date">` overlaying the visible date text
+ * already receives clicks (it focuses on click), but on desktop that alone
+ * doesn't open the calendar dropdown — browsers only auto-open it for a
+ * click on the control's own little calendar-icon affordance, invisible
+ * here since the whole input is transparent. `showPicker()` opens it
+ * explicitly from this click handler (same user gesture, so it's allowed).
+ * Not supported everywhere (older Firefox/Safari) — falls through to a
+ * plain focus there, so keyboard/typed entry still works.
+ */
+function openDatePicker(e: MouseEvent): void {
+  const input = e.currentTarget as HTMLInputElement
+  if (typeof input.showPicker === 'function') {
+    try {
+      input.showPicker()
+    } catch {
+      /* not focused via a trusted gesture in this browser — input still has focus */
+    }
+  }
+}
+
+/** "Revised today" — replaces the old raw stepper's "+"; a full clean-revision completion. */
+function recordRevisedToday(): void {
+  const page = selectedPage.value
+  if (page === null) return
+  levelEdits.cancel(page)
+  progress.recordPerfectRevision(page)
 }
 
 // —— Bulk range mark ————————————————————————————————
@@ -227,7 +339,12 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
       <p v-if="!juzGroups.length" class="loading-hint">{{ t('common.loading') }}</p>
       <template v-else>
         <p class="panel-lead">{{ t('progress.pagesLead') }}</p>
-        <PageDotsGrid :groups="juzGroups" :strength="progress.strength" @select="openInReader" />
+        <PageDotsGrid
+          :groups="juzGroups"
+          :strength="progress.strength"
+          :review-data="progress.reviewData"
+          @select="openInReader"
+        />
       </template>
     </section>
 
@@ -247,27 +364,54 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
           />
         </div>
 
-        <div class="row">
-          <span>{{ t('progress.sheet.strength') }}</span>
-          <div class="stepper">
-            <button
-              class="step"
-              :aria-label="t('progress.sheet.decrease')"
-              @click="progress.bumpStrength(selectedPage, -1)"
+        <div class="row level-row">
+          <label class="level-field" for="page-level-select">
+            <span>{{ t('progress.sheet.level') }}</span>
+            <select
+              id="page-level-select"
+              v-model.number="levelSelection"
+              class="level-select"
+              :aria-label="t('strengthBand.aria')"
             >
-              <Icon :icon="Minus" :size="16" />
-            </button>
-            <span class="step-val">{{ progress.strengthOf(selectedPage) }}</span>
-            <button
-              class="step"
-              :aria-label="t('progress.sheet.recordClean')"
-              @click="progress.recordPerfectRevision(selectedPage)"
-            >
-              <Icon :icon="Plus" :size="16" />
-            </button>
-          </div>
+              <option v-for="band in STRENGTH_BANDS" :key="band.rank" :value="band.rank">
+                {{ levelLabel(band.rank) }}
+              </option>
+            </select>
+          </label>
         </div>
-        <p class="hint">{{ t('progress.sheet.hint') }}</p>
+        <p v-if="levelNote" class="hint">{{ levelNote }}</p>
+
+        <div class="row">
+          <label class="last-revised-field" for="page-last-revised">
+            <span>{{ t('progress.sheet.lastRevised') }}</span>
+            <!-- The visible, clickable date text; the real <input type="date">
+                 sits transparently on top of it (still in the a11y tree —
+                 opacity doesn't remove that — and still keyboard-reachable),
+                 so tapping the date itself opens the native calendar picker
+                 rather than a bare, unstyled native control. -->
+            <span class="last-revised-control">
+              <span class="last-revised-fmt" aria-hidden="true">
+                {{ lastRevisedLabel || t('progress.sheet.noRevisionYet') }}
+              </span>
+              <input
+                id="page-last-revised"
+                type="date"
+                class="date-input"
+                :value="lastRevisedISO"
+                :max="todayISODate()"
+                :aria-label="t('progress.sheet.lastRevised')"
+                @click="openDatePicker"
+                @change="onLastRevisedChange"
+              />
+            </span>
+          </label>
+        </div>
+
+        <button class="revised-today" @click="recordRevisedToday">
+          <Icon :icon="CalendarCheck" :size="16" />
+          <span>{{ t('progress.sheet.revisedToday') }}</span>
+        </button>
+        <p class="hint">{{ t('progress.sheet.revisedTodayHint') }}</p>
 
         <button class="open-reader" @click="openInReader(selectedPage)">
           <Icon :icon="BookOpen" :size="16" />
@@ -543,30 +687,89 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
   justify-content: space-between;
   gap: 1rem;
 }
-.stepper {
+.level-row {
+  justify-content: flex-start;
+}
+.level-field {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
+  justify-content: space-between;
 }
-.step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.level-select {
   height: 2.25rem;
-  width: 2.25rem;
+  padding: 0 0.6rem;
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   background: var(--color-elevated);
   color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
-.step:focus-visible {
+.level-select:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.step-val {
-  min-width: 1.5rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+.last-revised-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  justify-content: space-between;
+}
+.last-revised-control {
+  position: relative;
+  display: inline-flex;
+  /* input[type=date] carries its own UA min-width, which can exceed the
+     visible chip (most likely in RTL) — clip it so the invisible hit area
+     never extends past the visible date text. */
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+.last-revised-fmt {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-elevated);
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The real control, invisible but on top — still keyboard/AT reachable
+   (opacity doesn't remove it from the accessibility tree), so a click or tap
+   anywhere on the visible date text opens the native calendar picker. */
+.date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.last-revised-control:focus-within .last-revised-fmt {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.revised-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.revised-today:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .hint {
   font-size: var(--text-xs);

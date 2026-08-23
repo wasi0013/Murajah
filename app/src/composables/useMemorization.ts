@@ -11,6 +11,7 @@ import {
   type PageCell,
 } from '@/core/memorization/progressView'
 import { calculateAllWeaknesses, getWeakestPages } from '@/core/memorization/weaknessScorer'
+import { daysSince } from '@/core/memorization/strengthBands'
 
 /**
  * Reactive view-model for the Progress screen: the juz-grouped 604-page grid,
@@ -51,6 +52,7 @@ export function useMemorization(data: DataClient = getDataClient()) {
       progress.isMemorized(page),
       progress.strengthOf(page),
       mistakes.byPage.get(page)?.size ?? 0,
+      daysSince(progress.reviewData.get(page)?.lastReviewDate),
     )
   }
 

@@ -1,18 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import {
-  strengthTier,
+  pageCell,
   buildJuzGroups,
   memorizationStats,
   juzProgress,
 } from '@/core/memorization/progressView'
 
-describe('strengthTier', () => {
-  it('clamps to 0–6', () => {
-    expect(strengthTier(0)).toBe(0)
-    expect(strengthTier(3)).toBe(3)
-    expect(strengthTier(6)).toBe(6)
-    expect(strengthTier(9)).toBe(6)
-    expect(strengthTier(-2)).toBe(0)
+describe('pageCell', () => {
+  it('carries the raw strength and the effective (decay-capped) level', () => {
+    const c = pageCell(12, true, 45, 2, 0)
+    expect(c).toEqual({ page: 12, memorized: true, strength: 45, level: 2, mistakes: 2 })
+  })
+
+  it('caps the level for a long-neglected page without touching raw strength', () => {
+    const c = pageCell(12, true, 100, 0, 100000)
+    expect(c.strength).toBe(100)
+    expect(c.level).toBe(2) // floored at Da'if
   })
 })
 

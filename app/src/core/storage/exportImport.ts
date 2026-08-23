@@ -9,6 +9,7 @@
 // can't load. Recording audio blobs are device-local and never exported.
 
 import {
+  backfillReviewDates,
   deserializeDayLog,
   deserializeMistakes,
   deserializePlan,
@@ -213,7 +214,11 @@ export async function exportUserData(): Promise<MurajahExport> {
  */
 export async function importUserData(snap: ExportSnapshot): Promise<void> {
   const jobs: Promise<void>[] = []
-  if (snap.progress) jobs.push(saveProgress(deserializeProgress(snap.progress)))
+  // Backfill missing review dates on import too, not just on app-boot load —
+  // a legacy v2.0.0 backup (no `reviewData` field at all) or an old native
+  // export can be imported long after this feature shipped, so the stamp
+  // must use *today* (import time), not some earlier migration date.
+  if (snap.progress) jobs.push(saveProgress(backfillReviewDates(deserializeProgress(snap.progress)).progress))
   if (snap.mistakes) jobs.push(saveMistakes(deserializeMistakes(snap.mistakes)))
   if (snap.plan !== undefined) jobs.push(savePlan(deserializePlan(snap.plan)))
   if (snap.dayLog) jobs.push(saveDayLog(deserializeDayLog(snap.dayLog)))

@@ -255,3 +255,108 @@ describe('progress persistence', () => {
     expect(loaded.reviewData.size).toBe(0)
   })
 })
+
+describe('setStrengthBand', () => {
+  it('writes the band lower bound', () => {
+    const p = useProgressStore()
+    expect(p.setStrengthBand(5, 4)).toBe(75) // Qawiy
+    expect(p.strengthOf(5)).toBe(75)
+  })
+
+  it('does NOT stamp lastReviewDate — the sheet UI owns the debounced stamp', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    expect(p.reviewData.has(5)).toBe(false)
+  })
+
+  it('rank 0 (Not Memorized) clears strength rather than storing 0', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    p.setStrengthBand(5, 0)
+    expect(p.strength.has(5)).toBe(false)
+    expect(p.strengthOf(5)).toBe(0)
+  })
+
+  it('no-ops the strength write when already in the target band', () => {
+    const p = useProgressStore()
+    p.bumpStrength(5, 150) // deep into Mutqan (rank 6), well above its 98 lower bound
+    expect(p.setStrengthBand(5, 6)).toBe(150) // unchanged, not clobbered to 98
+  })
+
+  it('does not touch the memorized boolean', () => {
+    const p = useProgressStore()
+    p.setStrengthBand(5, 4)
+    expect(p.isMemorized(5)).toBe(false)
+    p.setStrengthBand(5, 0)
+    expect(p.isMemorized(5)).toBe(false)
+  })
+
+  it('out of range page is a no-op', () => {
+    const p = useProgressStore()
+    expect(p.setStrengthBand(0, 4)).toBe(0)
+    expect(p.reviewData.has(0)).toBe(false)
+  })
+})
+
+describe('touchReviewDate', () => {
+  it('stamps a well-formed past/present date as given', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(5, '2026-01-01')
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-01-01')
+  })
+
+  it('preserves the existing reviewCount/SM-2 fields rather than resetting them', () => {
+    const p = useProgressStore()
+    p.recordReview(5, 'perfect', new Date('2026-01-01T00:00:00Z'))
+    const before = p.reviewData.get(5)
+    p.touchReviewDate(5, '2026-02-01')
+    const after = p.reviewData.get(5)
+    expect(after?.lastReviewDate).toBe('2026-02-01')
+    expect(after?.reviewCount).toBe(before?.reviewCount)
+    expect(after?.interval).toBe(before?.interval)
+  })
+
+  it('rejects a malformed date rather than storing garbage', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(5, 'not-a-date')
+    expect(p.reviewData.has(5)).toBe(false)
+  })
+
+  it('clamps a future date to today (the calendar picker\'s max should prevent this client-side, but the store does not trust it alone)', () => {
+    const p = useProgressStore()
+    const farFuture = '2999-01-01'
+    p.touchReviewDate(5, farFuture)
+    expect(p.reviewData.get(5)?.lastReviewDate).not.toBe(farFuture)
+    expect(p.reviewData.get(5)?.lastReviewDate).toBeTruthy()
+  })
+
+  it('out of range page is a no-op', () => {
+    const p = useProgressStore()
+    p.touchReviewDate(0, '2026-01-01')
+    expect(p.reviewData.has(0)).toBe(false)
+  })
+})
+
+describe('decay-clock stamping on strength-mutating actions', () => {
+  it('penalizeMistake deliberately does NOT stamp lastReviewDate (a mistake is not a "revision", and would zero weaknessScorer\'s recency term)', () => {
+    const p = useProgressStore()
+    expect(p.reviewData.has(5)).toBe(false)
+    p.penalizeMistake(5)
+    expect(p.reviewData.has(5)).toBe(false)
+  })
+
+  it('bulkMarkMemorized stamps only the pages it actually bumps', () => {
+    const p = useProgressStore()
+    p.bumpStrength(2, 10) // page 2 already has strength — bulk-mark must not touch it
+    p.bulkMarkMemorized([1, 2], true)
+    expect(p.reviewData.get(1)?.lastReviewDate).toBeTruthy() // bumped -> stamped
+    expect(p.reviewData.has(2)).toBe(false) // left alone -> not stamped
+  })
+
+  it('penalizeMistake immediately followed by recordReview (useToday.ts complete()) is stamped by recordReview alone', () => {
+    const p = useProgressStore()
+    p.penalizeMistake(5)
+    p.recordReview(5, 'needs_work', new Date('2026-08-23T00:00:00Z'))
+    expect(p.reviewData.get(5)?.lastReviewDate).toBe('2026-08-23')
+  })
+})
