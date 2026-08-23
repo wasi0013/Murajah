@@ -31,8 +31,20 @@ import { db, STORE } from './userData'
 
 const JOURNAL_KEY_PREFIX = 'journal:'
 const journalKey = (date: string): string => `${JOURNAL_KEY_PREFIX}${date}`
-/** Lexicographic range covering every `journal:*` key — `YYYY-MM-DD` sorts as a string. */
-const JOURNAL_RANGE_ALL = IDBKeyRange.bound(JOURNAL_KEY_PREFIX, `${JOURNAL_KEY_PREFIX}￿`)
+/**
+ * Lexicographic range covering every `journal:*` key. IndexedDB has no native
+ * "starts with" query, so a prefix scan is simulated with an explicit upper
+ * bound — `~` (tilde, the highest common printable ASCII character) rather
+ * than an earlier invisible Unicode noncharacter sentinel (U+FFFF): it's
+ * visible and greppable in a diff/editor instead of disappearing, and it's the same
+ * well-known idiom other systems without native prefix queries use for this
+ * (CouchDB view ranges, S3/DynamoDB key-prefix scans). Safe here because every
+ * journal key is `journal:YYYY-MM-DD` — digits and hyphens only, all well
+ * below `~` (0x7E) in code-point order — so `journal:~` sorts after any real
+ * journal key and before the next top-level key alphabetically (`mistakes`,
+ * `plan`, `progress`, …), never sweeping in unrelated data.
+ */
+const JOURNAL_RANGE_ALL = IDBKeyRange.bound(JOURNAL_KEY_PREFIX, `${JOURNAL_KEY_PREFIX}~`)
 
 /** Reflection notes are capped short ("tweet-sized" per the brief), not a free-form journal. */
 export const JOURNAL_NOTE_MAX_LEN = 280

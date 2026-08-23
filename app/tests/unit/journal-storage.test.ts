@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { IDBFactory, IDBDatabase } from 'fake-indexeddb'
-import { _resetUserDataDb } from '@/core/storage/userData'
+import { _resetUserDataDb, saveMistakes, loadMistakes } from '@/core/storage/userData'
 import {
   serializeJournalEntry,
   deserializeJournalEntry,
@@ -100,6 +100,20 @@ describe('journal storage — load', () => {
     await saveJournalNote('2026-12-31', 'year end', '2026-12-31T00:00:00.000Z')
     const full = await loadFullJournal()
     expect([...full.keys()].sort()).toEqual(['2026-01-01', '2026-12-31'])
+  })
+
+  it("the ~ upper bound stops exactly at the journal: prefix — a sibling top-level key never leaks in", async () => {
+    // 'mistakes' sorts after 'journal:~' alphabetically (m > j), so this
+    // specifically exercises that the bound doesn't overshoot into it.
+    await saveMistakes(new Map([[42, new Set([1, 2])]]))
+    await saveJournalNote('2026-06-15', 'mid-year', '2026-06-15T00:00:00.000Z')
+
+    const full = await loadFullJournal()
+
+    expect([...full.keys()]).toEqual(['2026-06-15'])
+    // The sibling key is untouched — loadFullJournal's range never read it,
+    // and this proves it round-trips independently, not silently dropped.
+    expect(await loadMistakes()).toEqual(new Map([[42, new Set([1, 2])]]))
   })
 })
 
