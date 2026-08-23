@@ -60,9 +60,11 @@ test('recording a clean revision raises strength and awards hasanah', async ({ p
   await page.getByRole('button', { name: 'Page 8, not memorized' }).click()
   await expect(page.getByRole('dialog', { name: 'Page 8' })).toBeVisible()
 
-  // "+" records a clean recitation from memory: strength 0 → 1, hasanah increases.
-  await page.getByRole('button', { name: 'Record a clean revision' }).click()
-  await expect(page.locator('.step-val')).toHaveText('1')
+  // "Revised today" records a clean recitation from memory: strength 0 → 1
+  // (crossing into the "New" band), hasanah increases. Replaced the old raw
+  // stepper's "+" button — see ProgressView.vue's recordRevisedToday.
+  await page.getByRole('button', { name: 'Revised today' }).click()
+  await expect(page.getByRole('combobox', { name: 'Memorization level' })).toHaveValue('1')
   await page.keyboard.press('Escape')
 
   await expect(hasanah(page)).not.toHaveText('0')
