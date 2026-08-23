@@ -111,8 +111,10 @@ export interface HistoryDay {
   isToday: boolean
 }
 
-/** Did anything at all get recorded that day? */
-function hasWork(r: DayRecord): boolean {
+/** Did anything at all get recorded that day? Also used by `useJournalMonth`
+ * (Phase 12.3.1) for calendar-cell state, so the two calendars never disagree
+ * on what counts as "something happened". */
+export function hasWork(r: DayRecord): boolean {
   return (
     r.newMemorization.length + r.revision.length + r.weak.length + r.habits.length > 0
   )
