@@ -70,6 +70,12 @@
     "gzip": true
   },
   {
+    "name": "Progress route incl. Journal (lazy, gzip)",
+    "path": ["dist/assets/ProgressView-*.js"],
+    "limit": "20 kB",
+    "gzip": true
+  },
+  {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
     "limit": "34 kB",
