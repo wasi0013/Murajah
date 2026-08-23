@@ -81,7 +81,15 @@ const weeks = computed<Array<Array<JournalDaySummary | null>>>(() => {
     </div>
     <p v-if="loading" class="loading-hint" aria-live="polite">{{ t('common.loading') }}</p>
 
-    <table class="grid" :aria-label="t('journal.weeksAria', { month: monthLabel, year })">
+    <!-- `cal-grid`, not `grid` — Tailwind ships a utility class literally
+         named `.grid` (`display: grid`), which collided with (and beat) the
+         scoped `.grid` rule below, quietly overriding this <table>'s display
+         to CSS Grid. Once that happens, <thead>/<tbody>/<tr>/<td> stop being
+         table parts, and the columns collapse to content size instead of
+         distributing evenly — that was the actual cause of the cramped
+         layout, not a table/flexbox width interaction (verified via computed
+         styles in a real browser before landing this fix). -->
+    <table class="cal-grid" :aria-label="t('journal.weeksAria', { month: monthLabel, year })">
       <thead>
         <tr>
           <th v-for="w in weekdays" :key="w" scope="col">
@@ -166,17 +174,20 @@ const weeks = computed<Array<Array<JournalDaySummary | null>>>(() => {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.grid {
+.cal-grid {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0.2rem;
   table-layout: fixed;
 }
-.grid th {
+.cal-grid th {
   font-size: var(--text-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   padding-bottom: 0.3rem;
+}
+.cal-grid td {
+  padding: 0;
 }
 .cell {
   width: 100%;

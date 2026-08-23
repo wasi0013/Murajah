@@ -131,8 +131,8 @@ function fmtDuration(ms: number): string {
       <p v-if="loading" class="empty">{{ t('common.loading') }}</p>
       <p v-else-if="!hasAnything" class="empty">{{ t('journal.empty') }}</p>
 
-      <section v-if="detail.sections.newMemorization.length" class="block block-new">
-        <h3 class="block-title">{{ t('journal.sections.newMemorization') }}</h3>
+      <section v-if="detail.sections.newMemorization.length" class="day-block day-block-new">
+        <h3 class="day-block-title">{{ t('journal.sections.newMemorization') }}</h3>
         <div class="chips">
           <button v-for="p in detail.sections.newMemorization" :key="p" class="chip" @click="openPage(p)">
             {{ t('common.page', { n: p }) }}
@@ -140,8 +140,8 @@ function fmtDuration(ms: number): string {
         </div>
       </section>
 
-      <section v-if="detail.sections.revision.length" class="block block-revision">
-        <h3 class="block-title">{{ t('journal.sections.revision') }}</h3>
+      <section v-if="detail.sections.revision.length" class="day-block day-block-revision">
+        <h3 class="day-block-title">{{ t('journal.sections.revision') }}</h3>
         <div class="chips">
           <button v-for="p in detail.sections.revision" :key="p" class="chip" @click="openPage(p)">
             {{ t('common.page', { n: p }) }}
@@ -149,8 +149,8 @@ function fmtDuration(ms: number): string {
         </div>
       </section>
 
-      <section v-if="detail.sections.weak.length" class="block block-weak">
-        <h3 class="block-title">{{ t('journal.sections.weak') }}</h3>
+      <section v-if="detail.sections.weak.length" class="day-block day-block-weak">
+        <h3 class="day-block-title">{{ t('journal.sections.weak') }}</h3>
         <div class="chips">
           <button v-for="p in detail.sections.weak" :key="p" class="chip" @click="openPage(p)">
             {{ t('common.page', { n: p }) }}
@@ -158,15 +158,15 @@ function fmtDuration(ms: number): string {
         </div>
       </section>
 
-      <section v-if="detail.sections.habits.length" class="block">
-        <h3 class="block-title">{{ t('journal.sections.habits') }}</h3>
+      <section v-if="detail.sections.habits.length" class="day-block">
+        <h3 class="day-block-title">{{ t('journal.sections.habits') }}</h3>
         <ul class="habit-list">
           <li v-for="h in detail.sections.habits" :key="h.id">{{ t(h.nameKey) }}</li>
         </ul>
       </section>
 
-      <section v-if="detail.events.length || detail.eventsOverflow > 0" class="block">
-        <h3 class="block-title">{{ t('journal.sections.changes') }}</h3>
+      <section v-if="detail.events.length || detail.eventsOverflow > 0" class="day-block">
+        <h3 class="day-block-title">{{ t('journal.sections.changes') }}</h3>
         <ul class="event-list">
           <li v-for="e in detail.events" :key="e.id" class="event-row">
             <Icon :icon="e.type === 'band-down' ? TrendingDown : TrendingUp" :size="15" class="event-icon" :class="`event-icon-${e.type}`" />
@@ -181,8 +181,8 @@ function fmtDuration(ms: number): string {
         </p>
       </section>
 
-      <section v-if="detail.recordings.length" class="block">
-        <h3 class="block-title">{{ t('journal.sections.recordings') }}</h3>
+      <section v-if="detail.recordings.length" class="day-block">
+        <h3 class="day-block-title">{{ t('journal.sections.recordings') }}</h3>
         <ul class="recording-list">
           <li v-for="r in detail.recordings" :key="r.id" class="recording-row">
             <button type="button" class="play-btn" @click="togglePlay(r.id, r.blob)">
@@ -197,8 +197,8 @@ function fmtDuration(ms: number): string {
         <audio ref="audioEl" class="sr-audio" @ended="stopPlayback" />
       </section>
 
-      <section class="block">
-        <h3 class="block-title">{{ t('journal.sections.reflection') }}</h3>
+      <section class="day-block">
+        <h3 class="day-block-title">{{ t('journal.sections.reflection') }}</h3>
         <textarea
           v-model="noteDraft"
           class="note-input"
@@ -231,12 +231,12 @@ function fmtDuration(ms: number): string {
   padding: 1rem 0;
   text-align: center;
 }
-.block {
+.day-block {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.block-title {
+.day-block-title {
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -260,11 +260,11 @@ function fmtDuration(ms: number): string {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.block-new .chip {
+.day-block-new .chip {
   background: color-mix(in oklab, var(--color-accent) 14%, transparent);
   color: var(--color-accent);
 }
-.block-weak .chip {
+.day-block-weak .chip {
   background: color-mix(in oklab, var(--color-danger) 12%, transparent);
   color: var(--color-danger);
 }
