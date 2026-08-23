@@ -11,29 +11,35 @@
 import {
   backfillReviewDates,
   deserializeDayLog,
+  deserializeJournal,
   deserializeMistakes,
   deserializePlan,
   deserializeProgress,
   deserializeQuizAccuracy,
   loadAudioPrefs,
   loadDayLog,
+  loadFullJournal,
   loadMistakes,
   loadPlan,
   loadProgress,
   loadQuizAccuracy,
+  mergeJournal,
   saveAudioPrefs,
   saveDayLog,
+  saveFullJournal,
   saveMistakes,
   savePlan,
   saveProgress,
   saveQuizAccuracy,
   serializeDayLog,
+  serializeJournalLog,
   serializeMistakes,
   serializePlan,
   serializeProgress,
   serializeQuizAccuracy,
   type StoredAudioPrefs,
   type StoredDayLog,
+  type StoredJournal,
   type StoredMistakes,
   type StoredPlan,
   type StoredProgress,
@@ -63,6 +69,9 @@ export interface ExportSnapshot {
   mistakes?: StoredMistakes
   plan?: StoredPlan | null
   dayLog?: StoredDayLog
+  /** Phase 12.6 — unlike every other key here, import **merges** this one
+   * instead of replacing it. See `importUserData`'s journal branch. */
+  journal?: StoredJournal
   quiz?: StoredQuizAccuracy
   audio?: StoredAudioPrefs
   reader?: Partial<ReaderPrefs>
@@ -93,6 +102,7 @@ export function buildExport(
   if (snap.mistakes) data.mistakes = snap.mistakes
   if (snap.plan !== undefined) data.plan = snap.plan
   if (snap.dayLog) data.dayLog = snap.dayLog
+  if (snap.journal) data.journal = snap.journal
   if (snap.quiz) data.quiz = snap.quiz
   if (snap.audio) data.audio = snap.audio
   if (snap.reader) data.reader = snap.reader
@@ -169,6 +179,7 @@ function sanitizeSnapshot(data: Record<string, unknown>): ExportSnapshot {
     snap.plan = (data.plan as unknown as StoredPlan | null) ?? null
   }
   if (isObj(data.dayLog)) snap.dayLog = data.dayLog as unknown as StoredDayLog
+  if (isObj(data.journal)) snap.journal = data.journal as unknown as StoredJournal
   if (isObj(data.quiz)) snap.quiz = data.quiz as StoredQuizAccuracy
   if (isObj(data.audio)) snap.audio = data.audio as StoredAudioPrefs
   if (isObj(data.reader)) snap.reader = data.reader as Partial<ReaderPrefs>
@@ -184,11 +195,12 @@ function sanitizeSnapshot(data: Record<string, unknown>): ExportSnapshot {
 
 /** Gather the whole local profile into a versioned export envelope. */
 export async function exportUserData(): Promise<MurajahExport> {
-  const [progress, mistakes, plan, dayLog, quiz, audio, reader, theme] = await Promise.all([
+  const [progress, mistakes, plan, dayLog, journal, quiz, audio, reader, theme] = await Promise.all([
     loadProgress(),
     loadMistakes(),
     loadPlan(),
     loadDayLog(),
+    loadFullJournal(),
     loadQuizAccuracy(),
     loadAudioPrefs(),
     getPref<ReaderPrefs>(READER_PREF_KEY),
@@ -199,6 +211,7 @@ export async function exportUserData(): Promise<MurajahExport> {
     mistakes: serializeMistakes(mistakes),
     plan: serializePlan(plan),
     dayLog: serializeDayLog(dayLog),
+    journal: serializeJournalLog(journal),
     quiz: serializeQuizAccuracy(quiz),
     audio,
     reader,
@@ -222,6 +235,21 @@ export async function importUserData(snap: ExportSnapshot): Promise<void> {
   if (snap.mistakes) jobs.push(saveMistakes(deserializeMistakes(snap.mistakes)))
   if (snap.plan !== undefined) jobs.push(savePlan(deserializePlan(snap.plan)))
   if (snap.dayLog) jobs.push(saveDayLog(deserializeDayLog(snap.dayLog)))
+  // Deliberately NOT a replace like every key above/below (dayLog included) —
+  // a reflection note is editable on any past day, indefinitely, so a plausible
+  // sequence is "edit today's note on this device, then import an older backup
+  // taken on another device"; a straight replace would silently discard the
+  // newer edit. mergeJournal (Phase 12.6.2) unions by date, keeps the note with
+  // the later `noteUpdatedAt`, and unions events by id. See
+  // plans/phase-12-journal.md §12.6 for the full rationale.
+  if (snap.journal) {
+    jobs.push(
+      (async () => {
+        const merged = mergeJournal(await loadFullJournal(), deserializeJournal(snap.journal))
+        await saveFullJournal(merged)
+      })(),
+    )
+  }
   if (snap.quiz) jobs.push(saveQuizAccuracy(deserializeQuizAccuracy(snap.quiz)))
   if (snap.audio) jobs.push(saveAudioPrefs(snap.audio))
   // reader can arrive partial (a legacy backup carries only layout/tajweed), so

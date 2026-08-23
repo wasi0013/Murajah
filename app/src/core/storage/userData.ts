@@ -533,6 +533,20 @@ export function deserializeJournalEntry(
   }
 }
 
+/** Whole-log (Map ↔ Record) conversion for the export/import path (Phase 12.6)
+ * only — every other reader/writer here works one date at a time. */
+export function serializeJournalLog(log: JournalLog): StoredJournal {
+  const out: StoredJournal = {}
+  for (const [date, entry] of log) out[date] = serializeJournalEntry(entry)
+  return out
+}
+
+export function deserializeJournal(stored: StoredJournal | undefined): JournalLog {
+  const map: JournalLog = new Map()
+  for (const [date, entry] of Object.entries(stored ?? {})) map.set(date, deserializeJournalEntry(date, entry))
+  return map
+}
+
 /** Load one day's entry (an empty, unsaved-shaped entry if none / on error). */
 export async function loadJournalEntry(date: string): Promise<JournalEntry> {
   try {
@@ -654,6 +668,72 @@ export async function appendJournalEvent(date: string, event: JournalEvent): Pro
  * transactions here would be exactly the per-key write storm the key scheme
  * exists to avoid.
  */
+/**
+ * Union two journal logs — the pure decision behind backup import (Phase
+ * 12.6). Unlike every other key in `exportImport.ts` (a straight replace on
+ * import — see `importUserData`), the journal **merges**: a note is editable
+ * on any past day, indefinitely, so a plausible sequence is "edit today's
+ * note on this device, import an older backup taken on another device" —
+ * a replace would silently discard the newer edit.
+ *
+ * - A date present on only one side passes through unchanged.
+ * - `note`: the side with the **later** `noteUpdatedAt` wins. A side with no
+ *   `noteUpdatedAt` (never written) can never win over a side that has one —
+ *   an empty incoming note must not clobber a real existing one. Equal
+ *   timestamps keep `current` (makes a repeat import of the same backup a
+ *   no-op instead of flip-flopping).
+ * - `events`: unioned by `id` (an identical event on both sides — the normal
+ *   case for "export this device, re-import the same file later" — collapses
+ *   to one, not two), sorted by `createdAt`, then re-capped at
+ *   {@link MAX_EVENTS_PER_DAY} keeping the most recent ones.
+ * - `eventsOverflow`: the sum of whatever each side had already permanently
+ *   lost (real prior loss — not fabricated), plus any *new* overflow from
+ *   re-capping the merged, deduped list. Never inflated by counting a
+ *   dedup-collapsed duplicate as "lost" — it wasn't, it was the same fact
+ *   recorded twice.
+ *
+ * Pure — no IDB dependency, same style as `backfillReviewDates`.
+ */
+export function mergeJournal(current: JournalLog, incoming: JournalLog): JournalLog {
+  const merged: JournalLog = new Map()
+  const dates = new Set([...current.keys(), ...incoming.keys()])
+
+  for (const date of dates) {
+    const c = current.get(date)
+    const i = incoming.get(date)
+    if (c && !i) {
+      merged.set(date, c)
+      continue
+    }
+    if (i && !c) {
+      merged.set(date, i)
+      continue
+    }
+    const a = c!
+    const b = i!
+
+    let note = a.note
+    let noteUpdatedAt = a.noteUpdatedAt
+    if (b.noteUpdatedAt && (!a.noteUpdatedAt || b.noteUpdatedAt > a.noteUpdatedAt)) {
+      note = b.note
+      noteUpdatedAt = b.noteUpdatedAt
+    }
+
+    const byId = new Map<string, JournalEvent>()
+    for (const e of a.events) byId.set(e.id, e)
+    for (const e of b.events) byId.set(e.id, e)
+    const deduped = [...byId.values()].sort((x, y) => x.createdAt.localeCompare(y.createdAt))
+
+    const newOverflow = Math.max(0, deduped.length - MAX_EVENTS_PER_DAY)
+    const events = newOverflow > 0 ? deduped.slice(deduped.length - MAX_EVENTS_PER_DAY) : deduped
+    const eventsOverflow = a.eventsOverflow + b.eventsOverflow + newOverflow
+
+    merged.set(date, { date, note, noteUpdatedAt, events, eventsOverflow })
+  }
+
+  return merged
+}
+
 export async function saveFullJournal(log: JournalLog): Promise<void> {
   try {
     const tx = (await db()).transaction(STORE, 'readwrite')

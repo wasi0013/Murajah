@@ -3,6 +3,8 @@ import { IDBFactory, IDBDatabase } from 'fake-indexeddb'
 import {
   serializeJournalEntry,
   deserializeJournalEntry,
+  serializeJournalLog,
+  deserializeJournal,
   loadJournalEntry,
   loadJournalRange,
   loadFullJournal,
@@ -58,6 +60,21 @@ describe('journal entry serialize/deserialize', () => {
     // every other deserializer's `?? []` / `?? 0` defensiveness in this file.
     const back = deserializeJournalEntry('2026-08-23', { note: 'hi' } as never)
     expect(back).toEqual(entry('2026-08-23', { note: 'hi' }))
+  })
+})
+
+describe('journal log serialize/deserialize (the export/import path)', () => {
+  it('round-trips a whole log through the Map ↔ Record shape', () => {
+    const log: JournalLog = new Map([
+      ['2026-08-01', entry('2026-08-01', { note: 'first' })],
+      ['2026-08-02', entry('2026-08-02', { events: [event()] })],
+    ])
+    const back = deserializeJournal(serializeJournalLog(log))
+    expect(back).toEqual(log)
+  })
+
+  it('deserializeJournal returns an empty log for undefined', () => {
+    expect(deserializeJournal(undefined)).toEqual(new Map())
   })
 })
 
