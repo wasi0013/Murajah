@@ -4,6 +4,10 @@ import { setActivePinia, createPinia } from 'pinia'
 import { usePlanStore } from '@/stores/plan'
 import { usePartialProgressStore } from '@/stores/partialProgress'
 import { savePlan } from '@/core/storage/userData'
+import { __resetPlanPersistence } from '@/composables/usePlanPersistence'
+import { __resetProgressPersistence } from '@/composables/useProgressPersistence'
+import { __resetPartialProgressPersistence } from '@/composables/usePartialProgressPersistence'
+import { __resetDayLogPersistence } from '@/composables/useDayLogPersistence'
 import type { PageChunk } from '@/core/data/types'
 import type { PlanConfig } from '@/core/storage/userData'
 
@@ -67,6 +71,15 @@ const stubs = { RouterLink: { template: '<a><slot /></a>' } }
 beforeEach(() => {
   setActivePinia(createPinia())
   blockPartialProgressHydrate.current = false
+  // Each of these persistence composables' hydrate() is idempotent per app
+  // run (a module-level singleton) — without resetting them here, the first
+  // test's hydrate (against an empty/no-plan disk) would stay memoized for
+  // every later test in this file, silently skipping the real `setAll()` a
+  // fresh mount is supposed to get.
+  __resetPlanPersistence()
+  __resetProgressPersistence()
+  __resetPartialProgressPersistence()
+  __resetDayLogPersistence()
 })
 
 describe('MarkPageView', () => {
