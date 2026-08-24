@@ -354,6 +354,7 @@ function openJournal(): void {
               :meta="metaFor(p)"
               :done="today.isDone('newMemorization', p)"
               :done-label="t('task.memorized')"
+              :open-label="isFrontPage(p) ? t('task.openMemorize', { page: p }) : undefined"
               @open="openNewMemorization(p)"
               @clean="today.complete('newMemorization', p)"
             />

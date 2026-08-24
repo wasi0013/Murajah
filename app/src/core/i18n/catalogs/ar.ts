@@ -201,6 +201,7 @@ const ar: Messages = {
     shakyAria: 'صفحة {page} تحتاج عملاً',
     markAria: 'علّم صفحة {page} {label}',
     memorized: 'محفوظة',
+    openMemorize: 'افتح صفحة {page} لتعليم الآيات المحفوظة',
   },
   plan: {
     title: 'خطتك',

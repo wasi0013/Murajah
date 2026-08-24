@@ -201,6 +201,7 @@ const bn: Messages = {
     shakyAria: 'পৃষ্ঠা {page} আরও অনুশীলন দরকার',
     markAria: 'পৃষ্ঠা {page} {label} চিহ্নিত করুন',
     memorized: 'মুখস্থ',
+    openMemorize: 'মুখস্থ করা আয়াত চিহ্নিত করতে পৃষ্ঠা {page} খুলুন',
   },
   plan: {
     title: 'আপনার প্ল্যান',

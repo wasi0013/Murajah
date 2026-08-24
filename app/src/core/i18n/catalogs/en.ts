@@ -204,6 +204,7 @@ const en: Messages = {
     shakyAria: 'Page {page} needed work',
     markAria: 'Mark page {page} {label}',
     memorized: 'Memorized',
+    openMemorize: 'Open page {page} to mark memorized verses',
   },
   plan: {
     title: 'Your plan',

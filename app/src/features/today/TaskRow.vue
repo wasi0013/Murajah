@@ -24,6 +24,13 @@ defineProps<{
   gradable?: boolean
   /** Label for the plain completion action on a non-gradable row. */
   doneLabel?: string
+  /**
+   * Override for the open-button's accessible name, already interpolated
+   * (mirrors `doneLabel`'s shape) — the front-page newMemorization row opens
+   * the marking view, not the reader, so it needs its own wording rather
+   * than the generic "Open page {page} in the reader".
+   */
+  openLabel?: string
 }>()
 
 defineEmits<{ open: []; clean: []; mistake: [] }>()
@@ -31,7 +38,7 @@ defineEmits<{ open: []; clean: []; mistake: [] }>()
 
 <template>
   <li class="row" :class="{ 'row-done': done }">
-    <button class="open" type="button" :aria-label="t('task.open', { page })" @click="$emit('open')">
+    <button class="open" type="button" :aria-label="openLabel ?? t('task.open', { page })" @click="$emit('open')">
       <span class="page">
         <span class="page-n">{{ t('common.page', { n: page }) }}</span>
         <span v-if="meta" class="page-meta">{{ meta }}</span>
