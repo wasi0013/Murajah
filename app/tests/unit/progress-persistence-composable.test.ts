@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
+import { mount } from '@vue/test-utils'
+import { defineComponent, h, onMounted } from 'vue'
 import { useProgressStore } from '@/stores/progress'
 import { loadProgress, _resetUserDataDb } from '@/core/storage/userData'
 import { useProgressPersistence, __resetProgressPersistence } from '@/composables/useProgressPersistence'
@@ -70,5 +72,41 @@ describe('useProgressPersistence', () => {
 
     const reloaded = await loadProgress()
     expect(reloaded.readingSeconds).toBe(7)
+  })
+
+  /**
+   * Every case above calls `hydrate()` at the top level of the test, never
+   * inside a mounted component's `setup()` — so none of them could exercise
+   * Vue's auto-stop-on-unmount for a `watch()` created there, which is
+   * exactly the bug the detached-`effectScope` fix closes (see the module's
+   * own doc comment, and `useDayLogPersistence.ts`'s sibling test, which is
+   * what actually caught this via a real mount-unmount-mount sequence).
+   */
+  const StubView = defineComponent({
+    setup() {
+      const persistence = useProgressPersistence()
+      onMounted(() => void persistence.hydrate())
+      return () => h('div')
+    },
+  })
+
+  it('a tick made while a second view is mounted still reaches disk, even though the first (watcher-establishing) view already unmounted', async () => {
+    const first = mount(StubView) // e.g. App.vue's own hydrate — the first to run, so it sets up the watcher
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 10)) // let hydrate()'s load resolve before unmounting
+    first.unmount() // in the real bug, App.vue never unmounts — this simulates any route that raced it
+
+    const second = mount(StubView) // e.g. TodayView, hydrating again
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 10))
+
+    const progress = useProgressStore()
+    progress.addReadingSeconds(9)
+
+    await settle()
+    const reloaded = await loadProgress()
+    expect(reloaded.readingSeconds).toBe(9)
+
+    second.unmount()
   })
 })

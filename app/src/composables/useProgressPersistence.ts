@@ -1,4 +1,4 @@
-import { watch } from 'vue'
+import { effectScope, watch } from 'vue'
 import { useProgressStore } from '@/stores/progress'
 import { loadProgress, saveProgress } from '@/core/storage/userData'
 
@@ -20,6 +20,18 @@ const DEBOUNCE_MS = 300
  * call) just awaits that same resolved promise. The watcher then lives for the
  * app's lifetime, so a route without its own hydrate() call is still covered.
  *
+ * The watcher runs inside a **detached `effectScope`**, not directly inside
+ * whichever component's `setup()` calls `hydrate()` first. Vue auto-stops any
+ * `watch()` created during a component's `setup()` when that component
+ * unmounts — relying on App.vue (which never unmounts) always winning the
+ * race to call `hydrate()` first is fragile, and any other route that beat it
+ * here (or a future refactor of App.vue's own mount order) would silently
+ * lose the save path the moment it unmounted, with the idempotent guard then
+ * permanently blocking a replacement watcher for the rest of the session. See
+ * `useDayLogPersistence.ts`'s doc comment, where a real mount-unmount-mount
+ * sequence (`tests/e2e/mark-page.spec.ts`) caught exactly this for that
+ * sibling composable.
+ *
  * `dispose()` is kept only so existing call sites don't need to change — there
  * is nothing left to tear down per view.
  */
@@ -33,14 +45,20 @@ export function useProgressPersistence(progress = useProgressStore()) {
     // change landing while `loadProgress()` is still in flight must still be
     // captured, and starting first only ever means it schedules a save of
     // whatever `setAll` is about to overwrite anyway — never a lost write.
-    stopWatcher ??= watch(
-      () => progress.snapshot(),
-      (snap) => {
-        clearTimeout(saveTimer)
-        saveTimer = setTimeout(() => void saveProgress(snap), DEBOUNCE_MS)
-      },
-      { deep: true },
-    )
+    if (!stopWatcher) {
+      const scope = effectScope(true)
+      stopWatcher = () => scope.stop()
+      scope.run(() => {
+        watch(
+          () => progress.snapshot(),
+          (snap) => {
+            clearTimeout(saveTimer)
+            saveTimer = setTimeout(() => void saveProgress(snap), DEBOUNCE_MS)
+          },
+          { deep: true },
+        )
+      })
+    }
     return (hydrated ??= loadProgress().then((p) => progress.setAll(p)))
   }
 
