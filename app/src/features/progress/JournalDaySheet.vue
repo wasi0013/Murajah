@@ -50,6 +50,17 @@ function eventLabel(e: JournalEvent): string {
       count: e.count ?? 0,
     })
   }
+  if (e.type === 'verses-memorized') {
+    // The page itself is already shown by the row's own "Page N" button
+    // (below), so the text names only the verse range, matching how
+    // band-up/band-down's "{from} → {to}" doesn't repeat the page either.
+    const from = e.fromAyah ?? 0
+    const to = e.toAyah ?? from
+    return t(from === to ? 'journal.event.versesMemorizedOne' : 'journal.event.versesMemorizedRange', {
+      from,
+      to,
+    })
+  }
   return t('journal.event.change', { from: levelLabel(e.fromRank ?? 0), to: levelLabel(e.toRank ?? 0) })
 }
 
@@ -290,7 +301,8 @@ function fmtDuration(ms: number): string {
 .event-icon-band-down {
   color: var(--color-danger);
 }
-.event-icon-bulk-memorized {
+.event-icon-bulk-memorized,
+.event-icon-verses-memorized {
   color: var(--color-accent);
 }
 .event-page {

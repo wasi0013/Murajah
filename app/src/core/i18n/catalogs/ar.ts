@@ -264,6 +264,8 @@ const ar: Messages = {
       change: 'من {from} إلى {to}',
       bulkMemorizedOne: 'تم تحديد صفحة واحدة كمحفوظة',
       bulkMemorizedOther: 'تم تحديد {count} صفحات كمحفوظة',
+      versesMemorizedOne: 'تم حفظ الآية {from}',
+      versesMemorizedRange: 'تم حفظ الآيات {from}-{to}',
       overflowOne: '+ تغيير واحد إضافي غير معروض',
       overflowOther: '+ {n} تغييرات إضافية غير معروضة',
     },

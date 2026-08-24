@@ -264,6 +264,8 @@ const bn: Messages = {
       change: '{from} → {to}',
       bulkMemorizedOne: '১টি পৃষ্ঠা মুখস্থ হিসেবে চিহ্নিত হয়েছে',
       bulkMemorizedOther: '{count}টি পৃষ্ঠা মুখস্থ হিসেবে চিহ্নিত হয়েছে',
+      versesMemorizedOne: '{from} নং আয়াত মুখস্থ হয়েছে',
+      versesMemorizedRange: '{from}-{to} নং আয়াত মুখস্থ হয়েছে',
       overflowOne: '+আরও ১টি পরিবর্তন দেখানো হয়নি',
       overflowOther: '+আরও {n}টি পরিবর্তন দেখানো হয়নি',
     },

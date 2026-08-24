@@ -267,6 +267,8 @@ const en: Messages = {
       change: '{from} → {to}',
       bulkMemorizedOne: '1 page marked memorized',
       bulkMemorizedOther: '{count} pages marked memorized',
+      versesMemorizedOne: 'Verse {from} memorized',
+      versesMemorizedRange: 'Verses {from}-{to} memorized',
       overflowOne: '+1 more change not shown',
       overflowOther: '+{n} more changes not shown',
     },
