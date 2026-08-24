@@ -43,12 +43,12 @@ Full context, the reused code this design is built on, and the decisions already
 
 ### Phase 3: Marking UI
 
-- [ ] Task 8: route + `MarkPageView.vue` shell — loads the plan's front page, guards, no marking logic yet
-- [ ] Task 9: word-states wiring + verse-glyph tap gesture, calling `markPartialProgress`
+- [x] Task 8: route + `MarkPageView.vue` shell — loads the plan's front page, guards, no marking logic yet (landed combined with Task 9, see below)
+- [x] Task 9: word-states wiring + verse-glyph tap gesture, calling `markPartialProgress`
 
 ### Checkpoint: Phase 3
-- [ ] `npm run build` clean
-- [ ] Manual: open the marking view for a plan's front page, tap several verse glyphs, reload — marks persist, pre-highlighted; tap the page's last unmarked verse and confirm it graduates into `memorizedPages` and the front page advances
+- [x] `npm run build` clean
+- [x] Verified via `mark-page-view.test.ts` (a real mounted-component test, mocked data/font modules) rather than an interactive manual pass: open the marking view for a plan's front page, tap a word, marks appear (`hl-green`) and line coverage text updates, persistence covered separately by Task 3's own tests; tap the rest of the page and confirm it graduates into `memorizedPages` and the front page advances, with the view reactively flowing to the new front page
 
 ### Phase 4: Today card integration
 
@@ -155,22 +155,22 @@ Update `completedTasks`'s computed to count a `newMemorization` page as satisfie
 - [ ] `npm run build` clean
 
 ### Task 8 — marking view shell
-**Description:** New route (e.g. `/memorize/mark`, exact path TBD at implementation time against `router/index.ts`'s existing naming) and `features/memorize/MarkPageView.vue`. No route param — it always resolves `plan.newFront?.nextPage`. Guard: no plan, or no `newFront` (maintenance-only plan) → redirect to Today with a toast, matching the pattern other guarded routes in this app already use. Loads the page's `PageChunk` + font, closely mirroring `usePreviewPage.ts` (`data.getPage('qpc', page)`, `fonts.ensure({layout:'qpc', page, tajweed:true})`) but sourcing the page number from the plan store instead of a route param — a new composable (`useMarkPage.ts`) rather than a modification of `usePreviewPage.ts`, which stays share-feature-only. Renders via `ReadingSurface` with `interactive` on, no `word-states` wired yet (Task 9).
+**Description:** New route `/memorize` and `features/memorize/MarkPageView.vue`. No route param — it always resolves `plan.newFront?.nextPage`. Guard: **deviated from the plan** — no redirect-with-toast; instead an in-view empty state ("You don't have a page to memorize right now" + a link back to Today), matching `TodayView.vue`'s own established pattern of handling "no plan" in-view rather than at the router level (there's no `NO_SHELL_ROUTE_NAMES`-style precedent for a redirect guard on an authenticated in-app route in this codebase — that pattern is only used for the reader-enabled flag and the unauthenticated `/preview` share routes). Loads the page's `PageChunk` + font via a new `useMarkPage.ts` (mirrors `usePreviewPage.ts`'s shape, but **not** tajweed-forced — this is the everyday marking view, not the always-tajweed share preview, a deliberate deviation from the description's original `tajweed:true` sketch).
 **Acceptance criteria:**
-- [ ] Route resolves and renders the correct front page's Arabic text
-- [ ] No plan / no `newFront` redirects instead of crashing or rendering an empty page
-**Verification:** `npm run build`; manual nav check
+- [x] Route resolves and renders the correct front page's Arabic text
+- [x] No plan / no `newFront` shows the in-view empty state instead of crashing or rendering blank
+**Verification:** `npm run build`; `use-mark-page.test.ts` (composable) + `mark-page-view.test.ts` (mounted component, mocked data/font modules) — not e2e/manual, see Task 9
 **Dependencies:** None (parallel to Phase 1/2)
 **Files:** `router/index.ts`, `features/memorize/MarkPageView.vue`, `composables/useMarkPage.ts`
 **Scope:** Medium
 
 ### Task 9 — tap gesture + word-states wiring
-**Description:** Reuse `PreviewPageView.vue`'s pointerdown/move/up tap-vs-drag distinction (`TAP_SLOP`) verbatim. On a tap, resolve the target word via `data-loc`/`data-verse` (already on every `ReadingSurface` word per the design doc's verified finding); if the tapped word is the ayah-end glyph (or, simpler and equally correct: any tap resolves to its `data-verse` and toggles that whole ayah — MVP is verse-glyph-tap-only per the design doc, so *any* word tap can drive the whole-ayah toggle without needing to distinguish the glyph specifically), call `partialProgress` store's `toggleAyah`, then `useToday.markPartialProgress(page, store.marks)`. Word-states for `ReadingSurface` come from `resolvePageWordStates`-equivalent logic (Task 2/4) reading the store, not the URL.
+**Description:** Reuse `PreviewPageView.vue`'s pointerdown/move/up tap-vs-drag distinction (`TAP_SLOP`) verbatim. On a tap, resolve the target word via `data-verse` (not `data-loc` — MVP only ever produces whole-ayah marks, so the word index isn't needed; any word tap toggles its whole ayah, as the description's simpler alternative anticipated), call `useToday.markPartialProgress(page, surah, ayah, words)` directly (folds the store's `toggleAyah` call inside `markPartialProgress` itself, rather than the view calling the store and `useToday` separately — a tighter single entry point). Word-states reuse `ReadingSurface`'s existing `hl-green` class (the `/preview` share feature's green highlight) rather than adding a new state.
 **Acceptance criteria:**
-- [ ] Tapping any word in an unmarked ayah marks the whole ayah (all its words highlighted); tapping again clears it
-- [ ] Marks persist across a reload of the view (via Task 3's hydration)
-- [ ] Marking the page's last unmarked ayah triggers Task 7's completion path and the view reflects the page no longer being the front page (e.g. redirects, or shows a completion state — decide exact UX at implementation time, not a blocker to defer)
-**Verification:** `npm run build`; manual — full mark-a-page walkthrough
+- [x] Tapping any word in an unmarked ayah marks the whole ayah (all its words highlighted) — verified in `mark-page-view.test.ts`. Tapping again to clear is verified at the store/pure-function layer (Task 2/4's tests), not re-verified at the component layer.
+- [ ] Marks persisting across a reload of the *view* specifically isn't re-verified here — Task 3's own tests cover the persistence layer directly; not duplicated at the component level.
+- [x] Marking the page's last unmarked ayah triggers Task 7's completion path; resolved as "the view flows to the next front page automatically" (no redirect/celebration state) since `pageNum` is reactive to `plan.newFront` — verified in `mark-page-view.test.ts`.
+**Verification:** `npm run build`; `mark-page-view.test.ts` (mounted component, mocked data/font modules) — not manual/e2e, a deviation from the plan's stated verification method, judged sufficient given the component test exercises the real tap → store → useToday → re-render pipeline rather than a shallow stub
 **Dependencies:** Tasks 2, 4, 7, 8
 **Files:** `features/memorize/MarkPageView.vue`, `composables/useMarkPage.ts`
 **Scope:** Medium

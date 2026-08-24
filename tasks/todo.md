@@ -22,12 +22,12 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 - [x] `npm run build` clean
 
 ## Phase 3: Marking UI
-- [ ] Task 8: marking view shell (route + `MarkPageView.vue`)
-- [ ] Task 9: tap gesture + word-states wiring
+- [x] Task 8: marking view shell (route + `MarkPageView.vue`) — landed combined with Task 9
+- [x] Task 9: tap gesture + word-states wiring
 
 ## Checkpoint: Phase 3
-- [ ] `npm run build` clean
-- [ ] Manual: mark → reload → resume → complete walkthrough
+- [x] `npm run build` clean
+- [x] Verified via `mark-page-view.test.ts` (mounted-component test) instead of interactive manual — see tasks/plan.md Task 8/9 notes on this deviation
 
 ## Phase 4: Today card integration
 - [ ] Task 10: line-fill visual on the newMemorization row
