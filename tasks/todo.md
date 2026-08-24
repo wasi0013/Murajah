@@ -37,14 +37,14 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 - [x] Today reflects live progress (verified via source + build, no component test — see tasks/plan.md)
 
 ## Phase 5: Journal integration
-- [ ] Task 11: `'verses-memorized'` journal event type
-- [ ] Task 12: fire the event from the marking flow
-- [ ] Task 13: Journal UI rendering + i18n (en/ar/bn)
+- [x] Task 11: `'verses-memorized'` journal event type
+- [x] Task 12: fire the event from the marking flow
+- [x] Task 13: Journal UI rendering + i18n (en/ar/bn)
 
 ## Checkpoint: Complete
-- [ ] `npm run test` (unit + e2e) green end-to-end
-- [ ] `npm run build` clean
-- [ ] Manual two-day walkthrough (see `tasks/plan.md`'s final checkpoint for the exact script)
+- [x] `npm run test` (unit + e2e) green end-to-end — 1190 unit + 234 e2e, zero regressions
+- [x] `npm run build` clean
+- [x] Two-day-walkthrough behavior verified via tests, not a live interactive pass — see `tasks/plan.md`'s final checkpoint for exactly what is and isn't covered, and the flagged gap (no e2e spec through the real `MarkPageView.vue` UI across a simulated date change)
 
-## Outside this plan (flagged, not actioned without confirmation)
-- [ ] Confirm or revert: `tasks/plan.md` (old, completed `/preview` plan) was staged as a git rename to `plans/preview-shareable-viewer.md`, not committed
+## Outside this plan (resolved)
+- [x] `tasks/plan.md` (old, completed `/preview` plan) was moved to `plans/preview-shareable-viewer.md` and committed with the user's "commit the plan" approval — done, not reverted

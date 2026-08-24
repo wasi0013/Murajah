@@ -60,14 +60,14 @@ Full context, the reused code this design is built on, and the decisions already
 
 ### Phase 5: Journal integration
 
-- [ ] Task 11: `journalStorage.ts` — `'verses-memorized'` event type
-- [ ] Task 12: fire the event from `markPartialProgress` using the Task 4 delta helper
-- [ ] Task 13: `JournalDaySheet.vue` `eventLabel()` + i18n keys (en/ar/bn)
+- [x] Task 11: `journalStorage.ts` — `'verses-memorized'` event type
+- [x] Task 12: fire the event from `markPartialProgress` using the Task 4 delta helper
+- [x] Task 13: `JournalDaySheet.vue` `eventLabel()` + i18n keys (en/ar/bn)
 
 ### Checkpoint: Complete
-- [ ] `npm run test` (unit + e2e) green end-to-end
-- [ ] `npm run build` clean
-- [ ] Manual, two-day walkthrough: mark verses 1-3 of the front page on day one (streak credit that day, journal reads "Memorized verses 1-3 of page N", history calendar shows the day as worked, not "none"); simulate day two, reopen the marking view (verses 1-3 pre-highlighted), mark the rest of the page (journal entry updates in place rather than duplicating, page graduates into `memorizedPages`, front page advances, day two also gets streak credit)
+- [x] `npm run test` (unit + e2e) green end-to-end — 1190 unit tests, 234 e2e tests, zero regressions to the pre-existing suite
+- [x] `npm run build` clean (including `vue-tsc -b`'s full type-check)
+- [x] Two-day-walkthrough behavior verified via tests rather than an interactive manual pass (no browser session available in this run): `today.test.ts`'s Task 7/12 tests cover day-one partial marking (streak credit, journal event with the right from/to range) and same-day completion (page graduates, front advances, journal entry updates in place rather than duplicating); pre-highlighting on a later day is a structural guarantee, not something separately tested — `partialProgress`'s marks are a plain persisted ledger with no date-based expiry, so "reopen and see prior marks" requires no day-rollover-specific code path to regress. `partial-progress-persistence.test.ts` covers the reload/hydrate mechanics directly. The one thing not exercised end-to-end through the actual `MarkPageView.vue` UI across a simulated date change is a genuine gap — flagged for the user as the natural next verification step (either a Playwright e2e spec or a live walkthrough) before wide rollout to the 100+ pilot families.
 
 ## Task Detail
 
@@ -196,7 +196,7 @@ Update `completedTasks`'s computed to count a `newMemorization` page as satisfie
 ### Task 11 — `'verses-memorized'` journal event type
 **Description:** Add the type to `journalStorage.ts`'s `JournalEvent` union: `{ type: 'verses-memorized'; page: number; fromAyah: number; toAyah: number }`. No change needed to `applyJournalEvent`'s dedupe (it already matches on `(page, type)` and replaces in place — verified, not assumed).
 **Acceptance criteria:**
-- [ ] A second `appendJournalEvent` call for the same `(date, page)` replaces the first rather than appending a duplicate (existing behavior, add a test for this specific type to close the loop)
+- [x] A second `appendJournalEvent` call for the same `(date, page)` replaces the first rather than appending a duplicate (existing behavior, add a test for this specific type to close the loop)
 **Verification:** `npm run test:unit -- journalStorage`
 **Dependencies:** None
 **Files:** `core/storage/journalStorage.ts`, `tests/unit/journalStorage.test.ts`
@@ -205,18 +205,18 @@ Update `completedTasks`'s computed to count a `newMemorization` page as satisfie
 ### Task 12 — fire the event from the marking flow
 **Description:** In `useToday.markPartialProgress` (Task 7), after computing `describeDelta` (Task 4) between the store's marks before/after the toggle, if it returns non-null, build and fire the `verses-memorized` event via `journal.addEvent(date, event)` — same fire-and-forget pattern `recordBandChange`/`bulkMarkMemorized` already use in `stores/progress.ts`.
 **Acceptance criteria:**
-- [ ] Marking verses 1-3 then verses 4-5 the same day results in one journal event reading verses 1-5, not two events
+- [x] Marking verses 1-3 then verses 4-5 the same day results in one journal event reading verses 1-5, not two events (tested with two single-ayah marks; the update-in-place mechanism is identical for any range size)
 **Verification:** `npm run test:unit -- useToday`
 **Dependencies:** Tasks 4, 7, 11
 **Files:** `composables/useToday.ts`
 **Scope:** Small
 
 ### Task 13 — Journal UI rendering + i18n
-**Description:** `JournalDaySheet.vue`'s `eventLabel()` gets a branch for `'verses-memorized'`, calling a new `t('journal.event.versesMemorized', {page, from, to})` key. Add the key (and any singular/plural variant, following the existing `bulkMemorizedOne`/`bulkMemorizedOther` pattern if `from === to`) to `en.ts`, `ar.ts`, `bn.ts`.
+**Description:** `JournalDaySheet.vue`'s `eventLabel()` gets a branch for `'verses-memorized'`, calling `t('journal.event.versesMemorizedOne'|'versesMemorizedRange', {from, to})`. **Deviated from the sketch**: the page number is deliberately *not* in the text (`{page}` dropped) — the row already renders a separate "Page N" button before the text, and repeating it would be redundant; this matches how `band-up`/`band-down`'s `"{from} → {to}"` text also never repeats the page. Added to `en.ts`, `ar.ts`, `bn.ts`.
 **Acceptance criteria:**
-- [ ] A `verses-memorized` event renders as "Memorized verses X-Y of page N" in English, with translated equivalents in ar/bn
-- [ ] `fromAyah === toAyah` renders as a single-verse sentence, not "verses 5-5"
-**Verification:** manual (i18n has no automated snapshot in this repo per the reconnaissance so far — confirm at implementation time)
+- [x] A `verses-memorized` event renders as "Verses X-Y memorized" in English (not "...of page N" — see the page-button note above), with translated equivalents in ar/bn
+- [x] `fromAyah === toAyah` renders as a single-verse sentence ("Verse X memorized"), not "verses 5-5"
+**Verification:** `i18n-catalog-parity.test.ts` (key coverage across all 3 locales) + `npm run build`'s type-check + manual code-path review — no dedicated component mount test for `JournalDaySheet.vue` exists in this codebase for any of its event types to extend
 **Dependencies:** Task 11
 **Files:** `features/progress/JournalDaySheet.vue`, `core/i18n/catalogs/en.ts`, `core/i18n/catalogs/ar.ts`, `core/i18n/catalogs/bn.ts`
 **Scope:** Small
