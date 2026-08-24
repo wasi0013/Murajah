@@ -551,6 +551,13 @@ const ar: Messages = {
     install: 'تثبيت',
     iosInstallHint: 'اضغط على أيقونة المشاركة، ثم «إضافة إلى الشاشة الرئيسية».',
   },
+  markPage: {
+    back: 'العودة إلى اليوم',
+    noFront: 'لا توجد لديك صفحة لحفظها الآن.',
+    retry: 'حاول مرة أخرى',
+    hint: 'انقر على آية لتمييزها كمحفوظة.',
+    linesProgress: '{covered} من {total} سطرًا',
+  },
   preview: {
     ayah: 'الآية {surah}:{ayah}',
     range: 'الآيات {surah}:{start}–{end}',

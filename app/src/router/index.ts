@@ -51,6 +51,16 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/quiz/QuizView.vue'),
   },
   {
+    // Mark memorized verses on the plan's current new-memorization front page
+    // (partial-page tracking — see plans/partial-page-tracking.md). No :page
+    // param — it always resolves plan.newFront?.nextPage itself, so marking
+    // is restricted to that one page by construction. Code-split → never in
+    // the reader bundle.
+    path: '/memorize',
+    name: 'memorize',
+    component: () => import('@/features/memorize/MarkPageView.vue'),
+  },
+  {
     // Memorization progress (grid + stats). Code-split → never in the reader bundle.
     path: '/progress',
     name: 'progress',

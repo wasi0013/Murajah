@@ -555,6 +555,13 @@ const en: Messages = {
     install: 'Install',
     iosInstallHint: 'Tap the Share icon, then “Add to Home Screen”.',
   },
+  markPage: {
+    back: 'Back to Today',
+    noFront: "You don't have a page to memorize right now.",
+    retry: 'Try again',
+    hint: 'Tap a verse to mark it memorized.',
+    linesProgress: '{covered} of {total} lines',
+  },
   preview: {
     ayah: 'Ayah {surah}:{ayah}',
     range: 'Ayahs {surah}:{start}–{end}',

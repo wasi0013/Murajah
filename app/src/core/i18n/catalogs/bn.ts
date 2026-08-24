@@ -551,6 +551,13 @@ const bn: Messages = {
     install: 'ইনস্টল করুন',
     iosInstallHint: 'শেয়ার আইকনে ট্যাপ করুন, তারপর "Add to Home Screen" নির্বাচন করুন।',
   },
+  markPage: {
+    back: 'আজকের পাতায় ফিরে যান',
+    noFront: 'এখন মুখস্থ করার জন্য আপনার কোনো পৃষ্ঠা নেই।',
+    retry: 'আবার চেষ্টা করুন',
+    hint: 'একটি আয়াত মুখস্থ হিসেবে চিহ্নিত করতে ট্যাপ করুন।',
+    linesProgress: '{total} এর মধ্যে {covered} লাইন',
+  },
   preview: {
     ayah: 'আয়াত {surah}:{ayah}',
     range: 'আয়াত {surah}:{start}–{end}',
