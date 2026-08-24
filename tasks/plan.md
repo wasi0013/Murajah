@@ -20,7 +20,7 @@ Full context, the reused code this design is built on, and the decisions already
 
 ### Phase 1: Data layer & pure logic (no UI, fully unit-testable)
 
-- [ ] Task 1: `core/storage/userData.ts` — add `partialProgress` key
+- [x] Task 1: `core/storage/userData.ts` — add `partialProgress` key
 - [ ] Task 2: `stores/partialProgress.ts` — new Pinia store
 - [ ] Task 3: `composables/usePartialProgressPersistence.ts` — hydrate/persist
 - [ ] Task 4: `core/memorization/partialProgress.ts` — pure helpers (coverage, line-fill, journal-delta)
@@ -74,8 +74,8 @@ Full context, the reused code this design is built on, and the decisions already
 ### Task 1 — `partialProgress` storage key
 **Description:** Add a `partialProgress` key to `userData.ts` following the exact pattern of `PLAN_KEY`/`DAYLOG_KEY`: a constant, `serialize`/`deserialize`, `load`/`save`. Shape: `{ page: number; marks: PageHighlightSpec[] } | null` (null = nothing in progress). `PageHighlightSpec` is imported from `core/navigation/previewRoute.ts`, not redefined.
 **Acceptance criteria:**
-- [ ] `loadPartialProgress()` returns `null` on a fresh DB, and round-trips a saved value exactly
-- [ ] A stored value whose `page` no longer matches the plan's current front page is still loaded as-is here (the *orphan* check belongs to the store/composable layer, Task 2, not this layer — this layer only persists)
+- [x] `loadPartialProgress()` returns `null` on a fresh DB, and round-trips a saved value exactly
+- [x] A stored value whose `page` no longer matches the plan's current front page is still loaded as-is here (the *orphan* check belongs to the store/composable layer, Task 2, not this layer — this layer only persists)
 **Verification:** `npm run test:unit -- userData`; `npm run build`
 **Dependencies:** None
 **Files:** `core/storage/userData.ts`, `tests/unit/userData.test.ts` (or wherever its sibling keys are tested)

@@ -3,7 +3,7 @@
 See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies. `plans/partial-page-tracking.md` is the design doc behind it.
 
 ## Phase 1: Data layer & pure logic
-- [ ] Task 1: `partialProgress` storage key (`core/storage/userData.ts`)
+- [x] Task 1: `partialProgress` storage key (`core/storage/userData.ts`)
 - [ ] Task 2: `partialProgress` Pinia store (`stores/partialProgress.ts`)
 - [ ] Task 3: persistence composable (`composables/usePartialProgressPersistence.ts`)
 - [ ] Task 4: pure coverage/derivation helpers (`core/memorization/partialProgress.ts`)
