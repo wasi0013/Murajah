@@ -6,11 +6,14 @@ import { useMistakesStore } from '@/stores/mistakes'
 import { useQuizStore } from '@/stores/quiz'
 import { useDayLogStore, type DaySection } from '@/stores/dayLog'
 import { useHabitVersesStore } from '@/stores/habitVerses'
+import { usePartialProgressStore } from '@/stores/partialProgress'
 import { generateDailyTasks } from '@/core/memorization/dailyTasks'
 import { advanceMemorizationPage } from '@/core/memorization/planBuilder'
 import { getHabit, getTodayDate, type HabitDef } from '@/core/memorization/streaks'
+import { isFullyMarked } from '@/core/memorization/partialProgress'
 import type { ReviewRating } from '@/core/memorization/reviewScheduler'
 import { advanceRevisionCursor } from '@/core/memorization/revisionCycle'
+import type { Word } from '@/core/data/types'
 
 /** The one habit whose checkbox also drives the habit-builder verse cursor. */
 const RECITE_AYAHS_HABIT = 'recite-ayahs'
@@ -36,6 +39,7 @@ export function useToday(opts: UseTodayOptions = {}) {
   const quiz = useQuizStore()
   const dayLog = useDayLogStore()
   const habitVerses = useHabitVersesStore()
+  const partialProgress = usePartialProgressStore()
 
   // Rolls at local midnight, shared with `useStreak` — so a session left open
   // overnight regenerates the queue for the new day instead of stalling on
@@ -89,10 +93,20 @@ export function useToday(opts: UseTodayOptions = {}) {
       habits.value.length,
   )
 
+  /**
+   * A newMemorization page is satisfied either the normal way (`isDone` — the
+   * page is fully finished) or by a partial mark today (`dayLog.isTouched`) —
+   * "any forward progress completes the day" (see plans/partial-page-tracking.md).
+   * `isTouched` is a structurally separate flag from `isDone`/`setPageDone`,
+   * so this never risks satisfying `complete()`'s own idempotency guard.
+   */
+  const isNewMemorizationSatisfied = (page: number): boolean =>
+    isDone('newMemorization', page) || dayLog.isTouched(date.value, page)
+
   /** Only *planned* work counts — pages finished before a pace cut don't inflate it. */
   const completedTasks = computed(
     () =>
-      newMemorization.value.filter((p) => isDone('newMemorization', p)).length +
+      newMemorization.value.filter(isNewMemorizationSatisfied).length +
       revision.value.filter((p) => isDone('revision', p)).length +
       weakReinforcement.value.filter((p) => isDone('weak', p)).length +
       habits.value.filter((h) => isHabitDone(h.id)).length,
@@ -157,6 +171,45 @@ export function useToday(opts: UseTodayOptions = {}) {
   const markMistake = (section: DaySection, page: number) => complete(section, page, 'needs_work')
 
   /**
+   * Toggle a whole ayah's mark on `page` (must be the plan's current front
+   * page — the caller is responsible for that restriction; this function
+   * doesn't re-check it). `words` is that page's full word list, needed to
+   * decide whether the page is now fully marked.
+   *
+   * Deliberately does **not** set `dayLog.setPageDone` — that flag is what
+   * `complete()`'s idempotency guard (`if (isDone(section, page)) return
+   * false`) checks, and a partial mark must never satisfy it: doing so would
+   * make `complete()` silently skip the reward, strength bump, and front
+   * advance once the page actually finishes later the same day. Partial
+   * credit for the streak instead goes through the structurally separate
+   * `newMemorizationTouched` flag (`dayLog.setTouched`), read by
+   * `completedTasks` above, not by `complete()`.
+   *
+   * Once every word on the page is marked, hands off to the existing
+   * `complete('newMemorization', page, 'perfect')` unmodified — same reward/
+   * strength/schedule/front-advance path a whole-page completion already
+   * uses — then clears the `partialProgress` store for that page.
+   */
+  function markPartialProgress(page: number, surah: number, ayah: number, words: Word[]): void {
+    partialProgress.toggleAyah(page, surah, ayah)
+
+    // Read before any clear() — `partialProgress.marks` is a reactive array
+    // that clear() splices in place, so this must be decided first.
+    const pageComplete = isFullyMarked(partialProgress.marks, words)
+    const touched = partialProgress.marks.length > 0
+
+    if (touched) {
+      const changed = dayLog.setTouched(date.value, page, true)
+      if (changed) syncCompleted()
+    }
+
+    if (pageComplete) {
+      partialProgress.clear()
+      complete('newMemorization', page, 'perfect')
+    }
+  }
+
+  /**
    * Habits toggle freely — unlike a page task they carry no reward or schedule, so
    * un-checking one costs nothing. (Page tasks have no un-check: a recall is a real
    * event. The reward is paid, the SM-2 schedule has moved, and hasanah is monotonic
@@ -195,6 +248,7 @@ export function useToday(opts: UseTodayOptions = {}) {
     allDone,
     complete,
     markMistake,
+    markPartialProgress,
     toggleHabit,
   }
 }

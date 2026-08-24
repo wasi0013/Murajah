@@ -5,7 +5,10 @@ import { useToday } from '@/composables/useToday'
 import { useProgressStore } from '@/stores/progress'
 import { usePlanStore } from '@/stores/plan'
 import { useDayLogStore } from '@/stores/dayLog'
+import { usePartialProgressStore } from '@/stores/partialProgress'
+import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import type { PlanConfig, PlanPace } from '@/core/storage/userData'
+import type { Word } from '@/core/data/types'
 
 // 2026-07-15 is a Wednesday (getDay() === 3).
 const TODAY = new Date('2026-07-15T09:00:00')
@@ -41,7 +44,13 @@ function setup(memorized: number[] = [1, 2], config: Partial<PlanConfig> = {}) {
   for (const p of memorized) progress.setMemorized(p, true)
   const plan = usePlanStore()
   plan.create(planConfig(config))
-  return { today: useToday({ today: ref(TODAY) }), progress, plan, dayLog: useDayLogStore() }
+  return {
+    today: useToday({ today: ref(TODAY) }),
+    progress,
+    plan,
+    dayLog: useDayLogStore(),
+    partialProgress: usePartialProgressStore(),
+  }
 }
 
 describe('useToday — task derivation', () => {
@@ -192,6 +201,74 @@ describe('useToday — day completion + habits', () => {
     today.toggleHabit('recite-ayahs')
     expect(today.isHabitDone('recite-ayahs')).toBe(false)
     expect(today.allDone.value).toBe(false)
+  })
+})
+
+describe('useToday — partial-page progress (Task 7)', () => {
+  /** A tiny 2-ayah page fixture, matching preview-route.test.ts's style. */
+  function word(ayah: number, wordIdx: number, id: number): Word {
+    return {
+      id,
+      surah: '2',
+      ayah: String(ayah),
+      word: String(wordIdx),
+      location: `2:${ayah}:${wordIdx}`,
+      text: `w${ayah}.${wordIdx}`,
+    }
+  }
+  const pageWords: Word[] = [word(1, 1, 1), word(1, 2, 2), word(2, 1, 3), word(2, 2, 4)]
+
+  function setupFront() {
+    return setup([], { newFront: { layout: 'qpc', nextPage: 22 }, pace: pace({ revisionPagesPerDay: 0 }) })
+  }
+
+  it('a partial mark touches the day without finishing the page', () => {
+    const { today, dayLog, progress } = setupFront()
+    expect(today.totalTasks.value).toBe(1) // newMemorization: [22] only
+
+    today.markPartialProgress(22, 2, 1, pageWords) // ayah 1 only — not the whole page
+
+    expect(today.isDone('newMemorization', 22)).toBe(false) // page not finished
+    expect(dayLog.get(TODAY_STR)!.newMemorizationTouched).toEqual([22])
+    expect(progress.isMemorized(22)).toBe(false)
+  })
+
+  it('a partial mark alone satisfies the day (any progress completes the streak)', () => {
+    const { today } = setupFront()
+    today.markPartialProgress(22, 2, 1, pageWords)
+    expect(today.allDone.value).toBe(true)
+    expect(today.completionPercentage.value).toBe(100)
+  })
+
+  it('marking every ayah on the page completes it exactly like a normal complete()', () => {
+    const { today, progress, plan, partialProgress } = setupFront()
+    today.markPartialProgress(22, 2, 1, pageWords)
+    today.markPartialProgress(22, 2, 2, pageWords) // covers the rest of the page
+
+    expect(progress.isMemorized(22)).toBe(true)
+    expect(plan.newFront).toEqual({ layout: 'qpc', nextPage: 23 })
+    expect(today.isDone('newMemorization', 22)).toBe(true)
+    expect(partialProgress.page).toBeNull() // cleared once graduated
+  })
+
+  it('REGRESSION: a page finished mid-day via marking is rewarded exactly once — the isDone guard is never short-circuited by an earlier partial touch', () => {
+    const { today, progress, plan } = setupFront()
+    const hasanahBefore = progress.hasanah
+
+    // Earlier in the day: a partial mark sets newMemorizationTouched, NOT isDone.
+    today.markPartialProgress(22, 2, 1, pageWords)
+    expect(today.isDone('newMemorization', 22)).toBe(false)
+
+    // Later the same day: the rest of the page completes it.
+    today.markPartialProgress(22, 2, 2, pageWords)
+
+    // If the isDone guard had been short-circuited by the earlier partial
+    // touch, complete() would have returned early and none of this would
+    // have happened at all.
+    expect(progress.hasanah).toBe(hasanahBefore + getPageHasanah(22)) // exactly once
+    expect(progress.strengthOf(22)).toBe(1) // bumped exactly once
+    expect(plan.newFront).toEqual({ layout: 'qpc', nextPage: 23 }) // advanced exactly once
+    expect(progress.reviewData.get(22)).toBeDefined() // entered the review cycle
   })
 })
 
