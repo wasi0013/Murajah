@@ -205,6 +205,14 @@ export function useToday(opts: UseTodayOptions = {}) {
     const pageComplete = isFullyMarked(after, words)
     const touched = after.length > 0
 
+    // Deliberately one-way: once a mark has made the day's front page
+    // "touched", un-marking every ayah again (`after.length === 0`) never
+    // calls `setTouched(..., false)` here. This matches the rest of the app's
+    // no-un-check philosophy (see TaskRow.vue's own doc comment) and the
+    // design doc's "any forward progress... completes that day's streak" —
+    // a corrective un-tap shouldn't retroactively cost the day's streak
+    // credit. See today.test.ts's "un-marking the day's only mark still
+    // leaves it touched" for the locked-in behavior.
     if (touched) {
       const changed = dayLog.setTouched(date.value, page, true)
       if (changed) syncCompleted()

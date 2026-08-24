@@ -307,6 +307,19 @@ describe('useToday — partial-page progress (Task 7)', () => {
     const events = journal.get(TODAY_STR)?.events ?? []
     expect(events).toHaveLength(1) // still just the first mark's event, unchanged
   })
+
+  it('un-marking the day\'s only mark still leaves it touched — no un-check, matching the rest of the app', () => {
+    const { today, dayLog } = setupFront()
+    today.markPartialProgress(22, 2, 1, pageWords)
+    expect(dayLog.get(TODAY_STR)!.newMemorizationTouched).toEqual([22])
+    expect(today.allDone.value).toBe(true) // the streak-completing side effect landed
+
+    today.markPartialProgress(22, 2, 1, pageWords) // toggles the same ayah back off
+
+    // The day's streak credit is not revoked by a corrective un-tap.
+    expect(dayLog.get(TODAY_STR)!.newMemorizationTouched).toEqual([22])
+    expect(today.allDone.value).toBe(true)
+  })
 })
 
 describe('useToday — the revision rotation advances on full-chunk completion', () => {
