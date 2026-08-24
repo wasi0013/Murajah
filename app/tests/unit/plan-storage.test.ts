@@ -44,6 +44,7 @@ const record = (date: string, completed: boolean): DayRecord => ({
   revision: [10, 11],
   weak: [],
   habits: ['recite-ayahs'],
+  newMemorizationTouched: completed ? [] : [22],
 })
 
 describe('plan storage', () => {
@@ -107,6 +108,27 @@ describe('day log storage', () => {
     await saveDayLog(log)
     const back = await loadDayLog()
     expect(back.get('2026-07-15')).toEqual(record('2026-07-15', true))
+  })
+
+  it('newMemorizationTouched defaults to [] on a record that predates the field', () => {
+    const legacyShaped = {
+      date: '2026-07-15',
+      completed: false,
+      newMemorization: [],
+      revision: [],
+      weak: [],
+      habits: [],
+      // newMemorizationTouched intentionally absent
+    }
+    const back = deserializeDayLog({ '2026-07-15': legacyShaped } as never)
+    expect(back.get('2026-07-15')?.newMemorizationTouched).toEqual([])
+  })
+
+  it('round-trips a non-empty newMemorizationTouched', () => {
+    const r = record('2026-07-16', false)
+    expect(r.newMemorizationTouched).toEqual([22])
+    const back = deserializeDayLog(serializeDayLog(new Map([['2026-07-16', r]])))
+    expect(back.get('2026-07-16')?.newMemorizationTouched).toEqual([22])
   })
 })
 

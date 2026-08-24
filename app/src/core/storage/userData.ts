@@ -306,6 +306,19 @@ const DEFAULT_PACE: PlanPace = {
  * One day's completion record in the day log (Phase 5) — drives streaks + the
  * history calendar. `completed` = every planned task was done that day; the arrays
  * are the pages actually finished per section (canonical scheme), habits by id.
+ *
+ * `newMemorizationTouched` (partial-page tracking) is deliberately separate
+ * from `newMemorization`: it means "the front page got a new mark today," not
+ * "this page is fully finished" — the latter is what `newMemorization` means
+ * everywhere else (`dayLog.setPageDone`'s idempotency guard, `complete()`'s
+ * reward/schedule/front-advance path) and must never be set by partial
+ * credit. See tasks/plan.md Task 5/7 for why keeping these apart matters.
+ * Optional (unlike its array siblings) so every existing `DayRecord` literal
+ * in the codebase — `dayLog.ts`'s `emptyRecord()`, `planMigration.ts`'s
+ * `dayRecordFromGoal` — keeps compiling unchanged; `stores/dayLog.ts` (Task
+ * 6) is what actually starts writing it. `deserializeDayLog` still defaults
+ * a stored/legacy record's missing field to `[]`, matching how every other
+ * array field here already handles a legacy/partial stored record.
  */
 export interface DayRecord {
   date: string
@@ -314,6 +327,7 @@ export interface DayRecord {
   revision: number[]
   weak: number[]
   habits: string[]
+  newMemorizationTouched?: number[]
 }
 
 /** Date (`YYYY-MM-DD`) → that day's completion record. */
@@ -397,6 +411,7 @@ export function serializeDayLog(log: DayLog): StoredDayLog {
       revision: [...r.revision],
       weak: [...r.weak],
       habits: [...r.habits],
+      newMemorizationTouched: [...(r.newMemorizationTouched ?? [])],
     }
   }
   return out
@@ -412,6 +427,7 @@ export function deserializeDayLog(stored: StoredDayLog | undefined): DayLog {
       revision: [...(r.revision ?? [])],
       weak: [...(r.weak ?? [])],
       habits: [...(r.habits ?? [])],
+      newMemorizationTouched: [...(r.newMemorizationTouched ?? [])],
     })
   }
   return map
