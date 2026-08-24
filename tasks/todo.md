@@ -64,5 +64,11 @@ Reviewed the full feature diff (`19a127da..HEAD`, 24 commits). Two critical find
 - [ ] Suggestion (deferred, cross-cutting) — `useMarkPage.ts`/`usePreviewPage.ts` share a pre-existing lack of an out-of-order-resolution guard (no request token/AbortController) if `page` changes faster than a fetch resolves; this feature's auto-advancing front page makes it somewhat more likely to matter, but it's a shared follow-up across both composables, not scoped to this diff.
 - All fixes verified RED-without/GREEN-with via temporarily reverting each guard. Final state: 1196 unit + 236 e2e, `npm run build` clean.
 
+## Follow-up: usePlanPersistence (the deferred issue from the review above)
+- [x] Fixed both of its distinct bugs: no idempotent-hydrate guard at all (every `hydrate()` unconditionally re-fetched and could clobber a live mutation), and its own watcher was set up fresh per call rather than as a shared, detached-`effectScope` singleton (so a view unmounting before its own 300ms debounce fired silently dropped the pending save). Same shape as the `dayLog`/`progress`/`partialProgress` fixes.
+- [x] Two new regression tests in `plan-store.test.ts`, each verified RED-without/GREEN-with, plus a mount-unmount-mount component test
+- [x] Fixed a resulting test-isolation gap in `mark-page-view.test.ts` (all four persistence composables' module-level singletons now reset in `beforeEach`)
+- [x] `npm run test` green (1199 unit + 236 e2e, one pre-existing unrelated flake in `download.spec.ts` confirmed to pass in isolation), `npm run build` clean
+
 ## Outside this plan (resolved)
 - [x] `tasks/plan.md` (old, completed `/preview` plan) was moved to `plans/preview-shareable-viewer.md` and committed with the user's "commit the plan" approval — done, not reverted
