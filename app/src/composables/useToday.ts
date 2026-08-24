@@ -7,13 +7,15 @@ import { useQuizStore } from '@/stores/quiz'
 import { useDayLogStore, type DaySection } from '@/stores/dayLog'
 import { useHabitVersesStore } from '@/stores/habitVerses'
 import { usePartialProgressStore } from '@/stores/partialProgress'
+import { useJournalStore } from '@/stores/journal'
 import { generateDailyTasks } from '@/core/memorization/dailyTasks'
 import { advanceMemorizationPage } from '@/core/memorization/planBuilder'
 import { getHabit, getTodayDate, type HabitDef } from '@/core/memorization/streaks'
-import { isFullyMarked } from '@/core/memorization/partialProgress'
+import { isFullyMarked, describeDelta } from '@/core/memorization/partialProgress'
 import type { ReviewRating } from '@/core/memorization/reviewScheduler'
 import { advanceRevisionCursor } from '@/core/memorization/revisionCycle'
 import type { Word } from '@/core/data/types'
+import type { JournalEvent } from '@/core/storage/journalStorage'
 
 /** The one habit whose checkbox also drives the habit-builder verse cursor. */
 const RECITE_AYAHS_HABIT = 'recite-ayahs'
@@ -40,6 +42,7 @@ export function useToday(opts: UseTodayOptions = {}) {
   const dayLog = useDayLogStore()
   const habitVerses = useHabitVersesStore()
   const partialProgress = usePartialProgressStore()
+  const journal = useJournalStore()
 
   // Rolls at local midnight, shared with `useStreak` — so a session left open
   // overnight regenerates the queue for the new day instead of stalling on
@@ -191,16 +194,37 @@ export function useToday(opts: UseTodayOptions = {}) {
    * uses — then clears the `partialProgress` store for that page.
    */
   function markPartialProgress(page: number, surah: number, ayah: number, words: Word[]): void {
+    // A plain copy — `partialProgress.marks` is the same reactive array
+    // `toggleAyah` mutates next, so this must be taken before that call.
+    const before = partialProgress.marks.map((m) => ({ ...m }))
     partialProgress.toggleAyah(page, surah, ayah)
 
     // Read before any clear() — `partialProgress.marks` is a reactive array
     // that clear() splices in place, so this must be decided first.
-    const pageComplete = isFullyMarked(partialProgress.marks, words)
-    const touched = partialProgress.marks.length > 0
+    const after = partialProgress.marks.map((m) => ({ ...m }))
+    const pageComplete = isFullyMarked(after, words)
+    const touched = after.length > 0
 
     if (touched) {
       const changed = dayLog.setTouched(date.value, page, true)
       if (changed) syncCompleted()
+    }
+
+    // Only a *newly covered* range narrates in the journal — toggling an
+    // ayah back off covers nothing new, so describeDelta returns null and no
+    // event fires (the earlier mark's event, if any, is left untouched).
+    const delta = describeDelta(before, after, words)
+    if (delta) {
+      const createdAt = new Date().toISOString()
+      const event: JournalEvent = {
+        id: `verses-memorized:${page}:${date.value}`,
+        type: 'verses-memorized',
+        page,
+        fromAyah: delta.fromAyah,
+        toAyah: delta.toAyah,
+        createdAt,
+      }
+      journal.addEvent(date.value, event)
     }
 
     if (pageComplete) {

@@ -6,6 +6,7 @@ import { useProgressStore } from '@/stores/progress'
 import { usePlanStore } from '@/stores/plan'
 import { useDayLogStore } from '@/stores/dayLog'
 import { usePartialProgressStore } from '@/stores/partialProgress'
+import { useJournalStore } from '@/stores/journal'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import type { PlanConfig, PlanPace } from '@/core/storage/userData'
 import type { Word } from '@/core/data/types'
@@ -269,6 +270,42 @@ describe('useToday — partial-page progress (Task 7)', () => {
     expect(progress.strengthOf(22)).toBe(1) // bumped exactly once
     expect(plan.newFront).toEqual({ layout: 'qpc', nextPage: 23 }) // advanced exactly once
     expect(progress.reviewData.get(22)).toBeDefined() // entered the review cycle
+  })
+
+  it('fires a verses-memorized journal event describing the newly-covered ayah range', () => {
+    const { today } = setupFront()
+    const journal = useJournalStore()
+    journal.ensure(TODAY_STR) // resident, so addEvent's in-memory mirror is observable — see progress-journal-events.test.ts
+
+    today.markPartialProgress(22, 2, 1, pageWords)
+
+    const events = journal.get(TODAY_STR)?.events ?? []
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: 'verses-memorized', page: 22, fromAyah: 1, toAyah: 1 })
+  })
+
+  it('a second mark the same day updates the event in place instead of adding a duplicate', () => {
+    const { today } = setupFront()
+    const journal = useJournalStore()
+    journal.ensure(TODAY_STR)
+
+    today.markPartialProgress(22, 2, 1, pageWords)
+    today.markPartialProgress(22, 2, 2, pageWords)
+
+    const events = journal.get(TODAY_STR)?.events ?? []
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ type: 'verses-memorized', page: 22, fromAyah: 2, toAyah: 2 })
+  })
+
+  it('unmarking (toggling an ayah back off) fires no journal event — nothing was newly covered', () => {
+    const { today } = setupFront()
+    const journal = useJournalStore()
+    journal.ensure(TODAY_STR)
+    today.markPartialProgress(22, 2, 1, pageWords)
+    today.markPartialProgress(22, 2, 1, pageWords) // toggles it back off
+
+    const events = journal.get(TODAY_STR)?.events ?? []
+    expect(events).toHaveLength(1) // still just the first mark's event, unchanged
   })
 })
 
