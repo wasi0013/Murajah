@@ -21,14 +21,14 @@ Full context, the reused code this design is built on, and the decisions already
 ### Phase 1: Data layer & pure logic (no UI, fully unit-testable)
 
 - [x] Task 1: `core/storage/userData.ts` — add `partialProgress` key
-- [ ] Task 2: `stores/partialProgress.ts` — new Pinia store
-- [ ] Task 3: `composables/usePartialProgressPersistence.ts` — hydrate/persist
-- [ ] Task 4: `core/memorization/partialProgress.ts` — pure helpers (coverage, line-fill, journal-delta)
+- [x] Task 2: `stores/partialProgress.ts` — new Pinia store
+- [x] Task 3: `composables/usePartialProgressPersistence.ts` — hydrate/persist
+- [x] Task 4: `core/memorization/partialProgress.ts` — pure helpers (coverage, line-fill, journal-delta) (implemented before Task 2, which depends on its `toggleAyah`)
 
 ### Checkpoint: Phase 1
-- [ ] `npm run test:unit` (in `app/`) green
-- [ ] `npm run build` clean
-- [ ] Manual: none needed yet (no UI wired)
+- [x] `npm run test:unit` (in `app/`) green
+- [x] `npm run build` clean
+- [x] Manual: none needed yet (no UI wired)
 
 ### Phase 2: Wire into Today's completion, streak, and history
 
@@ -84,8 +84,8 @@ Full context, the reused code this design is built on, and the decisions already
 ### Task 2 — `partialProgress` Pinia store
 **Description:** New store holding the live `{ page, marks: PageHighlightSpec[] }` state (or empty). Actions: `toggleAyah(surah, ayah)` (whole-verse toggle, adapts `togglePageWordHighlight`'s owner-lookup/expand logic from `previewRoute.ts` to a flat array instead of the by-color map — do not import the six-color type), `clear()`, `setAll()`/`snapshot()` for persistence. If the store is asked to mark a page that differs from its current `page`, it replaces the state entirely (starting fresh on that page) rather than merging — a plan-front change orphans any stale marks by design.
 **Acceptance criteria:**
-- [ ] Toggling an unmarked ayah adds a whole-ayah spec; toggling it again removes it (mirrors `togglePageWordHighlight`'s existing unmark behavior)
-- [ ] Switching the target page clears prior marks rather than merging them
+- [x] Toggling an unmarked ayah adds a whole-ayah spec; toggling it again removes it (mirrors `togglePageWordHighlight`'s existing unmark behavior)
+- [x] Switching the target page clears prior marks rather than merging them
 **Verification:** `npm run test:unit -- partialProgress`
 **Dependencies:** Task 1 (shares the `PageHighlightSpec` type)
 **Files:** `stores/partialProgress.ts`, `tests/unit/partialProgress-store.test.ts`
@@ -94,7 +94,7 @@ Full context, the reused code this design is built on, and the decisions already
 ### Task 3 — persistence composable
 **Description:** `usePartialProgressPersistence.ts`, mirroring `useDayLogPersistence.ts` verbatim in shape: idempotent `hydrate()`, debounced watch-driven save, module-level singleton, test-only reset export.
 **Acceptance criteria:**
-- [ ] A store mutation persists within the debounce window; hydrate reflects the last saved value on reload
+- [x] A store mutation persists within the debounce window; hydrate reflects the last saved value on reload
 **Verification:** `npm run test:unit -- partialProgress-persistence`
 **Dependencies:** Task 2
 **Files:** `composables/usePartialProgressPersistence.ts`, `tests/unit/partialProgress-persistence.test.ts`
@@ -106,9 +106,9 @@ Full context, the reused code this design is built on, and the decisions already
 - `coveredLineCount(marks: PageHighlightSpec[], words: Word[]): { covered: number; total: number }` — a line counts only when every word on it is covered (uses `Word.line_number`; `total` is that page's actual max line number, not a hardcoded 15, so pages 1-2's 8-line layout isn't misreported)
 - `describeDelta(before: PageHighlightSpec[], after: PageHighlightSpec[], words: Word[]): { fromAyah: number; toAyah: number } | null` — the lowest/highest ayah newly covered by `after` that wasn't covered by `before`; `null` if nothing changed
 **Acceptance criteria:**
-- [ ] `isFullyMarked` is true only when literally every word's location is covered, tested against a real page's `Word[]` (reuse a fixture already used by `pageVerses.test.ts` if one exists)
-- [ ] `coveredLineCount` on a page 1/2-shaped fixture (8 lines) reports `total: 8`, not 15
-- [ ] `describeDelta` returns the min/max ayah of the *newly* covered words only, not the full cumulative set
+- [x] `isFullyMarked` is true only when literally every word's location is covered, tested against a hand-built fixture (no `pageVerses.test.ts` fixture existed to reuse, so one was built matching `preview-route.test.ts`'s style instead)
+- [x] `coveredLineCount` on a page 1/2-shaped fixture (8 lines) reports `total: 8`, not 15
+- [x] `describeDelta` returns the min/max ayah of the *newly* covered words only, not the full cumulative set
 **Verification:** `npm run test:unit -- partialProgress` (RED first: write these three tests before the implementation)
 **Dependencies:** None (pure functions, can be built in parallel with Tasks 1-3)
 **Files:** `core/memorization/partialProgress.ts`, `tests/unit/partialProgress.test.ts`

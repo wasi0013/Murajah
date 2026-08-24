@@ -4,13 +4,13 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 
 ## Phase 1: Data layer & pure logic
 - [x] Task 1: `partialProgress` storage key (`core/storage/userData.ts`)
-- [ ] Task 2: `partialProgress` Pinia store (`stores/partialProgress.ts`)
-- [ ] Task 3: persistence composable (`composables/usePartialProgressPersistence.ts`)
-- [ ] Task 4: pure coverage/derivation helpers (`core/memorization/partialProgress.ts`)
+- [x] Task 2: `partialProgress` Pinia store (`stores/partialProgress.ts`)
+- [x] Task 3: persistence composable (`composables/usePartialProgressPersistence.ts`)
+- [x] Task 4: pure coverage/derivation helpers (`core/memorization/partialProgress.ts`)
 
 ## Checkpoint: Phase 1
-- [ ] `npm run test:unit` green
-- [ ] `npm run build` clean
+- [x] `npm run test:unit` green
+- [x] `npm run build` clean
 
 ## Phase 2: Wire into Today's completion, streak, and history
 - [ ] Task 5: `DayRecord.newMemorizationTouched` field
