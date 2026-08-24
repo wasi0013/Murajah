@@ -492,8 +492,10 @@ test('enabling new memorization schedules a page even from a zero-pace plan', as
   await page.getByRole('button', { name: 'Save changes' }).click()
 
   // The section now renders with the next un-memorized page (memorized 1–3 → 4).
+  // It's the plan's front page, so it opens the marking view, not the reader
+  // (see plans/partial-page-tracking.md) — the row's own label says so.
   await expect(section(page, 'New memorization').locator('.row')).toHaveCount(1)
-  await expect(page.getByRole('button', { name: 'Open page 4 in the reader' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Open page 4 to mark memorized verses' })).toBeVisible()
 })
 
 test('plan setup no longer offers a script choice for new memorization', async ({ page }) => {
