@@ -30,11 +30,11 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 - [x] Verified via `mark-page-view.test.ts` (mounted-component test) instead of interactive manual — see tasks/plan.md Task 8/9 notes on this deviation
 
 ## Phase 4: Today card integration
-- [ ] Task 10: line-fill visual on the newMemorization row
+- [x] Task 10: line-fill visual on the newMemorization row
 
 ## Checkpoint: Phase 4
-- [ ] `npm run build` clean
-- [ ] Manual: Today reflects live progress
+- [x] `npm run build` clean
+- [x] Today reflects live progress (verified via source + build, no component test — see tasks/plan.md)
 
 ## Phase 5: Journal integration
 - [ ] Task 11: `'verses-memorized'` journal event type

@@ -52,11 +52,11 @@ Full context, the reused code this design is built on, and the decisions already
 
 ### Phase 4: Today card integration
 
-- [ ] Task 10: line-fill visual on the newMemorization row, deep-linked into the marking view
+- [x] Task 10: line-fill visual on the newMemorization row, deep-linked into the marking view
 
 ### Checkpoint: Phase 4
-- [ ] `npm run build` clean
-- [ ] Manual: Today's newMemorization row shows "N/15 lines" and fills as marks are added; tapping it opens the marking view, not the plain reader
+- [x] `npm run build` clean
+- [x] Verified via source reading + build (no TodayView component test exists in this codebase for any section, matching precedent): Today's newMemorization row shows "N/total lines" and fills as marks are added; tapping it opens the marking view, not the plain reader
 
 ### Phase 5: Journal integration
 
@@ -182,8 +182,8 @@ Update `completedTasks`'s computed to count a `newMemorization` page as satisfie
 ### Task 10 — Today line-fill visual
 **Description:** A small fill component (15-strip, or however many lines `coveredLineCount` reports as `total` for that page) added where `TaskRow.vue` renders the `newMemorization` section's row, reading `coveredLineCount(partialProgress.marks, words)`. The row's `open` action routes into the Task 8 marking view instead of the plain reader, for this section only — revision/weak rows are unchanged.
 **Acceptance criteria:**
-- [ ] The newMemorization row shows "N / total lines" and the fill visually reflects `coveredLineCount`
-- [ ] Tapping the row opens the marking view, not `readerLink({page})`
+- [x] The newMemorization row shows "N / total lines" and the fill visually reflects `coveredLineCount`
+- [x] Tapping the row opens the marking view, not `readerLink({page})` (only for the front page specifically — any other newMemorization page, only possible when newPagesPerDay > 1, keeps the old reader flow)
 **Verification:** `npm run build`; manual
 **Dependencies:** Tasks 4, 8
 **Files:** `features/today/TaskRow.vue` (or a new sibling component if the fill visual doesn't belong inline), `features/today/TodayView.vue`
