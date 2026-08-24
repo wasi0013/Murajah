@@ -13,13 +13,13 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 - [x] `npm run build` clean
 
 ## Phase 2: Wire into Today's completion, streak, and history
-- [ ] Task 5: `DayRecord.newMemorizationTouched` field
-- [ ] Task 6: `dayLog` store touched-setter + `hasWork()` fix
-- [ ] Task 7: `useToday.ts` wiring — **highest-risk task, has a named regression test**
+- [x] Task 5: `DayRecord.newMemorizationTouched` field
+- [x] Task 6: `dayLog` store touched-setter + `hasWork()` fix
+- [x] Task 7: `useToday.ts` wiring — **highest-risk task, has a named regression test**
 
 ## Checkpoint: Phase 2
-- [ ] `npm run test:unit` green (including Task 7's idempotency regression test)
-- [ ] `npm run build` clean
+- [x] `npm run test:unit` green (including Task 7's idempotency regression test)
+- [x] `npm run build` clean
 
 ## Phase 3: Marking UI
 - [ ] Task 8: marking view shell (route + `MarkPageView.vue`)

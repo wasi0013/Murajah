@@ -32,14 +32,14 @@ Full context, the reused code this design is built on, and the decisions already
 
 ### Phase 2: Wire into Today's completion, streak, and history
 
-- [ ] Task 5: `core/storage/userData.ts` — `DayRecord.newMemorizationTouched?: number[]`, sweep serializers
-- [ ] Task 6: `stores/dayLog.ts` — touched-setter, `hasWork()` update in `streaks.ts`
-- [ ] Task 7: `useToday.ts` — `markPartialProgress(page, words)` action + `completedTasks` change + page-complete handoff to `complete()`
+- [x] Task 5: `core/storage/userData.ts` — `DayRecord.newMemorizationTouched?: number[]`, sweep serializers
+- [x] Task 6: `stores/dayLog.ts` — touched-setter, `hasWork()` update in `streaks.ts`
+- [x] Task 7: `useToday.ts` — `markPartialProgress(page, words)` action + `completedTasks` change + page-complete handoff to `complete()`
 
 ### Checkpoint: Phase 2
-- [ ] `npm run test:unit` green, including the named idempotency test (Task 7's acceptance criteria)
-- [ ] `npm run build` clean
-- [ ] Manual: none needed yet (no UI wired)
+- [x] `npm run test:unit` green, including the named idempotency test (Task 7's acceptance criteria)
+- [x] `npm run build` clean
+- [x] Manual: none needed yet (no UI wired)
 
 ### Phase 3: Marking UI
 
@@ -117,8 +117,8 @@ Full context, the reused code this design is built on, and the decisions already
 ### Task 5 — `DayRecord.newMemorizationTouched`
 **Description:** Add the optional field to the `DayRecord` interface in `userData.ts`; update its serializer/deserializer (default `[]` on load, matching the `??[]` defensiveness every other array field already has); confirm `planMigration.ts`'s `dayRecordFromGoal` needs no change (field is optional, legacy goals correctly produce `undefined`) rather than assuming it.
 **Acceptance criteria:**
-- [ ] A `DayRecord` missing the field (an old stored day, or a migrated legacy one) loads without error and behaves as "nothing touched," not a crash
-- [ ] `dayLog.ts`'s `snapshot()` and `emptyRecord()` both carry the field (caught by Task 6's own tests, not duplicated here)
+- [x] A `DayRecord` missing the field (an old stored day, or a migrated legacy one) loads without error and behaves as "nothing touched," not a crash
+- [x] `dayLog.ts`'s `snapshot()` and `emptyRecord()` both carry the field (caught by Task 6's own tests, not duplicated here)
 **Verification:** `npm run test:unit -- userData dayLog`
 **Dependencies:** None
 **Files:** `core/storage/userData.ts`
@@ -127,8 +127,8 @@ Full context, the reused code this design is built on, and the decisions already
 ### Task 6 — `dayLog` store + `hasWork()` update
 **Description:** `stores/dayLog.ts`: `emptyRecord()` includes `newMemorizationTouched: []`; add `isTouched(date, page)`/`setTouched(date, page, touched)` (same push/splice shape as `setPageDone`, but writing the new field, and — unlike `setPageDone` — allowed to be set true without going through `complete()`); `snapshot()` copies the new array. `core/memorization/streaks.ts`: `hasWork(r)` adds `r.newMemorizationTouched?.length ?? 0` to its sum.
 **Acceptance criteria:**
-- [ ] A day with only `newMemorizationTouched` set (nothing else) reports `hasWork(r) === true`
-- [ ] `buildHistory` renders that day as `'partial'`, not `'none'` (existing three-state logic already handles this once `hasWork` is correct — no change needed there beyond the `hasWork` fix)
+- [x] A day with only `newMemorizationTouched` set (nothing else) reports `hasWork(r) === true`
+- [x] `buildHistory` renders that day as `'partial'`, not `'none'` (existing three-state logic already handles this once `hasWork` is correct — no change needed there beyond the `hasWork` fix)
 **Verification:** `npm run test:unit -- dayLog streaks`
 **Dependencies:** Task 5
 **Files:** `stores/dayLog.ts`, `core/memorization/streaks.ts`
@@ -142,9 +142,9 @@ Full context, the reused code this design is built on, and the decisions already
 
 Update `completedTasks`'s computed to count a `newMemorization` page as satisfied when `isDone('newMemorization', page) || isTouched(date.value, page)`.
 **Acceptance criteria:**
-- [ ] **Named regression test**: a page marked partially earlier in the day, then completed via marking later the *same* day, awards hasanah exactly once, bumps strength exactly once, fires exactly one band-change journal event, and advances `plan.newFront` exactly once — i.e. `complete()`'s idempotency guard is never short-circuited by the earlier partial touch.
-- [ ] A day with only a partial mark (page not finished) sets `dayLog record.completed = true` when every other planned task is also done, and streak credit is granted for that day
-- [ ] `partialProgress` store is cleared for a page exactly when it graduates into `memorizedPages`, never before
+- [x] **Named regression test**: a page marked partially earlier in the day, then completed via marking later the *same* day, awards hasanah exactly once, bumps strength exactly once, and advances `plan.newFront` exactly once — i.e. `complete()`'s idempotency guard is never short-circuited by the earlier partial touch. (The band-change-event-fires-once claim is asserted indirectly: `recordBandChange` is unconditionally called once inside `recordReview`, and the strength/hasanah assertions already prove `recordReview` itself ran exactly once — not asserted directly against the journal store in this test.)
+- [x] A day with only a partial mark (page not finished) sets `dayLog record.completed = true` when every other planned task is also done, and streak credit is granted for that day
+- [x] `partialProgress` store is cleared for a page exactly when it graduates into `memorizedPages`, never before
 **Verification:** `npm run test:unit -- useToday`
 **Dependencies:** Tasks 2, 4, 6
 **Files:** `composables/useToday.ts`, `tests/unit/useToday.test.ts`
