@@ -2,6 +2,7 @@ import type { Layout } from '@/core/data/types'
 import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/habitVerses'
 import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { PlaybackScope } from '@/core/audio/scope'
+import type { PageHighlightSpec } from '@/core/navigation/previewRoute'
 import { idbCount, idbGet, openDb, txDone } from './idb'
 
 /**
@@ -25,6 +26,7 @@ const AUDIO_KEY = 'audio'
 const LIVE_KEY = 'live'
 const RECORDINGS_KEY = 'recordings'
 const HABIT_VERSES_KEY = 'habitVerses'
+const PARTIAL_PROGRESS_KEY = 'partialProgress'
 
 /** On-disk mistakes shape: `{ "<qpcPage>": wordId[] }` (matches legacy export). */
 export type StoredMistakes = Record<string, number[]>
@@ -683,6 +685,51 @@ export async function saveHabitVerseCursor(cursor: StoredHabitVerseCursor): Prom
       lastAdvanceDate: cursor.lastAdvanceDate,
     }
     tx.objectStore(STORE).put(plain, HABIT_VERSES_KEY)
+    await txDone(tx)
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * In-progress marks on the plan's current new-memorization front page
+ * (partial-page tracking) — which verses/word-ranges a kid has marked
+ * memorized on a page not yet fully complete. `marks` reuses `/preview`'s
+ * `PageHighlightSpec` shape (a plain `{surah, ayah, wordStart?, wordEnd?}`),
+ * not its six-color container — this is a single, flat "memorized" set, never
+ * a colored highlight. `page` pins the marks to the front page they were made
+ * on; this layer only persists what it's given — `stores/partialProgress.ts`
+ * is responsible for treating a stored `page` that no longer matches the
+ * plan's current front page as stale.
+ */
+export interface StoredPartialProgress {
+  page: number
+  marks: PageHighlightSpec[]
+}
+
+/** Load the persisted partial progress (`null` if none / on error). */
+export async function loadPartialProgress(): Promise<StoredPartialProgress | null> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readonly')
+    const stored = await idbGet<StoredPartialProgress>(tx.objectStore(STORE), PARTIAL_PROGRESS_KEY)
+    await txDone(tx)
+    return stored ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Persist partial progress, or clear it when null (best-effort). */
+export async function savePartialProgress(p: StoredPartialProgress | null): Promise<void> {
+  try {
+    const tx = (await db()).transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    if (p) {
+      // Rebuild plain objects/arrays — the store's values may be Vue reactive proxies.
+      store.put({ page: p.page, marks: p.marks.map((m) => ({ ...m })) }, PARTIAL_PROGRESS_KEY)
+    } else {
+      store.delete(PARTIAL_PROGRESS_KEY)
+    }
     await txDone(tx)
   } catch {
     /* best-effort */

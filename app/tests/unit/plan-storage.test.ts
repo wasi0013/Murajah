@@ -13,10 +13,13 @@ import {
   loadMistakes,
   saveProgress,
   saveMistakes,
+  loadPartialProgress,
+  savePartialProgress,
   _resetUserDataDb,
   type PlanConfig,
   type DayLog,
   type DayRecord,
+  type StoredPartialProgress,
 } from '@/core/storage/userData'
 
 beforeEach(() => {
@@ -104,6 +107,38 @@ describe('day log storage', () => {
     await saveDayLog(log)
     const back = await loadDayLog()
     expect(back.get('2026-07-15')).toEqual(record('2026-07-15', true))
+  })
+})
+
+describe('partial progress storage', () => {
+  const sample = (): StoredPartialProgress => ({
+    page: 202,
+    marks: [
+      { surah: 2, ayah: 5 },
+      { surah: 2, ayah: 7, wordStart: 1, wordEnd: 3 },
+    ],
+  })
+
+  it('defaults to null when nothing has been stored', async () => {
+    expect(await loadPartialProgress()).toBeNull()
+  })
+
+  it('persists partial progress to IndexedDB and reloads it; clears on null', async () => {
+    const p = sample()
+    await savePartialProgress(p)
+    expect(await loadPartialProgress()).toEqual(p)
+
+    await savePartialProgress(null)
+    expect(await loadPartialProgress()).toBeNull()
+  })
+
+  it('does not mutate the caller when saving reactive-proxy-shaped input', async () => {
+    const marks = sample().marks
+    await savePartialProgress({ page: 202, marks })
+    const back = await loadPartialProgress()
+    expect(back).toEqual({ page: 202, marks })
+    // storage returns its own copy, not the same array reference
+    expect(back!.marks).not.toBe(marks)
   })
 })
 
