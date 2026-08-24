@@ -9,7 +9,7 @@ import { toast } from '@/composables/useToast'
 import { t } from '@/core/i18n'
 
 // Routes are lazy-loaded (code-split) so each feature ships its own chunk
-// and never bloats the initial reader bundle. See plans/redesign-2026.md §3.
+// and never bloats the initial reader bundle. See plans/archive/redesign-2026.md §3.
 const routes: RouteRecordRaw[] = [
   {
     path: '/',

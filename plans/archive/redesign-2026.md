@@ -223,7 +223,7 @@ Reframed from "the usual PWA/offline task list" once it became clear this ships 
 - Final full-suite Lighthouse + Playwright run against §3 budgets; staged rollout with rollback plan (built on Phase 10's rehearsal + rollout-health signal).
 **Acceptance:** New app serves 100% of traffic under budget; legacy removed; rollback documented and tested.
 
-### Phase 12 — Practice Journal (new 2026-08-23) → [phase-12-journal.md](./phase-12-journal.md)
+### Phase 12 — Practice Journal (new 2026-08-23) → [phase-12-journal.md](../phase-12-journal.md)
 
 Post-launch feature request, reversing Phase 8's "notes/journal dropped" call: an automatic daily journal — a calendar surfaced as `/progress`'s 4th segment (`Overview | Juz | Pages | Journal`), showing each day's memorization/revision/weak-page activity, recordings, and memorization-strength band changes, plus an optional 280-character reflection note per day. Retires `HistorySheet.vue` (its streak-heatmap job becomes a strict subset of the new calendar). Built on per-date IndexedDB keys rather than a whole-blob rewrite per note edit — the feature's central performance constraint given `userData.ts`'s existing debounced-deep-watch pattern doesn't scale to per-day text edits over a growing history. Backup import gets a dedicated `mergeJournal` (union by date, last-write-wins by edit timestamp) — the one deliberate exception to every other key's "import replaces" semantics, needed because notes are editable on any past day across devices.
 

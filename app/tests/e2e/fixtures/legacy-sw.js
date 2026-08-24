@@ -284,7 +284,7 @@ function offlineFallbackResponse() {
  * WebKitBlobResource error 1 on Home Screen relaunch). The fetch itself is
  * returned untouched — no `.blob()`, no `.clone()`, nothing WebKit can later
  * decide is stale/invalid. The tradeoff (explicitly accepted, see
- * plans/phase-10-pwa-migration.md decision 2): iOS gets no offline app-shell
+ * plans/archive/phase-10-pwa-migration.md decision 2): iOS gets no offline app-shell
  * fallback. Per-page fonts/data below are unaffected and still cache normally.
  */
 async function networkOnlyNavigation(request) {

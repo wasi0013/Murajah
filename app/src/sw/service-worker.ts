@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 /**
- * Murajah service worker (redesigned app) — see plans/phase-10-pwa-migration.md.
+ * Murajah service worker (redesigned app) — see plans/archive/phase-10-pwa-migration.md.
  *
  * - Navigation (documents): Workbox NetworkFirst on Android/desktop. iOS/iPadOS
  *   instead gets `networkOnlyNavigation` — a plain fetch with zero Cache Storage

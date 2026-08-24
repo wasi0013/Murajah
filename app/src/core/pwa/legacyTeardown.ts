@@ -1,7 +1,7 @@
 /**
  * Retires the legacy `source/sw.js` (live on murajah.pages.dev, scope `/`,
  * controlling every existing user) before the new app registers its own
- * service worker — see plans/phase-10-pwa-migration.md §10.2, the load-bearing
+ * service worker — see plans/archive/phase-10-pwa-migration.md §10.2, the load-bearing
  * task this whole phase is organized around.
  *
  * Cache deletion is prefix-matched against the two known legacy bucket names

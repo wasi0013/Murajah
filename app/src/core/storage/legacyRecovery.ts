@@ -1,5 +1,5 @@
 // Recovers a returning legacy user's memorization data straight from the
-// still-present `murajah-db` IndexedDB database (see plans/legacy-schema.md) —
+// still-present `murajah-db` IndexedDB database (see plans/archive/legacy-schema.md) —
 // no export/import file required. Surfaced as a Settings → Danger zone option,
 // visible only while `hasLegacyData()` is true.
 //

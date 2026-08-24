@@ -3,7 +3,7 @@ import { computed, reactive } from 'vue'
 
 /**
  * Word-level mistake marks, in the **legacy-exact** canonical shape
- * `Map<qpcPage, Set<wordId>>` (see plans/legacy-schema.md) — so migrated data
+ * `Map<qpcPage, Set<wordId>>` (see plans/archive/legacy-schema.md) — so migrated data
  * loads unchanged, `weaknessScorer` reads it directly, and export round-trips
  * losslessly. This is the single store Phase 4 (weakness/hasanah) also consumes;
  * no parallel schema.

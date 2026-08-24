@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// Phase 10 — plans/phase-10-pwa-migration.md. Covers the load-bearing pieces
+// Phase 10 — plans/archive/phase-10-pwa-migration.md. Covers the load-bearing pieces
 // that can be verified with browser automation: device-gated registration
 // (§10.1/10.1.3), universal legacy teardown (§10.2), and that the app still
 // boots normally under the new SW. The iOS *navigation* bug family itself

@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-// Phase 10.7.3 — the cutover rehearsal plans/phase-10-pwa-migration.md
+// Phase 10.7.3 — the cutover rehearsal plans/archive/phase-10-pwa-migration.md
 // required before Phase 11: run the migration against the *actual* legacy
 // `sw.js` (not a stub) plus realistic IndexedDB fixtures shaped like
-// plans/legacy-schema.md, and prove every fixture survives byte-identical.
+// plans/archive/legacy-schema.md, and prove every fixture survives byte-identical.
 // This is the authoritative test of §10.2's teardown — pwa.spec.ts covers the
 // registration/gate logic with a trivial stub, but real legacy has a very
 // different lifecycle (conditional skipWaiting gated on all critical
@@ -76,7 +76,7 @@ test('rehearsal: migrating from the real legacy sw.js preserves murajah-db byte-
     .toMatch(/\/sw\.js$/)
 
   // Seed realistic legacy fixtures: the exact DB/store/keyPath shape from
-  // plans/legacy-schema.md §1, populated with representative memorization,
+  // plans/archive/legacy-schema.md §1, populated with representative memorization,
   // plan, and streak data.
   const fixtureSnapshot = await page.evaluate(
     async ({ dbName, dbVersion }) => {

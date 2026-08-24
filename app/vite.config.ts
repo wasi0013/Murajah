@@ -12,7 +12,7 @@ export default defineConfig({
     VitePWA({
       // Hand-written SW (not auto-generated) — required so it can branch once
       // at top level on `?platform=ios` (see src/sw/service-worker.ts and
-      // plans/phase-10-pwa-migration.md decision 1). `injectRegister: false`:
+      // plans/archive/phase-10-pwa-migration.md decision 1). `injectRegister: false`:
       // registration is hand-rolled in main.ts, both because the device-gated
       // URL needs a query string the virtual-module registrar can't express,
       // and because it must run *after* legacy-SW teardown (10.2), not before.

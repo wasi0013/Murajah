@@ -12,7 +12,7 @@
  * their pace, where they were memorizing, and enough day history for the streak.
  *
  * Note `plans` / `planHistory` were **IndexedDB-only** in legacy — they never
- * appear in the v2.0.0 export JSON (see plans/legacy-schema.md §2). So this takes
+ * appear in the v2.0.0 export JSON (see plans/archive/legacy-schema.md §2). So this takes
  * plan records as read from the legacy `plans` store, alongside `dailyGoals`,
  * which *is* in the export.
  */

@@ -6,7 +6,7 @@ import { hasLegacyData, recoverLegacyData, LEGACY_DB_NAME } from '@/core/storage
 
 const LEGACY_DB_VERSION = 6
 
-/** Seed a legacy `murajah-db` shaped like plans/legacy-schema.md, with an
+/** Seed a legacy `murajah-db` shaped like plans/archive/legacy-schema.md, with an
  * `appData` blob under id `murajah-data` — the same fixture shape
  * pwa-rehearsal.spec.ts uses against the real legacy service worker. */
 function seedLegacyDb(appData: {

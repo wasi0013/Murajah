@@ -8,7 +8,7 @@ import { usePwaUpdate } from '@/composables/usePwaUpdate'
 createApp(App).use(createPinia()).use(router).mount('#app')
 
 // Fire-and-forget: retires the legacy SW and registers the new one (see
-// plans/phase-10-pwa-migration.md §10.2) without blocking first paint.
+// plans/archive/phase-10-pwa-migration.md §10.2) without blocking first paint.
 // `.catch` guards against an unhandled rejection if `register()` itself
 // throws (seen from some in-app browsers / locked-down environments) — a
 // failure here must stay a non-fatal no-op for PWA/update-toast/pwa_boot

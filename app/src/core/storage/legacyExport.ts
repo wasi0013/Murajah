@@ -1,5 +1,5 @@
 // Lossless bridge between the legacy v2.0.0 backup JSON and the new app's
-// canonical runtime user-data shape. See plans/legacy-schema.md.
+// canonical runtime user-data shape. See plans/archive/legacy-schema.md.
 //
 // Guarantee: serializeUserData(parseLegacyExport(json)) deep-equals `json`
 // (given the original `exported` timestamp) — no existing user loses data, and

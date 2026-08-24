@@ -1,5 +1,5 @@
 {
-  "_comment": "Legacy IndexedDB `plans` store records + the export's dailyGoals block, in the real shapes legacy wrote (planManager.js createPlan / dailyGoalsManager.js). Plans are NOT part of the v2.0.0 export JSON — see plans/legacy-schema.md §2. Deliberately exercises: two active plans overlapping on page 582 with different review history, an up-front seeded page (583) that was never actually reviewed, and an archived plan that must be ignored.",
+  "_comment": "Legacy IndexedDB `plans` store records + the export's dailyGoals block, in the real shapes legacy wrote (planManager.js createPlan / dailyGoalsManager.js). Plans are NOT part of the v2.0.0 export JSON — see plans/archive/legacy-schema.md §2. Deliberately exercises: two active plans overlapping on page 582 with different review history, an up-front seeded page (583) that was never actually reviewed, and an archived plan that must be ignored.",
   "plans": [
     {
       "id": "plan_juz30",

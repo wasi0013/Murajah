@@ -3,7 +3,7 @@
  * `planManager.js` to the unified adaptive-plan model.
  *
  * What survives the port: juz⇄page scope math (retargeted to the **derived** nav
- * index, not the legacy off-by-one tables — see plans/legacy-hardcoded-tables.md),
+ * index, not the legacy off-by-one tables — see plans/archive/legacy-hardcoded-tables.md),
  * `generateSmartPlan` (defaults a plan from existing memorized/strength/mistake
  * data), and the memorization-front advance/sync helpers. What's dropped: multi-plan
  * CRUD, status transitions, `juzModes`/mixed logic, milestones, and the
