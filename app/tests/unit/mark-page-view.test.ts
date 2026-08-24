@@ -32,6 +32,22 @@ vi.mock('@/core/fonts', () => ({
   }),
 }))
 
+// Lets one test hold `partialProgress`'s own hydrate() pending indefinitely
+// while everything else (plan/progress/dayLog) resolves normally, to
+// reproduce the tap-before-hydrate race without an artificial fixed delay.
+const { blockPartialProgressHydrate } = vi.hoisted(() => ({ blockPartialProgressHydrate: { current: false } }))
+vi.mock('@/composables/usePartialProgressPersistence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/composables/usePartialProgressPersistence')>()
+  return {
+    ...actual,
+    usePartialProgressPersistence: (...args: Parameters<typeof actual.usePartialProgressPersistence>) => {
+      const real = actual.usePartialProgressPersistence(...args)
+      if (!blockPartialProgressHydrate.current) return real
+      return { ...real, hydrate: () => new Promise<void>(() => {}) } // never resolves
+    },
+  }
+})
+
 // Imported after the mocks above so MarkPageView's own imports resolve to them.
 const { default: MarkPageView } = await import('@/features/memorize/MarkPageView.vue')
 
@@ -48,7 +64,10 @@ const planConfig = (over: Partial<PlanConfig> = {}): PlanConfig => ({
 
 const stubs = { RouterLink: { template: '<a><slot /></a>' } }
 
-beforeEach(() => setActivePinia(createPinia()))
+beforeEach(() => {
+  setActivePinia(createPinia())
+  blockPartialProgressHydrate.current = false
+})
 
 describe('MarkPageView', () => {
   it('shows the empty state when there is no plan front page', async () => {
@@ -109,7 +128,71 @@ describe('MarkPageView', () => {
     await flushAsync()
     expect(wrapper.text()).toContain('Page 23')
   })
+
+  it('a tap before partialProgress finishes hydrating is ignored, not clobbered later', async () => {
+    // Reproduces the real-world race: TodayView's own `useMarkPage(frontPage)`
+    // (for its line-fill visual) can leave the page chunk/font already warm
+    // by the time this view mounts, so the surface can render tappable words
+    // well before the independent `partialProgress` IndexedDB read resolves.
+    await savePlan(planConfig())
+    blockPartialProgressHydrate.current = true
+    const wrapper = mount(MarkPageView, { global: { stubs } })
+    // Only the page-chunk/font fetch and the other three stores' hydrate()
+    // settle here — partialProgress's own hydrate() is held pending.
+    await flushAsync()
+
+    const words = wrapper.findAll('.word')
+    expect(words).toHaveLength(4) // the page rendered — the race window is real
+    await words[0]!.trigger('pointerdown')
+    await words[0]!.trigger('pointerup')
+    await flushAsync()
+
+    // The tap must be ignored outright, not applied-then-clobbered: nothing
+    // toggled, and no line-fill/journal side effect fired.
+    expect(wrapper.findAll('.word').some((w) => w.classes().includes('state-hl-green'))).toBe(false)
+    expect(usePartialProgressStore().marks).toEqual([])
+  })
+
+  it('a rapid second tap landing before Vue re-renders the auto-advanced page is ignored, not misattributed', async () => {
+    // `pageNum` advances synchronously inside `complete()` (the graduating
+    // tap's own handler), but `useMarkPage`'s `watch(page, load)` — which
+    // resets `chunk.value` for the new page — only runs on the next
+    // reactivity flush, not synchronously in that same handler. Two taps
+    // landing in the *same* browser task (a fast real double-tap, which
+    // dispatches both pointerdown/pointerup pairs before any microtask
+    // checkpoint) can both run before that flush: the second would otherwise
+    // see `pageNum.value` already at the new page while `chunk.value` is
+    // still the old page's data. `trigger()` always yields to `nextTick()`
+    // internally, so this dispatches both taps' raw DOM events directly,
+    // with no `await` between them, to reproduce that same-task ordering.
+    await savePlan(planConfig())
+    const wrapper = mount(MarkPageView, { global: { stubs } })
+    await flushAsync()
+
+    let words = wrapper.findAll('.word')
+    dispatchTap(words[0]!.element as HTMLElement)
+    await flushAsync()
+
+    words = wrapper.findAll('.word')
+    const staleWord = words[2]!.element as HTMLElement // ayah 2's first word — still page 22
+    dispatchTap(staleWord) // graduates the page — pageNum flips to 23 synchronously
+    dispatchTap(staleWord) // same task, no yield — lands before chunk catches up
+
+    await flushAsync()
+
+    // The graduation itself must be unaffected by the extra tap, and nothing
+    // should have re-created a bogus, page-23-attributed partial mark.
+    expect(usePlanStore().newFront).toEqual({ layout: 'qpc', nextPage: 23 })
+    expect(usePartialProgressStore().page).toBeNull()
+  })
 })
+
+/** Dispatch a full tap (pointerdown + pointerup) synchronously, bypassing
+ * `trigger()`'s implicit `nextTick()` yield between calls. */
+function dispatchTap(el: HTMLElement) {
+  el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 0, clientY: 0 }))
+  el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 0, clientY: 0 }))
+}
 
 /**
  * Flush the microtask queue + several ticks, for the composable's async

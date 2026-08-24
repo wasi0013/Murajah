@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { ArrowLeft, AlertTriangle } from 'lucide-vue-next'
 import { usePlanStore } from '@/stores/plan'
@@ -57,11 +57,27 @@ const progressPersistence = useProgressPersistence()
 const partialProgressPersistence = usePartialProgressPersistence()
 const dayLogPersistence = useDayLogPersistence()
 
+/**
+ * A tap before every hydrate() above resolves would mutate the live
+ * `partialProgress` store, then `partialProgressPersistence`'s own
+ * `setAll(diskState)` — resolving after the tap — would silently overwrite
+ * it (on a first-ever mark this is `setAll(null)`, wiping the tap out
+ * entirely, and the debounced save watcher then persists that clobbered
+ * empty state). This is a real window, not a theoretical one: `TodayView`'s
+ * own `useMarkPage(frontPage)` (for its line-fill visual) pre-warms the page
+ * chunk/font fetch this view also uses, so the tappable surface can render
+ * well before the independent `partialProgress` IndexedDB read completes.
+ */
+const storesReady = ref(false)
 onMounted(() => {
-  void planPersistence.hydrate()
-  void progressPersistence.hydrate()
-  void partialProgressPersistence.hydrate()
-  void dayLogPersistence.hydrate()
+  void Promise.all([
+    planPersistence.hydrate(),
+    progressPersistence.hydrate(),
+    partialProgressPersistence.hydrate(),
+    dayLogPersistence.hydrate(),
+  ]).then(() => {
+    storesReady.value = true
+  })
 })
 onBeforeUnmount(() => {
   planPersistence.dispose()
@@ -93,10 +109,17 @@ const wordStates = computed(() => {
 })
 
 function onWordTap(e: PointerEvent) {
+  if (!storesReady.value) return // see the hydrate/tap race note above
   const el = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-verse]')
   const verse = el?.dataset.verse
   const page = pageNum.value
   if (!verse || !chunk.value || page == null) return
+  // `pageNum` and `chunk` update independently — page graduation advances
+  // `plan.newFront` synchronously inside `complete()`, but `useMarkPage`'s
+  // own reload of `chunk`/`family` for the new page is async. A tap landing
+  // in that gap would otherwise mark the new page number against the old
+  // page's still-rendered words.
+  if (chunk.value.page !== page) return
   const [surahStr, ayahStr] = verse.split(':')
   const surah = Number(surahStr)
   const ayah = Number(ayahStr)
