@@ -42,9 +42,16 @@ See `tasks/plan.md` for full task detail, acceptance criteria, and dependencies.
 - [x] Task 13: Journal UI rendering + i18n (en/ar/bn)
 
 ## Checkpoint: Complete
-- [x] `npm run test` (unit + e2e) green end-to-end — 1190 unit + 234 e2e, zero regressions
+- [x] `npm run test` (unit + e2e) green end-to-end — 1193 unit + 235 e2e, zero regressions
 - [x] `npm run build` clean
 - [x] Two-day-walkthrough behavior verified via tests, not a live interactive pass — see `tasks/plan.md`'s final checkpoint for exactly what is and isn't covered, and the flagged gap (no e2e spec through the real `MarkPageView.vue` UI across a simulated date change)
+
+## Follow-up: e2e walkthrough (closes the gap above)
+- [x] `tests/e2e/mark-page.spec.ts` — marks verses through the real `MarkPageView.vue` UI, navigates Today ↔ Mark ↔ Journal, advances the clock a day, reopens `/memorize` fresh and confirms prior marks hydrate from disk, finishes the page, and checks graduation + streak + journal across both days
+- [x] `MarkPageView.vue` was missing its own hydrate/dispose lifecycle (a deep link, reload, or back/forward to `/memorize` saw a stale/empty plan) — fixed, mirroring `TodayView.vue`/`ProgressView.vue`
+- [x] Found and fixed a real, pre-existing bug this surfaced: `useDayLogPersistence`/`useProgressPersistence`/`usePartialProgressPersistence`'s debounced-save watcher was silently killed by Vue when the first view to call `hydrate()` unmounted, permanently blocking any later view's writes for the rest of the session — fixed with a detached `effectScope`, regression-tested by mounting real components (see the commit for full rationale)
+- [x] `TaskRow`'s front-page open button aria-label ("Open page {page} in the reader") was inaccurate now that it routes to `/memorize` — added an `openLabel` override, i18n'd in all three catalogs
+- [x] `npm run test` green (1193 unit + 235 e2e), `npm run build` clean
 
 ## Outside this plan (resolved)
 - [x] `tasks/plan.md` (old, completed `/preview` plan) was moved to `plans/preview-shareable-viewer.md` and committed with the user's "commit the plan" approval — done, not reverted
