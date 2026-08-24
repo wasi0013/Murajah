@@ -6,6 +6,7 @@ import {
   isNewDay,
   getHabit,
   HABIT_CATALOG,
+  hasWork,
 } from '@/core/memorization/streaks'
 import type { DayLog, DayRecord } from '@/core/storage/userData'
 
@@ -92,6 +93,17 @@ describe('streaks — calculateStreak', () => {
   })
 })
 
+describe('hasWork', () => {
+  it('is false for a record with nothing recorded', () => {
+    expect(hasWork(rec('2026-07-15', false))).toBe(false)
+  })
+
+  it('is true for a partial-only day: newMemorizationTouched set, nothing else', () => {
+    const r: DayRecord = { ...rec('2026-07-15', false), newMemorizationTouched: [202] }
+    expect(hasWork(r)).toBe(true)
+  })
+})
+
 describe('streaks — buildHistory', () => {
   it('returns a gapless run of days ending today, oldest first', () => {
     const h = buildHistory(new Map(), 5, TODAY)
@@ -125,6 +137,12 @@ describe('streaks — buildHistory', () => {
   it('treats an empty record as no activity, not partial work', () => {
     const log = new Map([[daysAgo(1), rec(daysAgo(1), false)]])
     expect(buildHistory(log, 2, TODAY)[0].state).toBe('none')
+  })
+
+  it('a partial-page mark alone renders as partial, not none (the hasWork fix)', () => {
+    const touchedOnly: DayRecord = { ...rec(daysAgo(1), false), newMemorizationTouched: [202] }
+    const log: DayLog = new Map([[touchedOnly.date, touchedOnly]])
+    expect(buildHistory(log, 2, TODAY)[0].state).toBe('partial')
   })
 
   it('ignores days older than the window', () => {

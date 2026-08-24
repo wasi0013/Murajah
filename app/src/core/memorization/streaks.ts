@@ -113,10 +113,19 @@ export interface HistoryDay {
 
 /** Did anything at all get recorded that day? Also used by `useJournalMonth`
  * (Phase 12.3.1) for calendar-cell state, so the two calendars never disagree
- * on what counts as "something happened". */
+ * on what counts as "something happened". Includes `newMemorizationTouched`
+ * (partial-page tracking) — otherwise a day where a kid only marked verses,
+ * with no full page/revision/weak page finished, renders as "never opened
+ * the app" on both calendars, exactly the false negative this function
+ * exists to avoid (see the doc comment above and tasks/plan.md Task 6). */
 export function hasWork(r: DayRecord): boolean {
   return (
-    r.newMemorization.length + r.revision.length + r.weak.length + r.habits.length > 0
+    r.newMemorization.length +
+      r.revision.length +
+      r.weak.length +
+      r.habits.length +
+      (r.newMemorizationTouched?.length ?? 0) >
+    0
   )
 }
 

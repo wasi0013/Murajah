@@ -6,7 +6,15 @@ import type { DayLog, DayRecord } from '@/core/storage/userData'
 export type DaySection = 'newMemorization' | 'revision' | 'weak'
 
 function emptyRecord(date: string): DayRecord {
-  return { date, completed: false, newMemorization: [], revision: [], weak: [], habits: [] }
+  return {
+    date,
+    completed: false,
+    newMemorization: [],
+    revision: [],
+    weak: [],
+    habits: [],
+    newMemorizationTouched: [],
+  }
 }
 
 /**
@@ -29,6 +37,15 @@ export const useDayLogStore = defineStore('dayLog', () => {
   const isPageDone = (date: string, section: DaySection, page: number): boolean =>
     byDate.get(date)?.[section].includes(page) ?? false
 
+  /**
+   * Whether the plan's front page got a *partial* mark today — distinct from
+   * `isPageDone('newMemorization', page)`, which means the page is fully
+   * finished. Never set true by `complete()`'s idempotency-guarded path; only
+   * `useToday.markPartialProgress` (Task 7) writes this.
+   */
+  const isTouched = (date: string, page: number): boolean =>
+    byDate.get(date)?.newMemorizationTouched?.includes(page) ?? false
+
   const isHabitDone = (date: string, habitId: string): boolean =>
     byDate.get(date)?.habits.includes(habitId) ?? false
 
@@ -38,6 +55,22 @@ export const useDayLogStore = defineStore('dayLog', () => {
     const i = list.indexOf(page)
     if (done === (i !== -1)) return false
     if (done) list.push(page)
+    else list.splice(i, 1)
+    return true
+  }
+
+  /**
+   * Record (or clear) that the front page got a partial mark today. Returns
+   * whether it changed. Unlike `setPageDone`, this is allowed to be set true
+   * without going through `complete()` — that's the whole point (partial
+   * credit for the streak without pretending the page is finished).
+   */
+  function setTouched(date: string, page: number, touched: boolean): boolean {
+    const record = ensure(date)
+    const list = (record.newMemorizationTouched ??= [])
+    const i = list.indexOf(page)
+    if (touched === (i !== -1)) return false
+    if (touched) list.push(page)
     else list.splice(i, 1)
     return true
   }
@@ -74,6 +107,7 @@ export const useDayLogStore = defineStore('dayLog', () => {
         revision: [...r.revision],
         weak: [...r.weak],
         habits: [...r.habits],
+        newMemorizationTouched: [...(r.newMemorizationTouched ?? [])],
       })
     }
     return copy
@@ -84,8 +118,10 @@ export const useDayLogStore = defineStore('dayLog', () => {
     get,
     ensure,
     isPageDone,
+    isTouched,
     isHabitDone,
     setPageDone,
+    setTouched,
     setHabitDone,
     setCompleted,
     setAll,
