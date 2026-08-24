@@ -60,12 +60,19 @@ Memorizing the Quran is a profound spiritual journey, but maintenance is equally
 - Color-coded memorized-page grid and Juz-level progress overview
 - Per-page perfect-revision counters and a weakness score that surfaces pages needing review
 - A page-by-page revision heatmap and a **completion estimate** — a projected finish date based on your pace
+- **Practice Journal** — an automatic daily calendar of what you actually did (new memorization, revision, weak-page work, listening, strength-band changes), plus an optional personal note per day
 
 ### 🗓️ Adaptive Daily Plans
 
 - One adaptive plan combining scope, pace, and new-memorization targets — not a static checklist
 - Smart, weakness-aware scheduling
-- A daily "Today" view with streaks (midnight reset) and full history
+- A daily "Today" view with streaks (midnight reset)
+- **Verse-by-verse marking** for your current page — tap an ayah to mark it memorized and watch a line-fill visual track sub-page progress, so partial daily progress always counts toward your streak
+
+### 🔗 Shareable Previews
+
+- Turn any verse range into a read-only, tajweed-highlighted link (`/preview/2/255`) — no account needed to view it
+- Tap-to-paint up to six highlight colors before sharing, or build a link from a simple surah/verse picker at `/preview`
 
 ### ❓ Quiz Mode
 
@@ -227,7 +234,7 @@ This project is licensed under **GNU GPL v3.0**. See [LICENSE](/LICENSE) for ful
 
 ## 🌟 Start Your Journey
 
-Start your memorization journey with Murajah today — make review easy, systematic, and rewarding. 📖✨
+Start your memorization journey with Murajah today, make review easy, systematic, and rewarding. 📖✨
 May Allah accept your efforts in memorizing and preserve **His Words** in your heart. 🤍
 
 > May Allah bless all the JSON resource providers and the quran.com team.
