@@ -178,6 +178,67 @@ describe('journal storage — write (read-modify-write, never a blind put)', () 
     expect(stored.events).toHaveLength(2)
   })
 
+  it('a second verses-memorized event the same day for the same page replaces the first (upsert, not duplicate)', async () => {
+    await appendJournalEvent('2026-08-23', {
+      id: 'verses-memorized:202:2026-08-23T09:00:00.000Z',
+      type: 'verses-memorized',
+      page: 202,
+      fromAyah: 5,
+      toAyah: 6,
+      createdAt: '2026-08-23T09:00:00.000Z',
+    })
+    await appendJournalEvent('2026-08-23', {
+      id: 'verses-memorized:202:2026-08-23T15:00:00.000Z',
+      type: 'verses-memorized',
+      page: 202,
+      fromAyah: 5,
+      toAyah: 8,
+      createdAt: '2026-08-23T15:00:00.000Z',
+    })
+
+    const stored = await loadJournalEntry('2026-08-23')
+    expect(stored.events).toHaveLength(1)
+    expect(stored.events[0]).toMatchObject({ page: 202, fromAyah: 5, toAyah: 8 })
+  })
+
+  it('verses-memorized events on different pages the same day both survive', async () => {
+    await appendJournalEvent('2026-08-23', {
+      id: 'a',
+      type: 'verses-memorized',
+      page: 202,
+      fromAyah: 1,
+      toAyah: 2,
+      createdAt: '2026-08-23T09:00:00.000Z',
+    })
+    await appendJournalEvent('2026-08-23', {
+      id: 'b',
+      type: 'verses-memorized',
+      page: 203,
+      fromAyah: 1,
+      toAyah: 1,
+      createdAt: '2026-08-23T10:00:00.000Z',
+    })
+
+    const stored = await loadJournalEntry('2026-08-23')
+    expect(stored.events).toHaveLength(2)
+  })
+
+  it('round-trips fromAyah/toAyah through serialize/deserialize', () => {
+    const e = entry('2026-08-23', {
+      events: [
+        {
+          id: 'verses-memorized:202:2026-08-23T09:00:00.000Z',
+          type: 'verses-memorized',
+          page: 202,
+          fromAyah: 5,
+          toAyah: 7,
+          createdAt: '2026-08-23T09:00:00.000Z',
+        },
+      ],
+    })
+    expect(deserializeJournalEntry(e.date, serializeJournalEntry(e))).toEqual(e)
+  })
+
   it('the blocker: appending an event for a date never resident in memory preserves that date\'s existing note', async () => {
     // A note was saved earlier (e.g. from the Journal panel, in an earlier session).
     await saveJournalNote('2026-08-23', 'wrote this earlier', '2026-08-23T09:00:00.000Z')

@@ -62,13 +62,23 @@ export const MAX_EVENTS_PER_DAY = 20
 export interface JournalEvent {
   /** `${type}:${page}:${createdAt}` (or equivalent) — stable identity for import dedupe. */
   id: string
-  type: 'band-up' | 'band-down' | 'bulk-memorized'
+  type: 'band-up' | 'band-down' | 'bulk-memorized' | 'verses-memorized'
   /** Absent only for `'bulk-memorized'`, which is a whole-action aggregate. */
   page?: number
   fromRank?: StrengthRank
   toRank?: StrengthRank
   /** `'bulk-memorized'` only — how many pages the action credited. */
   count?: number
+  /** `'verses-memorized'` only (partial-page tracking) — the lowest/highest
+   * ayah newly covered by that day's marking delta on `page`. An honest
+   * approximation when a day's marks aren't contiguous (see
+   * plans/partial-page-tracking.md's Open Questions); `partialProgress`
+   * remains the precise ledger. `applyJournalEvent`'s existing `(page,
+   * type)` dedupe means a later same-day event for the same page replaces
+   * this in place — "verses 5-6" naturally becomes "verses 5-8", no new
+   * merge logic needed. */
+  fromAyah?: number
+  toAyah?: number
   /** ISO instant — sort order and the import-merge dedupe tie-break. */
   createdAt: string
 }
