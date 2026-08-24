@@ -17,6 +17,9 @@ import { useDayLogPersistence } from '@/composables/useDayLogPersistence'
 import { useQuizPersistence } from '@/composables/useQuizPersistence'
 import { useHabitVersesPersistence } from '@/composables/useHabitVersesPersistence'
 import { useMilestones } from '@/composables/useMilestones'
+import { useMarkPage } from '@/composables/useMarkPage'
+import { usePartialProgressStore } from '@/stores/partialProgress'
+import { coveredLineCount } from '@/core/memorization/partialProgress'
 import { juzForPage } from '@/core/navigation/juz'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { toast } from '@/composables/useToast'
@@ -91,6 +94,34 @@ function metaFor(page: number): string | undefined {
 
 function openInReader(page: number) {
   void router.push(readerLink({ page }))
+}
+
+/**
+ * Partial-page tracking (see plans/partial-page-tracking.md): the
+ * newMemorization row for the plan's front page specifically opens the
+ * marking view (tap-to-mark verses) instead of the plain reader, and shows a
+ * "N of total lines" fill visual next to it. Any *other* page in
+ * `newMemorization` (only possible when `newPagesPerDay > 1`) keeps the
+ * ordinary whole-page reader flow — marking is restricted to the front page
+ * by design.
+ */
+const partialProgress = usePartialProgressStore()
+const frontPage = computed(() => plan.newFront?.nextPage)
+const { chunk: frontChunk } = useMarkPage(frontPage)
+
+function isFrontPage(page: number): boolean {
+  return frontPage.value === page
+}
+
+const frontLineCoverage = computed(() => {
+  const c = frontChunk.value
+  if (!c || partialProgress.page !== frontPage.value) return null
+  return coveredLineCount(partialProgress.marks, c.layout, c.words)
+})
+
+function openNewMemorization(page: number) {
+  if (isFrontPage(page)) void router.push({ name: 'memorize' })
+  else openInReader(page)
 }
 
 /** Today is a standalone route reached from the reader; the top bar returns there. */
@@ -306,16 +337,27 @@ function openJournal(): void {
       <section v-if="today.newMemorization.value.length" class="section" aria-labelledby="s-new">
         <h2 id="s-new" class="section-title">{{ t('today.sections.new') }}</h2>
         <ul class="rows">
-          <TaskRow
-            v-for="p in today.newMemorization.value"
-            :key="p"
-            :page="p"
-            :meta="metaFor(p)"
-            :done="today.isDone('newMemorization', p)"
-            :done-label="t('task.memorized')"
-            @open="openInReader(p)"
-            @clean="today.complete('newMemorization', p)"
-          />
+          <template v-for="p in today.newMemorization.value" :key="p">
+            <li v-if="isFrontPage(p) && frontLineCoverage" class="line-fill-row">
+              <span class="line-fill-label">
+                {{ t('markPage.linesProgress', { covered: frontLineCoverage.covered, total: frontLineCoverage.total }) }}
+              </span>
+              <span class="line-fill-bar" role="progressbar" :aria-valuenow="frontLineCoverage.covered" :aria-valuemin="0" :aria-valuemax="frontLineCoverage.total">
+                <span
+                  class="line-fill-bar-inner"
+                  :style="{ width: `${frontLineCoverage.total > 0 ? (frontLineCoverage.covered / frontLineCoverage.total) * 100 : 0}%` }"
+                ></span>
+              </span>
+            </li>
+            <TaskRow
+              :page="p"
+              :meta="metaFor(p)"
+              :done="today.isDone('newMemorization', p)"
+              :done-label="t('task.memorized')"
+              @open="openNewMemorization(p)"
+              @clean="today.complete('newMemorization', p)"
+            />
+          </template>
         </ul>
       </section>
 
@@ -611,6 +653,30 @@ function openJournal(): void {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+.line-fill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.25rem;
+}
+.line-fill-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.line-fill-bar {
+  display: block;
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  overflow: hidden;
+}
+.line-fill-bar-inner {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 0.2s ease;
 }
 .habit {
   display: flex;
