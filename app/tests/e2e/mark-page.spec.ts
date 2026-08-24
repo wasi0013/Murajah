@@ -177,3 +177,21 @@ test('marking verses across two days tracks the streak, journal, and page gradua
   await journal(page).locator(`[data-date="${DAY2}"] button`).click()
   await expect(page.getByRole('dialog')).toContainText('Verse 248 memorized')
 })
+
+test('the line-fill visual renders on a cold load of Today, not only after visiting the marking view first', async ({
+  page,
+}) => {
+  // The walkthrough above always visits /memorize before checking Today's
+  // fill row in the same session, so it can't catch TodayView failing to
+  // hydrate `partialProgress` itself — this seeds the mark directly on disk
+  // (as MarkPageView's own debounced save would have left it) and goes
+  // straight to /today, never touching /memorize at all.
+  await open(page, {
+    progress: PROGRESS,
+    plan: plan(),
+    partialProgress: { page: 40, marks: [{ surah: 2, ayah: 246 }] },
+  })
+
+  await expect(page.getByRole('heading', { name: 'New memorization' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.line-fill-label')).toHaveText('5 of 15 lines')
+})

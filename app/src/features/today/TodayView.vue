@@ -18,6 +18,7 @@ import { useQuizPersistence } from '@/composables/useQuizPersistence'
 import { useHabitVersesPersistence } from '@/composables/useHabitVersesPersistence'
 import { useMilestones } from '@/composables/useMilestones'
 import { useMarkPage } from '@/composables/useMarkPage'
+import { usePartialProgressPersistence } from '@/composables/usePartialProgressPersistence'
 import { usePartialProgressStore } from '@/stores/partialProgress'
 import { coveredLineCount } from '@/core/memorization/partialProgress'
 import { juzForPage } from '@/core/navigation/juz'
@@ -54,6 +55,11 @@ const mistakesPersistence = useMistakesPersistence()
 const dayLogPersistence = useDayLogPersistence()
 const quizPersistence = useQuizPersistence()
 const habitVersesPersistence = useHabitVersesPersistence()
+// The front-page line-fill visual below reads `partialProgress` directly —
+// without hydrating it here, a cold load landing straight on Today (never
+// having visited /memorize this session) always sees `page: null, marks: []`
+// and the fill row silently never renders, even with real progress on disk.
+const partialProgressPersistence = usePartialProgressPersistence()
 const milestones = useMilestones()
 
 onMounted(() => {
@@ -61,6 +67,7 @@ onMounted(() => {
   void quizPersistence.hydrate() // quiz accuracy also feeds weakness scoring
   void dayLogPersistence.hydrate() // the streak and today's checked state
   void habitVersesPersistence.hydrate() // the habit builder's verse cursor
+  void partialProgressPersistence.hydrate() // the front-page line-fill visual
   // Milestones celebrate what's crossed from here on, so they can only be armed once
   // the plan (with the nav index) and progress are in. Arming against a half-loaded
   // set of memorized pages would congratulate the user for the rest of them arriving.
@@ -75,6 +82,7 @@ onBeforeUnmount(() => {
   dayLogPersistence.dispose()
   quizPersistence.dispose()
   habitVersesPersistence.dispose()
+  partialProgressPersistence.dispose()
   milestones.dispose()
 })
 
@@ -339,10 +347,17 @@ function openJournal(): void {
         <ul class="rows">
           <template v-for="p in today.newMemorization.value" :key="p">
             <li v-if="isFrontPage(p) && frontLineCoverage" class="line-fill-row">
-              <span class="line-fill-label">
+              <span :id="`line-fill-label-${p}`" class="line-fill-label">
                 {{ t('markPage.linesProgress', { covered: frontLineCoverage.covered, total: frontLineCoverage.total }) }}
               </span>
-              <span class="line-fill-bar" role="progressbar" :aria-valuenow="frontLineCoverage.covered" :aria-valuemin="0" :aria-valuemax="frontLineCoverage.total">
+              <span
+                class="line-fill-bar"
+                role="progressbar"
+                :aria-labelledby="`line-fill-label-${p}`"
+                :aria-valuenow="frontLineCoverage.covered"
+                :aria-valuemin="0"
+                :aria-valuemax="frontLineCoverage.total"
+              >
                 <span
                   class="line-fill-bar-inner"
                   :style="{ width: `${frontLineCoverage.total > 0 ? (frontLineCoverage.covered / frontLineCoverage.total) * 100 : 0}%` }"
