@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { ArrowLeft, AlertTriangle } from 'lucide-vue-next'
 import { usePlanStore } from '@/stores/plan'
 import { usePartialProgressStore } from '@/stores/partialProgress'
 import { useToday } from '@/composables/useToday'
 import { useMarkPage } from '@/composables/useMarkPage'
+import { usePlanPersistence } from '@/composables/usePlanPersistence'
+import { useProgressPersistence } from '@/composables/useProgressPersistence'
+import { usePartialProgressPersistence } from '@/composables/usePartialProgressPersistence'
+import { useDayLogPersistence } from '@/composables/useDayLogPersistence'
 import { coveredLineCount } from '@/core/memorization/partialProgress'
 import ReadingSurface from '@/features/reader/ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
@@ -36,6 +40,35 @@ const { t } = useI18n()
 const plan = usePlanStore()
 const partialProgress = usePartialProgressStore()
 const today = useToday()
+
+/**
+ * Owns its own hydrate/persist, like `TodayView.vue`/`ProgressView.vue` —
+ * `/memorize` is directly reachable (a deep link, a reload, browser back/
+ * forward), not only ever entered from an already-hydrated Today. Without
+ * this, a fresh visit sees `plan.newFront` as null (the empty state) even
+ * with a real plan on disk, since nothing else on this route loads it.
+ * Journal needs no hydration here: `journal.addEvent` writes through to disk
+ * regardless of whether the date is "resident" in the store (see
+ * `journalStorage.ts`'s own doc comment) — this view never reads journal
+ * state back, only writes it via `markPartialProgress`.
+ */
+const planPersistence = usePlanPersistence()
+const progressPersistence = useProgressPersistence()
+const partialProgressPersistence = usePartialProgressPersistence()
+const dayLogPersistence = useDayLogPersistence()
+
+onMounted(() => {
+  void planPersistence.hydrate()
+  void progressPersistence.hydrate()
+  void partialProgressPersistence.hydrate()
+  void dayLogPersistence.hydrate()
+})
+onBeforeUnmount(() => {
+  planPersistence.dispose()
+  progressPersistence.dispose()
+  partialProgressPersistence.dispose()
+  dayLogPersistence.dispose()
+})
 
 const pageNum = computed(() => plan.newFront?.nextPage)
 const { loading, error, chunk, family, retry } = useMarkPage(pageNum)

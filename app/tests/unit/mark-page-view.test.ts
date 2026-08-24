@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { usePlanStore } from '@/stores/plan'
 import { usePartialProgressStore } from '@/stores/partialProgress'
+import { savePlan } from '@/core/storage/userData'
 import type { PageChunk } from '@/core/data/types'
 import type { PlanConfig } from '@/core/storage/userData'
 
@@ -57,7 +58,9 @@ describe('MarkPageView', () => {
   })
 
   it('renders the front page and tapping a word marks its whole ayah', async () => {
-    usePlanStore().create(planConfig())
+    // Seeded on disk (not via the store directly) — the view now owns its
+    // own hydrate() on mount, so it must load this like a real fresh visit.
+    await savePlan(planConfig())
     const wrapper = mount(MarkPageView, { global: { stubs } })
     await flushAsync()
 
@@ -83,8 +86,8 @@ describe('MarkPageView', () => {
   })
 
   it('marking the whole page graduates it and flows to the next front page', async () => {
+    await savePlan(planConfig())
     const plan = usePlanStore()
-    plan.create(planConfig())
     const wrapper = mount(MarkPageView, { global: { stubs } })
     await flushAsync()
 
@@ -108,9 +111,16 @@ describe('MarkPageView', () => {
   })
 })
 
-/** Flush the microtask queue + a tick, for the composable's async load(). */
+/**
+ * Flush the microtask queue + several ticks, for the composable's async
+ * load() plus this view's own four hydrate() calls (Task: hydration fix) —
+ * fake-indexeddb resolves each `IDBRequest` via a queued macrotask, so a
+ * chain of plan/progress/partialProgress/dayLog reads needs more than one
+ * `setTimeout(0)` round to fully settle.
+ */
 async function flushAsync() {
-  await Promise.resolve()
-  await Promise.resolve()
-  await new Promise((r) => setTimeout(r, 0))
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+  }
 }
