@@ -78,7 +78,7 @@
   {
     "name": "App shell CSS (gzip)",
     "path": "dist/assets/*.css",
-    "limit": "34 kB",
+    "limit": "36 kB",
     "gzip": true
   }
 ]

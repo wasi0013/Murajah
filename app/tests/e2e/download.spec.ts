@@ -71,7 +71,7 @@ test('feature demos are lazy: no video element or network request until scrolled
   })
 
   await page.goto('/download')
-  await expect(page.locator('.demo-card')).toHaveCount(4)
+  await expect(page.locator('.demo-card')).toHaveCount(6)
   // Nothing below the fold has fetched a clip yet.
   expect(videoRequests).toEqual([])
 
