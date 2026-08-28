@@ -24,7 +24,7 @@ export function pageCell(
   mistakes: number,
   daysSinceLastRevision: number,
 ): PageCell {
-  return { page, memorized, strength, level: effectiveRank(strength, daysSinceLastRevision), mistakes }
+  return { page, memorized, strength, level: effectiveRank(memorized, strength, daysSinceLastRevision), mistakes }
 }
 
 export interface JuzGroup {

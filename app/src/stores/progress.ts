@@ -9,7 +9,12 @@ import {
   PASSING_THRESHOLD,
   type ReviewRating,
 } from '@/core/memorization/reviewScheduler'
-import { bandForStrength, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
+import {
+  bandForStrength,
+  bandByRank,
+  MEMORIZED_FLOOR_STRENGTH,
+  type StrengthRank,
+} from '@/core/memorization/strengthBands'
 import { useJournalStore } from '@/stores/journal'
 import type { JournalEvent } from '@/core/storage/journalStorage'
 
@@ -17,13 +22,14 @@ import type { JournalEvent } from '@/core/storage/journalStorage'
 export const TOTAL_PAGES = 604
 
 /**
- * Strength credited when a page is bulk-marked memorized directly, skipping
- * the page-by-page review loop that normally builds strength one clean
- * revision at a time (previously this left strength at 0). Approximates ~40
- * clean revisions' worth so a bulk-marked page isn't indistinguishable from
- * an untouched one — see {@link useProgressStore}'s `bulkMarkMemorized`.
+ * Strength credited when a page is marked memorized directly (bulk range-mark
+ * or the single-page toggle), skipping the page-by-page review loop that
+ * normally builds strength one clean revision at a time (previously this left
+ * strength at 0). Da'if's (Weak's) own floor — see `strengthBands.ts`'s
+ * `MEMORIZED_FLOOR_STRENGTH` (the single source of truth this re-exports) —
+ * so a freshly-marked page isn't indistinguishable from an untouched one.
  */
-export const BULK_MARK_STRENGTH = 40
+export const BULK_MARK_STRENGTH = MEMORIZED_FLOOR_STRENGTH
 
 /** Local calendar date as `YYYY-MM-DD` (matches the weakness scorer's parsing). */
 export function todayISODate(d: Date = new Date()): string {
@@ -65,10 +71,63 @@ export const useProgressStore = defineStore('progress', () => {
     if (on) memorized.add(page)
     else memorized.delete(page)
   }
+  /**
+   * Toggle a single page's memorized flag. Marking on credits
+   * {@link BULK_MARK_STRENGTH} (the same Da'if-floor starting state {@link
+   * bulkMarkMemorized} uses) — but only when the page has no strength yet, so
+   * a page with real review history is never clobbered, and a page a prior
+   * bug (or a legacy import) left at strength 0 gets backfilled here too.
+   * Without this, a freshly-marked page reads `memorized: true` with
+   * `strength: 0`, and `effectiveRank`'s decay floor only papers over that at
+   * *display* time — the moment the very first revision lands, raw strength
+   * goes 0 → 1 and the *displayed* band would regress from Da'if to Jadid, a
+   * visible downgrade for doing a revision. Crediting the floor here instead
+   * keeps every later revision strictly additive. Unmarking never touches
+   * strength/hasanah, matching {@link bulkMarkMemorized}.
+   *
+   * No hasanah for this credit — unlike `bulkMarkMemorized`'s deliberate bulk
+   * registration, this is a switch flip in the per-page sheet: mis-tap the
+   * wrong page, toggle it back off, and (`awardHasanah` being monotonic —
+   * unmarking never refunds) a reward for a page never intended stays stuck
+   * forever. The strength/anchor credit is still needed either way — it's
+   * only the reward half that's unsafe here.
+   */
   function toggleMemorized(page: number): boolean {
     const next = !memorized.has(page)
     setMemorized(page, next)
+    if (next) creditFreshMemorization(page, { reward: false })
     return next
+  }
+
+  /**
+   * Give a page its Da'if-floor starting state — {@link BULK_MARK_STRENGTH}
+   * strength and a decay-clock anchor, plus proportional hasanah when
+   * `reward` is true (the default) — but only while it has *no evidence at
+   * all* yet: zero strength AND no review history (`reviewCount` unset/0).
+   * Shared by {@link toggleMemorized} and {@link bulkMarkMemorized} so both
+   * "I already know this page" entry points land a memorized page in the
+   * same starting band instead of at raw strength 0 (which used to render
+   * "Not Memorized" despite `memorized: true` — the bug this exists to
+   * prevent). Returns whether it actually credited anything.
+   *
+   * The review-history exclusion matters as much here as it does in
+   * `backfillReviewDates` (`core/storage/userData.ts`), for the same reason:
+   * `weaknessScorer.ts` derives its revision-quality factor from
+   * `perfectRevisionCount / totalReviewCount`, not `perfectRevisionCount`
+   * alone. A page reviewed 5 times and never once passed (strength 0,
+   * `reviewCount: 5` — genuine evidence of a struggling page) would jump to
+   * a *better-than-perfect*-looking ratio (`40 / 5`, clamped to 1.0 = "all
+   * perfect") the moment this bumps strength to 40, potentially dropping a
+   * page that needs reinforcement out of that lane. A page with no review
+   * history has no such ratio to distort — crediting it is safe.
+   */
+  function creditFreshMemorization(page: number, { reward = true }: { reward?: boolean } = {}): boolean {
+    if (strengthOf(page) !== 0) return false
+    if ((reviewData.get(page)?.reviewCount ?? 0) > 0) return false
+    bumpStrength(page, BULK_MARK_STRENGTH)
+    if (reward) awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
+    touchReviewDate(page)
+    return true
   }
 
   /**
@@ -236,12 +295,12 @@ export const useProgressStore = defineStore('progress', () => {
 
   /**
    * Mark (or unmark) a whole page range as memorized in one action — the
-   * Progress screen's bulk range-mark. Marking on credits {@link BULK_MARK_STRENGTH}
-   * and its proportional hasanah (at the same per-revision rate {@link recordReview}
-   * uses) to each page — but only a page with no strength yet, so re-running this
-   * over pages that already have real review history never overwrites it, and
-   * re-running it over a page the bug already left at 0 backfills it. Unmarking
-   * never touches strength/hasanah, matching the single-page toggle.
+   * Progress screen's bulk range-mark. Marking on credits each page via
+   * {@link creditFreshMemorization} (only a page with no strength yet, so
+   * re-running this over pages that already have real review history never
+   * overwrites it, and re-running it over a page a prior bug left at 0
+   * backfills it). Unmarking never touches strength/hasanah, matching the
+   * single-page toggle.
    *
    * Logs **one** coalesced `'bulk-memorized'` journal event for the whole call
    * (Phase 12.2.2), not one per page — a single tap over a large range (up to
@@ -253,12 +312,7 @@ export const useProgressStore = defineStore('progress', () => {
     let creditedCount = 0
     for (const page of pages) {
       setMemorized(page, on)
-      if (on && strengthOf(page) === 0) {
-        bumpStrength(page, BULK_MARK_STRENGTH)
-        awardHasanah(getPageHasanah(page) * BULK_MARK_STRENGTH)
-        touchReviewDate(page)
-        creditedCount++
-      }
+      if (on && creditFreshMemorization(page)) creditedCount++
     }
     if (creditedCount > 0) {
       const createdAt = new Date().toISOString()

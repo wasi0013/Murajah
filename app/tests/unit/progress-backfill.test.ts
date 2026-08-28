@@ -69,6 +69,35 @@ describe('backfillReviewDates (pure)', () => {
     backfillReviewDates(p, '2026-08-23')
     expect(p.reviewData.has(5)).toBe(false)
   })
+
+  // Regression: a page can be `memorized` with zero recorded strength (a
+  // legacy import predating `perfectRevisions`, or a page freshly marked
+  // memorized single-page) — such a page was never visited by this function
+  // at all (it only walked `progress.strength`, which never holds a 0 entry),
+  // so it kept `daysSince === Infinity` forever and rendered "Not Memorized"
+  // instead of the documented Weak floor. Two repairs land for one page: the
+  // strength floor and the review-date anchor.
+  it('credits the Weak floor + stamps today for a memorized page with zero strength (the reported bug)', () => {
+    const p = emptyProgress({ memorized: new Set([7]) })
+    const { progress, changedCount } = backfillReviewDates(p, '2026-08-23')
+    expect(changedCount).toBe(2)
+    expect(progress.strength.get(7)).toBe(40)
+    expect(progress.reviewData.get(7)?.lastReviewDate).toBe('2026-08-23')
+  })
+
+  it('never lowers or re-credits a memorized page that already has real strength', () => {
+    const p = emptyProgress({ memorized: new Set([7]), strength: new Map([[7, 10]]) })
+    const { progress, changedCount } = backfillReviewDates(p, '2026-08-23')
+    expect(progress.strength.get(7)).toBe(10) // untouched, never bumped to the floor
+    expect(changedCount).toBe(1) // only the reviewData anchor
+  })
+
+  it('still does not touch a strength<=0 page that is not memorized either', () => {
+    const p = emptyProgress({ strength: new Map([[5, 0]]) })
+    const { progress, changedCount } = backfillReviewDates(p, '2026-08-23')
+    expect(changedCount).toBe(0)
+    expect(progress.reviewData.has(5)).toBe(false)
+  })
 })
 
 describe('loadProgress() self-persists the backfill', () => {

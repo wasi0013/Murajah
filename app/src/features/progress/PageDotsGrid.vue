@@ -14,6 +14,7 @@ const { t } = useI18n()
  */
 const props = defineProps<{
   groups: JuzGroup[]
+  memorized: Set<number>
   strength: Map<number, number>
   reviewData: Map<number, ReviewSchedule>
 }>()
@@ -21,7 +22,7 @@ const emit = defineEmits<{ select: [page: number] }>()
 
 function level(page: number): StrengthRank {
   const days = daysSince(props.reviewData.get(page)?.lastReviewDate)
-  return effectiveRank(props.strength.get(page) ?? 0, days)
+  return effectiveRank(props.memorized.has(page), props.strength.get(page) ?? 0, days)
 }
 function label(page: number, level: StrengthRank): string {
   if (level === 0) return t('heatmap.labelNotStarted', { page })

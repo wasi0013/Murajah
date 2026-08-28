@@ -63,8 +63,13 @@ test('a migrated backup renders identical memorized pages, hasanah and mistakes'
   }
 
   // Mistake pages carry the mistake count in their label (a non-colour cue).
-  await expect(page.getByRole('button', { name: 'Page 3, memorized, 3 mistakes' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Page 50, memorized, 1 mistakes' })).toBeVisible()
+  // Pages 3 and 50 are memorized but have no `perfectRevisions` entry at all
+  // (legacy imports predate that counter for pages never formally revised) —
+  // the storage-layer backfill floors those to Da'if ("Weak") on this load
+  // rather than leaving them at raw 0, which used to render "Not Memorized"
+  // despite being memorized (see strengthBands.ts's `effectiveRank`).
+  await expect(page.getByRole('button', { name: 'Page 3, memorized, Weak (ضعيف), 3 mistakes' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Page 50, memorized, Weak (ضعيف), 1 mistakes' })).toBeVisible()
 
   // Summary stats reflect the migrated set: 5 memorized, 2 pages with mistakes.
   await expect(page.locator('.stat', { hasText: 'Pages ·' }).locator('.stat-n')).toHaveText('5/604')

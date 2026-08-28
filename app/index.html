@@ -26,9 +26,190 @@
          rather than only around the Quran text. -->
     <meta name="google" content="notranslate" />
     <title>Murajah — Quran Memorization</title>
+    <!--
+      Boot fallback (reported bug: some users see a themed-but-empty dark
+      screen and nothing ever loads — CSS painted the body, the app never
+      mounted). Root causes share one symptom (no visible progress, no
+      error) so one mechanism covers all of them:
+        - a flaky/degraded connection (same-region reports) stalling the
+          entry chunk or a lazy route chunk;
+        - a WebView too old to run `<script type="module">` at all — silently
+          ignored by the browser, nothing to catch, nothing to log (the
+          Android app is a WebView wrapper, so this hits it directly; an
+          outright-disabled WebView component is a native/OS issue no web
+          content can fix, but an old-but-functional one lands here);
+        - an uncaught error during Vue's own boot/first-route resolution.
+      This block is intentionally dependency-free — plain HTML/CSS plus one
+      classic (non-module) script — so it still runs when the module script
+      above never executes at all. Inline hex colors only, never a
+      `var(--color-*)` token: `tokens.css` is a separate stylesheet that may
+      be exactly what failed to load. Values below mirror (but deliberately
+      don't reference) design/tokens.css's light/dark `--color-bg`/`--color-text`
+      and accent — keep the two in sync by hand if the palette ever changes.
+      `main.ts` clears this once `router.isReady()` resolves (not merely
+      `mount()` — that returns before the first route's lazy chunk is even
+      requested, so clearing on `mount()` alone would hide the spinner while
+      leaving an empty shell behind, the original bug minus the diagnosis).
+    -->
+    <style>
+      #murajah-boot,
+      .murajah-boot-noscript-wrap {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 24px;
+        text-align: center;
+        background: #e9ebe5;
+        color: #161d1a;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        #murajah-boot,
+        .murajah-boot-noscript-wrap {
+          background: #0e1524;
+          color: #f0ebde;
+        }
+      }
+      #murajah-boot-spinner {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 3px solid currentColor;
+        border-top-color: transparent;
+        opacity: 0.6;
+        animation: murajah-boot-spin 0.8s linear infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #murajah-boot-spinner {
+          animation-duration: 2.4s;
+        }
+      }
+      @keyframes murajah-boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      #murajah-boot-trouble {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        max-width: 320px;
+      }
+      #murajah-boot-trouble button {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        /* #3b82f6 (the meta theme-color, used for icons/small accents
+           elsewhere) is only ~3.7:1 against white text — under the 4.5:1 AA
+           bar for 15px bold, which doesn't qualify as "large text". This
+           mirrors design/tokens.css's light `--color-accent`/`--color-accent-contrast`
+           pair instead (7.5:1), same dark-mode swap pattern as the rest of
+           this panel. */
+        background: #0f5f57;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      @media (prefers-color-scheme: dark) {
+        #murajah-boot-trouble button {
+          background: #e2a44b;
+          color: #0e1524;
+        }
+      }
+      .murajah-boot-noscript {
+        max-width: 320px;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <style>
+        /* With scripting off, the always-on #murajah-boot div (plain HTML,
+           not gated by JS) would otherwise sit on top of this message —
+           DOM order puts it later in the body, and both are fixed
+           full-screen at the same z-index. Hide it; show only this. */
+        #murajah-boot {
+          display: none;
+        }
+      </style>
+      <div id="murajah-noscript" role="alert" class="murajah-boot-noscript-wrap">
+        <p class="murajah-boot-noscript">
+          Murajah needs JavaScript to run. Please enable it, or open this page in an up-to-date browser.
+        </p>
+      </div>
+    </noscript>
+    <div id="murajah-boot" role="status" aria-live="polite">
+      <div id="murajah-boot-spinner" aria-hidden="true"></div>
+      <p>Loading Murajah…</p>
+      <div id="murajah-boot-trouble">
+        <p id="murajah-boot-trouble-text">This is taking longer than expected.</p>
+        <button type="button" onclick="location.reload()">Retry</button>
+      </div>
+    </div>
+    <script>
+      // Classic (non-module) script — runs in every browser, including one
+      // too old to execute the module script below at all. See the comment
+      // above the <style> block for the full rationale.
+      (function () {
+        var TIMEOUT_MS = window.__MURAJAH_BOOT_TIMEOUT_MS || 12000
+        var ready = false
+        var troubleShown = false
+        var timer = setTimeout(showTrouble, TIMEOUT_MS)
+
+        function showTrouble() {
+          if (ready || troubleShown) return
+          troubleShown = true
+          var text = document.getElementById('murajah-boot-trouble-text')
+          if (text && navigator.onLine === false) {
+            text.textContent = 'You appear to be offline. Please check your connection and try again.'
+          }
+          var trouble = document.getElementById('murajah-boot-trouble')
+          if (trouble) trouble.style.display = 'flex'
+        }
+
+        // A crash before the app is ready is a stronger signal than "slow" —
+        // surface the retry panel immediately rather than waiting out the
+        // full timeout. Once `ready` flips, these are permanently inert —
+        // an error somewhere deep in a fully-booted app must never re-hijack
+        // the whole screen.
+        //
+        // Capture phase (the `true` third argument), not bubble: a <script>
+        // (or other resource) failing to *load* — the exact entry-chunk-404
+        // /flaky-connection case — fires a non-bubbling `error` event at the
+        // element itself. A plain bubble-phase `window.addEventListener`
+        // never sees it; only a capturing listener on an ancestor does.
+        window.addEventListener(
+          'error',
+          function () {
+            if (!ready) showTrouble()
+          },
+          true,
+        )
+        window.addEventListener('unhandledrejection', function () {
+          if (!ready) showTrouble()
+        })
+
+        window.__murajahBootReady = function () {
+          ready = true
+          clearTimeout(timer)
+          var boot = document.getElementById('murajah-boot')
+          if (boot) boot.remove()
+        }
+        // Exposed for main.ts's `router.isReady()` rejection path — same
+        // panel, no need to wait out the timeout when the failure is already
+        // known.
+        window.__murajahShowBootTrouble = showTrouble
+      })()
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

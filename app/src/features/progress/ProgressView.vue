@@ -126,7 +126,11 @@ const selectedDaysSince = computed(() =>
 const selectedEffectiveRank = computed<StrengthRank>(() =>
   selectedPage.value === null
     ? 0
-    : effectiveRank(progress.strengthOf(selectedPage.value), selectedDaysSince.value),
+    : effectiveRank(
+        progress.isMemorized(selectedPage.value),
+        progress.strengthOf(selectedPage.value),
+        selectedDaysSince.value,
+      ),
 )
 
 // —— Manual level picks: exact-restore on revert + debounced decay-clock stamp ——
@@ -364,6 +368,7 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
         <p class="panel-lead">{{ t('progress.pagesLead') }}</p>
         <PageDotsGrid
           :groups="juzGroups"
+          :memorized="progress.memorized"
           :strength="progress.strength"
           :review-data="progress.reviewData"
           @select="openInReader"

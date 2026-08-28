@@ -2,8 +2,14 @@
 /**
  * Murajah service worker (redesigned app) — see plans/archive/phase-10-pwa-migration.md.
  *
- * - Navigation (documents): Workbox NetworkFirst on Android/desktop. iOS/iPadOS
- *   instead gets `networkOnlyNavigation` — a plain fetch with zero Cache Storage
+ * - Navigation (documents): Workbox NetworkFirst on Android/desktop, with the
+ *   same `networkTimeoutSeconds` as the manifest route below — a NetworkFirst
+ *   with no timeout waits on the network indefinitely before ever trying the
+ *   cache, so a returning user on a degraded-but-not-fully-offline connection
+ *   (reported: a themed-but-empty screen, nothing rendering, no error — CSS
+ *   painted the body but the shell never arrived) would hang rather than
+ *   falling back to a perfectly good cached app shell. iOS/iPadOS instead gets
+ *   `networkOnlyNavigation` — a plain fetch with zero Cache Storage
  *   involvement — because iOS WebKit has repeatedly broken on synthesized/cached
  *   Responses used to fulfil a navigation (three distinct incidents in the legacy
  *   `source/sw.js`, most recently WebKitBlobResource error 1 on Home Screen PWA
@@ -42,6 +48,11 @@ declare let self: ServiceWorkerGlobalScope
 
 const IS_IOS = new URL(self.location.href).searchParams.get('platform') === 'ios'
 
+// Shared by the navigation route and the manifest route below — both are
+// NetworkFirst and both need the network given a fair chance before falling
+// back, but neither should ever hang past this on a degraded connection.
+const NETWORK_TIMEOUT_SECONDS = 4
+
 clientsClaim()
 
 // Precaching the app shell is exactly the thing iOS's navigation bug family
@@ -72,7 +83,10 @@ async function networkOnlyNavigation(request: Request): Promise<Response> {
 if (IS_IOS) {
   registerRoute(({ request }) => request.mode === 'navigate', ({ request }) => networkOnlyNavigation(request))
 } else {
-  registerRoute(({ request }) => request.mode === 'navigate', new NetworkFirst({ cacheName: 'murajah-app-navigation' }))
+  registerRoute(
+    ({ request }) => request.mode === 'navigate',
+    new NetworkFirst({ cacheName: 'murajah-app-navigation', networkTimeoutSeconds: NETWORK_TIMEOUT_SECONDS }),
+  )
 }
 
 /**
@@ -98,7 +112,7 @@ const rejectHtml = {
 // connection, falls back to cache only when truly offline.
 registerRoute(
   ({ url }) => isManifestRequest(url),
-  new NetworkFirst({ cacheName: 'murajah-app-manifest', networkTimeoutSeconds: 4 }),
+  new NetworkFirst({ cacheName: 'murajah-app-manifest', networkTimeoutSeconds: NETWORK_TIMEOUT_SECONDS }),
 )
 
 // cacheName bumped to -v3 (was stale-while-revalidate -v2): abandons any

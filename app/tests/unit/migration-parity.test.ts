@@ -15,7 +15,7 @@ import {
 import { useProgressStore } from '@/stores/progress'
 import { useMistakesStore } from '@/stores/mistakes'
 import { memorizationStats, pageCell } from '@/core/memorization/progressView'
-import { effectiveRank, bandForStrength, daysSince } from '@/core/memorization/strengthBands'
+import { effectiveRank, bandForStrength, daysSince, MEMORIZED_FLOOR_STRENGTH } from '@/core/memorization/strengthBands'
 
 /**
  * Migration-parity (headline, Phase 4.10.1). Exercises the REAL migration path end
@@ -36,11 +36,20 @@ describe('migration parity on a committed legacy export', () => {
 
     // Expectations derived straight from the fixture (no magic numbers).
     const expectedMemorized = new Set(legacyBackup.memorized)
-    const expectedStrength = new Map(
+    const legacyStrength = new Map(
       Object.entries(legacyBackup.perfectRevisions).map(([p, n]) => [Number(p), n as number]),
     )
     let expectedHasanah = 0
-    for (const [page, n] of expectedStrength) expectedHasanah += getPageHasanah(page) * n
+    for (const [page, n] of legacyStrength) expectedHasanah += getPageHasanah(page) * n
+    // The storage-layer backfill (userData.ts) floors any memorized page the
+    // legacy export carried with no `perfectRevisions` entry at all to
+    // `MEMORIZED_FLOOR_STRENGTH` — silently, with no hasanah for the credit
+    // (unlike a live user-triggered mark), so `expectedHasanah` above is
+    // computed from the raw legacy numbers only, before this floor applies.
+    const expectedStrength = new Map(legacyStrength)
+    for (const page of legacyBackup.memorized) {
+      if (!expectedStrength.has(page)) expectedStrength.set(page, MEMORIZED_FLOOR_STRENGTH)
+    }
     const expectedMistakePages = Object.values(legacyBackup.mistakes).filter(
       (ids) => (ids as number[]).length > 0,
     ).length
@@ -89,7 +98,7 @@ describe('migration parity on a committed legacy export', () => {
       const cell = pageCell(page, progress.isMemorized(page), progress.strengthOf(page), mistakeCount, days)
       expect(cell.memorized).toBe(true)
       expect(cell.strength).toBe(strength)
-      expect(cell.level).toBe(effectiveRank(strength, days))
+      expect(cell.level).toBe(effectiveRank(true, strength, days))
       expect(cell.mistakes).toBe(mistakeCount)
     }
 
@@ -100,5 +109,19 @@ describe('migration parity on a committed legacy export', () => {
       bandForStrength(progress.strengthOf(604)).rank,
     )
     expect(bandForStrength(progress.strengthOf(604)).rank).toBe(1) // 12 → Jadid, not Mutqan
+
+    // Regression: the fixture has memorized pages with NO `perfectRevisions`
+    // entry at all (legacy imports predate that counter for pages the user
+    // never formally revised). Those must be backfilled to the Weak floor —
+    // in the stored strength itself, not just at display time — and render
+    // "Weak", not "Not Memorized" — the bug this fixture was extended to catch.
+    const zeroStrengthMemorized = [...expectedMemorized].filter((p) => !legacyStrength.has(p))
+    expect(zeroStrengthMemorized.length).toBeGreaterThan(0) // sanity: the fixture actually exercises this
+    for (const page of zeroStrengthMemorized) {
+      expect(progress.strengthOf(page)).toBe(MEMORIZED_FLOOR_STRENGTH) // floored in storage, not just display
+      const days = daysSince(progress.reviewData.get(page)?.lastReviewDate)
+      expect(days).not.toBe(Infinity) // backfilled to the import date, not left anchor-less
+      expect(pageCell(page, true, progress.strengthOf(page), 0, days).level).toBe(2) // Da'if (Weak)
+    }
   })
 })

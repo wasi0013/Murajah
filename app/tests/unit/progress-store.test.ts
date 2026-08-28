@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
 import { useProgressStore } from '@/stores/progress'
+import { effectiveRank } from '@/core/memorization/strengthBands'
 import {
   serializeProgress,
   deserializeProgress,
@@ -30,6 +31,92 @@ describe('progress store', () => {
     p.setMemorized(0, true)
     p.setMemorized(605, true)
     expect(p.memorizedCount).toBe(0)
+  })
+
+  // Regression: the reported bug (memorized pages rendering "Not Memorized")
+  // plus the fix for it must not trade one contradiction for another — a
+  // freshly-marked page's *displayed* level must never regress the moment a
+  // real revision or mistake lands.
+  describe('toggleMemorized credits the Weak floor, in storage — not just at display time', () => {
+    it('a freshly single-page-marked page is never "Not Memorized" (the reported bug)', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10)
+      expect(p.strengthOf(10)).toBe(40) // credited in storage, like bulkMarkMemorized
+      expect(p.reviewData.get(10)?.lastReviewDate).toBeTruthy() // decay clock anchored immediately
+      expect(effectiveRank(true, p.strengthOf(10), 0)).toBe(2) // Da'if (Weak)
+    })
+
+    it('unlike bulkMarkMemorized, awards no hasanah — a mis-tapped page toggled back off would keep it forever', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10) // on: credits strength, no reward
+      expect(p.hasanah).toBe(0)
+      p.toggleMemorized(10) // off: never refunds anyway, but there's nothing to refund
+      expect(p.hasanah).toBe(0)
+    })
+
+    it('a real revision right after a fresh (no-evidence) mark never lowers the displayed level', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10) // no prior review history — credited to 40
+      const before = effectiveRank(true, p.strengthOf(10), 0)
+      p.recordPerfectRevision(10)
+      const after = effectiveRank(true, p.strengthOf(10), 0)
+      expect(after).toBeGreaterThanOrEqual(before) // strictly additive, never a visible downgrade
+    })
+
+    // Known, accepted trade-off (not a bug): a page with real review history
+    // is deliberately left uncredited (see the test above this describe
+    // block) so it can't distort weaknessScorer's ratio — but that means
+    // *this* page still passes through raw strength 0 → 1 on its first real
+    // pass, so the *displayed* band can legitimately dip from the Da'if
+    // floor down to Jadid (bandForStrength(1).rank) for one revision, same
+    // as `recordBandChange` narrating "Not Memorized → New" in the Journal.
+    // The alternative (crediting these too) reintroduces the scheduler bug
+    // the review-history guard exists to prevent — see
+    // `creditFreshMemorization`'s doc comment. Pinned here so this reads as
+    // documented behavior, not a regression, if it's ever hit in review.
+    it('a page with real review history can still dip Weak → New on its first pass (accepted, see comment)', () => {
+      const p = useProgressStore()
+      p.recordReview(10, 'needs_work') // reviewCount 1, strength 0 — never credited
+      const before = effectiveRank(true, p.strengthOf(10), 0)
+      p.toggleMemorized(10)
+      expect(effectiveRank(true, p.strengthOf(10), 0)).toBe(before) // toggling alone doesn't move it
+      p.recordPerfectRevision(10) // strength 0 → 1
+      const after = effectiveRank(true, p.strengthOf(10), 0)
+      expect(before).toBe(2) // Da'if (Weak), via the floor
+      expect(after).toBe(1) // Jadid (New) — a real, visible dip
+    })
+
+    it('a mistake right after marking never raises the displayed level', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10)
+      const before = effectiveRank(true, p.strengthOf(10), 0)
+      p.penalizeMistake(10)
+      const after = effectiveRank(true, p.strengthOf(10), 0)
+      expect(after).toBeLessThanOrEqual(before)
+    })
+
+    it('re-toggling off then on never re-credits a page with real strength', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10) // credits 40
+      p.bumpStrength(10, -30) // simulate mistakes down to 10
+      p.toggleMemorized(10) // off
+      p.toggleMemorized(10) // on again
+      expect(p.strengthOf(10)).toBe(10) // real history, never clobbered back to 40
+    })
+
+    // Regression: crediting the floor onto a page with zero strength but
+    // real review history (reviewed repeatedly, never once passed) would
+    // read as "40 clean revisions" to weaknessScorer's
+    // perfectRevisionCount/totalReviewCount ratio — inflating a genuinely
+    // struggling page into looking flawless. Never credit over evidence.
+    it('never credits a page that has real review history but zero strength (evidence of struggling, not absence of data)', () => {
+      const p = useProgressStore()
+      p.recordReview(10, 'needs_work') // reviewCount 1, strength stays 0 — genuine evidence
+      expect(p.strengthOf(10)).toBe(0)
+      p.toggleMemorized(10)
+      expect(p.strengthOf(10)).toBe(0) // not floored to 40 over real evidence
+      expect(p.isMemorized(10)).toBe(true) // the memorized flag itself still applies
+    })
   })
 
   it('bumps strength with a floor at 0', () => {
@@ -144,6 +231,16 @@ describe('progress store', () => {
     expect(p.strengthOf(3)).toBe(0)
     p.bulkMarkMemorized([3], true)
     expect(p.strengthOf(3)).toBe(40)
+
+    // A page with zero strength but real review history (reviewed, never
+    // passed) is evidence of struggling, not absence of data — never
+    // credited over it (see creditFreshMemorization's doc comment on why
+    // this would otherwise distort weaknessScorer's ratio).
+    p.recordReview(4, 'needs_work')
+    expect(p.strengthOf(4)).toBe(0)
+    p.bulkMarkMemorized([4], true)
+    expect(p.strengthOf(4)).toBe(0)
+    expect(p.isMemorized(4)).toBe(true)
   })
 
   it('markReviewed records a dated, counted review (and a clean revision marks one)', () => {

@@ -3,6 +3,7 @@ import { INITIAL_HABIT_VERSE_CURSOR, type HabitVerseCursor } from '@/core/quran/
 import { INITIAL_REVISION_CURSOR, type RevisionCursor } from '@/core/memorization/revisionCycle'
 import type { PlaybackScope } from '@/core/audio/scope'
 import type { PageHighlightSpec } from '@/core/navigation/previewRoute'
+import { MEMORIZED_FLOOR_STRENGTH } from '@/core/memorization/strengthBands'
 import { idbCount, idbGet, openDb, txDone } from './idb'
 
 /**
@@ -201,32 +202,91 @@ export function deserializeProgress(stored: StoredProgress | undefined): Progres
 }
 
 /**
- * One-time, idempotent backfill for the memorization-level decay clock
- * (strengthBands.ts): any page with `strength > 0` that has no
- * `reviewData[page].lastReviewDate` — legacy data predates that field
- * entirely — gets stamped with `today`, so decay has a real anchor instead of
- * treating every such page as `Infinity` days unrevised forever. Reuses
- * `normalizeSchedule()` for the rest of the record, matching every other
- * partial/legacy-record hydration in this file. Pure (returns a new
- * `Progress`, never mutates the input) — callers must persist the result
- * themselves when `changedCount > 0`, or the stamp never sticks and decay
- * silently never engages (the same "today" would be recomputed and rewritten
- * on every subsequent load).
+ * One-time, idempotent backfill for legacy/imported memorized pages, run on
+ * every load (`loadProgress`) and every import/recovery path. Two related
+ * repairs, both keyed off "any page marked `memorized` with no real strength
+ * or review history yet" (a legacy import predating `perfectRevisions`
+ * tracking, or a page a prior bug left at strength 0):
+ *
+ * 1. **Review-date anchor.** Any such page, or any page with `strength > 0`,
+ *    that has no `reviewData[page].lastReviewDate` gets stamped with `today`
+ *    — so decay has a real anchor instead of treating it as `Infinity` days
+ *    unrevised forever. `effectiveRank` (strengthBands.ts) only lets a
+ *    memorized-but-zero-strength page fall through to "Not Memorized" after
+ *    `NEVER_REVISED_TIMEOUT_DAYS` of *real* elapsed time — an un-anchored
+ *    page would trip that immediately. Anchoring to "today" (the day the
+ *    data was imported/first loaded, per product's "missing revision date =
+ *    day of import" rule) is what keeps a freshly-recovered memorized page
+ *    floored at Da'if (Weak) on the very first load.
+ *
+ * 2. **Strength floor.** A memorized page with strength 0 *and no review
+ *    history either* (`reviewData[page].reviewCount` unset/0) is credited
+ *    `MEMORIZED_FLOOR_STRENGTH` (Da'if's own lower bound — no hasanah, unlike
+ *    the live `creditFreshMemorization` a user action triggers in
+ *    `stores/progress.ts`; this is a silent data repair on load, not a
+ *    reward event). Without this, `effectiveRank`'s floor is the *only*
+ *    thing keeping such a page off "Not Memorized", purely at display time —
+ *    the instant the page's first real revision lands, raw strength goes
+ *    0 → 1 and the displayed band would regress from Da'if to Jadid. Writing
+ *    the floor into the stored strength itself makes every later revision
+ *    strictly additive instead.
+ *
+ *    The review-history exclusion matters: a page can be memorized, strength
+ *    0, *and* have real `reviewData` (reviewed several times, never once
+ *    passed) — genuine evidence of a struggling page, not an absence of
+ *    data. `weaknessScorer.ts` reads this same raw `strength` as one of its
+ *    inputs (`perfectRevisionCount`); flooring a page like that to 40 would
+ *    read as "40 clean revisions" to the scorer and mask a page the daily
+ *    weak-reinforcement lane is specifically supposed to catch. The floor is
+ *    for "no evidence exists yet" (a legacy import predating the counter, a
+ *    freshly-marked untouched page), never for "evidence says weak."
+ *
+ * Reuses `normalizeSchedule()` for the rest of the review record, matching
+ * every other partial/legacy-record hydration in this file. Pure (returns a
+ * new `Progress`, never mutates the input) — callers must persist the result
+ * themselves when `changedCount > 0`, or neither repair sticks (the same
+ * "today"/floor would be recomputed and rewritten on every subsequent load).
+ *
+ * `floorStrength` (default on) exists for exactly one caller:
+ * `legacyRecovery.ts` runs this on the *incoming legacy side alone*, before
+ * merging it onto the current store via `Math.max(current, incoming)` per
+ * page. Flooring that isolated, partial view would inject an artificial
+ * `MEMORIZED_FLOOR_STRENGTH` into the max-merge and could raise a page's
+ * *real*, already-tracked current strength — e.g. current=20, legacy
+ * implicitly 0 but floored to 40 pre-merge, `Math.max(20, 40)` wrongly wins
+ * at 40. `legacyRecovery.ts` passes `false` and leans on the plain
+ * `loadProgress()` call that follows the merge (in the caller today, and
+ * unconditionally on the next app boot) to apply the floor once to the
+ * *true*, fully-merged state instead.
  */
 export function backfillReviewDates(
   progress: Progress,
   today: string = isoToday(),
+  { floorStrength = true }: { floorStrength?: boolean } = {},
 ): { progress: Progress; changedCount: number } {
   const reviewData = new Map(progress.reviewData)
+  const strength = new Map(progress.strength)
   let changedCount = 0
-  for (const [page, strength] of progress.strength) {
-    if (strength <= 0) continue
+  if (floorStrength) {
+    const noEvidenceYet = [...progress.memorized].filter((page) => {
+      const hasStrength = (strength.get(page) ?? 0) > 0
+      const hasReviewHistory = (progress.reviewData.get(page)?.reviewCount ?? 0) > 0
+      return !hasStrength && !hasReviewHistory
+    })
+    for (const page of noEvidenceYet) {
+      strength.set(page, MEMORIZED_FLOOR_STRENGTH)
+      changedCount++
+    }
+  }
+  const pagesNeedingAnchor = new Set(progress.memorized)
+  for (const [page, s] of progress.strength) if (s > 0) pagesNeedingAnchor.add(page)
+  for (const page of pagesNeedingAnchor) {
     const existing = reviewData.get(page)
     if (existing?.lastReviewDate) continue
     reviewData.set(page, normalizeSchedule({ lastReviewDate: today, reviewCount: existing?.reviewCount ?? 0 }))
     changedCount++
   }
-  return { progress: { ...progress, reviewData }, changedCount }
+  return { progress: { ...progress, strength, reviewData }, changedCount }
 }
 
 /** Load persisted progress (empty if none / on error), backfilling missing review dates. */

@@ -39,6 +39,29 @@ export const STRENGTH_BANDS: readonly StrengthBand[] = [
 /** The floor decay never caps below — a page once memorized never fully "un-memorizes" from neglect. */
 export const DECAY_FLOOR_RANK: StrengthRank = 2
 
+/**
+ * The raw-strength floor a page starts at when it's affirmatively marked
+ * memorized without going through the guided revision loop — bulk range-mark,
+ * the single-page toggle, and the storage-layer backfill for legacy/already-
+ * memorized data all credit exactly this (see `stores/progress.ts`'s
+ * `creditFreshMemorization` and `core/storage/userData.ts`'s
+ * `backfillReviewDates`). Deliberately Da'if's (Weak's) own lower bound, not
+ * some arbitrary number — so those pages render at the documented floor
+ * immediately, and so `bandForStrength` of this value round-trips to exactly
+ * `DECAY_FLOOR_RANK`.
+ */
+export const MEMORIZED_FLOOR_STRENGTH = bandByRank(DECAY_FLOOR_RANK).minStrength
+
+/**
+ * How long a memorized page can sit with **zero** completed revisions —
+ * counting from `lastReviewDate` (backfilled to the import/mark date when no
+ * real history exists, see `backfillReviewDates` in `core/storage/userData.ts`)
+ * — before it's honestly shown as Not Memorized instead of floored at Da'if.
+ * Product rule: a page the user has marked memorized only ever displays as
+ * Not Memorized if it's gone unrevised, from day one, for 3+ years.
+ */
+export const NEVER_REVISED_TIMEOUT_DAYS = 1095 // 3 years
+
 /** Highest band whose `minStrength <= strength` (negative strength clamps to rank 0). */
 export function bandForStrength(strength: number): StrengthBand {
   let best = STRENGTH_BANDS[0]
@@ -83,9 +106,41 @@ export function capForDays(days: number): StrengthRank {
   return 6 // no cap
 }
 
-/** The rank actually shown to the user: the raw band, capped by neglect. */
-export function effectiveRank(rawStrength: number, daysSinceLastRevision: number): StrengthRank {
+/**
+ * The rank actually shown to the user: the raw band, capped by neglect, with
+ * a `memorized`-aware floor.
+ *
+ * For any page with `rawStrength > 0` (it's completed at least one real
+ * revision) this is unchanged from before: `min(raw, cap)` — decay can only
+ * ever push the displayed band down, never up, so an honestly-low band (e.g.
+ * Jadid from a handful of revisions) stays exactly that, never gets lifted to
+ * the Da'if floor.
+ *
+ * `rawStrength <= 0` is the case that regressed: a page can be `memorized`
+ * (legacy import predating this counter, a fresh single-page mark, or a
+ * strength that mistakes floored back to 0) while its raw band is
+ * `bandForStrength(0)` = Not Memorized. Showing that for an actually-memorized
+ * page is wrong — the boolean and the label contradict each other. So a
+ * memorized page with zero revisions floors at Da'if (Weak) instead, *unless*
+ * it's gone unrevised for `NEVER_REVISED_TIMEOUT_DAYS` — at that point it
+ * really has earned "Not Memorized". A non-memorized page never gets a floor;
+ * it shows the honest `min(raw, cap)`, which for `rawStrength <= 0` is always 0.
+ */
+export function effectiveRank(
+  memorized: boolean,
+  rawStrength: number,
+  daysSinceLastRevision: number,
+): StrengthRank {
   const raw = bandForStrength(rawStrength).rank
   const cap = capForDays(daysSinceLastRevision)
-  return Math.min(raw, cap) as StrengthRank
+  const capped = Math.min(raw, cap) as StrengthRank
+  if (!memorized || rawStrength > 0) return capped
+  // `daysSinceLastRevision` is only a real elapsed count once a `lastReviewDate`
+  // anchor exists (see `daysSince`'s `Infinity` fallback for "no anchor yet").
+  // An un-anchored page must NOT trip this escape hatch — that would show
+  // "Not Memorized" the instant a page is marked, before the decay clock even
+  // has a start date, which is the exact bug this function exists to fix.
+  return Number.isFinite(daysSinceLastRevision) && daysSinceLastRevision >= NEVER_REVISED_TIMEOUT_DAYS
+    ? 0
+    : DECAY_FLOOR_RANK
 }

@@ -188,8 +188,14 @@ export async function recoverLegacyData(): Promise<RecoveryResult> {
     return { status: 'error' }
   }
 
+  // floorStrength: false — this is the isolated incoming side, about to be
+  // `Math.max`-merged onto the current store in `mergeProgress` below; see
+  // `backfillReviewDates`'s doc comment for why flooring it here would risk
+  // raising a page's real current strength. Whoever next calls the plain
+  // `loadProgress()` on the true, post-merge state — the app, on the reload
+  // that follows a successful recovery — applies the floor once, correctly.
   const incomingProgress = snap.progress
-    ? backfillReviewDates(deserializeProgress(snap.progress)).progress
+    ? backfillReviewDates(deserializeProgress(snap.progress), undefined, { floorStrength: false }).progress
     : null
   const incomingMistakes = snap.mistakes ? deserializeMistakes(snap.mistakes) : null
 
