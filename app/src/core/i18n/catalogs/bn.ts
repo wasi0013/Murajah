@@ -289,12 +289,15 @@ const bn: Messages = {
     },
     summaryAria: 'সারসংক্ষেপ',
     stats: {
-      pagesPercent: 'পৃষ্ঠা · {percent}%',
-      hasanah: 'সম্ভাব্য নেকি',
+      pagesLabel: 'পৃষ্ঠা',
+      pagesPercent: '{percent}% সম্পন্ন',
+      hasanah: 'মোট সম্ভাব্য নেকি',
       readingTime: 'পাঠের সময়',
       listeningTime: 'শোনার সময়',
       mistakePages: 'ভুলসহ পৃষ্ঠা',
       avgStrength: 'গড় শক্তি',
+      avgStrengthScale: '১০০ এর মধ্যে',
+      avgStrengthAria: 'গড় মুখস্থ শক্তি {value}, ১০০ এর মধ্যে, {band}',
     },
     bulk: {
       aria: 'একসাথে পৃষ্ঠা চিহ্নিত',
@@ -355,6 +358,7 @@ const bn: Messages = {
     jumpTo: 'পারা {n}-এ যান',
     legendMistakes: 'ভুল আছে',
     juzMemorized: 'পারা {n} মুখস্থ',
+    juzBandShare: '{percent}% {band}',
     cell: {
       memorized: 'মুখস্থ',
       notMemorized: 'মুখস্থ নয়',

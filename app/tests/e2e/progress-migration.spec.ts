@@ -40,7 +40,7 @@ async function seedUserData(page: Page) {
   )
 }
 
-const hasanah = (page: Page) => page.locator('.stat', { hasText: 'Hasanah' }).locator('.stat-n')
+const hasanah = (page: Page) => page.locator('.stat--hasanah .stat-n')
 
 test('a migrated backup renders identical memorized pages, hasanah and mistakes', async ({
   page,
@@ -72,6 +72,6 @@ test('a migrated backup renders identical memorized pages, hasanah and mistakes'
   await expect(page.getByRole('button', { name: 'Page 50, memorized, Weak (ضعيف), 1 mistakes' })).toBeVisible()
 
   // Summary stats reflect the migrated set: 5 memorized, 2 pages with mistakes.
-  await expect(page.locator('.stat', { hasText: 'Pages ·' }).locator('.stat-n')).toHaveText('5/604')
-  await expect(page.locator('.stat', { hasText: 'mistakes' }).locator('.stat-n')).toHaveText('2')
+  await expect(page.locator('.stat--pages .stat-n')).toHaveText('5/604')
+  await expect(page.locator('.stat--mistakes .stat-n')).toHaveText('2')
 })

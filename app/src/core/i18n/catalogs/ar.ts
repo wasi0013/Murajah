@@ -289,12 +289,15 @@ const ar: Messages = {
     },
     summaryAria: 'ملخّص',
     stats: {
-      pagesPercent: 'صفحات · {percent}٪',
-      hasanah: 'حسنات',
+      pagesLabel: 'الصفحات',
+      pagesPercent: '{percent}٪ اكتمال',
+      hasanah: 'إجمالي الحسنات',
       readingTime: 'وقت القراءة',
       listeningTime: 'وقت الاستماع',
       mistakePages: 'صفحات بها أخطاء',
       avgStrength: 'متوسط القوة',
+      avgStrengthScale: 'من أصل 100',
+      avgStrengthAria: 'متوسط قوة الحفظ {value} من أصل 100، {band}',
     },
     bulk: {
       aria: 'تعليم مجموعة صفحات',
@@ -355,6 +358,7 @@ const ar: Messages = {
     jumpTo: 'انتقل إلى الجزء {n}',
     legendMistakes: 'به أخطاء',
     juzMemorized: 'الجزء {n} محفوظ',
+    juzBandShare: '{percent}% {band}',
     cell: {
       memorized: 'محفوظة',
       notMemorized: 'غير محفوظة',

@@ -2,8 +2,9 @@
 import { nextTick, ref } from 'vue'
 import { useMemorization } from '@/composables/useMemorization'
 import { TOTAL_PAGES } from '@/stores/progress'
-import { juzProgress, type PageCell } from '@/core/memorization/progressView'
+import { juzProgress, juzBandSegments, type JuzGroup, type PageCell } from '@/core/memorization/progressView'
 import { STRENGTH_BANDS, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
+import { bandColorVars } from '@/core/memorization/bandColors'
 import { useI18n } from '@/core/i18n'
 
 const { t } = useI18n()
@@ -71,42 +72,6 @@ function jumpToJuz(juz: number, startPage: number): void {
   activePage.value = startPage
 }
 
-/**
- * Background/text CSS vars for a band (see strengthBands.ts). Band 6 (Mutqan)
- * is a fixed "ink" pair rather than a themed hue — a deliberately different
- * visual language for the top level — and carries its own border var (visible
- * in dark theme so it doesn't merge into the already near-black surface).
- */
-function bandVars(level: StrengthRank): { bg: string; text: string; border: string } {
-  if (level === 6) {
-    return { bg: 'var(--color-mutqan-bg)', text: 'var(--color-mutqan-text)', border: 'var(--color-mutqan-border)' }
-  }
-  // Not used by cellStyle (guarded out before calling) or the legend (which
-  // starts at rank 1 — band 0 is the separate "not started" swatch) — kept
-  // as a defensive fallback so an out-of-guard call degrades to the muted
-  // empty look rather than undefined CSS values.
-  if (level === 0) {
-    return { bg: 'var(--color-surface)', text: 'var(--color-text-muted)', border: 'var(--color-border)' }
-  }
-  // Unlike the old monotonic lightness ramp, these hues vary widely in
-  // contrast against a single blanket text colour. --color-danger/
-  // --color-success are dark/saturated enough in every theme for
-  // --color-on-status; the amber/teal/blue highlight tokens are light-to-mid
-  // toned in every theme (light, dark, and sepia all pick pastel-ish hl-*
-  // values), so they need a text colour that stays dark regardless of theme
-  // — --color-band-ink, not --color-text (which itself flips to a near-white
-  // value in dark theme and would fail contrast there). Verified against all
-  // 3 themes; band 0 is handled by cellStyle before this is ever called.
-  const vars: Record<Exclude<StrengthRank, 0 | 6>, { bg: string; text: string }> = {
-    1: { bg: 'var(--hl-amber)', text: 'var(--color-band-ink)' },
-    2: { bg: 'var(--color-danger)', text: 'var(--color-on-status)' },
-    3: { bg: 'var(--hl-teal)', text: 'var(--color-band-ink)' },
-    4: { bg: 'var(--hl-blue)', text: 'var(--color-band-ink)' },
-    5: { bg: 'var(--color-success)', text: 'var(--color-on-status)' },
-  }
-  return { ...vars[level as Exclude<StrengthRank, 0 | 6>], border: 'transparent' }
-}
-
 function cellStyle(c: PageCell): Record<string, string> {
   // Band 0 ("Not Memorized") renders as a plain, uncoloured cell even in the
   // rare memorized-but-strength-0 case (reachable via the sheet's Toggle
@@ -114,7 +79,7 @@ function cellStyle(c: PageCell): Record<string, string> {
   // for --color-border's very pale/very dark bg across every theme, and
   // "memorized + Not Memorized" would be a confusing label anyway.
   if (!c.memorized || c.level === 0) return {}
-  const v = bandVars(c.level)
+  const v = bandColorVars(c.level)
   return { background: v.bg, color: v.text, borderColor: v.border }
 }
 
@@ -127,6 +92,31 @@ function cellLabel(c: PageCell): string {
   parts.push(c.memorized ? t('grid.cell.memorized') : t('grid.cell.notMemorized'))
   if (c.memorized && c.level > 0) parts.push(bandLabel(c.level))
   if (c.mistakes > 0) parts.push(t('grid.cell.mistakes', { n: c.mistakes }))
+  return parts.join(', ')
+}
+
+/**
+ * The juz header's mini progress bar, segmented by strength band instead of
+ * one flat "% memorized" fill — so it reads consistently with the multi-
+ * coloured cells directly beneath it (previously always plain green,
+ * regardless of how strong/weak the memorized pages actually were).
+ */
+function juzSegments(g: JuzGroup) {
+  return juzBandSegments(g, progress.memorized, progress.strength, progress.reviewData)
+}
+
+/**
+ * The bar's aria-label: `aria-valuenow`/`aria-valuemax` alone still describe
+ * only "X of Y memorized", same as before this bar had a colour breakdown at
+ * all — the band composition, the whole point of the change, would otherwise
+ * be colour-only information. Appends each segment as "{percent}% {band}",
+ * same list-building pattern as `cellLabel` above.
+ */
+function juzBarLabel(g: JuzGroup): string {
+  const parts = [t('grid.juzMemorized', { n: g.juz })]
+  for (const seg of juzSegments(g)) {
+    parts.push(t('grid.juzBandShare', { percent: Math.round(seg.percent), band: bandLabel(seg.rank) }))
+  }
   return parts.join(', ')
 }
 </script>
@@ -152,7 +142,7 @@ function cellLabel(c: PageCell): string {
         {{ t('common.notStarted') }}
       </span>
       <span v-for="band in STRENGTH_BANDS.slice(1)" :key="band.rank" class="legend-item">
-        <span class="swatch" :style="{ background: bandVars(band.rank).bg, borderColor: bandVars(band.rank).border }" />
+        <span class="swatch" :style="{ background: bandColorVars(band.rank).bg, borderColor: bandColorVars(band.rank).border }" />
         {{ bandLabel(band.rank) }}
       </span>
       <span class="legend-item">
@@ -176,16 +166,16 @@ function cellLabel(c: PageCell): string {
         <span
           class="juz-bar"
           role="progressbar"
-          :aria-label="t('grid.juzMemorized', { n: g.juz })"
+          :aria-label="juzBarLabel(g)"
           :aria-valuemin="0"
           :aria-valuenow="juzProgress(g, progress.memorized).memorized"
           :aria-valuemax="g.pages.length"
         >
           <span
+            v-for="seg in juzSegments(g)"
+            :key="seg.rank"
             class="juz-fill"
-            :style="{
-              width: `${(juzProgress(g, progress.memorized).memorized / g.pages.length) * 100}%`,
-            }"
+            :style="{ width: `${seg.percent}%`, background: bandColorVars(seg.rank).bg }"
           />
         </span>
       </header>
@@ -304,16 +294,20 @@ function cellLabel(c: PageCell): string {
   font-variant-numeric: tabular-nums;
 }
 .juz-bar {
+  display: flex;
   height: 0.35rem;
   border-radius: var(--radius-full);
   background: var(--color-elevated);
   overflow: hidden;
 }
+/* One stretch per strength band present in the juz (see juzSegments) — inline
+   `background` per segment, sorted strongest-first by the view-model so the
+   bar reads left-to-right exactly like the legend above it. The unfilled
+   remainder is just the bar's own background showing through; Not Memorized
+   never gets a segment of its own. */
 .juz-fill {
   display: block;
   height: 100%;
-  background: var(--color-success);
-  border-radius: var(--radius-full);
 }
 .cells {
   display: grid;

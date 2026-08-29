@@ -13,7 +13,7 @@ async function settle(page: Page) {
 // to mark memorized and record clean revisions (which award hasanah). Data
 // persists to IndexedDB, so marks survive a reload.
 
-const hasanah = (page: Page) => page.locator('.stat', { hasText: 'Hasanah' }).locator('.stat-n')
+const hasanah = (page: Page) => page.locator('.stat--hasanah .stat-n')
 
 test('the shell nav opens the progress view', async ({ page }) => {
   await page.goto('/')
@@ -83,6 +83,37 @@ test('bulk range mark memorizes a contiguous range', async ({ page }) => {
   for (const p of [1, 2, 3]) {
     await expect(page.getByRole('button', { name: `Page ${p}, memorized` })).toBeVisible()
   }
+})
+
+test('a juz progress bar segments by strength band instead of one flat colour', async ({ page }) => {
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Bulk-mark credits the Da'if (Weak) floor — pages 1-3 start as one band.
+  await page.getByLabel('From page').fill('1')
+  await page.getByLabel('To page').fill('3')
+  await page.getByRole('button', { name: 'Memorized', exact: true }).click()
+
+  const bar = page.locator('[data-juz="1"] .juz-bar')
+  await expect(bar.locator('.juz-fill')).toHaveCount(1)
+
+  // Raise page 1 alone to Mastered — the bar now splits into two segments,
+  // strongest first, each a different colour (see juzBandSegments).
+  await page.getByRole('button', { name: 'Page 1, memorized', exact: false }).click()
+  await page.getByRole('combobox', { name: 'Memorization level' }).selectOption('6')
+  await page.keyboard.press('Escape')
+
+  const segments = bar.locator('.juz-fill')
+  await expect(segments).toHaveCount(2)
+  const [firstBg, secondBg] = await segments.evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor))
+  expect(firstBg).not.toBe(secondBg)
+
+  // The colour breakdown is never colour-only — the bar's own aria-label
+  // names each band's share, strongest first (same order as the segments
+  // themselves), same list-building pattern as a cell's label.
+  await expect(bar).toHaveAccessibleName(/Mastered.*Weak/s)
 })
 
 // —— Mark memorized by surah/juz (9.x) ————————————————————————————————

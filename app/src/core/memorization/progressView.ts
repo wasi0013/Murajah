@@ -1,5 +1,6 @@
+import type { ReviewSchedule } from '@/core/storage/userData'
 import { getPageHasanah } from './pageHasanah.js'
-import { effectiveRank, type StrengthRank } from './strengthBands'
+import { daysSince, effectiveRank, type StrengthRank } from './strengthBands'
 
 /**
  * Pure view-model helpers for the Progress screen (canonical 604 scheme). No Vue
@@ -127,6 +128,55 @@ export function juzProgress(
   let count = 0
   for (const p of group.pages) if (memorized.has(p)) count++
   return { memorized: count, total: group.pages.length }
+}
+
+/** One coloured stretch of a `juzBandSegments` bar — a share of the juz's pages at a given band. */
+export interface JuzBandSegment {
+  /** 1–6 only; rank 0 (Not Memorized) is never a segment — see below. */
+  rank: Exclude<StrengthRank, 0>
+  /** 0–100, this band's share of the juz's total pages. */
+  percent: number
+}
+
+/**
+ * Segment a juz's pages by *effective* strength band (same 7-band colour
+ * scheme + decay handling as the page cells — see `strengthBands.ts`), for a
+ * progress bar that reads as a stacked ledger instead of one flat "%
+ * memorized" fill. Sorted strongest → weakest (Mutqan first) to match the
+ * grid legend's own ordering, so a bar and its legend never disagree on
+ * which end is "better". Rank 0 is deliberately never a segment — it's the
+ * bar's unfilled remainder, exactly like an ordinary binary progress bar's
+ * "not done" portion, and it can be arbitrarily large (a mostly-unmemorized
+ * juz), so giving it a segment would be redundant with the bar's own empty
+ * track underneath.
+ */
+export function juzBandSegments(
+  group: JuzGroup,
+  memorized: Set<number>,
+  strength: Map<number, number>,
+  reviewData: Map<number, ReviewSchedule>,
+  today: Date = new Date(),
+): JuzBandSegment[] {
+  const total = group.pages.length
+  if (total === 0) return []
+
+  const counts = new Map<StrengthRank, number>()
+  for (const page of group.pages) {
+    const level = effectiveRank(
+      memorized.has(page),
+      strength.get(page) ?? 0,
+      daysSince(reviewData.get(page)?.lastReviewDate, today),
+    )
+    if (level === 0) continue
+    counts.set(level, (counts.get(level) ?? 0) + 1)
+  }
+
+  const segments: JuzBandSegment[] = []
+  for (let rank = 6; rank >= 1; rank--) {
+    const count = counts.get(rank as StrengthRank) ?? 0
+    if (count > 0) segments.push({ rank: rank as Exclude<StrengthRank, 0>, percent: (count / total) * 100 })
+  }
+  return segments
 }
 
 /** Total memorized-page hasanah *weight* (reference; the live reward is the counter). */

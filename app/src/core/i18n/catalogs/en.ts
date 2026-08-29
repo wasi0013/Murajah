@@ -292,12 +292,15 @@ const en: Messages = {
     },
     summaryAria: 'Summary',
     stats: {
-      pagesPercent: 'Pages · {percent}%',
-      hasanah: 'Hasanah',
+      pagesLabel: 'Pages',
+      pagesPercent: '{percent}% completion',
+      hasanah: 'Total Hasanah',
       readingTime: 'Reading time',
       listeningTime: 'Listening time',
       mistakePages: 'Pages with mistakes',
       avgStrength: 'Avg. strength',
+      avgStrengthScale: 'out of 100',
+      avgStrengthAria: 'Average memorization strength {value} out of 100, {band}',
     },
     bulk: {
       aria: 'Bulk mark pages',
@@ -358,6 +361,9 @@ const en: Messages = {
     jumpTo: 'Jump to juz {n}',
     legendMistakes: 'Has mistakes',
     juzMemorized: 'Juz {n} memorized',
+    /** One band's share of a juz progress bar, e.g. "25% Solid" — appended
+     * to `juzMemorized` so the bar's colour breakdown isn't colour-only. */
+    juzBandShare: '{percent}% {band}',
     cell: {
       memorized: 'memorized',
       notMemorized: 'not memorized',

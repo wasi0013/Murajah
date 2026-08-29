@@ -10,7 +10,6 @@ import { usePlanStore } from '@/stores/plan'
 import { TOTAL_PAGES, todayISODate } from '@/stores/progress'
 import { readerLink } from '@/core/navigation/readerLinks'
 import { estimateCompletion } from '@/core/memorization/completion'
-import { formatReadingTime } from '@/core/memorization/progressView'
 import { STRENGTH_BANDS, bandForStrength, bandByRank, effectiveRank, daysSince, type StrengthRank } from '@/core/memorization/strengthBands'
 import { createLevelEditController } from '@/core/memorization/levelEditController'
 import { useI18n } from '@/core/i18n'
@@ -18,6 +17,7 @@ import Icon from '@/components/Icon.vue'
 import Toggle from '@/components/Toggle.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
+import StatsSummary from './StatsSummary.vue'
 import MemorizedGrid from './MemorizedGrid.vue'
 import JuzProgressGrid from './JuzProgressGrid.vue'
 import PageDotsGrid from './PageDotsGrid.vue'
@@ -237,10 +237,6 @@ function bulkMark(on: boolean) {
 
 // A friendlier alternative to the manual range: pick whole surahs/juz instead.
 const pickOpen = ref(false)
-
-const hasanahFmt = computed(() => stats.value.totalHasanah.toLocaleString('en-US'))
-const readingTimeFmt = computed(() => formatReadingTime(stats.value.readingSeconds))
-const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningSeconds))
 </script>
 
 <template>
@@ -257,32 +253,22 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
     </div>
 
     <template v-if="tab === 'overview'">
-    <section class="stats" :aria-label="t('progress.summaryAria')">
-      <div class="stat">
-        <span class="stat-n">{{ stats.memorizedCount }}<span class="stat-of">/{{ stats.totalPages }}</span></span>
-        <span class="stat-l">{{ t('progress.stats.pagesPercent', { percent: stats.percent }) }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">{{ hasanahFmt }}</span>
-        <span class="stat-l">{{ t('progress.stats.hasanah') }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">{{ readingTimeFmt }}</span>
-        <span class="stat-l">{{ t('progress.stats.readingTime') }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">{{ listeningTimeFmt }}</span>
-        <span class="stat-l">{{ t('progress.stats.listeningTime') }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">{{ stats.mistakePages }}</span>
-        <span class="stat-l">{{ t('progress.stats.mistakePages') }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n">{{ stats.averageStrength }}</span>
-        <span class="stat-l">{{ t('progress.stats.avgStrength') }}</span>
+    <StatsSummary :stats="stats" />
+
+    <!-- Needs-review sits above the bulk-mark tool (swapped from its original
+         position below MemorizedGrid): this is the section users check most,
+         scrolling past everything else to reach it; bulk-mark is an
+         occasional power-tool action, not something checked on every visit. -->
+    <section v-if="weakestPages.length" class="weakest" :aria-label="t('progress.weakestAria')">
+      <h2 class="section-title">{{ t('progress.needsReview') }}</h2>
+      <div class="chips">
+        <button v-for="p in weakestPages" :key="p" class="chip" @click="openPage(p)">
+          {{ t('common.page', { n: p }) }}
+        </button>
       </div>
     </section>
+
+    <MemorizedGrid @select="openPage" />
 
     <section class="bulk" :aria-label="t('progress.bulk.aria')">
       <span class="bulk-label">{{ t('progress.bulk.label') }}</span>
@@ -313,17 +299,6 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
         <Icon :icon="ListChecks" :size="14" />
         <span>{{ t('progress.pick.button') }}</span>
       </button>
-    </section>
-
-    <MemorizedGrid @select="openPage" />
-
-    <section v-if="weakestPages.length" class="weakest" :aria-label="t('progress.weakestAria')">
-      <h2 class="section-title">{{ t('progress.needsReview') }}</h2>
-      <div class="chips">
-        <button v-for="p in weakestPages" :key="p" class="chip" @click="openPage(p)">
-          {{ t('common.page', { n: p }) }}
-        </button>
-      </div>
     </section>
     </template>
 
@@ -560,45 +535,17 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
   font-weight: 600;
   color: var(--color-success);
 }
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.75rem;
-  max-width: 46rem;
-  margin: 1rem auto 0;
-  padding: 0 1rem;
-}
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.85rem 1rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-.stat-n {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-accent);
-}
-.stat-of {
-  font-size: var(--text-base);
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-.stat-l {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
 .bulk {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.65rem;
   max-width: 46rem;
-  margin: 1rem auto 0;
+  /* Follows MemorizedGrid now (swapped below needs-review) — same breathing
+     room the grid gives whatever comes after it, shared with .grid-root
+     below rather than the tighter 1rem this used when it sat right under
+     .stats. */
+  margin: 1.5rem auto 0;
   padding: 0.85rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -678,8 +625,16 @@ const listeningTimeFmt = computed(() => formatReadingTime(stats.value.listeningS
 .weakest,
 :deep(.grid-root) {
   max-width: 46rem;
-  margin: 1.5rem auto 0;
   padding: 0 1rem;
+}
+.weakest {
+  /* Follows .stats now (swapped above the bulk-mark tool) — the tighter gap
+     .bulk used to have in that position, not the 1.5rem breathing room a
+     section needs after the dense MemorizedGrid. */
+  margin: 1rem auto 0;
+}
+:deep(.grid-root) {
+  margin: 1.5rem auto 0;
 }
 .section-title {
   font-size: var(--text-sm);
