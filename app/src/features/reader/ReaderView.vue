@@ -140,14 +140,32 @@ const sheetOpen = ref(false)
 const paletteOpen = ref(false)
 const legendOpen = ref(false)
 
+// ReaderPager's page/font loader must not start against `reader.page`'s bare
+// store default (1) — see useReaderPages' `readyGate` doc comment. Resolved
+// once the block below has restored the real page, whichever source wins.
+let resolveReaderReady: () => void
+const readerReady = new Promise<void>((resolve) => {
+  resolveReaderReady = resolve
+})
+
 onMounted(async () => {
   void progressPersistence.hydrate() // load memorization/hasanah before rewards accrue
-  // The bare reader home (`/`) reopens on the last-read page; every other reader
-  // route names a location in the URL, so restore prefs but let the URL own the
-  // page (otherwise the saved page clobbers a deep-link — /78 snapped to page 50).
-  const urlNamesPage = String(router.currentRoute.value.name) !== 'home'
-  await persistence.hydrate({ skipPage: urlNamesPage }) // saved prefs first…
-  sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
+  try {
+    // The bare reader home (`/`) reopens on the last-read page; every other reader
+    // route names a location in the URL, so restore prefs but let the URL own the
+    // page (otherwise the saved page clobbers a deep-link — /78 snapped to page 50).
+    const urlNamesPage = String(router.currentRoute.value.name) !== 'home'
+    await persistence.hydrate({ skipPage: urlNamesPage }) // saved prefs first…
+    sync.applyRoute() // …then the URL wins for layout/page/toggles it specifies
+  } finally {
+    // Always resolve, even if the block above throws — ReaderPager's page
+    // load is gated on this (see useReaderPages' `readyGate` doc comment),
+    // and leaving it unresolved would strand the reader on its skeleton
+    // forever, which is a worse failure than loading the wrong page once.
+    // (getPref/setPref already swallow their own errors, so this is
+    // defense-in-depth rather than a known reachable path today.)
+    resolveReaderReady()
+  }
 })
 onBeforeUnmount(() => {
   sync.dispose()
@@ -235,7 +253,12 @@ watch(
 
     <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
          it off brings the normal layout (and its options) back. -->
-    <ReaderPager v-if="!reader.tafsir" class="reader-surface" :class="{ blurred: recorder.active }" />
+    <ReaderPager
+      v-if="!reader.tafsir"
+      class="reader-surface"
+      :class="{ blurred: recorder.active }"
+      :ready-gate="readerReady"
+    />
 
     <TafsirPanel
       v-else
@@ -435,6 +458,12 @@ watch(
   text-align: start;
   font-variant-numeric: tabular-nums;
   overflow: hidden;
+  /* `.page-meta` (juz/surah name) only renders once useReaderLocation's nav
+     index has loaded — reserve its line up front (measured: a real,
+     confirmed layout shift via the Layout Instability API) rather than
+     growing the topbar the moment it arrives, same technique as the WBW
+     gloss's reserved line in ReadingSurface.vue. */
+  min-height: calc((var(--text-sm) + var(--text-xs)) * 1.15);
 }
 .page-n {
   font-size: var(--text-sm);

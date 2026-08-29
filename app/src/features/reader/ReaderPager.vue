@@ -25,9 +25,17 @@ const MorphologyPopup = defineAsyncComponent(() => import('./MorphologyPopup.vue
  * turn shows without a fetch. A tap opens word morphology (read mode) or toggles
  * a mistake (mark mode); a scroll is never mistaken for a tap.
  */
+const props = defineProps<{
+  /** See useReaderPages' `readyGate` doc comment — ReaderView.vue passes one
+   * that resolves once the last-read page (persisted prefs) is restored, so
+   * the very first page load targets the real page instead of the store's
+   * default. Every other mount point (e.g. the gallery) leaves it unset. */
+  readyGate?: Promise<void>
+}>()
+
 const { t } = useI18n()
 const reader = useReaderStore()
-const pages = useReaderPages(reader)
+const pages = useReaderPages(reader, { readyGate: props.readyGate })
 
 // Mirrors the top-bar prev/next (ReaderView.vue) — a second, larger pair at the
 // foot of the page, for reaching a page turn without scrolling back to the top.
@@ -164,7 +172,15 @@ function handleTap(e: PointerEvent) {
       </RouterLink>
     </div>
     <div v-else class="page-skeleton" role="status" aria-label="Loading page">
-      <Skeleton v-for="n in 12" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
+      <!-- 15 lines, not 12: every mushaf page (QPC or Indopak) sets exactly 15
+           ayah lines per page — matching the real count keeps the skeleton's
+           height in the neighbourhood of the real surface's, so the swap to
+           ReadingSurface moves `.page-nav` below it as little as possible.
+           It can't be exact (fitLines' per-page [0.35, 1.6] scale factor
+           means the real, fitted line height varies by page/device), but
+           matching the *count* removes the single biggest, structural part
+           of the mismatch. -->
+      <Skeleton v-for="n in 15" :key="n" height="1.6em" :width="`${70 + ((n * 7) % 28)}%`" />
     </div>
 
     <nav class="page-nav" :aria-label="t('reader.pageNavAria')">

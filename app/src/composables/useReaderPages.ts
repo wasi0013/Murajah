@@ -20,6 +20,20 @@ export interface UseReaderPagesOptions {
   fonts?: FontLoader
   /** Pages kept beyond the mounted window before eviction. Default 1. */
   keepRadius?: number
+  /**
+   * Resolves once the reader store's page/layout are finalized — i.e. once
+   * the caller has restored persisted prefs (last-read page) and applied any
+   * URL-driven location. Without this, the first `refresh()` below fires as
+   * soon as `data.init()`/`fonts.init()` resolve, which races the (separate,
+   * IndexedDB-backed) prefs restore: on a returning user deep in the Quran,
+   * `reader.page` is still its store default (1) at that point, so this loads
+   * page 1's chunk + font — wasted bandwidth — and only starts the *real*
+   * page once prefs land and the page/layout watch below fires again, adding
+   * a full extra round trip squarely on the path to first paint. Left unset
+   * (every caller but ReaderView.vue), this is a no-op — `reader.page` is
+   * already final at construction time for those.
+   */
+  readyGate?: Promise<void>
 }
 
 /**
@@ -125,7 +139,7 @@ export function useReaderPages(
   )
 
   void (async () => {
-    await Promise.all([data.init(), fonts.init()])
+    await Promise.all([data.init(), fonts.init(), options.readyGate ?? Promise.resolve()])
     reader.configure({ qpc: data.pageCount('qpc'), indopak: data.pageCount('indopak') })
     ready.value = true
     refresh()

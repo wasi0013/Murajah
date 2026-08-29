@@ -59,6 +59,52 @@ test('warm morphology tap is served from cache (no new fetch)', async ({ page })
   expect(morReqs.length).toBe(afterFirst)
 })
 
+test('a returning user\'s last-read page loads directly, without fetching the store-default page first', async ({
+  page,
+}) => {
+  // Regression test: `useReaderPages` used to start its first load as soon as
+  // `data.init()`/`fonts.init()` resolved, racing the *separate* IndexedDB
+  // read that restores the last-read page (useReaderPersistence). On a
+  // returning user deep in the Quran, `reader.page` was still its store
+  // default (1) at that point, so the reader wastefully fetched page 1's
+  // chunk + font before ever starting the real page — an extra sequential
+  // round trip squarely on the path to first paint. Fixed via `readyGate`
+  // (ReaderView.vue → ReaderPager.vue → useReaderPages).
+  const TARGET_PAGE = 400
+  await page.goto('/')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await page.evaluate(
+    (targetPage) =>
+      new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open('murajah-prefs', 1)
+        req.onsuccess = () => {
+          const tx = req.result.transaction('prefs', 'readwrite')
+          tx.objectStore('prefs').put(
+            { page: targetPage, layout: 'qpc', tajweed: false, wbw: false, wbwLang: 'en', tafsir: false, tafsirLang: 'en', textSizeStep: 2, mode: 'read' },
+            'reader',
+          )
+          tx.oncomplete = () => resolve()
+          tx.onerror = () => reject(tx.error)
+        }
+        req.onerror = () => reject(req.error)
+      }),
+    TARGET_PAGE,
+  )
+
+  const requestedPages = new Set<number>()
+  page.on('request', (r) => {
+    const m = r.url().match(/(?:pages|qpc-v2)\/p?(\d+)/)
+    if (m) requestedPages.add(Number(m[1]))
+  })
+
+  await page.reload()
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+
+  const allowed = new Set([TARGET_PAGE - 1, TARGET_PAGE, TARGET_PAGE + 1])
+  const unexpected = [...requestedPages].filter((p) => !allowed.has(p))
+  expect(unexpected, 'no page outside the restored page ± its prefetched neighbours').toEqual([])
+})
+
 test('page turns work under prefers-reduced-motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/read/qpc/10')
@@ -67,4 +113,34 @@ test('page turns work under prefers-reduced-motion', async ({ page }) => {
   await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page).toHaveURL(/\/read\/qpc\/11/)
   await expect(page.getByText('Page 11 / 604')).toBeVisible()
+})
+
+test('the home page load stays within a low cumulative layout shift budget', async ({ page }) => {
+  // Confirmed layout-shift sources this locks in against regressing (measured
+  // via the real Layout Instability API, throttled + unthrottled, before the
+  // fix landed): the SurahNames header font swapping in late without a
+  // preload (design/tokens.css + index.html), and the topbar's page/juz
+  // indicator growing from one line to two once the nav index loads
+  // (ReaderView.vue's `.indicator`). 0.01 is a generous multiple of the
+  // ~0.002 measured locally post-fix — tight enough to catch either
+  // regressing, loose enough not to flake on CI jitter.
+  await page.addInitScript(() => {
+    ;(window as unknown as { __cls: number }).__cls = 0
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
+          if (!entry.hadRecentInput) (window as unknown as { __cls: number }).__cls += entry.value
+        }
+      }).observe({ type: 'layout-shift', buffered: true })
+    } catch {
+      /* Layout Instability API unavailable (non-Chromium) — nothing to assert */
+    }
+  })
+
+  await page.goto('/')
+  await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
+  await page.waitForTimeout(500) // let the surah-header line (if any) finish settling
+
+  const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls)
+  expect(cls).toBeLessThan(0.01)
 })

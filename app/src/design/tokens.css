@@ -20,7 +20,21 @@
   src: url('/fonts/surah-names.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
+  /* `block` (not `swap`): the visible span's raw text ("001surah") is a
+     ligature *trigger*, not real fallback content (see ReadingSurface.vue) —
+     rendered in the fallback Arabic font it shows as literal, meaningless
+     digits+letters, not a placeholder a reader would accept. `swap` would
+     paint that garbled text immediately and then swap the real glyph in
+     whenever the font arrives (possibly seconds later), which is both a
+     visibly broken flash AND a confirmed layout-shift source (measured via
+     the Layout Instability API — the glyph and the fallback text render at
+     different widths). `block` gives a short invisible period instead (the
+     span is aria-hidden anyway) and swaps once, still self-healing if the
+     font is slow. Paired with the <link rel="preload"> in index.html, which
+     starts this fetch immediately rather than only once the reader chunk
+     discovers the CSS, so in practice it's usually already resolved before
+     the first surah-header line paints. */
+  font-display: block;
 }
 
 /* ---------------------------------------------------------------- *

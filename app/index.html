@@ -25,6 +25,16 @@
          even when detection guesses right — hence opting out entirely
          rather than only around the Quran text. -->
     <meta name="google" content="notranslate" />
+    <!-- Starts fetching the surah-header ornamental font immediately, in
+         parallel with the app's JS, instead of only once the reader chunk's
+         CSS is parsed and the browser discovers the @font-face rule on its
+         own — the gap between those two points is exactly the window in
+         which design/tokens.css's `font-display: block` would otherwise show
+         nothing (or, without `block`, a garbled ligature-trigger-text flash
+         and a measured layout shift when the real glyph finally swaps in).
+         crossorigin is required even same-origin for font preloads, or the
+         browser fetches it twice (fetched anonymous, used anonymous). -->
+    <link rel="preload" href="/fonts/surah-names.woff2" as="font" type="font/woff2" crossorigin />
     <title>Murajah — Quran Memorization</title>
     <!--
       Boot fallback (reported bug: some users see a themed-but-empty dark
