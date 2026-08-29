@@ -16,6 +16,7 @@ import {
   type StrengthRank,
 } from '@/core/memorization/strengthBands'
 import { useJournalStore } from '@/stores/journal'
+import { useSettingsStore } from '@/stores/settings'
 import type { JournalEvent } from '@/core/storage/journalStorage'
 
 /** Canonical Madani mushaf page count — memorization is tracked in this scheme. */
@@ -50,6 +51,7 @@ export function todayISODate(d: Date = new Date()): string {
  */
 export const useProgressStore = defineStore('progress', () => {
   const journal = useJournalStore()
+  const settings = useSettingsStore()
 
   const memorized = reactive(new Set<number>())
   const strength = reactive(new Map<number, number>())
@@ -199,19 +201,31 @@ export const useProgressStore = defineStore('progress', () => {
     )
   }
 
-  /** Add to the cumulative hasanah total (positive only — hasanah never drops). */
+  /**
+   * Add to the cumulative hasanah total (positive only — hasanah never
+   * drops). No-ops entirely while the user has turned hasanah tracking off
+   * (settings.trackHasanah) — this is the single choke point every hasanah
+   * source (reading-time reward, fresh-memorization credit, passing
+   * scheduled revision) funnels through, so gating here alone covers all of
+   * them. The skipped amount is never buffered: flipping the toggle back on
+   * later does not retroactively award what was missed.
+   */
   function awardHasanah(amount: number): void {
-    if (amount > 0) hasanah.value += amount
+    if (amount > 0 && settings.trackHasanah) hasanah.value += amount
   }
 
-  /** Accumulate active reading time (positive integer seconds only). */
+  /** Accumulate active reading time (positive integer seconds only). No-ops
+   * while settings.trackReadingTime is off — see awardHasanah's doc comment;
+   * same choke-point reasoning, independent toggle. */
   function addReadingSeconds(n: number): void {
-    if (n > 0) readingSeconds.value += Math.floor(n)
+    if (n > 0 && settings.trackReadingTime) readingSeconds.value += Math.floor(n)
   }
 
-  /** Accumulate active listening time (positive integer seconds only). */
+  /** Accumulate active listening time (positive integer seconds only). No-ops
+   * while settings.trackListeningTime is off — see awardHasanah's doc comment;
+   * same choke-point reasoning, independent toggle. */
   function addListeningSeconds(n: number): void {
-    if (n > 0) listeningSeconds.value += Math.floor(n)
+    if (n > 0 && settings.trackListeningTime) listeningSeconds.value += Math.floor(n)
   }
 
   /**

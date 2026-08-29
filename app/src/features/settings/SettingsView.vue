@@ -24,6 +24,7 @@ import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { DISCORD_URL } from '@/core/links'
 import Icon from '@/components/Icon.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
+import Toggle from '@/components/Toggle.vue'
 import Button from '@/components/Button.vue'
 import Modal from '@/components/Dialog.vue'
 
@@ -57,6 +58,24 @@ const languageOptions = LOCALE_LIST.map((l) => ({ value: l, label: LOCALES[l].na
 const language = computed<string>({
   get: () => locale.value,
   set: (v) => void setLocale(v as Locale),
+})
+
+// Progress-tracking toggles: same computed({get,set}) bridge as theme/language
+// above, funnelling writes through the store's setters so each is persisted,
+// not just held in a local ref. Turning one off stops that metric's accrual
+// entirely (stores/progress.ts) and hides its Progress-view card
+// (StatsSummary.vue) — see the hint copy below.
+const trackHasanah = computed<boolean>({
+  get: () => settings.trackHasanah,
+  set: (v) => settings.setTrackHasanah(v),
+})
+const trackReadingTime = computed<boolean>({
+  get: () => settings.trackReadingTime,
+  set: (v) => settings.setTrackReadingTime(v),
+})
+const trackListeningTime = computed<boolean>({
+  get: () => settings.trackListeningTime,
+  set: (v) => settings.setTrackListeningTime(v),
 })
 
 // —— Data backup ————————————————————————————————————
@@ -253,6 +272,23 @@ function cancelClearCache() {
       <p class="hint">{{ t('settings.language.hint') }}</p>
     </section>
 
+    <section class="section" :aria-label="t('settings.tracking.title')">
+      <h2 class="section-title">{{ t('settings.tracking.title') }}</h2>
+      <div class="row">
+        <span class="row-label">{{ t('settings.tracking.hasanah') }}</span>
+        <Toggle v-model="trackHasanah" :label="t('settings.tracking.hasanah')" />
+      </div>
+      <div class="row">
+        <span class="row-label">{{ t('settings.tracking.readingTime') }}</span>
+        <Toggle v-model="trackReadingTime" :label="t('settings.tracking.readingTime')" />
+      </div>
+      <div class="row">
+        <span class="row-label">{{ t('settings.tracking.listeningTime') }}</span>
+        <Toggle v-model="trackListeningTime" :label="t('settings.tracking.listeningTime')" />
+      </div>
+      <p class="hint">{{ t('settings.tracking.hint') }}</p>
+    </section>
+
     <section class="section" :aria-label="t('settings.data.title')">
       <h2 class="section-title">{{ t('settings.data.title') }}</h2>
       <p class="lead">{{ t('settings.data.lead') }}</p>
@@ -444,6 +480,11 @@ function cancelClearCache() {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+/* Every section used to have exactly one .row; "Progress tracking" stacks
+   three, so give the second and later ones some breathing room. */
+.row + .row {
+  margin-top: 0.9rem;
 }
 .row-label {
   font-size: var(--text-base);

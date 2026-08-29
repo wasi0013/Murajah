@@ -34,6 +34,45 @@ test('choosing a theme paints the document and persists across reload', async ({
   await expect(page.getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'true')
 })
 
+test('progress-tracking toggles: on by default, and turning one off persists across reload', async ({
+  page,
+}) => {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+
+  const hasanah = page.getByRole('switch', { name: 'Total Hasanah' })
+  const readingTime = page.getByRole('switch', { name: 'Reading time' })
+  const listeningTime = page.getByRole('switch', { name: 'Listening time' })
+  await expect(hasanah).toHaveAttribute('aria-checked', 'true')
+  await expect(readingTime).toHaveAttribute('aria-checked', 'true')
+  await expect(listeningTime).toHaveAttribute('aria-checked', 'true')
+
+  // Turning OFF must survive a reload — asserting only that the default ON
+  // state is stable would also pass a broken (truthiness-gated) hydrate().
+  await readingTime.click()
+  await expect(readingTime).toHaveAttribute('aria-checked', 'false')
+  await page.waitForTimeout(300) // let the fire-and-forget pref write commit
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.getByRole('switch', { name: 'Reading time' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  )
+  // The other two are untouched.
+  await expect(page.getByRole('switch', { name: 'Total Hasanah' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  await expect(page.getByRole('switch', { name: 'Listening time' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+})
+
 test('the back button returns to the reader', async ({ page }) => {
   await page.goto('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({

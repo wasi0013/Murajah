@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { setActivePinia, createPinia } from 'pinia'
 import { useProgressStore } from '@/stores/progress'
+import { useSettingsStore } from '@/stores/settings'
 import { effectiveRank } from '@/core/memorization/strengthBands'
 import {
   serializeProgress,
@@ -266,6 +267,74 @@ describe('progress store', () => {
     p.markReviewed(605, '2026-07-15')
     expect(p.reviewData.has(0)).toBe(false)
     expect(p.reviewData.has(605)).toBe(false)
+  })
+})
+
+// Settings-store gating (Phase: progress-tracking toggles). Each of the three
+// mutators below is the single choke point every real caller of that metric
+// funnels through (see stores/progress.ts's doc comments) — testing the
+// mutators directly here is equivalent to testing every caller.
+describe('progress-tracking toggles gate accrual', () => {
+  it('awardHasanah no-ops while trackHasanah is off, independently of the other two', () => {
+    const settings = useSettingsStore()
+    settings.setTrackHasanah(false)
+    const p = useProgressStore()
+    p.awardHasanah(1000)
+    expect(p.hasanah).toBe(0)
+    // The other two toggles are untouched — still on, still work.
+    p.addReadingSeconds(5)
+    p.addListeningSeconds(5)
+    expect(p.readingSeconds).toBe(5)
+    expect(p.listeningSeconds).toBe(5)
+  })
+
+  it('addReadingSeconds no-ops while trackReadingTime is off, independently of the other two', () => {
+    const settings = useSettingsStore()
+    settings.setTrackReadingTime(false)
+    const p = useProgressStore()
+    p.addReadingSeconds(5)
+    expect(p.readingSeconds).toBe(0)
+    p.awardHasanah(1000)
+    p.addListeningSeconds(5)
+    expect(p.hasanah).toBe(1000)
+    expect(p.listeningSeconds).toBe(5)
+  })
+
+  it('addListeningSeconds no-ops while trackListeningTime is off, independently of the other two', () => {
+    const settings = useSettingsStore()
+    settings.setTrackListeningTime(false)
+    const p = useProgressStore()
+    p.addListeningSeconds(5)
+    expect(p.listeningSeconds).toBe(0)
+    p.awardHasanah(1000)
+    p.addReadingSeconds(5)
+    expect(p.hasanah).toBe(1000)
+    expect(p.readingSeconds).toBe(5)
+  })
+
+  it('turning hasanah tracking off does not affect memorization/strength — the gate is precise, not blanket', () => {
+    const settings = useSettingsStore()
+    settings.setTrackHasanah(false)
+    const p = useProgressStore()
+
+    // Single-page toggle already awards no hasanah by design (reward: false) —
+    // strength/memorized state still update normally.
+    expect(p.toggleMemorized(10)).toBe(true)
+    expect(p.strengthOf(10)).toBe(40)
+    expect(p.hasanah).toBe(0)
+
+    // Bulk-mark normally awards hasanah too — strength/memorized state still
+    // update, only the hasanah write is suppressed.
+    p.bulkMarkMemorized([20, 21], true)
+    expect(p.isMemorized(20)).toBe(true)
+    expect(p.isMemorized(21)).toBe(true)
+    expect(p.strengthOf(20)).toBe(40)
+    expect(p.hasanah).toBe(0)
+
+    // A passing scheduled revision still raises strength — only its hasanah
+    // award is suppressed.
+    expect(p.recordPerfectRevision(30)).toBe(1)
+    expect(p.hasanah).toBe(0)
   })
 })
 

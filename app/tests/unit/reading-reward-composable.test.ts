@@ -4,6 +4,7 @@ import { defineComponent, ref, type Ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useReadingReward } from '@/composables/useReadingReward'
 import { useProgressStore } from '@/stores/progress'
+import { useSettingsStore } from '@/stores/settings'
 
 function harness(page: Ref<number | undefined>, weight = 100) {
   const Comp = defineComponent({
@@ -62,6 +63,37 @@ describe('useReadingReward (wired)', () => {
     await Promise.resolve()
     vi.advanceTimersByTime(90_000)
     expect(progress.hasanah).toBe(200) // earned again on the new page
+    w.unmount()
+  })
+
+  // Real call-path proof (not just a store-level unit test) that the two
+  // settings toggles gating this composable's two per-tick side effects
+  // (progress.addReadingSeconds / progress.awardHasanah) are independent —
+  // useReadingReward.ts itself needed zero changes for this; the gate lives
+  // entirely in stores/progress.ts.
+  it('reading-time tracking off does not block hasanah, and vice versa', () => {
+    const settings = useSettingsStore()
+    settings.setTrackReadingTime(false)
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(90_000) // past the ×1 reward threshold
+    expect(progress.readingSeconds).toBe(0) // suppressed
+    expect(progress.hasanah).toBe(100) // still awarded — independent toggle
+    w.unmount()
+  })
+
+  it('hasanah tracking off does not block reading-time, and vice versa', () => {
+    const settings = useSettingsStore()
+    settings.setTrackHasanah(false)
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(90_000)
+    expect(progress.hasanah).toBe(0) // suppressed
+    expect(progress.readingSeconds).toBe(90) // still accrued — independent toggle
     w.unmount()
   })
 })

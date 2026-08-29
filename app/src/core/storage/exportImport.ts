@@ -59,6 +59,9 @@ export const EXPORT_VERSION = 1
 
 const READER_PREF_KEY = 'reader'
 const THEME_PREF_KEY = 'theme'
+const TRACK_HASANAH_KEY = 'trackHasanah'
+const TRACK_READING_TIME_KEY = 'trackReadingTime'
+const TRACK_LISTENING_TIME_KEY = 'trackListeningTime'
 
 /**
  * Everything a backup carries. Every field is optional so a partial profile (or
@@ -78,6 +81,12 @@ export interface ExportSnapshot {
   audio?: StoredAudioPrefs
   reader?: Partial<ReaderPrefs>
   theme?: ThemeName
+  /** Progress-tracking toggles (settings.ts) — `false` is a real, meaningful
+   * value here (an explicit opt-out), so every read/write below checks
+   * `!== undefined` / `typeof === 'boolean'`, never truthiness. */
+  trackHasanah?: boolean
+  trackReadingTime?: boolean
+  trackListeningTime?: boolean
 }
 
 export interface MurajahExport {
@@ -109,6 +118,11 @@ export function buildExport(
   if (snap.audio) data.audio = snap.audio
   if (snap.reader) data.reader = snap.reader
   if (snap.theme) data.theme = snap.theme
+  // `!== undefined`, not truthiness (like `theme` above) — `false` is a real,
+  // meaningful opt-out here and must not be silently omitted from the backup.
+  if (snap.trackHasanah !== undefined) data.trackHasanah = snap.trackHasanah
+  if (snap.trackReadingTime !== undefined) data.trackReadingTime = snap.trackReadingTime
+  if (snap.trackListeningTime !== undefined) data.trackListeningTime = snap.trackListeningTime
   return { app: EXPORT_APP, version: EXPORT_VERSION, exported: exportedAt, data }
 }
 
@@ -188,6 +202,11 @@ function sanitizeSnapshot(data: Record<string, unknown>): ExportSnapshot {
   if (typeof data.theme === 'string' && THEMES.includes(data.theme as ThemeName)) {
     snap.theme = data.theme as ThemeName
   }
+  // Booleans: `typeof === 'boolean'`, the direct analog of the `theme` check
+  // above — never truthiness, or an imported `false` would be dropped.
+  if (typeof data.trackHasanah === 'boolean') snap.trackHasanah = data.trackHasanah
+  if (typeof data.trackReadingTime === 'boolean') snap.trackReadingTime = data.trackReadingTime
+  if (typeof data.trackListeningTime === 'boolean') snap.trackListeningTime = data.trackListeningTime
   return snap
 }
 
@@ -197,7 +216,20 @@ function sanitizeSnapshot(data: Record<string, unknown>): ExportSnapshot {
 
 /** Gather the whole local profile into a versioned export envelope. */
 export async function exportUserData(): Promise<MurajahExport> {
-  const [progress, mistakes, plan, dayLog, journal, quiz, audio, reader, theme] = await Promise.all([
+  const [
+    progress,
+    mistakes,
+    plan,
+    dayLog,
+    journal,
+    quiz,
+    audio,
+    reader,
+    theme,
+    trackHasanah,
+    trackReadingTime,
+    trackListeningTime,
+  ] = await Promise.all([
     loadProgress(),
     loadMistakes(),
     loadPlan(),
@@ -207,6 +239,9 @@ export async function exportUserData(): Promise<MurajahExport> {
     loadAudioPrefs(),
     getPref<ReaderPrefs>(READER_PREF_KEY),
     getPref<ThemeName>(THEME_PREF_KEY),
+    getPref<boolean>(TRACK_HASANAH_KEY),
+    getPref<boolean>(TRACK_READING_TIME_KEY),
+    getPref<boolean>(TRACK_LISTENING_TIME_KEY),
   ])
   return buildExport({
     progress: serializeProgress(progress),
@@ -218,6 +253,9 @@ export async function exportUserData(): Promise<MurajahExport> {
     audio,
     reader,
     theme,
+    trackHasanah,
+    trackReadingTime,
+    trackListeningTime,
   })
 }
 
@@ -266,5 +304,14 @@ export async function importUserData(snap: ExportSnapshot): Promise<void> {
     )
   }
   if (snap.theme) jobs.push(setPref(THEME_PREF_KEY, snap.theme))
+  // `!== undefined`, not truthiness — an imported `false` must actually take
+  // effect, not be silently skipped in favour of whatever is already saved.
+  if (snap.trackHasanah !== undefined) jobs.push(setPref(TRACK_HASANAH_KEY, snap.trackHasanah))
+  if (snap.trackReadingTime !== undefined) {
+    jobs.push(setPref(TRACK_READING_TIME_KEY, snap.trackReadingTime))
+  }
+  if (snap.trackListeningTime !== undefined) {
+    jobs.push(setPref(TRACK_LISTENING_TIME_KEY, snap.trackListeningTime))
+  }
   await Promise.all(jobs)
 }

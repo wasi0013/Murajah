@@ -72,6 +72,12 @@ const fullSnapshot: ExportSnapshot = {
   audio: { grain: 'verse', verseReciterId: 'alafasy', speed: 1.25, autoScroll: true },
   reader: { layout: 'indopak', tajweed: false, textSizeStep: 4, page: 50 },
   theme: 'dark',
+  // At least one `false` here on purpose — these are meaningful opt-outs, not
+  // absent values, and the round-trip below must preserve `false` exactly
+  // (a truthiness check anywhere on this path would silently drop it).
+  trackHasanah: false,
+  trackReadingTime: true,
+  trackListeningTime: false,
 }
 
 /** Simulate the file trip so nothing relies on shared object identity. */
@@ -109,13 +115,31 @@ describe('native backup export/import', () => {
       app: EXPORT_APP,
       version: EXPORT_VERSION,
       exported: '2026-07-18T00:00:00.000Z',
-      // progress must be an object; an array is rejected. theme must be a known name.
-      data: { progress: [1, 2, 3], mistakes: { '3': [1] }, theme: 'neon' },
+      // progress must be an object; an array is rejected. theme must be a known
+      // name. trackHasanah must be a boolean, not a string.
+      data: { progress: [1, 2, 3], mistakes: { '3': [1] }, theme: 'neon', trackHasanah: 'off' },
     }
     const snap = readImport(env)
     expect(snap.progress).toBeUndefined()
     expect(snap.theme).toBeUndefined()
+    expect(snap.trackHasanah).toBeUndefined()
     expect(snap.mistakes).toEqual({ '3': [1] })
+  })
+
+  // Regression guard for a specific bug class: gating a boolean pref's
+  // export/import on truthiness (like `if (snap.theme)`) instead of
+  // `!== undefined` would silently drop a `false` toggle from the backup, or
+  // skip applying it on import — the toggle would appear to "not stick".
+  it('preserves a false progress-tracking toggle through export, and applies it on import', () => {
+    const env = buildExport({ trackHasanah: false, trackReadingTime: false, trackListeningTime: false })
+    expect(env.data.trackHasanah).toBe(false)
+    expect(env.data.trackReadingTime).toBe(false)
+    expect(env.data.trackListeningTime).toBe(false)
+
+    const snap = readImport(roundTrip(env))
+    expect(snap.trackHasanah).toBe(false)
+    expect(snap.trackReadingTime).toBe(false)
+    expect(snap.trackListeningTime).toBe(false)
   })
 })
 

@@ -72,3 +72,26 @@ test('decorative graphics are hidden from assistive tech; the gauge and bars are
   await expect(page.locator('.stat--strength .gauge')).toHaveAttribute('role', 'img')
   await expect(page.locator('.stat--strength .gauge')).toHaveAccessibleName(/.+/)
 })
+
+test('disabling a progress-tracking toggle hides its card here, and only that card', async ({
+  page,
+}) => {
+  // Settings toggles (settings.spec.ts) gate accrual in the store and, per
+  // this test, also hide the corresponding card — immediate visual proof the
+  // setting took effect, rather than a frozen number that just stops moving.
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('switch', { name: 'Total Hasanah' }).click()
+  await page.waitForTimeout(300) // let the fire-and-forget pref write commit
+
+  await page.goto('/progress')
+  await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({ timeout: 10_000 })
+
+  await expect(page.locator('.stat--hasanah')).toHaveCount(0)
+  // Every other card — including the two never gated by this feature — stays put.
+  await expect(page.locator('.stat--pages')).toBeVisible()
+  await expect(page.locator('.stat--reading')).toBeVisible()
+  await expect(page.locator('.stat--listening')).toBeVisible()
+  await expect(page.locator('.stat--mistakes')).toBeVisible()
+  await expect(page.locator('.stat--strength')).toBeVisible()
+})

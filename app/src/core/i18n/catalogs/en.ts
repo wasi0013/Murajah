@@ -74,6 +74,13 @@ const en: Messages = {
       label: 'App language',
       hint: 'Changes the interface language. Quran text is unaffected.',
     },
+    tracking: {
+      title: 'Progress tracking',
+      hasanah: 'Total Hasanah',
+      readingTime: 'Reading time',
+      listeningTime: 'Listening time',
+      hint: 'On by default. Turning any of these off stops calculating and recording that number entirely — it is not just hidden from view.',
+    },
     data: {
       title: 'Your data',
       lead: 'Everything is stored on this device. Export a backup to move to another device or keep a safety copy; importing replaces the data the file contains.',
@@ -299,7 +306,6 @@ const en: Messages = {
       listeningTime: 'Listening time',
       mistakePages: 'Pages with mistakes',
       avgStrength: 'Avg. strength',
-      avgStrengthScale: 'out of 100',
       avgStrengthAria: 'Average memorization strength {value} out of 100, {band}',
     },
     bulk: {

@@ -4,12 +4,14 @@ import { BookOpen, Clock, Headphones, FileWarning, Target } from 'lucide-vue-nex
 import type { MemorizationStats } from '@/core/memorization/progressView'
 import { formatReadingTime } from '@/core/memorization/progressView'
 import { bandForStrength, bandByRank } from '@/core/memorization/strengthBands'
-import { bandColorVars, bandColor } from '@/core/memorization/bandColors'
+import { bandColor } from '@/core/memorization/bandColors'
 import { semicircleGaugeDash, semicircleLength } from '@/core/memorization/gauge'
+import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 
 const { t } = useI18n()
+const settings = useSettingsStore()
 
 const props = defineProps<{ stats: MemorizationStats }>()
 
@@ -40,11 +42,10 @@ const MISTAKE_BAR_HEIGHTS = [14, 22, 30, 38, 44]
 // parallel "Excellent/Good/Fair" vocabulary — one set of level names for the
 // whole Progress view. `averageStrength` is a raw, unbounded per-page
 // counter average (see MemorizationStats's doc comment) so the gauge visual
-// clamps at 100 ("out of 100") while the printed number stays the honest,
-// uncapped value.
+// clamps at 100 ("out of 100" — stated in its aria-label) while the printed
+// number stays the honest, uncapped value.
 const GAUGE_RADIUS = 52
 const gaugeRank = computed(() => bandForStrength(props.stats.averageStrength).rank)
-const gaugeVars = computed(() => bandColorVars(gaugeRank.value))
 const gaugeAccent = computed(() => bandColor(gaugeRank.value))
 const gaugeLabel = computed(() => t(`strengthBand.${bandByRank(gaugeRank.value).labelKey}`))
 const gaugeTrackLength = semicircleLength(GAUGE_RADIUS)
@@ -53,7 +54,21 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
 
 <template>
   <section class="stats" :aria-label="t('progress.summaryAria')">
-    <div class="row hero-row">
+    <!-- One grid, fixed at 2 columns, for every card — Pages included.
+         Hasanah/Reading/Listening are individually hideable (settings.trackX),
+         so the visible count ranges 3-6; Mistakes and Avg. strength are
+         always shown. Pages is always first, and `.stat--pages:nth-last-
+         child(odd)` below is a standard CSS parity trick: being both
+         first-child and nth-last-child(odd) is only possible when the total
+         sibling count is odd, so this fires exactly when the count is odd —
+         no JS, no counting props. When it fires, Pages spans the full row
+         alone; the remainder is then even and tiles in perfect pairs below
+         it. When it doesn't (an even count), Pages takes one column and
+         pairs with whatever comes next, and the remainder (even minus the
+         pair Pages joined) is again even. Either way, no row is ever left
+         with a single orphaned card and empty space beside it, for any
+         combination of toggles. -->
+    <div class="row stats-grid">
       <div class="stat stat--pages">
         <div class="stat-head">
           <span class="badge badge-accent"><Icon :icon="BookOpen" :size="18" /></span>
@@ -73,7 +88,7 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
         <span class="stat-l">{{ t('progress.stats.pagesPercent', { percent: stats.percent }) }}</span>
       </div>
 
-      <div class="stat stat--hasanah">
+      <div v-if="settings.trackHasanah" class="stat stat--hasanah">
         <!-- A soft mosque-skyline silhouette (three arches + a finial) —
              pure decoration, echoes the reward's spiritual context without
              competing with the number. Plain arcs, no freehand curves. -->
@@ -83,41 +98,37 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
           <path d="M118 88 L118 55 A11 11 0 0 1 140 55 L140 88" />
           <circle cx="80" cy="24" r="3" />
         </svg>
-        <div class="stat-head">
-          <span class="badge badge-amber">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
-              <!-- The Islamic 8-point star (Rub el Hizb/khatam) — two squares
-                   overlaid 45° apart, the classic construction seen across
-                   Quranic manuscripts and tilework — with a small rosette
-                   centre. Plain primitives, inherits currentColor like every
-                   lucide icon elsewhere in this app. -->
-              <rect x="5" y="5" width="14" height="14" rx="1" />
-              <rect x="5" y="5" width="14" height="14" rx="1" transform="rotate(45 12 12)" />
-              <circle cx="12" cy="12" r="2.6" />
-            </svg>
-          </span>
-          <span class="stat-label">{{ t('progress.stats.hasanah') }}</span>
-        </div>
+        <span class="badge badge-amber">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+            <!-- The Islamic 8-point star (Rub el Hizb/khatam) — two squares
+                 overlaid 45° apart, the classic construction seen across
+                 Quranic manuscripts and tilework — with a small rosette
+                 centre. Plain primitives, inherits currentColor like every
+                 lucide icon elsewhere in this app. -->
+            <rect x="5" y="5" width="14" height="14" rx="1" />
+            <rect x="5" y="5" width="14" height="14" rx="1" transform="rotate(45 12 12)" />
+            <circle cx="12" cy="12" r="2.6" />
+          </svg>
+        </span>
         <span class="stat-n stat-n--amber">{{ hasanahFmt }}</span>
+        <span class="stat-l">{{ t('progress.stats.hasanah') }}</span>
       </div>
-    </div>
 
-    <div class="row mid-row">
-      <div class="stat stat--reading">
+      <div v-if="settings.trackReadingTime" class="stat stat--reading">
         <span class="badge badge-teal"><Icon :icon="Clock" :size="18" /></span>
         <span class="stat-n">{{ readingTimeFmt }}</span>
         <span class="stat-l">{{ t('progress.stats.readingTime') }}</span>
         <!-- Symbolic growth curve — fixed shape, not plotted from data (see
              doc comment above). Sits in normal flow so it can never be
              clipped by the card's rounded corners at any width. -->
-        <svg class="decor decor-line" viewBox="0 0 160 44" preserveAspectRatio="none" aria-hidden="true">
+        <svg class="decor decor-line" viewBox="0 0 160 44" aria-hidden="true">
           <path class="decor-fill" d="M0,36 C18,38 32,22 50,25 C68,28 80,10 100,13 C118,16 136,5 156,6 L160,6 L160,44 L0,44 Z" />
           <path class="decor-line-stroke" d="M0,36 C18,38 32,22 50,25 C68,28 80,10 100,13 C118,16 136,5 156,6" />
           <circle class="decor-dot" cx="156" cy="6" r="3" />
         </svg>
       </div>
 
-      <div class="stat stat--listening">
+      <div v-if="settings.trackListeningTime" class="stat stat--listening">
         <span class="badge badge-blue"><Icon :icon="Headphones" :size="18" /></span>
         <span class="stat-n">{{ listeningTimeFmt }}</span>
         <span class="stat-l">{{ t('progress.stats.listeningTime') }}</span>
@@ -157,38 +168,45 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
           />
         </svg>
       </div>
-    </div>
 
-    <div class="row strength-row">
       <div class="stat stat--strength">
-        <div class="stat-head">
-          <span class="badge" :style="{ background: `color-mix(in oklab, ${gaugeAccent} 16%, var(--color-surface))`, color: gaugeAccent }">
-            <Icon :icon="Target" :size="18" />
-          </span>
-          <span class="stat-label">{{ t('progress.stats.avgStrength') }}</span>
-          <span class="pill" :style="{ background: gaugeVars.bg, color: gaugeVars.text }">{{ gaugeLabel }}</span>
-        </div>
-        <div class="gauge-row">
-          <span class="stat-n">{{ stats.averageStrength }}</span>
-          <svg
-            class="gauge"
-            viewBox="0 0 120 66"
-            role="img"
-            :aria-label="t('progress.stats.avgStrengthAria', { value: stats.averageStrength, band: gaugeLabel })"
-          >
-            <path class="gauge-track" d="M8 60 A52 52 0 0 1 112 60" />
-            <path
-              class="gauge-fill"
-              d="M8 60 A52 52 0 0 1 112 60"
-              :style="{
-                stroke: gaugeAccent,
-                strokeDasharray: gaugeTrackLength,
-                strokeDashoffset: gaugeDash.dashoffset,
-              }"
-            />
-          </svg>
-        </div>
-        <span class="stat-l gauge-caption">{{ t('progress.stats.avgStrengthScale') }}</span>
+        <span class="badge" :style="{ background: `color-mix(in oklab, ${gaugeAccent} 16%, var(--color-surface))`, color: gaugeAccent }">
+          <Icon :icon="Target" :size="18" />
+        </span>
+        <!-- The number stays the default accent colour, not gaugeAccent — a
+             band like Jadid (amber) or Da'if (red) is too low-contrast as
+             text on the plain card surface in the light/sepia themes (the
+             old pill paired that colour with its OWN matching background,
+             e.g. dark ink on amber; a bare surface behind it isn't that
+             pair). The band still reads via the label text, the badge/gauge
+             colour, and the gauge's full aria-label. -->
+        <span class="stat-n">{{ stats.averageStrength }}</span>
+        <span class="stat-l">{{ t('progress.stats.avgStrength') }} · {{ gaugeLabel }}</span>
+        <!-- Real data (unlike the three decorative graphics above). Unlike
+             those, a semicircle can't be stretched to the row's flat aspect
+             ratio without reading as visibly egg-shaped, so this one keeps
+             its own natural proportions (`.gauge`'s aspect-ratio below) and
+             sits at a fixed height matching the row instead of full card
+             width. The fill fraction (stroke-dashoffset) is unaffected
+             either way — it's exact SVG-user-unit arc length, not tied to
+             the rendered size. -->
+        <svg
+          class="gauge decor"
+          viewBox="0 0 120 66"
+          role="img"
+          :aria-label="t('progress.stats.avgStrengthAria', { value: stats.averageStrength, band: gaugeLabel })"
+        >
+          <path class="gauge-track" d="M8 60 A52 52 0 0 1 112 60" />
+          <path
+            class="gauge-fill"
+            d="M8 60 A52 52 0 0 1 112 60"
+            :style="{
+              stroke: gaugeAccent,
+              strokeDasharray: gaugeTrackLength,
+              strokeDashoffset: gaugeDash.dashoffset,
+            }"
+          />
+        </svg>
       </div>
     </div>
   </section>
@@ -207,22 +225,15 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
   display: grid;
   gap: 0.75rem;
 }
-.hero-row {
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+.stats-grid {
+  /* Fixed at 2 columns (not auto-fit) — the whole point is that the column
+     count stays constant so the .stat--pages parity rule below can reason
+     about it. See the template comment above for how that guarantees a
+     fully tiled grid for any visible card count. */
+  grid-template-columns: repeat(2, 1fr);
 }
-.mid-row {
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-}
-/* The strength card has far less content per pixel than the others (a badge
-   row + one number + a gauge) — stretching it across the full 46rem row
-   like the hero/mid cards left a wide dead gap between the number and the
-   gauge. Cap it and let it sit at the row's start (both directions) instead
-   of stretching to fill. */
-.strength-row {
-  display: block;
-}
-.stat--strength {
-  max-width: 22rem;
+.stat--pages:nth-last-child(odd) {
+  grid-column: 1 / -1;
 }
 .stat {
   position: relative;
@@ -234,6 +245,11 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  /* Lets .stat-n--amber's font-size query the card's own width below —
+     hasanah's card is one of two equal grid columns now (not a full-width
+     row of its own), and hasanah has no natural upper bound the way the
+     others' numbers do. */
+  container-type: inline-size;
 }
 .stat-head {
   display: flex;
@@ -269,6 +285,13 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
 }
 .stat-n--amber {
   color: var(--hl-amber);
+  /* Hasanah is the one number here with no natural ceiling (reading/listening
+     are minutes, strength is 0-100, mistakes is a page count) — it keeps
+     growing for as long as the app is used, so a fixed size that fits today's
+     test data would eventually clip. Shrinks with the card's own width
+     instead of the viewport's, since this card's width also varies with how
+     many sibling cards/toggles are showing. */
+  font-size: clamp(1rem, 13cqi, var(--text-2xl));
 }
 .stat-of {
   font-size: var(--text-base);
@@ -292,7 +315,7 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
   border-radius: inherit;
 }
 
-/* Decorative graphics for the mid-row cards — fixed, symbolic shapes (see
+/* Decorative graphics for the non-Pages cards — fixed, symbolic shapes (see
    the doc comment in <script setup>), never data. Sits in normal flow
    (rather than absolutely positioned over a negative offset) and is pushed
    to the card's bottom edge with `margin-top: auto`, so at any card width —
@@ -319,6 +342,13 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
 .decor-dot {
   fill: var(--hl-teal);
 }
+/* Overrides .decor's fixed height: forcing this viewBox's own aspect ratio
+   onto the box (instead of stretching to a fixed 2.5rem) keeps the curve —
+   and, critically, the perfectly round end-dot — from reading as skewed. */
+.decor-line {
+  height: auto;
+  aspect-ratio: 160 / 44;
+}
 .decor-wave rect {
   fill: var(--hl-blue);
   opacity: 0.45;
@@ -344,16 +374,17 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
   stroke: none;
 }
 
-.gauge-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
+/* Same fixed height as the other cards' .decor graphics, pushed to the
+   card's bottom edge, but NOT stretched to the full card width (a semicircle
+   distorts badly under non-uniform scaling — see the template comment).
+   `aspect-ratio` overrides .decor's `width: 100%` with its own true
+   proportions instead, so it renders as a small, correctly-round dial
+   left-aligned under the label. */
 .gauge {
-  width: 6.5rem;
-  height: auto;
-  flex: 0 0 auto;
-  margin-inline-start: auto;
+  width: auto;
+  height: 2.5rem;
+  aspect-ratio: 120 / 66;
+  align-self: flex-start;
 }
 .gauge-track {
   fill: none;
@@ -366,17 +397,6 @@ const gaugeDash = computed(() => semicircleGaugeDash(props.stats.averageStrength
   stroke-width: 8;
   stroke-linecap: round;
   transition: stroke-dashoffset var(--duration-slow) var(--ease-standard);
-}
-.gauge-caption {
-  text-align: end;
-}
-.pill {
-  margin-inline-start: auto;
-  padding: 0.15rem 0.6rem;
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
