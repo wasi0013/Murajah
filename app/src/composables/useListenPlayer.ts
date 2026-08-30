@@ -15,6 +15,7 @@ import { buildScopePlaylist, type PlaybackScope } from '@/core/audio/scope'
 import { listenReciter, verseReciter } from '@/core/audio/reciters'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
+import { reportAudioStartError } from '@/composables/audioPlaybackError'
 
 export function useListenPlayer() {
   const store = useAudioStore()
@@ -34,6 +35,12 @@ export function useListenPlayer() {
       const page = listenReciter(store.pageReciterId)
       const verse = verseReciter(page.id)
       engine.setPlaylistAndPlay(buildScopePlaylist(scope, page, verse, qpcNav))
+    } catch (error) {
+      // Caller (ListenView) fires this with `void player.play(...)` —
+      // fire-and-forget. See `reportAudioStartError`'s doc comment for why
+      // this catch exists at all (most commonly: offline, tapping Play
+      // otherwise did nothing and looked like a crash).
+      reportAudioStartError(error)
     } finally {
       store.loading = false
     }
