@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { IDBFactory } from 'fake-indexeddb'
 import { loadAudioPrefs, saveAudioPrefs, _resetUserDataDb } from '@/core/storage/userData'
@@ -119,5 +120,30 @@ describe('useAudioPersistence', () => {
     const stored = await loadAudioPrefs()
     expect(stored).not.toHaveProperty('index')
     expect(stored).not.toHaveProperty('currentTime')
+  })
+
+  it('flushes a still-debounced change on dispose instead of dropping it (BUG: closing the mini-player right after toggling loop-list silently discarded it)', async () => {
+    const store = useAudioStore()
+    const p = useAudioPersistence(store)
+    store.loopPlaylist = true
+    await nextTick() // let the watcher's (pre-flush, not synchronous) callback run
+    p.dispose() // well within the 300ms debounce — nothing has saved yet
+    // Give the fire-and-forget flush's IndexedDB round-trip a tick to land.
+    await tick(20)
+    expect(await loadAudioPrefs()).toMatchObject({ loopPlaylist: true })
+  })
+
+  it('does not re-apply storage on a second hydrate of the same store (BUG: reopening the player on another view reverted a just-made change back to the last saved value)', async () => {
+    await saveAudioPrefs({ loopPlaylist: false })
+    const store = useAudioStore()
+    const p = useAudioPersistence(store)
+    await p.hydrate() // first mount, e.g. Today — loads the stored `false`
+    expect(store.loopPlaylist).toBe(false)
+
+    store.loopPlaylist = true // live change, not saved yet (debounce pending)
+    await useAudioPersistence(store).hydrate() // second mount of a different view, same store
+
+    expect(store.loopPlaylist).toBe(true) // must not have been reverted to the stale stored value
+    p.dispose()
   })
 })

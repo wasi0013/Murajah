@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import AudioMiniPlayer from '@/features/audio/AudioMiniPlayer.vue'
 import ReciterPicker from '@/features/audio/ReciterPicker.vue'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { useAudioEngine } from '@/composables/useAudioEngine'
+import { useAudioPersistence } from '@/composables/useAudioPersistence'
 import { useAudioStore } from '@/stores/audio'
 import { useTodayPlayer, type TodaySource } from '@/composables/useTodayPlayer'
 import type { AbsoluteVerseRef } from '@/core/quran/habitVerses'
@@ -33,6 +34,15 @@ const { t } = useI18n()
 const store = useAudioStore()
 const engine = useAudioEngine()
 const player = useTodayPlayer()
+// Today is the one player-bearing view that didn't hydrate/persist the prefs
+// slice (grain, reciters, speed, repeat/spaced, autoplay-next, loop-playlist,
+// auto-scroll) — toggling them here had no lasting effect, and worse, opening
+// the reader/mushaf player afterwards would hydrate stale values right back
+// over the change. Same lifecycle as `AudioHost`/`ListenView`.
+const prefs = useAudioPersistence(store)
+
+onMounted(() => void prefs.hydrate())
+onBeforeUnmount(() => prefs.dispose())
 
 const pickerOpen = ref(false)
 // The v-model-bound string the SegmentedControl actually reads/writes ('' when

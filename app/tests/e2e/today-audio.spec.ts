@@ -117,6 +117,31 @@ test('a page-grain list tab hides the (non-functional) repeat/spaced-drill contr
   await expect(page.getByText('Repetition')).toHaveCount(0)
 })
 
+test('toggling a transport setting (loop list) on Today survives reload', async ({ page }) => {
+  // BUG regression: Today never hydrated/persisted the audio prefs slice, so
+  // toggles here (loop-list, autoplay-next, auto-scroll, reciter, speed) were
+  // silently lost on reload — and reopening the player elsewhere (Reader/Mushaf)
+  // would even revert a same-session change back to whatever was last saved.
+  await open(page, { progress: PROGRESS, plan: plan() })
+  await page.getByRole('radio', { name: 'Revision' }).click()
+  await expect(page.locator('.player')).toBeVisible()
+  await page.getByRole('button', { name: 'More controls' }).click()
+
+  const loopList = page.getByLabel('Loop list')
+  await expect(loopList).not.toBeChecked()
+  await loopList.check()
+  await page.waitForTimeout(500) // past the 300ms debounced write
+
+  const stored = await readKey<{ loopPlaylist?: boolean }>(page, 'audio')
+  expect(stored?.loopPlaylist).toBe(true)
+
+  await page.reload()
+  await page.getByRole('radio', { name: 'Revision' }).click()
+  await expect(page.locator('.player')).toBeVisible()
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByLabel('Loop list')).toBeChecked()
+})
+
 test('enabling the habit adds a Daily verses tab starting at 1:1', async ({ page }) => {
   await open(page, { progress: PROGRESS, plan: plan({ habits: ['recite-ayahs'] }) })
   const versesTab = page.getByRole('radio', { name: 'Daily verses' })

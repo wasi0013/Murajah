@@ -135,6 +135,26 @@ test('the reader tags words with their verse for highlight sync', async ({ page 
   await expect(firstWord).toHaveAttribute('data-verse', /^\d+:\d+$/)
 })
 
+test('a toggle changed right before closing the reader player still persists (BUG: dispose used to drop the debounced write)', async ({ page }) => {
+  // Unlike Today/Listen, the reader/mushaf's AudioHost — and its persistence
+  // instance — is mounted only while `audio.open` is true (v-if in ReaderView/
+  // MushafView). Closing the player unmounts it immediately, well inside the
+  // 300ms debounce, so this is the one path that actually exercises dispose()'s
+  // flush rather than the normal debounced save.
+  await openReaderPlayer(page)
+  await page.getByRole('button', { name: 'More controls' }).click()
+  const loopList = page.getByLabel('Loop list')
+  await expect(loopList).not.toBeChecked()
+  await loopList.check()
+  await page.getByRole('button', { name: 'Close player' }).click() // no wait — inside the debounce
+  await expect(page.locator('.player')).toHaveCount(0)
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Recitation audio' }).click()
+  await page.getByRole('button', { name: 'More controls' }).click()
+  await expect(page.getByLabel('Loop list')).toBeChecked()
+})
+
 test('the mushaf view opens the player over its visible spread', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/mushaf/3')
