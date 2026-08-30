@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight, Headphones, Mic, Palette, Search, SlidersHorizontal } from 'lucide-vue-next'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
@@ -12,6 +12,7 @@ import { useReaderRouteSync, type FriendlyResolution } from '@/composables/useRe
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
+import { lazyComponent } from '@/composables/lazyComponent'
 import { useMadaniPage } from '@/composables/useMadaniPage'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
@@ -81,7 +82,20 @@ useReadingReward(madaniPage, getPageHasanah)
 
 // Recitation audio — lazy, so its code stays out of the reader's initial bundle.
 const audio = useAudioStore()
-const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
+// onFail closes the mini-player trigger back to its resting state — without
+// it, a failed load (offline) left `audio.open` stuck true with nothing
+// rendered, so the headphone icon looked pressed/active but did nothing on
+// a later tap too (see lazyComponent's doc comment). Guarded on `!isPlaying`:
+// `audio.open` is a global flag Listen/Today's own (non-lazy) mini-player
+// reads too — if a session is already playing from one of those, this
+// Reader-local chunk failing must not reach out and close a working player
+// elsewhere just because Reader's own copy of it failed to load.
+const AudioHost = lazyComponent(
+  () => import('@/features/audio/AudioHost.vue'),
+  () => {
+    if (!audio.isPlaying) audio.open = false
+  },
+)
 const audioPages = computed(() => [reader.page])
 // The recited ayah (verse grain), or a deep-linked ayah (/2/255) — highlighted +
 // scrolled to in the tafsir surface.
@@ -98,7 +112,10 @@ const tafsirAutoScroll = computed(() => (audio.activeVerse ? audio.autoScroll : 
 // off the page while it's being recited into the mic.
 const recordOpen = ref(false)
 const recordAutoStart = ref(false)
-const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
+const RecordingPanel = lazyComponent(
+  () => import('@/features/audio/RecordingPanel.vue'),
+  () => (recordOpen.value = false),
+)
 const recorder = useRecorderStore()
 
 // Today's quick-test habit sends a random memorized page here (recorder.pendingPage)

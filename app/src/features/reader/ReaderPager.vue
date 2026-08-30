@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
@@ -8,14 +8,12 @@ import { useMistakes } from '@/composables/useMistakes'
 import { useAudioStore } from '@/stores/audio'
 import { getDataClient } from '@/core/data'
 import { mushafLink } from '@/core/navigation/readerLinks'
+import { lazyComponent } from '@/composables/lazyComponent'
 import type { SurahNames } from '@/core/data/types'
 import ReadingSurface from './ReadingSurface.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import Icon from '@/components/Icon.vue'
 import { useI18n } from '@/core/i18n'
-
-// Code-split: the popup + its data stay out of the initial reader bundle.
-const MorphologyPopup = defineAsyncComponent(() => import('./MorphologyPopup.vue'))
 
 /**
  * Reader host: renders the current page as a single reading surface. Paging is
@@ -51,6 +49,12 @@ const {
   openFor: openMorphology,
   close: closeMorphology,
 } = useMorphology()
+
+// Code-split: the popup + its data stay out of the initial reader bundle.
+// onFail closes it back to resting state — without it, a failed load
+// (offline) left `morphOpen` stuck true with nothing rendered (see
+// lazyComponent's doc comment).
+const MorphologyPopup = lazyComponent(() => import('./MorphologyPopup.vue'), () => closeMorphology())
 
 // The active word gets the morphology-active highlight on its surface.
 const wordStates = computed<Record<string, 'morphology'>>(() =>
