@@ -11,6 +11,7 @@ Design and implementation planning docs. Two tiers:
 |---|---|
 | [`partial-page-tracking.md`](./partial-page-tracking.md) | Sub-page memorization marking design. Built and shipped (see `../tasks/todo.md`); kept active because its "Key Assumptions to Validate" (line-fill legibility, the two-tap gesture, marking directly on the mushaf) are genuinely unresolved pending real usage. |
 | [`phase-12-journal.md`](./phase-12-journal.md) | Practice Journal design + task log. Built and merged, marked "not yet reviewed or shipped to production." |
+| [`performance-audit-2026-08.md`](./performance-audit-2026-08.md) | Fresh-eyes perf audit (SW outward) triggered by user reports of sluggishness. Two confirmed, measured root causes (progress-store per-second full IndexedDB writes that also queue every other feature's storage behind them; `AssetCache`'s full-table `getAll()` enumeration on every write) plus a Progress-tab memoization cleanup. Bundle size checked and ruled out. Nothing fixed yet — task list only. |
 
 ## Archive
 
