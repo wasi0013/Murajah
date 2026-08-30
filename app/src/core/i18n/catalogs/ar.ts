@@ -10,7 +10,9 @@ const ar: Messages = {
     language: 'اللغة',
     loading: 'جارٍ التحميل…',
     backToReader: 'العودة إلى القارئ',
+    loadError: 'تعذّر التحميل. حاول مرة أخرى.',
     navError: 'تعذّر فتح تلك الصفحة. حاول مرة أخرى.',
+    networkError: 'لا يوجد اتصال بالإنترنت. تحقّق من الواي فاي أو بيانات الجوال ثم حاول مرة أخرى.',
     notStarted: 'لم يبدأ',
     page: 'صفحة {n}',
     pages: 'الصفحات {start}–{end}',
@@ -546,6 +548,7 @@ const ar: Messages = {
     micDenied: 'تم رفض الوصول إلى الميكروفون.',
     deleteRecording: 'حذف التسجيل',
     noRecordings: 'لا توجد تسجيلات بعد — سجّل هذه الصفحة لتسمع نفسك.',
+    startError: 'تعذّر بدء التشغيل. حاول مرة أخرى.',
   },
   palette: {
     title: 'الانتقال السريع',
