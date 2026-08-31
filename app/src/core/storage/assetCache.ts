@@ -47,10 +47,47 @@ export interface AssetCacheOptions {
   name?: string
 }
 
+/**
+ * How many `put()`s an instance goes between forced full-table resyncs of
+ * `totalBytes` — see that field's doc comment. Chosen so the existing
+ * "no full-table read while under the byte cap" contract still holds for any
+ * realistic single browsing session's worth of writes (well above what one
+ * mushaf reading session or one data-worker session touches), while still
+ * bounding cross-instance drift to a modest, self-correcting amount rather
+ * than letting it run unchecked for an entire page-load's lifetime.
+ */
+const RESYNC_EVERY_N_PUTS = 50
+
 export class AssetCache {
   private readonly db: IDBDatabase
   private readonly maxBytes: number
   private lastTs = 0
+  /**
+   * Running total of `bytes` across every entry currently in `STORE`, kept
+   * in memory for this instance's lifetime (seeded once in `open()`, then
+   * maintained incrementally by `put`/`delete`/`evict`, and periodically
+   * resynced — see `RESYNC_EVERY_N_PUTS`). Exists so `put()` can decide
+   * whether eviction is even necessary — see its doc comment — without
+   * re-`getAll()`-ing the whole store, potentially every cached Blob's
+   * metadata, on every single write.
+   *
+   * Not persisted across page loads (a fresh instance recomputes it once in
+   * `open()`), and — important caveat — not shared *across* instances either:
+   * two `AssetCache`s open on the same underlying IndexedDB store at once
+   * (e.g. this app open in two browser tabs, each writing to the same
+   * `murajah-images` store) each only see their own writes, so each one's
+   * belief about the total can understate the true on-disk size by however
+   * much the other instance has written. The periodic full resync below
+   * bounds how far that can drift before self-correcting, rather than
+   * leaving it unbounded for an instance's entire lifetime; the old
+   * `getAll()`-per-put implementation had no such gap (it recomputed the
+   * true total from disk before every single decision) but paid for that
+   * with the full-table read this class exists to avoid. See
+   * plans/performance-audit-2026-08.md P0-2 and its code-review follow-up.
+   */
+  private totalBytes = 0
+  /** Puts since the last full resync of `totalBytes` — see `RESYNC_EVERY_N_PUTS`. */
+  private putsSinceResync = 0
 
   private constructor(db: IDBDatabase, maxBytes: number) {
     this.db = db
@@ -74,7 +111,20 @@ export class AssetCache {
     })
     const cache = new AssetCache(db, opts.maxBytes ?? 24 * 1024 * 1024)
     await cache.purgeIfVersionChanged(opts.version)
+    await cache.seedTotalBytes()
     return cache
+  }
+
+  /** Full scan to (re)seed `totalBytes` from the true on-disk state — see its
+   * doc comment. Called once from `open()`, after `purgeIfVersionChanged` (so
+   * a just-cleared store correctly seeds to 0 rather than recomputing over
+   * stale entries), and again periodically from `put()` per
+   * `RESYNC_EVERY_N_PUTS`. */
+  private async seedTotalBytes(): Promise<void> {
+    const tx = this.db.transaction(STORE, 'readonly')
+    const entries = await idbGetAll<Entry>(tx.objectStore(STORE))
+    await txDone(tx)
+    this.totalBytes = entries.reduce((sum, e) => sum + e.bytes, 0)
   }
 
   async get<T>(url: string): Promise<T | undefined> {
@@ -89,22 +139,55 @@ export class AssetCache {
     return entry?.data as T | undefined
   }
 
+  /**
+   * Write an entry and evict only if that pushes the running total over the
+   * cap. A single-key `get(url)` first (cheap — one record by primary key,
+   * not a table scan) finds any existing entry's byte size so an overwrite
+   * (e.g. a retried fetch for a URL already cached) adjusts `totalBytes` by
+   * the *delta*, never double-counts. Previously this called the full
+   * `getAll()`-based `evict()` unconditionally on every write — for the
+   * common case of a cache nowhere near its cap (e.g. the mushaf image
+   * cache: ~68MB of real data under a 96MB cap for most users), that was a
+   * full-table read of every cached entry's metadata on every single page
+   * fetch, on the main thread for images. Every `RESYNC_EVERY_N_PUTS` writes,
+   * `totalBytes` is also force-resynced from a true full scan — see that
+   * field's doc comment for why (bounding cross-instance drift), and
+   * `seedTotalBytes`'s doc comment for why this reuses the exact same scan.
+   * See plans/performance-audit-2026-08.md P0-2.
+   */
   async put(url: string, data: unknown, bytes: number): Promise<void> {
     const tx = this.db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put({ url, data, bytes, ts: this.nextTs() } satisfies Entry)
+    const store = tx.objectStore(STORE)
+    const existing = await idbGet<Entry>(store, url)
+    store.put({ url, data, bytes, ts: this.nextTs() } satisfies Entry)
     await txDone(tx)
-    await this.evict()
+    this.totalBytes += bytes - (existing?.bytes ?? 0)
+    this.putsSinceResync += 1
+    if (this.putsSinceResync >= RESYNC_EVERY_N_PUTS) {
+      this.putsSinceResync = 0
+      await this.seedTotalBytes()
+    }
+    if (this.totalBytes > this.maxBytes) await this.evict()
   }
 
   /** Drop a single entry — used to force a fresh fetch when a cached asset is
-   * bad (e.g. a truncated image the user asked to retry). */
+   * bad (e.g. a truncated image the user asked to retry). Also keeps
+   * `totalBytes` accurate so a later `put()` doesn't evict based on a stale
+   * (too-high) total. */
   async delete(url: string): Promise<void> {
     const tx = this.db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).delete(url)
+    const store = tx.objectStore(STORE)
+    const existing = await idbGet<Entry>(store, url)
+    store.delete(url)
     await txDone(tx)
+    if (existing) this.totalBytes = Math.max(0, this.totalBytes - existing.bytes)
   }
 
-  /** Evict least-recently-used entries until total bytes are under the cap. */
+  /** Evict least-recently-used entries until total bytes are under the cap.
+   * Only called from `put()` once `totalBytes` is actually over `maxBytes` —
+   * a full-table scan, same as `seedTotalBytes`'s periodic resync, but it
+   * now runs solely on the rare "cache is actually full" sweep instead of
+   * on every write. */
   private async evict(): Promise<void> {
     const tx = this.db.transaction(STORE, 'readwrite')
     const store = tx.objectStore(STORE)
@@ -119,6 +202,7 @@ export class AssetCache {
       }
     }
     await txDone(tx)
+    this.totalBytes = total
   }
 
   private async purgeIfVersionChanged(version: string): Promise<void> {
@@ -130,5 +214,11 @@ export class AssetCache {
       meta.put(version, 'version')
     }
     await txDone(tx)
+  }
+
+  /** Test hook: current running total, to assert `put`/`delete` keep it
+   * accurate without reaching into private state. */
+  _debugTotalBytes(): number {
+    return this.totalBytes
   }
 }

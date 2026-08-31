@@ -56,6 +56,22 @@ export function useMemorization(data: DataClient = getDataClient()) {
     )
   }
 
+  /**
+   * `cell()` above, memoized across all `TOTAL_PAGES` pages, keyed by page.
+   * `MemorizedGrid.vue`'s template used to call `cell(page)` fresh, up to 3x
+   * per cell (class/style/aria-label bindings), for all 604 cells — meaning
+   * every unrelated reactive change the render touched redid every page's
+   * band classification from scratch. `cell()` itself is kept as-is (still a
+   * legitimate pure per-page function; nothing here changes its behavior)
+   * — this just computes it once per relevant store change instead of once
+   * per template binding. See plans/performance-audit-2026-08.md P1.
+   */
+  const cells = computed<Map<number, PageCell>>(() => {
+    const map = new Map<number, PageCell>()
+    for (let page = 1; page <= TOTAL_PAGES; page++) map.set(page, cell(page))
+    return map
+  })
+
   /** Top-N weakest memorized pages (weakness = recency + revision + mistakes). */
   const weakestPages = computed<number[]>(() => {
     const pages = [...progress.memorized]
@@ -69,5 +85,5 @@ export function useMemorization(data: DataClient = getDataClient()) {
     return getWeakestPages(weakness, 10)
   })
 
-  return { progress, juzGroups, stats, cell, weakestPages }
+  return { progress, juzGroups, stats, cell, cells, weakestPages }
 }

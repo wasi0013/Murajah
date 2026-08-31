@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, ChevronLeft, ChevronRight, Headphones, Mic, Search, ZoomOut } from 'lucide-vue-next'
 import { useMushafStore } from '@/stores/mushaf'
@@ -13,6 +13,7 @@ import { useMushafQuickJump } from '@/composables/useMushafQuickJump'
 import { useMushafLocation } from '@/composables/useMushafLocation'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
+import { lazyComponent } from '@/composables/lazyComponent'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { keyToPageDelta } from '@/core/reader/keyboard'
 import Icon from '@/components/Icon.vue'
@@ -42,12 +43,28 @@ const nav = useMushafPage(store, router)
 // so audio sources against layout 'qpc'. In a 2-up spread `store.visible` is both
 // pages, so the player naturally covers the whole spread (the user's requirement).
 const audio = useAudioStore()
-const AudioHost = defineAsyncComponent(() => import('@/features/audio/AudioHost.vue'))
+// onFail closes the mini-player trigger back to its resting state — without
+// it, a failed load (offline) left `audio.open` stuck true with nothing
+// rendered, so the headphone icon looked pressed/active but did nothing on
+// a later tap too (see lazyComponent's doc comment). Guarded on `!isPlaying`:
+// `audio.open` is a global flag Listen/Today's own (non-lazy) mini-player
+// reads too — if a session is already playing from one of those, this
+// Mushaf-local chunk failing must not reach out and close a working player
+// elsewhere just because Mushaf's own copy of it failed to load.
+const AudioHost = lazyComponent(
+  () => import('@/features/audio/AudioHost.vue'),
+  () => {
+    if (!audio.isPlaying) audio.open = false
+  },
+)
 
 // Record-your-recitation (7.6), mirroring the text reader's mic control — the
 // page blurs while `recorder.active` so a recall test can't be read off the scan.
 const recordOpen = ref(false)
-const RecordingPanel = defineAsyncComponent(() => import('@/features/audio/RecordingPanel.vue'))
+const RecordingPanel = lazyComponent(
+  () => import('@/features/audio/RecordingPanel.vue'),
+  () => (recordOpen.value = false),
+)
 const recorder = useRecorderStore()
 
 const img = useMushafImages(store)

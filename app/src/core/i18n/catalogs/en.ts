@@ -12,7 +12,9 @@ const en: Messages = {
     language: 'Language',
     loading: 'Loading…',
     backToReader: 'Back to reader',
+    loadError: 'Couldn’t load that. Please try again.',
     navError: 'Couldn’t open that page. Please try again.',
+    networkError: 'No internet connection. Check your Wi-Fi or mobile data, then try again.',
     notStarted: 'Not started',
     page: 'Page {n}',
     pages: 'Pages {start}–{end}',
@@ -552,6 +554,7 @@ const en: Messages = {
     micDenied: 'Microphone access was denied.',
     deleteRecording: 'Delete recording',
     noRecordings: 'No recordings yet — record this page to hear yourself back.',
+    startError: 'Couldn’t start playback. Please try again.',
   },
   palette: {
     title: 'Quick jump',

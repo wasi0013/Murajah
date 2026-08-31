@@ -18,6 +18,7 @@ import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { versesForPages } from '@/core/audio/verses'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
+import { reportAudioStartError } from '@/composables/audioPlaybackError'
 
 export interface QariContext {
   view: AudioView
@@ -47,6 +48,11 @@ export function useQariPlayer() {
           }),
         )
       }
+    } catch (error) {
+      // Caller (AudioHost) fires this with `void player.start(ctx())` —
+      // fire-and-forget. See `reportAudioStartError`'s doc comment for why
+      // this catch exists at all.
+      reportAudioStartError(error)
     } finally {
       store.loading = false
     }

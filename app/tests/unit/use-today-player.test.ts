@@ -23,6 +23,7 @@ vi.mock('@/core/data', () => ({
 
 import { useTodayPlayer } from '@/composables/useTodayPlayer'
 import { useAudioStore } from '@/stores/audio'
+import { useToasts } from '@/composables/useToast'
 
 const lastPlaylist = () => setPlaylistAndPlay.mock.calls.at(-1)![0]
 
@@ -76,5 +77,22 @@ describe('useTodayPlayer', () => {
     setPlaylistAndPlay.mockClear()
     await player.restart()
     expect(lastPlaylist()).toHaveLength(2)
+  })
+
+  // Bug: tapping Play while offline did nothing — a rejected data.init()
+  // (verses source only; pages never touch it) became a silent unhandled
+  // rejection, since TodayAudioPlayer calls this with `void player.play(...)`.
+  it('a network failure surfaces a toast and resolves cleanly instead of rejecting', async () => {
+    useToasts().splice(0)
+    getNavIndex.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    const player = useTodayPlayer()
+    const store = useAudioStore()
+
+    await expect(player.play({ kind: 'verses', verses: [{ surah: 1, ayah: 1 }] })).resolves.toBeUndefined()
+
+    expect(store.loading).toBe(false) // never left stuck mid-spinner
+    const last = useToasts().at(-1)
+    expect(last?.variant).toBe('error')
+    expect(last?.message).toMatch(/internet|wi-?fi/i)
   })
 })

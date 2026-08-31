@@ -24,6 +24,7 @@ vi.mock('@/core/data', () => ({
 
 import { useListenPlayer } from '@/composables/useListenPlayer'
 import { useAudioStore } from '@/stores/audio'
+import { useToasts } from '@/composables/useToast'
 
 const lastPlaylist = () => setPlaylistAndPlay.mock.calls.at(-1)![0]
 
@@ -88,5 +89,22 @@ describe('useListenPlayer', () => {
     setPlaylistAndPlay.mockClear()
     await listen.restart()
     expect(lastPlaylist()).toHaveLength(21)
+  })
+
+  // Bug: tapping Play on Listen while offline did nothing — a rejected
+  // data.init()/getNavIndex() became a silent unhandled rejection, since
+  // ListenView calls this with `void listen.play(...)`.
+  it('a network failure surfaces a toast and resolves cleanly instead of rejecting', async () => {
+    useToasts().splice(0)
+    init.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    const listen = useListenPlayer()
+    const store = useAudioStore()
+
+    await expect(listen.play({ kind: 'surah', surah: 25 })).resolves.toBeUndefined()
+
+    expect(store.loading).toBe(false) // never left stuck mid-spinner
+    const last = useToasts().at(-1)
+    expect(last?.variant).toBe('error')
+    expect(last?.message).toMatch(/internet|wi-?fi/i)
   })
 })

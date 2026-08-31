@@ -13,6 +13,7 @@ import { buildPagePlaylist, buildVersePlaylist } from '@/core/audio/playlist'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { useAudioEngine } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
+import { reportAudioStartError } from '@/composables/audioPlaybackError'
 
 export type TodaySource =
   | { kind: 'pages'; pages: number[] }
@@ -49,6 +50,12 @@ export function useTodayPlayer() {
           spaced: store.spaced,
         }),
       )
+    } catch (error) {
+      // Caller (TodayAudioPlayer) fires this with `void player.play(...)` —
+      // fire-and-forget. See `reportAudioStartError`'s doc comment for why
+      // this catch exists at all (most commonly: offline, tapping Play
+      // otherwise did nothing and looked like a crash).
+      reportAudioStartError(error)
     } finally {
       store.loading = false
     }

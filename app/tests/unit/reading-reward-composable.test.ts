@@ -97,3 +97,83 @@ describe('useReadingReward (wired)', () => {
     w.unmount()
   })
 })
+
+// P0-1 (plans/performance-audit-2026-08.md): progress.addReadingSeconds must
+// not fire on every 1s tick — that kept useProgressPersistence.ts's debounced
+// IndexedDB watcher writing the whole progress record every second for as
+// long as the reader was open. `readingSeconds` accrual is batched locally
+// and flushed every FLUSH_INTERVAL_S(15)s, or immediately on tab-hide/
+// pagehide/unmount — these tests assert the batching itself, and that no
+// active second is ever silently dropped.
+describe('useReadingReward — reading-seconds batching (P0-1)', () => {
+  it('readingSeconds updates only every 15s, not every 1s', () => {
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(14_000)
+    expect(progress.readingSeconds).toBe(0) // not yet flushed
+    vi.advanceTimersByTime(1_000) // 15s
+    expect(progress.readingSeconds).toBe(15)
+    vi.advanceTimersByTime(14_000) // 29s
+    expect(progress.readingSeconds).toBe(15) // still the last flush
+    vi.advanceTimersByTime(1_000) // 30s
+    expect(progress.readingSeconds).toBe(30)
+    w.unmount()
+  })
+
+  it('a tab-hide (visibilitychange) flushes a pending remainder immediately', () => {
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(7_000) // < 15s, nothing flushed yet
+    expect(progress.readingSeconds).toBe(0)
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(progress.readingSeconds).toBe(7) // flushed immediately, not lost
+    w.unmount()
+  })
+
+  it('pagehide flushes a pending remainder immediately', () => {
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(9_000)
+    window.dispatchEvent(new Event('pagehide'))
+    expect(progress.readingSeconds).toBe(9)
+    w.unmount()
+  })
+
+  it('unmount flushes a pending remainder — no second is ever silently dropped', () => {
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(47_000) // not a multiple of 15
+    w.unmount()
+    expect(progress.readingSeconds).toBe(47) // every active second still counted
+  })
+
+  // Code-review follow-up: an earlier version accrued `pendingSeconds`
+  // unconditionally, only consulting `settings.trackReadingTime` via the
+  // store's own gate at flush time — so toggling the setting mid-window
+  // could over- or under-credit up to one flush interval. Gating accrual
+  // itself on the live setting (matching the old per-tick call's
+  // granularity) closes the over-crediting direction completely.
+  it('does not credit seconds accrued while tracking was off, even after it is turned back on', () => {
+    const settings = useSettingsStore()
+    settings.setTrackReadingTime(false)
+    const page = ref<number | undefined>(50)
+    const w = harness(page, 100)
+    const progress = useProgressStore()
+
+    vi.advanceTimersByTime(10_000) // 10 active seconds, tracking OFF throughout
+    settings.setTrackReadingTime(true)
+    vi.advanceTimersByTime(5_000) // 5 more, tracking ON
+
+    expect(progress.readingSeconds).toBe(5) // only the ON seconds, never the OFF ones
+    w.unmount()
+  })
+})

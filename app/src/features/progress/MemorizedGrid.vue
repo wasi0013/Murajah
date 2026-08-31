@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useMemorization } from '@/composables/useMemorization'
 import { TOTAL_PAGES } from '@/stores/progress'
-import { juzProgress, juzBandSegments, type JuzGroup, type PageCell } from '@/core/memorization/progressView'
+import { juzProgress, juzBandSegments, type JuzGroup, type JuzBandSegment, type PageCell } from '@/core/memorization/progressView'
 import { STRENGTH_BANDS, bandByRank, type StrengthRank } from '@/core/memorization/strengthBands'
 import { bandColorVars } from '@/core/memorization/bandColors'
 import { useI18n } from '@/core/i18n'
@@ -19,7 +19,12 @@ const { t } = useI18n()
  * move focus — Left/Right by one page, Up/Down by a row, Home/End to the ends).
  * A juz-jump bar scrolls the grid to any juz.
  */
-const { juzGroups, cell, progress } = useMemorization()
+// Renamed from `useMemorization()`'s `cells` on destructure — this file
+// already has a `.cells` CSS class and a function-local `cells` (the DOM
+// query result in `columnsOf` below); avoiding the same name for the
+// memoized per-page map keeps those three unrelated things from reading as
+// if they were connected.
+const { juzGroups, cells: cellsByPage, progress } = useMemorization()
 const emit = defineEmits<{ select: [page: number] }>()
 
 const gridRoot = ref<HTMLElement>()
@@ -96,14 +101,31 @@ function cellLabel(c: PageCell): string {
 }
 
 /**
- * The juz header's mini progress bar, segmented by strength band instead of
- * one flat "% memorized" fill — so it reads consistently with the multi-
- * coloured cells directly beneath it (previously always plain green,
- * regardless of how strong/weak the memorized pages actually were).
+ * Per-juz memorized-count + strength-band segments (for the mini progress
+ * bar, segmented by strength band instead of one flat "% memorized" fill —
+ * so it reads consistently with the multi-coloured cells directly beneath
+ * it), memoized across all juz groups instead of recomputed per template
+ * binding. The template used to call `juzProgress(...)` twice and
+ * `juzBandSegments(...)` (via the old `juzSegments()`) twice per juz header,
+ * every render — each an O(pages-in-juz) scan, none of it cached. See
+ * plans/performance-audit-2026-08.md P1.
+ *
+ * Only `memorized` is kept from `juzProgress`'s `{ memorized, total }` —
+ * `total` would just duplicate `g.pages.length`, which every template
+ * binding below already reads directly off the (already-available) juz
+ * group, so carrying a second, unused copy of the same number here would be
+ * dead weight, not a cache hit.
  */
-function juzSegments(g: JuzGroup) {
-  return juzBandSegments(g, progress.memorized, progress.strength, progress.reviewData)
-}
+const juzStats = computed<Map<number, { memorized: number; segments: JuzBandSegment[] }>>(() => {
+  const map = new Map<number, { memorized: number; segments: JuzBandSegment[] }>()
+  for (const g of juzGroups.value) {
+    map.set(g.juz, {
+      memorized: juzProgress(g, progress.memorized).memorized,
+      segments: juzBandSegments(g, progress.memorized, progress.strength, progress.reviewData),
+    })
+  }
+  return map
+})
 
 /**
  * The bar's aria-label: `aria-valuenow`/`aria-valuemax` alone still describe
@@ -114,7 +136,7 @@ function juzSegments(g: JuzGroup) {
  */
 function juzBarLabel(g: JuzGroup): string {
   const parts = [t('grid.juzMemorized', { n: g.juz })]
-  for (const seg of juzSegments(g)) {
+  for (const seg of juzStats.value.get(g.juz)?.segments ?? []) {
     parts.push(t('grid.juzBandShare', { percent: Math.round(seg.percent), band: bandLabel(seg.rank) }))
   }
   return parts.join(', ')
@@ -161,18 +183,18 @@ function juzBarLabel(g: JuzGroup): string {
       <header class="juz-head">
         <span class="juz-name">{{ t('common.juz', { n: g.juz }) }}</span>
         <span class="juz-count">
-          {{ juzProgress(g, progress.memorized).memorized }}/{{ g.pages.length }}
+          {{ juzStats.get(g.juz)?.memorized ?? 0 }}/{{ g.pages.length }}
         </span>
         <span
           class="juz-bar"
           role="progressbar"
           :aria-label="juzBarLabel(g)"
           :aria-valuemin="0"
-          :aria-valuenow="juzProgress(g, progress.memorized).memorized"
+          :aria-valuenow="juzStats.get(g.juz)?.memorized ?? 0"
           :aria-valuemax="g.pages.length"
         >
           <span
-            v-for="seg in juzSegments(g)"
+            v-for="seg in juzStats.get(g.juz)?.segments ?? []"
             :key="seg.rank"
             class="juz-fill"
             :style="{ width: `${seg.percent}%`, background: bandColorVars(seg.rank).bg }"
@@ -187,9 +209,9 @@ function juzBarLabel(g: JuzGroup): string {
           class="cell"
           :data-page="page"
           :tabindex="page === activePage ? 0 : -1"
-          :class="{ mistake: cell(page).mistakes > 0 }"
-          :style="cellStyle(cell(page))"
-          :aria-label="cellLabel(cell(page))"
+          :class="{ mistake: (cellsByPage.get(page)?.mistakes ?? 0) > 0 }"
+          :style="cellsByPage.get(page) ? cellStyle(cellsByPage.get(page)!) : {}"
+          :aria-label="cellsByPage.get(page) ? cellLabel(cellsByPage.get(page)!) : ''"
           @click="select(page)"
           @focus="activePage = page"
         >

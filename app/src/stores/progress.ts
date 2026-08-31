@@ -214,16 +214,30 @@ export const useProgressStore = defineStore('progress', () => {
     if (amount > 0 && settings.trackHasanah) hasanah.value += amount
   }
 
-  /** Accumulate active reading time (positive integer seconds only). No-ops
+  /**
+   * Accumulate active reading time (positive integer seconds only). No-ops
    * while settings.trackReadingTime is off — see awardHasanah's doc comment;
-   * same choke-point reasoning, independent toggle. */
+   * same choke-point reasoning, independent toggle.
+   *
+   * Callers: only ever call this in *batches* (accumulated locally, flushed
+   * periodically — see `useReadingReward.ts`'s `pendingSeconds`), never once
+   * per elapsed second. `useProgressPersistence.ts`'s save watcher treats
+   * this field as part of the same deep-watched snapshot as `memorized`/
+   * `strength`/`reviewData`, so a per-second caller here turns every second
+   * of reading into a full-record IndexedDB write for as long as reading
+   * continues — see plans/performance-audit-2026-08.md's P0-1 finding. A new
+   * per-second-changing field on this store would reintroduce the same
+   * problem and needs the same batching treatment at its call site.
+   */
   function addReadingSeconds(n: number): void {
     if (n > 0 && settings.trackReadingTime) readingSeconds.value += Math.floor(n)
   }
 
   /** Accumulate active listening time (positive integer seconds only). No-ops
    * while settings.trackListeningTime is off — see awardHasanah's doc comment;
-   * same choke-point reasoning, independent toggle. */
+   * same choke-point reasoning, independent toggle. Same "batch, don't call
+   * once per second" caller contract as `addReadingSeconds` above — see its
+   * doc comment; `useListeningTime.ts`'s `pending` is the batching side here. */
   function addListeningSeconds(n: number): void {
     if (n > 0 && settings.trackListeningTime) listeningSeconds.value += Math.floor(n)
   }
