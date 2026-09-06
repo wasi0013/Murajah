@@ -337,8 +337,8 @@ const en: Messages = {
       confirmedOne: '1 page marked memorized.',
       confirmedOther: '{n} pages marked memorized.',
     },
-    weakestAria: 'Weakest pages',
-    needsReview: 'Needs review',
+    recentlyMemorizedAria: 'Recently memorized pages',
+    recentlyMemorized: 'Recently memorized',
     juzAria: 'Juz progress',
     estimate: {
       aria: 'Completion estimate',
@@ -423,6 +423,7 @@ const en: Messages = {
     pageNavAria: 'Page navigation',
     goToPrevPage: 'Go to previous page',
     goToNextPage: 'Go to next page',
+    revision: 'Page revision',
     jump: 'Go to page, ayah or surah',
     audio: 'Recitation audio',
     record: 'Record your recitation',

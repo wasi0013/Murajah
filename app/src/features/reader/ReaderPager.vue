@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Brain } from 'lucide-vue-next'
 import { useReaderStore } from '@/stores/reader'
 import { useReaderPages } from '@/composables/useReaderPages'
 import { useMorphology } from '@/composables/useMorphology'
 import { useMistakes } from '@/composables/useMistakes'
+import { usePagerIcons } from '@/composables/usePagerIcons'
 import { useAudioStore } from '@/stores/audio'
 import { getDataClient } from '@/core/data'
 import { mushafLink } from '@/core/navigation/readerLinks'
@@ -29,9 +30,18 @@ const props = defineProps<{
    * the very first page load targets the real page instead of the store's
    * default. Every other mount point (e.g. the gallery) leaves it unset. */
   readyGate?: Promise<void>
+  /** The canonical (Madani 604) page to stamp a manual "revised today" against
+   * — ReaderView.vue's `useMadaniPage`. Indopak's own page count differs from
+   * the progress store's, so the brain button below can't just read
+   * `reader.page` (same reasoning as the reading-time hasanah). Required
+   * (not defaulted to `reader.page`) so a future caller that forgets to wire
+   * it up fails to compile instead of silently stamping the wrong page in
+   * Indopak. */
+  revisionPage: number
 }>()
 
-const { t } = useI18n()
+const { t, dir } = useI18n()
+const { prevIcon, nextIcon } = usePagerIcons(dir)
 const reader = useReaderStore()
 const pages = useReaderPages(reader, { readyGate: props.readyGate })
 
@@ -39,6 +49,24 @@ const pages = useReaderPages(reader, { readyGate: props.readyGate })
 // foot of the page, for reaching a page turn without scrolling back to the top.
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
+
+// Manual "revised today" (7.x): a brain-icon button between the two page-turn
+// buttons opens the same sheet Progress uses for a page, minus the
+// open-in-reader action (this *is* the reader — the page is already on
+// screen). Snapshotting the page on open (rather than binding straight to
+// `revisionPage`) means a page turn behind the open sheet — arrow keys still
+// reach the reader; see useReaderKeyboard — doesn't retarget the sheet mid-edit.
+const revisionSheetPage = ref<number | null>(null)
+function openRevisionSheet() {
+  revisionSheetPage.value = props.revisionPage
+}
+// Lazy — a rarely-tapped popup shouldn't cost the reader's initial bundle;
+// mirrors MorphologyPopup below. onFail resets the trigger rather than
+// leaving the sheet looking stuck half-open (see lazyComponent's doc comment).
+const PageRevisionSheet = lazyComponent(
+  () => import('@/features/progress/PageRevisionSheet.vue'),
+  () => (revisionSheetPage.value = null),
+)
 
 const {
   open: morphOpen,
@@ -194,8 +222,16 @@ function handleTap(e: PointerEvent) {
         :disabled="!canPrev"
         @click="reader.prevPage()"
       >
-        <Icon :icon="ChevronLeft" :size="20" />
+        <Icon :icon="prevIcon" :size="20" />
         <span>{{ t('reader.goToPrevPage') }}</span>
+      </button>
+      <button
+        type="button"
+        class="page-nav-btn page-nav-btn-icon"
+        :aria-label="t('reader.revision')"
+        @click="openRevisionSheet"
+      >
+        <Icon :icon="Brain" :size="20" />
       </button>
       <button
         type="button"
@@ -204,9 +240,15 @@ function handleTap(e: PointerEvent) {
         @click="reader.nextPage()"
       >
         <span>{{ t('reader.goToNextPage') }}</span>
-        <Icon :icon="ChevronRight" :size="20" />
+        <Icon :icon="nextIcon" :size="20" />
       </button>
     </nav>
+
+    <PageRevisionSheet
+      v-if="revisionSheetPage !== null"
+      v-model:page="revisionSheetPage"
+      :show-open-in-reader="false"
+    />
 
     <MorphologyPopup
       v-if="morphOpen"
@@ -292,5 +334,10 @@ function handleTap(e: PointerEvent) {
 }
 .page-nav-btn:disabled {
   opacity: 0.4;
+}
+.page-nav-btn-icon {
+  flex: 0 0 auto;
+  width: 3.25rem;
+  padding: 0.9rem;
 }
 </style>

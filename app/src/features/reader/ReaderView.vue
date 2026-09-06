@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronLeft, ChevronRight, Headphones, Mic, Palette, Search, SlidersHorizontal } from 'lucide-vue-next'
+import { Headphones, Mic, Palette, Search, SlidersHorizontal } from 'lucide-vue-next'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useAudioStore } from '@/stores/audio'
 import { useRecorderStore } from '@/stores/recorder'
@@ -20,6 +20,7 @@ import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
 import { useVerseStudy } from '@/composables/useVerseStudy'
 import { useQuickJump } from '@/composables/useQuickJump'
+import { usePagerIcons } from '@/composables/usePagerIcons'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
 import RecordCountdown from './RecordCountdown.vue'
@@ -33,7 +34,8 @@ import BottomSheet from '@/components/BottomSheet.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
 import { useI18n } from '@/core/i18n'
 
-const { t } = useI18n()
+const { t, dir } = useI18n()
+const { prevIcon, nextIcon } = usePagerIcons(dir)
 
 /**
  * Reader shell: a top bar (quick-jump + settings), the paged reading surface,
@@ -221,7 +223,7 @@ watch(
         :aria-label="t('reader.prevPage')"
         @click="reader.prevPage()"
       >
-        <Icon :icon="ChevronLeft" :size="22" />
+        <Icon :icon="prevIcon" :size="22" />
       </button>
 
       <button class="jump" :aria-label="t('reader.jump')" @click="paletteOpen = true">
@@ -242,7 +244,7 @@ watch(
         :aria-label="t('reader.nextPage')"
         @click="reader.nextPage()"
       >
-        <Icon :icon="ChevronRight" :size="22" />
+        <Icon :icon="nextIcon" :size="22" />
       </button>
 
       <button
@@ -275,6 +277,7 @@ watch(
       class="reader-surface"
       :class="{ blurred: recorder.active }"
       :ready-gate="readerReady"
+      :revision-page="madaniPage"
     />
 
     <TafsirPanel

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { useI18n } from '@/core/i18n'
+import { usePagerIcons } from '@/composables/usePagerIcons'
 import type { JournalDaySummary } from '@/composables/useJournalMonth'
 import Icon from '@/components/Icon.vue'
 
@@ -30,7 +30,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{ select: [date: string]; prev: []; next: [] }>()
 
-const { t, locale } = useI18n()
+const { t, locale, dir } = useI18n()
+const { prevIcon, nextIcon } = usePagerIcons(dir)
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
 const weekdays = computed(() => WEEKDAY_KEYS.map((key) => t(`common.weekdays.${key}`)))
@@ -72,11 +73,11 @@ const weeks = computed<Array<Array<JournalDaySummary | null>>>(() => {
   <div class="calendar">
     <div class="nav">
       <button class="nav-btn" type="button" :aria-label="t('journal.prevMonth')" @click="emit('prev')">
-        <Icon :icon="ChevronLeft" :size="18" />
+        <Icon :icon="prevIcon" :size="18" />
       </button>
       <h2 class="month-label" aria-live="polite">{{ monthLabel }}</h2>
       <button class="nav-btn" type="button" :aria-label="t('journal.nextMonth')" @click="emit('next')">
-        <Icon :icon="ChevronRight" :size="18" />
+        <Icon :icon="nextIcon" :size="18" />
       </button>
     </div>
     <p v-if="loading" class="loading-hint" aria-live="polite">{{ t('common.loading') }}</p>

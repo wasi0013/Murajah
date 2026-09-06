@@ -5,6 +5,7 @@ import {
   memorizationStats,
   juzProgress,
   juzBandSegments,
+  recentlyMemorizedPages,
 } from '@/core/memorization/progressView'
 import type { ReviewSchedule } from '@/core/storage/userData'
 
@@ -135,5 +136,63 @@ describe('juzBandSegments', () => {
     const memorized = new Set(groups[0].pages)
     const segments = juzBandSegments(groups[0], memorized, new Map(), new Map(), today)
     expect(segments).toEqual([{ rank: 2, percent: 100 }])
+  })
+})
+
+describe('recentlyMemorizedPages', () => {
+  it('orders memorized pages newest-first by memorizedAt', () => {
+    const memorized = new Set([1, 2, 3])
+    const memorizedAt = new Map([
+      [1, '2026-08-01T00:00:00.000Z'],
+      [2, '2026-08-03T00:00:00.000Z'],
+      [3, '2026-08-02T00:00:00.000Z'],
+    ])
+    expect(recentlyMemorizedPages(memorized, memorizedAt)).toEqual([2, 3, 1])
+  })
+
+  it('caps the result at `limit`', () => {
+    const memorized = new Set([1, 2, 3, 4])
+    const memorizedAt = new Map([
+      [1, '2026-08-01T00:00:00.000Z'],
+      [2, '2026-08-02T00:00:00.000Z'],
+      [3, '2026-08-03T00:00:00.000Z'],
+      [4, '2026-08-04T00:00:00.000Z'],
+    ])
+    expect(recentlyMemorizedPages(memorized, memorizedAt, 2)).toEqual([4, 3])
+  })
+
+  it('fewer than `limit` memorized pages: returns just what is memorized', () => {
+    const memorized = new Set([5, 6])
+    const memorizedAt = new Map([
+      [5, '2026-08-01T00:00:00.000Z'],
+      [6, '2026-08-02T00:00:00.000Z'],
+    ])
+    expect(recentlyMemorizedPages(memorized, memorizedAt, 10)).toEqual([6, 5])
+  })
+
+  it('pages with no memorizedAt entry (legacy data) are excluded entirely, not guessed at', () => {
+    const memorized = new Set([10, 1, 2])
+    const memorizedAt = new Map([[10, '2026-08-01T00:00:00.000Z']]) // 1, 2 never tracked
+    expect(recentlyMemorizedPages(memorized, memorizedAt)).toEqual([10])
+  })
+
+  it('an entirely untimestamped set (pre-migration) returns empty, not an arbitrary order', () => {
+    const memorized = new Set([30, 10, 20])
+    expect(recentlyMemorizedPages(memorized, new Map())).toEqual([])
+  })
+
+  it('same-instant ties (one bulkMarkMemorized loop) break toward the highest page number — stamped last', () => {
+    const memorized = new Set([5, 6, 7])
+    const sameInstant = '2026-08-05T12:00:00.000Z'
+    const memorizedAt = new Map([
+      [5, sameInstant],
+      [6, sameInstant],
+      [7, sameInstant],
+    ])
+    expect(recentlyMemorizedPages(memorized, memorizedAt)).toEqual([7, 6, 5])
+  })
+
+  it('nothing memorized yet returns an empty list', () => {
+    expect(recentlyMemorizedPages(new Set(), new Map())).toEqual([])
   })
 })

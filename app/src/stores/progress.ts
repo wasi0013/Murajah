@@ -59,6 +59,13 @@ export const useProgressStore = defineStore('progress', () => {
   const readingSeconds = ref(0)
   const listeningSeconds = ref(0)
   const reviewData = reactive(new Map<number, ReviewSchedule>())
+  /** ISO timestamp each currently-memorized page last became memorized — see
+   * `Progress.memorizedAt`'s doc comment (userData.ts) for the full contract.
+   * Written/cleared only from `setMemorized`, the sole place `memorized` itself
+   * is mutated, so every path that marks or unmarks a page (the single-page
+   * toggle, bulk range-mark, Today's new-memorization completion) stays in sync
+   * automatically. */
+  const memorizedAt = reactive(new Map<number, string>())
 
   const memorizedCount = computed(() => memorized.size)
   const isMemorized = (page: number) => memorized.has(page)
@@ -70,8 +77,13 @@ export const useProgressStore = defineStore('progress', () => {
 
   function setMemorized(page: number, on: boolean): void {
     if (!inRange(page)) return
-    if (on) memorized.add(page)
-    else memorized.delete(page)
+    if (on) {
+      memorized.add(page)
+      memorizedAt.set(page, new Date().toISOString())
+    } else {
+      memorized.delete(page)
+      memorizedAt.delete(page)
+    }
   }
   /**
    * Toggle a single page's memorized flag. Marking on credits
@@ -387,6 +399,8 @@ export const useProgressStore = defineStore('progress', () => {
     for (const [page, n] of p.strength) if (inRange(page) && n > 0) strength.set(page, n)
     reviewData.clear()
     for (const [page, r] of p.reviewData) if (inRange(page)) reviewData.set(page, r)
+    memorizedAt.clear()
+    for (const [page, ts] of p.memorizedAt ?? []) if (inRange(page)) memorizedAt.set(page, ts)
     hasanah.value = Math.max(0, p.hasanah)
     readingSeconds.value = Math.max(0, Math.floor(p.readingSeconds ?? 0))
     listeningSeconds.value = Math.max(0, Math.floor(p.listeningSeconds ?? 0))
@@ -401,6 +415,7 @@ export const useProgressStore = defineStore('progress', () => {
       readingSeconds: readingSeconds.value,
       listeningSeconds: listeningSeconds.value,
       reviewData: new Map(reviewData),
+      memorizedAt: new Map(memorizedAt),
     }
   }
 
@@ -411,6 +426,7 @@ export const useProgressStore = defineStore('progress', () => {
     readingSeconds,
     listeningSeconds,
     reviewData,
+    memorizedAt,
     memorizedCount,
     isMemorized,
     strengthOf,

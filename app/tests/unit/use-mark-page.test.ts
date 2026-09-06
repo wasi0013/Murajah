@@ -8,12 +8,12 @@ const chunk = (page: number): PageChunk => ({ page, layout: [], words: [] })
 function fakeData(getPage = vi.fn(async (_layout: string, page: number) => chunk(page))) {
   return { init: vi.fn(async () => {}), getPage }
 }
-function fakeFonts(ensure = vi.fn(async () => 'qpc-p22')) {
+function fakeFonts(ensure = vi.fn(async () => 'tj-p22')) {
   return { init: vi.fn(async () => {}), ensure }
 }
 
 describe('useMarkPage', () => {
-  it('loads the given page\'s chunk + font, plain qpc (no tajweed forced)', async () => {
+  it("loads the given page's chunk + font, QPC tajweed (matching the share preview)", async () => {
     const data = fakeData()
     const fonts = fakeFonts()
     const page = computed(() => 22)
@@ -22,9 +22,9 @@ describe('useMarkPage', () => {
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
     expect(c.value).toEqual({ page: 22, layout: [], words: [] })
-    expect(family.value).toBe('qpc-p22')
+    expect(family.value).toBe('tj-p22')
     expect(data.getPage).toHaveBeenCalledWith('qpc', 22)
-    expect(fonts.ensure).toHaveBeenCalledWith({ layout: 'qpc', page: 22 })
+    expect(fonts.ensure).toHaveBeenCalledWith({ layout: 'qpc', page: 22, tajweed: true })
   })
 
   it('a null page (no plan front) stops loading without fetching', async () => {

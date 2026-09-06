@@ -320,13 +320,13 @@ test('the juz-jump bar scrolls the grid to a juz', async ({ page }) => {
   await expect(page.locator('[data-juz="30"]')).toBeInViewport()
 })
 
-test('a weakest-page chip opens that page and deep-links into the reader', async ({ page }) => {
+test('a recently-memorized chip opens that page and deep-links into the reader', async ({ page }) => {
   await page.goto('/progress')
   await expect(page.getByRole('button', { name: 'Page 1, not memorized' })).toBeVisible({
     timeout: 10_000,
   })
 
-  // Memorize a few pages — never-reviewed pages surface as "Needs review".
+  // Memorize a few pages — they surface in "Recently memorized".
   await page.getByLabel('From page').fill('1')
   await page.getByLabel('To page').fill('3')
   await page.getByRole('button', { name: 'Memorized', exact: true }).click()

@@ -334,8 +334,8 @@ const ar: Messages = {
       confirmedOne: 'تم تعليم صفحة واحدة كمحفوظة.',
       confirmedOther: 'تم تعليم {n} صفحة كمحفوظة.',
     },
-    weakestAria: 'أضعف الصفحات',
-    needsReview: 'يحتاج مراجعة',
+    recentlyMemorizedAria: 'الصفحات المحفوظة مؤخرًا',
+    recentlyMemorized: 'محفوظ مؤخرًا',
     juzAria: 'تقدّم الأجزاء',
     estimate: {
       aria: 'تقدير الإتمام',
@@ -418,6 +418,7 @@ const ar: Messages = {
     pageNavAria: 'التنقل بين الصفحات',
     goToPrevPage: 'الانتقال إلى الصفحة السابقة',
     goToNextPage: 'الانتقال إلى الصفحة التالية',
+    revision: 'مراجعة الصفحة',
     jump: 'انتقل إلى صفحة أو آية أو سورة',
     audio: 'تلاوة صوتية',
     record: 'سجّل تلاوتك',

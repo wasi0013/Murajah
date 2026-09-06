@@ -64,3 +64,21 @@ describe('useMemorization — cells memoization (P1)', () => {
     expect(after.get(11)?.memorized).toBe(false)
   })
 })
+
+describe('useMemorization — recentlyMemorized', () => {
+  // Ordering itself (newest-first, the ≤10 cap, the legacy/no-timestamp
+  // fallback) is covered exhaustively against controlled timestamps in
+  // progress-view.test.ts's `recentlyMemorizedPages` suite — this just pins
+  // that the composable wires the live store into it and updates reactively.
+  it('reflects the store live, and stops growing past 10', () => {
+    const progress = useProgressStore()
+    const { recentlyMemorized } = useMemorization(fakeDataClient())
+
+    expect(recentlyMemorized.value).toEqual([])
+    progress.setMemorized(3, true)
+    expect(recentlyMemorized.value).toEqual([3])
+
+    for (let page = 10; page <= 20; page++) progress.setMemorized(page, true)
+    expect(recentlyMemorized.value).toHaveLength(10)
+  })
+})

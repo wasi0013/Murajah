@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, ChevronLeft, ChevronRight, Headphones, Mic, Search, ZoomOut } from 'lucide-vue-next'
+import { ArrowLeft, Headphones, Mic, Search, ZoomOut } from 'lucide-vue-next'
 import { useMushafStore } from '@/stores/mushaf'
 import { useAudioStore } from '@/stores/audio'
 import { useRecorderStore } from '@/stores/recorder'
@@ -16,6 +16,7 @@ import { useReadingReward } from '@/composables/useReadingReward'
 import { lazyComponent } from '@/composables/lazyComponent'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { keyToPageDelta } from '@/core/reader/keyboard'
+import { usePagerIcons } from '@/composables/usePagerIcons'
 import Icon from '@/components/Icon.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
@@ -34,7 +35,8 @@ import { useI18n } from '@/core/i18n'
 const SPREAD_MIN_WIDTH = 820 // px — at/above this, show the 2-up spread
 const RTL = true // reading direction for keyboard paging
 
-const { t } = useI18n()
+const { t, dir } = useI18n()
+const { prevIcon, nextIcon } = usePagerIcons(dir)
 const store = useMushafStore()
 const router = useRouter()
 const nav = useMushafPage(store, router)
@@ -263,7 +265,7 @@ function backToReader() {
         :aria-label="t('reader.prevPage')"
         @click="store.canPrev && step(-1)"
       >
-        <Icon :icon="ChevronLeft" :size="22" />
+        <Icon :icon="prevIcon" :size="22" />
       </button>
 
       <button class="jump" :aria-label="t('reader.jump')" @click="paletteOpen = true">
@@ -284,7 +286,7 @@ function backToReader() {
         :aria-label="t('reader.nextPage')"
         @click="store.canNext && step(1)"
       >
-        <Icon :icon="ChevronRight" :size="22" />
+        <Icon :icon="nextIcon" :size="22" />
       </button>
 
       <button

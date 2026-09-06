@@ -171,6 +171,7 @@ describe('key isolation', () => {
       strength: new Map([[50, 3]]),
       hasanah: 9000,
       reviewData: new Map(),
+      memorizedAt: new Map(),
     })
     await saveMistakes(new Map([[7, new Set([1, 2])]]))
 

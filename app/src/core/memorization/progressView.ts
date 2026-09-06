@@ -185,3 +185,41 @@ export function memorizedWeight(memorized: Set<number>): number {
   for (const p of memorized) total += getPageHasanah(p)
   return total
 }
+
+/**
+ * Up to `limit` memorized pages, most-recently-memorized first (Progress
+ * Overview's "Recently memorized" chips — replaces the old weakest-page
+ * suggestions there; `weaknessScorer.ts` itself is unaffected and still
+ * drives the daily weak-reinforcement lane elsewhere).
+ *
+ * Pages with no `memorizedAt` entry — memorized before this was tracked, or
+ * via any future code path that forgets to stamp it — are left out entirely
+ * rather than ordered by a guess. There's no way to recover when they were
+ * actually memorized, and the caller already hides this section when the
+ * result is empty, so a long-time user on a fresh install simply sees nothing
+ * here until their next real memorization — an honest empty state, not a
+ * list of arbitrary old pages mislabeled "recent".
+ *
+ * ISO timestamps compare correctly with plain `<`/`>` (no need for
+ * `localeCompare`, which is both slower and locale-sensitive for no benefit
+ * here). ISO strings can and do tie: `bulkMarkMemorized` stamps every page in
+ * one range with a fresh `Date.now()` inside a single synchronous loop, so a
+ * whole range can land on the same millisecond. It iterates ascending, so the
+ * *highest* page number in a tie was the one actually stamped last — the tie
+ * break below is a real ordering, not an arbitrary one.
+ */
+export function recentlyMemorizedPages(
+  memorized: Set<number>,
+  memorizedAt: Map<number, string>,
+  limit = 10,
+): number[] {
+  return [...memorized]
+    .filter((p) => memorizedAt.has(p))
+    .sort((a, b) => {
+      const ta = memorizedAt.get(a)!
+      const tb = memorizedAt.get(b)!
+      if (ta !== tb) return ta < tb ? 1 : -1 // newest first
+      return b - a // same instant — highest page number was stamped last
+    })
+    .slice(0, limit)
+}

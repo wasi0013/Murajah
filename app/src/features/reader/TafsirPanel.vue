@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { BookOpen, ChevronLeft, ChevronRight, Copy } from 'lucide-vue-next'
+import { BookOpen, Copy } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { toast } from '@/composables/useToast'
 import type { VerseStudy } from '@/composables/useVerseStudy'
 import type { SurahNames } from '@/core/data/types'
 import { getDataClient } from '@/core/data'
 import { useReaderStore } from '@/stores/reader'
+import { usePagerIcons } from '@/composables/usePagerIcons'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -29,7 +30,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ expand: [verse: string] }>()
 
-const { t } = useI18n()
+const { t, dir } = useI18n()
+const { prevIcon, nextIcon } = usePagerIcons(dir)
 
 // tj-p{n} is the COLR/CPAL tajweed font (baked-in colour, not `currentColor`);
 // see ReadingSurface.vue for the fuller explanation of the dark-theme fix.
@@ -181,7 +183,7 @@ async function copy(v: VerseStudy) {
         :disabled="!canPrev"
         @click="reader.prevPage()"
       >
-        <Icon :icon="ChevronLeft" :size="20" />
+        <Icon :icon="prevIcon" :size="20" />
         <span>{{ t('reader.goToPrevPage') }}</span>
       </button>
       <button
@@ -191,7 +193,7 @@ async function copy(v: VerseStudy) {
         @click="reader.nextPage()"
       >
         <span>{{ t('reader.goToNextPage') }}</span>
-        <Icon :icon="ChevronRight" :size="20" />
+        <Icon :icon="nextIcon" :size="20" />
       </button>
     </nav>
   </section>

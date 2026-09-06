@@ -97,6 +97,9 @@ export interface StoredProgress {
   readingSeconds?: number
   listeningSeconds?: number
   reviewData?: Record<string, ReviewSchedule>
+  /** ISO timestamp a page most recently became memorized — absent for pages
+   * memorized before this was tracked (see `Progress.memorizedAt`). */
+  memorizedAt?: Record<string, string>
 }
 
 export interface Progress {
@@ -106,6 +109,19 @@ export interface Progress {
   readingSeconds?: number
   listeningSeconds?: number
   reviewData: Map<number, ReviewSchedule>
+  /**
+   * ISO timestamp of the moment each currently-memorized page last became
+   * memorized (Progress's "Recently memorized" chips) — written once per
+   * `setMemorized(page, true)` call, deleted on unmark, so this only ever
+   * holds entries for pages presently in `memorized`. Deliberately **not**
+   * backfilled for legacy/pre-existing data the way `reviewData.lastReviewDate`
+   * is (`backfillReviewDates`): stamping "today" on a page memorized years ago
+   * would make it look freshly memorized, exactly backwards. A page with no
+   * entry here is simply left out of the "recently memorized" list rather
+   * than ordered by a guess — see `recentlyMemorizedPages`
+   * (core/memorization/progressView.ts).
+   */
+  memorizedAt: Map<number, string>
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
@@ -174,6 +190,12 @@ export function serializeProgress(p: Progress): StoredProgress {
       consecutiveCorrect: r.consecutiveCorrect,
     }
   }
+  const memorizedAt: Record<string, string> = {}
+  // `?? []` defends a caller that built a `Progress` value predating this
+  // field (an older in-memory object still floating around, a test/debug
+  // literal) — without it, `saveProgress`'s catch-and-swallow would silently
+  // drop the *entire* write, not just memorizedAt.
+  for (const [page, ts] of p.memorizedAt ?? []) memorizedAt[String(page)] = ts
   return {
     memorized: [...p.memorized].sort((a, b) => a - b),
     perfectRevisions,
@@ -181,6 +203,7 @@ export function serializeProgress(p: Progress): StoredProgress {
     readingSeconds: p.readingSeconds ?? 0,
     listeningSeconds: p.listeningSeconds ?? 0,
     reviewData,
+    memorizedAt,
   }
 }
 
@@ -191,10 +214,13 @@ export function deserializeProgress(stored: StoredProgress | undefined): Progres
   for (const [page, r] of Object.entries(stored?.reviewData ?? {})) {
     reviewData.set(Number(page), normalizeSchedule(r))
   }
+  const memorizedAt = new Map<number, string>()
+  for (const [page, ts] of Object.entries(stored?.memorizedAt ?? {})) memorizedAt.set(Number(page), ts)
   return {
     memorized: new Set((stored?.memorized ?? []).map(Number)),
     strength,
     hasanah: stored?.hasanah ?? 0,
+    memorizedAt,
     readingSeconds: stored?.readingSeconds ?? 0,
     listeningSeconds: stored?.listeningSeconds ?? 0,
     reviewData,

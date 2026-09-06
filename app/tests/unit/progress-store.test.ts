@@ -34,6 +34,37 @@ describe('progress store', () => {
     expect(p.memorizedCount).toBe(0)
   })
 
+  describe('memorizedAt', () => {
+    it('stamps a timestamp when a page becomes memorized, and clears it on unmark', () => {
+      const p = useProgressStore()
+      expect(p.memorizedAt.has(10)).toBe(false)
+      p.setMemorized(10, true)
+      expect(p.memorizedAt.get(10)).toBeTruthy()
+      expect(() => new Date(p.memorizedAt.get(10)!).toISOString()).not.toThrow()
+      p.setMemorized(10, false)
+      expect(p.memorizedAt.has(10)).toBe(false)
+    })
+
+    it('toggleMemorized and bulkMarkMemorized both stamp it too (both funnel through setMemorized)', () => {
+      const p = useProgressStore()
+      p.toggleMemorized(10)
+      expect(p.memorizedAt.has(10)).toBe(true)
+      p.bulkMarkMemorized([20, 21], true)
+      expect(p.memorizedAt.has(20)).toBe(true)
+      expect(p.memorizedAt.has(21)).toBe(true)
+      p.bulkMarkMemorized([20], false)
+      expect(p.memorizedAt.has(20)).toBe(false)
+      expect(p.memorizedAt.has(21)).toBe(true) // unaffected
+    })
+
+    it('out-of-range pages are never stamped', () => {
+      const p = useProgressStore()
+      p.setMemorized(0, true)
+      p.setMemorized(605, true)
+      expect(p.memorizedAt.size).toBe(0)
+    })
+  })
+
   // Regression: the reported bug (memorized pages rendering "Not Memorized")
   // plus the fix for it must not trade one contradiction for another — a
   // freshly-marked page's *displayed* level must never regress the moment a
@@ -348,6 +379,7 @@ describe('progress persistence', () => {
       ]),
       hasanah: 12345,
       reviewData: new Map([[3, normalizeSchedule({ lastReviewDate: '2026-07-15', reviewCount: 2 })]]),
+      memorizedAt: new Map([[3, '2026-07-15T09:00:00.000Z']]),
     }
     const schedule3 = {
       lastReviewDate: '2026-07-15',
@@ -365,12 +397,14 @@ describe('progress persistence', () => {
       readingSeconds: 0,
       listeningSeconds: 0,
       reviewData: { '3': schedule3 },
+      memorizedAt: { '3': '2026-07-15T09:00:00.000Z' },
     })
     const back = deserializeProgress(stored)
     expect(back.memorized).toEqual(new Set([1, 2, 3]))
     expect(back.strength).toEqual(new Map([[3, 4]]))
     expect(back.hasanah).toBe(12345)
     expect(back.reviewData).toEqual(new Map([[3, schedule3]]))
+    expect(back.memorizedAt).toEqual(new Map([[3, '2026-07-15T09:00:00.000Z']]))
   })
 
   it('hydrates legacy (Phase-4) review records — recency only — with SM-2 defaults', () => {

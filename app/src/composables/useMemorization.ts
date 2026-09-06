@@ -7,17 +7,17 @@ import {
   buildJuzGroups,
   memorizationStats,
   pageCell,
+  recentlyMemorizedPages,
   type JuzGroup,
   type PageCell,
 } from '@/core/memorization/progressView'
-import { calculateAllWeaknesses, getWeakestPages } from '@/core/memorization/weaknessScorer'
 import { daysSince } from '@/core/memorization/strengthBands'
 
 /**
  * Reactive view-model for the Progress screen: the juz-grouped 604-page grid,
- * summary stats, and weakest-page suggestions — all derived from the canonical
- * progress + mistakes stores. Juz boundaries come from the derived QPC nav index
- * (not the legacy off-by-one tables).
+ * summary stats, and the recently-memorized list — all derived from the
+ * canonical progress + mistakes stores. Juz boundaries come from the derived
+ * QPC nav index (not the legacy off-by-one tables).
  */
 export function useMemorization(data: DataClient = getDataClient()) {
   const progress = useProgressStore()
@@ -72,18 +72,10 @@ export function useMemorization(data: DataClient = getDataClient()) {
     return map
   })
 
-  /** Top-N weakest memorized pages (weakness = recency + revision + mistakes). */
-  const weakestPages = computed<number[]>(() => {
-    const pages = [...progress.memorized]
-    if (pages.length === 0) return []
-    const weakness = calculateAllWeaknesses({
-      pages,
-      perfectRevisions: progress.strength,
-      mistakesMap: mistakes.byPage,
-      pageReviewData: progress.reviewData, // lightweight recency/count (Phase 4.8)
-    })
-    return getWeakestPages(weakness, 10)
-  })
+  /** Up to the 10 most recently memorized pages, newest first. */
+  const recentlyMemorized = computed<number[]>(() =>
+    recentlyMemorizedPages(progress.memorized, progress.memorizedAt, 10),
+  )
 
-  return { progress, juzGroups, stats, cell, cells, weakestPages }
+  return { progress, juzGroups, stats, cell, cells, recentlyMemorized }
 }

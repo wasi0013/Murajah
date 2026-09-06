@@ -61,6 +61,17 @@ describe('useProgressPersistence', () => {
     expect(reloaded.listeningSeconds).toBe(120)
   })
 
+  it('a fresh memorization (memorizedAt) reaches disk through the same debounced watcher', async () => {
+    const progress = useProgressStore()
+    await useProgressPersistence(progress).hydrate()
+
+    progress.setMemorized(50, true)
+    await settle()
+
+    const reloaded = await loadProgress()
+    expect(reloaded.memorizedAt.get(50)).toBeTruthy()
+  })
+
   it('dispose() no longer drops a pending debounced save', async () => {
     const progress = useProgressStore()
     const persistence = useProgressPersistence(progress)

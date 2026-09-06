@@ -334,8 +334,8 @@ const bn: Messages = {
       confirmedOne: '{n}টি পৃষ্ঠা মুখস্থ হিসেবে চিহ্নিত হয়েছে।',
       confirmedOther: '{n}টি পৃষ্ঠা মুখস্থ হিসেবে চিহ্নিত হয়েছে।',
     },
-    weakestAria: 'দুর্বলতম পৃষ্ঠা',
-    needsReview: 'রিভিউ দরকার',
+    recentlyMemorizedAria: 'সম্প্রতি মুখস্থ করা পৃষ্ঠা',
+    recentlyMemorized: 'সম্প্রতি মুখস্থ',
     juzAria: 'পারার অগ্রগতি',
     estimate: {
       aria: 'সমাপ্তির অনুমান',
@@ -418,6 +418,7 @@ const bn: Messages = {
     pageNavAria: 'পৃষ্ঠা নেভিগেশন',
     goToPrevPage: 'আগের পৃষ্ঠায় যান',
     goToNextPage: 'পরের পৃষ্ঠায় যান',
+    revision: 'পৃষ্ঠা মুরাজায়া',
     jump: 'পৃষ্ঠা, আয়াত বা সূরায় যান',
     audio: 'তিলাওয়াত অডিও',
     record: 'আপনার তিলাওয়াত রেকর্ড করুন',

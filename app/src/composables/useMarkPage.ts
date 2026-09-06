@@ -25,10 +25,11 @@ export interface UseMarkPageResult {
  * Loads the plan's current new-memorization front page for `MarkPageView.vue`
  * — the same shape as `usePreviewPage.ts` (load `PageChunk` + font, track
  * loading/error, `retry()`), but driven by the plan's front page instead of a
- * route param, and the ordinary reading font (not tajweed-forced — this is
- * the everyday marking view, not the always-tajweed share preview). A new
- * composable rather than a modification of `usePreviewPage.ts`, which stays
- * share-feature-only (see plans/partial-page-tracking.md).
+ * route param. Forces the QPC tajweed glyph font, same as the share preview —
+ * this is the page a new memorizer is looking straight at while learning it,
+ * where the colour-coded rules are most useful. A new composable rather than
+ * a modification of `usePreviewPage.ts`, which stays share-feature-only (see
+ * plans/partial-page-tracking.md).
  */
 export function useMarkPage(
   page: ComputedRef<number | undefined>,
@@ -55,7 +56,10 @@ export function useMarkPage(
     try {
       await data.init()
       await fonts.init()
-      const [c, f] = await Promise.all([data.getPage('qpc', p), fonts.ensure({ layout: 'qpc', page: p })])
+      const [c, f] = await Promise.all([
+        data.getPage('qpc', p),
+        fonts.ensure({ layout: 'qpc', page: p, tajweed: true }),
+      ])
       chunk.value = c
       family.value = f
     } catch {

@@ -104,6 +104,7 @@ describe('recoverLegacyData', () => {
       ]),
       hasanah: 12_000, // must never be reset by recovery
       reviewData: new Map(),
+      memorizedAt: new Map(),
     })
 
     const result = await recoverLegacyData()

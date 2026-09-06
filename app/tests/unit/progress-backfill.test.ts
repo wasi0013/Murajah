@@ -23,6 +23,7 @@ function emptyProgress(overrides: Partial<Progress> = {}): Progress {
     strength: new Map(),
     hasanah: 0,
     reviewData: new Map(),
+    memorizedAt: new Map(),
     ...overrides,
   }
 }

@@ -114,11 +114,19 @@ async function mergeProgress(incoming: Progress | null): Promise<void> {
   for (const [page, r] of incoming.reviewData) {
     if (!reviewData.has(page)) reviewData.set(page, r)
   }
+  // Same "current wins, incoming only fills gaps" rule as reviewData above —
+  // in practice incoming is always empty here (legacy exports predate this
+  // field entirely), but merges the same way if that ever changes.
+  const memorizedAt = new Map(current.memorizedAt)
+  for (const [page, ts] of incoming.memorizedAt) {
+    if (!memorizedAt.has(page)) memorizedAt.set(page, ts)
+  }
   await saveProgress({
     memorized: new Set([...current.memorized, ...incoming.memorized]),
     strength,
     hasanah: current.hasanah,
     reviewData,
+    memorizedAt,
   })
 }
 
