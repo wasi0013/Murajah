@@ -56,4 +56,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    // By default Vite adds a `<link rel="modulepreload">` in the head for
+    // every chunk the entry statically imports, transitively — 7 of them
+    // here (Icon, pinia, i18n, runtime-dom, etc.), several tens of KB
+    // combined. Under Lighthouse CI's throttled profile (lighthouserc.json:
+    // ~1.6Mbps/150ms RTT) those compete on the wire with the render-blocking
+    // app-shell stylesheet and the entry script itself, which is what was
+    // pushing First Contentful Paint just over its budget (measured locally:
+    // ~1505ms → ~1430ms with this off, LCP/TTI unchanged). The chunks are
+    // still fetched exactly when needed via normal `import()` resolution —
+    // this only removes the eager head start, which wasn't buying enough to
+    // be worth the bandwidth contention it caused this early.
+    modulePreload: { resolveDependencies: () => [] },
+  },
 })

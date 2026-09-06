@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   Apple,
   BookOpenText,
@@ -15,17 +15,21 @@ import {
   Store,
 } from 'lucide-vue-next'
 import { DISCORD_URL, PLAY_STORE_URL } from '@/core/links'
+import { useI18n } from '@/core/i18n'
 import Icon from '@/components/Icon.vue'
 import LazyLoopVideo from '@/components/LazyLoopVideo.vue'
 
 /**
  * Standalone install-funnel page at /download — reached only from an outside
  * link (App Store search has nothing to show, so this is what an iOS user
- * lands on instead), never from in-app navigation. Deliberately plain: no
- * i18n catalog, no onboarding gate (see App.vue's NO_ONBOARDING_ROUTE_NAMES —
- * a first-time visitor here must never be blocked by the language-picker
- * modal), and the tab bar is left in place (App.vue's showShellNav) so
- * anyone who bounces here still has a way back into the app itself.
+ * lands on instead), never from in-app navigation. No onboarding gate (see
+ * App.vue's NO_ONBOARDING_ROUTE_NAMES — a first-time visitor here must never
+ * be blocked by the language-picker modal), and the tab bar is left in place
+ * (App.vue's showShellNav) so anyone who bounces here still has a way back
+ * into the app itself. Its copy lives in the `download.*` catalog keys (not
+ * hardcoded, despite an earlier version of this comment saying otherwise) so
+ * router/index.ts's `?lang=` override (LANG_OVERRIDE_ROUTES) actually
+ * changes what a visitor reads here, not just the tab bar around it.
  *
  * Structure is a synthesis of https://1ayah.pages.dev/ (a sibling project's
  * marketing page) rather than a copy: same shape (hero → feature bento →
@@ -42,76 +46,79 @@ import LazyLoopVideo from '@/components/LazyLoopVideo.vue'
  * navigating anywhere. The embed itself still lazy-loads (native
  * `loading="lazy"` on the iframe), so nothing YouTube-side fetches until a
  * visitor actually scrolls near it.
+ *
+ * The iOS instructions reference real iOS/Safari UI element names (Share,
+ * Add to Home Screen, Shortcuts, …) — those are rendered via `v-html` from
+ * the catalog because they're the one place this page needs inline `<strong>`/
+ * `<a>`/`<code>` markup around specific words, not plain interpolated text.
+ * Safe here (unlike TafsirPanel/MorphologyPopup's own `v-html`, which render
+ * real content): every string is developer-authored catalog copy, never user
+ * input. Deliberately kept in their original English form rather than
+ * translated — they name actual on-screen iOS button labels, which don't
+ * change with this page's own language and would mislead a device that
+ * isn't itself set to Arabic/Bengali if translated.
  */
 
+const { t } = useI18n()
 const instructionsEl = ref<HTMLElement | null>(null)
 
-const demos = [
+const demos = computed(() => [
   {
     icon: BookOpenText,
-    title: 'Word-by-word & tajweed',
-    body: "Tap any word for its root, grammar, and translation. Madani (QPC) with color-coded tajweed, Indopak Nastaleeq, or the real scanned mushaf — your choice.",
+    title: t('download.demo.wbw.title'),
+    body: t('download.demo.wbw.body'),
     video: '/videos/reader.mp4',
     poster: '/videos/reader-poster.webp',
-    label: 'Demo: reading the mushaf with word-by-word translation and tajweed',
+    label: t('download.demo.wbw.label'),
   },
   {
     icon: ListChecks,
-    title: 'One adaptive daily queue',
-    body: 'New memorization, revision, and weak-spot reinforcement in a single queue — with streaks to keep the habit going.',
+    title: t('download.demo.queue.title'),
+    body: t('download.demo.queue.body'),
     video: '/videos/today.mp4',
     poster: '/videos/today-poster.webp',
-    label: "Demo: completing today's adaptive practice queue",
+    label: t('download.demo.queue.label'),
   },
   {
     icon: Brain,
-    title: 'Watch it add up',
-    body: 'A 604-page grid and Juz overview, color-coded by how clean each revision was — plus a weakness score that flags what needs another look.',
+    title: t('download.demo.progress.title'),
+    body: t('download.demo.progress.body'),
     video: '/videos/progress.mp4',
     poster: '/videos/progress-poster.webp',
-    label: 'Demo: the memorization progress grid',
+    label: t('download.demo.progress.label'),
     accent: true,
   },
   {
     icon: Headphones,
-    title: 'Listen & record',
-    body: '14 verse-by-verse reciters, continuous playback by surah, juz, or the whole Qur’an, and recording your own recitation to review.',
+    title: t('download.demo.audio.title'),
+    body: t('download.demo.audio.body'),
     video: '/videos/audio.mp4',
     poster: '/videos/audio-poster.webp',
-    label: 'Demo: listening to recitation and switching reciters',
+    label: t('download.demo.audio.label'),
   },
   {
     icon: Highlighter,
-    title: 'Share highlighted verses',
-    body: 'Tap-to-paint any passage in up to six colors, then share a read-only link. No account needed to view it.',
+    title: t('download.demo.highlight.title'),
+    body: t('download.demo.highlight.body'),
     video: '/videos/preview.mp4',
     poster: '/videos/preview-poster.webp',
-    label: 'Demo: highlighting a passage and sharing the link',
+    label: t('download.demo.highlight.label'),
   },
   {
     icon: Settings,
-    title: 'Your data, your device',
-    body: 'Everything is stored locally. Export a backup anytime, and switch between light, dark, and sepia, or Arabic, Bengali, and English.',
+    title: t('download.demo.settings.title'),
+    body: t('download.demo.settings.body'),
     video: '/videos/settings.mp4',
     poster: '/videos/settings-poster.webp',
-    label: 'Demo: theme, language, and backing up your data',
+    label: t('download.demo.settings.label'),
   },
-]
+])
 
-const steps = [
-  {
-    title: 'Start reading',
-    body: 'Pick Madani, Indopak, or scanned pages, and mark what you’ve already memorized.',
-  },
-  {
-    title: 'Practice a few minutes a day',
-    body: "Today's queue mixes new memorization, revision, and listening — built around your own pace.",
-  },
-  {
-    title: 'Review what’s shaky',
-    body: 'Mark mistakes as you read, then let Quiz mode and the weakness score target exactly those verses.',
-  },
-]
+const steps = computed(() => [
+  { title: t('download.step.read.title'), body: t('download.step.read.body') },
+  { title: t('download.step.practice.title'), body: t('download.step.practice.body') },
+  { title: t('download.step.review.title'), body: t('download.step.review.body') },
+])
 
 function scrollToIos() {
   instructionsEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -126,11 +133,11 @@ function scrollToIos() {
         width="128"
         height="128"
         fetchpriority="high"
-        alt="Murajah"
+        :alt="t('download.brand')"
         class="logo"
       />
-      <h1 class="brand">Murajah</h1>
-      <p class="tagline">Your daily companion for Qur'an memorization &amp; revision.</p>
+      <h1 class="brand">{{ t('download.brand') }}</h1>
+      <p class="tagline">{{ t('download.tagline') }}</p>
 
       <div class="cta-row">
         <a
@@ -140,19 +147,19 @@ function scrollToIos() {
           rel="noopener noreferrer"
         >
           <Icon :icon="Store" :size="20" />
-          <span>Install for Android</span>
+          <span>{{ t('download.installAndroid') }}</span>
         </a>
         <a class="cta cta-ios" href="#ios-install" @click.prevent="scrollToIos">
           <Icon :icon="Apple" :size="20" />
-          <span>Install for iOS</span>
+          <span>{{ t('download.installIos') }}</span>
         </a>
       </div>
     </section>
 
     <section class="section demos-section" aria-labelledby="demos-heading">
-      <p class="eyebrow">See it in action</p>
-      <h2 id="demos-heading" class="section-title">Everything you need to memorize.</h2>
-      <p class="section-lead">A closer look at the tools that make daily memorization stick.</p>
+      <p class="eyebrow">{{ t('download.demosEyebrow') }}</p>
+      <h2 id="demos-heading" class="section-title">{{ t('download.demosTitle') }}</h2>
+      <p class="section-lead">{{ t('download.demosLead') }}</p>
 
       <div class="demos-grid">
         <article v-for="d in demos" :key="d.title" class="demo-card" :class="{ 'demo-card-accent': d.accent }">
@@ -167,12 +174,9 @@ function scrollToIos() {
     </section>
 
     <section class="section process-section" aria-labelledby="process-heading">
-      <p class="eyebrow">How it works</p>
-      <h2 id="process-heading" class="section-title">A clear path to lifelong retention.</h2>
-      <p class="section-lead">
-        No overwhelming page-at-a-time grind — just small, repeatable steps that fit into a busy
-        day.
-      </p>
+      <p class="eyebrow">{{ t('download.processEyebrow') }}</p>
+      <h2 id="process-heading" class="section-title">{{ t('download.processTitle') }}</h2>
+      <p class="section-lead">{{ t('download.processLead') }}</p>
 
       <ol class="steps">
         <li v-for="(s, i) in steps" :key="s.title" class="step">
@@ -187,41 +191,37 @@ function scrollToIos() {
 
     <section class="cta-banner">
       <Icon :icon="PencilLine" :size="28" class="cta-banner-icon" />
-      <h2 class="cta-banner-title">Ready to start your memorization journey?</h2>
-      <p class="cta-banner-sub">Free and open-source. Step by step, verse by verse.</p>
+      <h2 class="cta-banner-title">{{ t('download.ctaTitle') }}</h2>
+      <p class="cta-banner-sub">{{ t('download.ctaSub') }}</p>
       <div class="badge-row">
         <a
           class="badge-link"
           :href="PLAY_STORE_URL"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Get it on Google Play"
+          :aria-label="t('download.googlePlayAlt')"
         >
-          <img src="/badges/google-play-badge.png" alt="Get it on Google Play" class="badge-img" />
+          <img src="/badges/google-play-badge.png" :alt="t('download.googlePlayAlt')" class="badge-img" />
         </a>
-        <a class="badge-link" href="#ios-install" aria-label="Install on iOS" @click.prevent="scrollToIos">
-          <img src="/badges/install-ios-badge.svg" alt="Install on iOS" class="badge-img" />
+        <a class="badge-link" href="#ios-install" :aria-label="t('download.installIosAlt')" @click.prevent="scrollToIos">
+          <img src="/badges/install-ios-badge.svg" :alt="t('download.installIosAlt')" class="badge-img" />
         </a>
       </div>
       <a class="cta cta-banner-discord" :href="DISCORD_URL" target="_blank" rel="noopener noreferrer">
         <Icon :icon="MessageCircle" :size="18" />
-        <span>Join the Discord</span>
+        <span>{{ t('download.joinDiscord') }}</span>
       </a>
     </section>
 
     <section id="ios-install" ref="instructionsEl" class="ios-instructions" aria-labelledby="ios-heading">
-      <p class="eyebrow">Install on iOS as app</p>
-      <h2 id="ios-heading" class="ios-title">Add Murajah to your Home Screen</h2>
-      <p class="ios-lead">
-        iOS doesn't have a Murajah app in the App Store — instead, you can add the web app to
-        your Home Screen so it opens and feels just like a regular app. Watch the short video
-        below, or follow the written steps.
-      </p>
+      <p class="eyebrow">{{ t('download.ios.eyebrow') }}</p>
+      <h2 id="ios-heading" class="ios-title">{{ t('download.ios.title') }}</h2>
+      <p class="ios-lead">{{ t('download.ios.lead') }}</p>
 
       <div class="video-wrap">
         <iframe
           src="https://www.youtube.com/embed/kwymbQOGipc"
-          title="How to install Murajah on iOS"
+          :title="t('download.ios.videoTitle')"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
           loading="lazy"
@@ -231,40 +231,33 @@ function scrollToIos() {
       <div class="option-card">
         <h3 class="option-title">
           <Icon :icon="Share" :size="16" class="option-icon" />
-          Option 1: Quick Safari method
-          <span class="option-note">(uses the default web icon)</span>
+          {{ t('download.ios.option1Title') }}
+          <span class="option-note">{{ t('download.ios.option1Note') }}</span>
         </h3>
+        <!-- Each step names a real iOS/Safari UI element (Share, Add to Home
+             Screen, …) via inline <strong>/<a> markup the catalog string
+             itself carries — see this file's top doc comment for why v-html
+             is safe here and why those names stay untranslated. -->
         <ol class="option-steps">
-          <li>
-            Open the
-            <a href="https://murajah.pages.dev/" target="_blank" rel="noopener noreferrer">Murajah Web App</a>
-            in <strong>Safari</strong>.
-          </li>
-          <li>Tap the <strong>Share</strong> button (square with an arrow pointing up).</li>
-          <li>Scroll down and select <strong>Add to Home Screen</strong>.</li>
-          <li>Rename it if you want, then tap <strong>Add</strong>.</li>
+          <li v-html="t('download.ios.option1Step1')" />
+          <li v-html="t('download.ios.option1Step2')" />
+          <li v-html="t('download.ios.option1Step3')" />
+          <li v-html="t('download.ios.option1Step4')" />
         </ol>
       </div>
 
       <div class="option-card">
         <h3 class="option-title">
           <Icon :icon="Sparkles" :size="16" class="option-icon" />
-          Option 2: Shortcuts app
-          <span class="option-note">(allows a custom icon image)</span>
+          {{ t('download.ios.option2Title') }}
+          <span class="option-note">{{ t('download.ios.option2Note') }}</span>
         </h3>
         <ol class="option-steps">
-          <li>Open the <strong>Shortcuts</strong> app and tap <strong>+</strong> in the top right.</li>
-          <li>Tap <strong>Add Action</strong>, search for <strong>Open URLs</strong>, and select it.</li>
-          <li>
-            Paste the website link
-            <code>https://murajah.pages.dev/</code>
-            into the URL field.
-          </li>
-          <li>
-            Tap the down arrow at the top (next to the shortcut name) →
-            <strong>Add to Home Screen</strong>.
-          </li>
-          <li>Tap the icon image to select a custom photo, set your title, and tap <strong>Add</strong>.</li>
+          <li v-html="t('download.ios.option2Step1')" />
+          <li v-html="t('download.ios.option2Step2')" />
+          <li v-html="t('download.ios.option2Step3')" />
+          <li v-html="t('download.ios.option2Step4')" />
+          <li v-html="t('download.ios.option2Step5')" />
         </ol>
       </div>
     </section>
@@ -273,8 +266,8 @@ function scrollToIos() {
       <a class="discord-card" :href="DISCORD_URL" target="_blank" rel="noopener noreferrer">
         <Icon :icon="MessageCircle" :size="24" class="discord-icon" />
         <span class="discord-text">
-          <span class="discord-title">Join the Murajah Discord</span>
-          <span class="discord-sub">Get support, share feedback, and connect with other reciters.</span>
+          <span class="discord-title">{{ t('download.discordTitle') }}</span>
+          <span class="discord-sub">{{ t('download.discordSub') }}</span>
         </span>
       </a>
     </section>

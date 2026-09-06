@@ -49,3 +49,33 @@ export function lazyComponent<T extends object>(loader: AsyncComponentLoader<T>,
     },
   })
 }
+
+/**
+ * Warms an in-page lazy component's chunk during idle time, ahead of the tap
+ * that would actually mount it.
+ *
+ * `import()` doesn't just fetch one file: the browser fetches the target
+ * module, parses it to find *its own* static imports, fetches those, and so
+ * on — a dependency-resolution waterfall. For a component with a shallow
+ * import graph that's imperceptible, but one that pulls in several sibling
+ * components/composables (each their own chunk) pays that waterfall in full
+ * on the very tap that's supposed to open it, even though every chunk is
+ * already sitting in the service worker's precache — Cache Storage lookups
+ * and module evaluation are still async work the browser was doing nowhere
+ * near the click until now.
+ *
+ * Calling the *same* loader here, earlier and idly, resolves that whole
+ * graph before the tap arrives: JS engines cache a module by resolved
+ * specifier, so `lazyComponent`'s own later call to this loader (inside
+ * `defineAsyncComponent`) is then served from that cache instead of
+ * repeating the trip. Errors are swallowed — this is only a warm-up;
+ * `lazyComponent`'s own `onError` is what surfaces a real failure, on the
+ * actual mount attempt.
+ */
+export function prefetchComponent<T extends object>(loader: AsyncComponentLoader<T>): void {
+  const idle: (cb: () => void) => void =
+    typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb) => setTimeout(cb, 1)
+  idle(() => {
+    void Promise.resolve(loader()).catch(() => {})
+  })
+}

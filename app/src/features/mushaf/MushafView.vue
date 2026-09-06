@@ -13,7 +13,7 @@ import { useMushafQuickJump } from '@/composables/useMushafQuickJump'
 import { useMushafLocation } from '@/composables/useMushafLocation'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
-import { lazyComponent } from '@/composables/lazyComponent'
+import { lazyComponent, prefetchComponent } from '@/composables/lazyComponent'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { keyToPageDelta } from '@/core/reader/keyboard'
 import { usePagerIcons } from '@/composables/usePagerIcons'
@@ -53,21 +53,27 @@ const audio = useAudioStore()
 // reads too — if a session is already playing from one of those, this
 // Mushaf-local chunk failing must not reach out and close a working player
 // elsewhere just because Mushaf's own copy of it failed to load.
-const AudioHost = lazyComponent(
-  () => import('@/features/audio/AudioHost.vue'),
-  () => {
-    if (!audio.isPlaying) audio.open = false
-  },
-)
+const audioHostLoader = () => import('@/features/audio/AudioHost.vue')
+const AudioHost = lazyComponent(audioHostLoader, () => {
+  if (!audio.isPlaying) audio.open = false
+})
 
 // Record-your-recitation (7.6), mirroring the text reader's mic control — the
 // page blurs while `recorder.active` so a recall test can't be read off the scan.
 const recordOpen = ref(false)
-const RecordingPanel = lazyComponent(
-  () => import('@/features/audio/RecordingPanel.vue'),
-  () => (recordOpen.value = false),
-)
+const recordingPanelLoader = () => import('@/features/audio/RecordingPanel.vue')
+const RecordingPanel = lazyComponent(recordingPanelLoader, () => (recordOpen.value = false))
 const recorder = useRecorderStore()
+
+// Warm both chunks during idle time so the first tap of either the headphone
+// or mic icon doesn't pay their import waterfall live — see
+// prefetchComponent's doc comment. AudioHost's graph is the deeper one (it
+// pulls in the reciter picker, playlist builder, etc.), which is what made
+// its delay noticeable next to the mic's much shallower one.
+onMounted(() => {
+  prefetchComponent(audioHostLoader)
+  prefetchComponent(recordingPanelLoader)
+})
 
 const img = useMushafImages(store)
 const zoom = useMushafZoom()

@@ -105,6 +105,19 @@ test.describe('first-time visitor (unseeded storage)', () => {
   })
 })
 
+// Regression: `?lang=` (router/index.ts's LANG_OVERRIDE_ROUTES) used to
+// repaint <html lang/dir> and the tab bar (both driven by core/i18n's
+// reactive `t()`) while this page's own copy stayed hardcoded English —
+// the override "worked" everywhere except the one thing a visitor actually
+// reads. Now the page's content comes from the `download.*` catalog too.
+test('?lang= overrides the page content itself, not just the tab bar', async ({ page }) => {
+  await page.goto('/download?lang=ar')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ar')
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  await expect(page.locator('h1.brand')).toHaveText('مراجعة')
+  await expect(page.getByText('التثبيت لأندرويد')).toBeVisible()
+})
+
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/download')
   const results = await new AxeBuilder({ page })

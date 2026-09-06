@@ -12,7 +12,7 @@ import { useReaderRouteSync, type FriendlyResolution } from '@/composables/useRe
 import { useReaderPersistence } from '@/composables/useReaderPersistence'
 import { useProgressPersistence } from '@/composables/useProgressPersistence'
 import { useReadingReward } from '@/composables/useReadingReward'
-import { lazyComponent } from '@/composables/lazyComponent'
+import { lazyComponent, prefetchComponent } from '@/composables/lazyComponent'
 import { useMadaniPage } from '@/composables/useMadaniPage'
 import { getPageHasanah } from '@/core/memorization/pageHasanah.js'
 import { useReaderKeyboard } from '@/composables/useReaderKeyboard'
@@ -92,12 +92,10 @@ const audio = useAudioStore()
 // reads too — if a session is already playing from one of those, this
 // Reader-local chunk failing must not reach out and close a working player
 // elsewhere just because Reader's own copy of it failed to load.
-const AudioHost = lazyComponent(
-  () => import('@/features/audio/AudioHost.vue'),
-  () => {
-    if (!audio.isPlaying) audio.open = false
-  },
-)
+const audioHostLoader = () => import('@/features/audio/AudioHost.vue')
+const AudioHost = lazyComponent(audioHostLoader, () => {
+  if (!audio.isPlaying) audio.open = false
+})
 const audioPages = computed(() => [reader.page])
 // The recited ayah (verse grain), or a deep-linked ayah (/2/255) — highlighted +
 // scrolled to in the tafsir surface.
@@ -114,11 +112,19 @@ const tafsirAutoScroll = computed(() => (audio.activeVerse ? audio.autoScroll : 
 // off the page while it's being recited into the mic.
 const recordOpen = ref(false)
 const recordAutoStart = ref(false)
-const RecordingPanel = lazyComponent(
-  () => import('@/features/audio/RecordingPanel.vue'),
-  () => (recordOpen.value = false),
-)
+const recordingPanelLoader = () => import('@/features/audio/RecordingPanel.vue')
+const RecordingPanel = lazyComponent(recordingPanelLoader, () => (recordOpen.value = false))
 const recorder = useRecorderStore()
+
+// Warm both chunks during idle time so the first tap of either the headphone
+// or mic icon doesn't pay their import waterfall live — see
+// prefetchComponent's doc comment. AudioHost's graph is the deeper one (it
+// pulls in the reciter picker, playlist builder, etc.), which is what made
+// its delay noticeable next to the mic's much shallower one.
+onMounted(() => {
+  prefetchComponent(audioHostLoader)
+  prefetchComponent(recordingPanelLoader)
+})
 
 // Today's quick-test habit sends a random memorized page here (recorder.pendingPage)
 // and pushes the URL; once the reader actually lands on that page, run the

@@ -55,20 +55,72 @@ async function setLocale(next: Locale): Promise<void> {
   messages.value = await loadCatalog(next)
   locale.value = next
   apply(next)
+  // An explicit choice always supersedes a route's `?lang=` override (see
+  // setLocaleOverride) — without this, leaving an overridden route would
+  // still restore the *old* saved preference, silently reverting the
+  // change just made.
+  overrideActive = false
   void setPref(LOCALE_PREF_KEY, next)
 }
 
-/** Apply the saved locale (or the default) on boot. Safe to await once at start. */
-async function hydrateLocale(): Promise<void> {
+// Whether the active locale is currently a route's `?lang=` override rather
+// than the user's own saved preference — see setLocaleOverride's doc comment.
+let overrideActive = false
+
+/** Loads and applies whatever locale is actually saved (or the default) —
+ * the shared core of `hydrateLocale` and `clearLocaleOverride`. Checked
+ * against `overrideActive` immediately before writing, not just on entry:
+ * this runs concurrently with `setLocaleOverride` on a cold boot into an
+ * overridden route (App.vue's boot-time hydrate vs. the router's afterEach),
+ * and awaiting prefs + a catalog import is enough of a gap for the override
+ * to have already landed by the time this is ready to write — so re-check
+ * right before, and yield to it instead of clobbering it. */
+async function applyPersisted(): Promise<void> {
   const saved = await getPref<string>(LOCALE_PREF_KEY)
   const loc = isLocale(saved) ? saved : DEFAULT_LOCALE
-  messages.value = await loadCatalog(loc)
+  const msgs = await loadCatalog(loc)
+  if (overrideActive) return
+  messages.value = msgs
   locale.value = loc
   apply(loc)
+}
+
+/** Apply the saved locale (or the default) on boot. Safe to await more than
+ * once — each call re-reads prefs, so a locale saved after an earlier call
+ * (e.g. in a test) is picked up rather than replayed from a cache. */
+function hydrateLocale(): Promise<void> {
+  return applyPersisted()
+}
+
+/**
+ * Temporary, unpersisted locale override for shareable links — /download and
+ * /preview (see router/index.ts's LANG_OVERRIDE_ROUTES) take a `?lang=`
+ * query param so a link can open in a chosen language for whoever follows
+ * it (e.g. sharing an Arabic /preview link with someone whose own device/app
+ * is set to English), without touching that visitor's actual saved
+ * preference. Applies immediately and unconditionally — `applyPersisted`'s
+ * own late-write guard (above) is what keeps a concurrent boot-time hydrate
+ * from winning the race and clobbering this instead.
+ */
+async function setLocaleOverride(next: Locale): Promise<void> {
+  messages.value = await loadCatalog(next)
+  locale.value = next
+  apply(next)
+  overrideActive = true
+}
+
+/** Leaving a route whose `?lang=` was overriding the locale (or the param no
+ * longer names one): restore the user's own saved preference. A no-op when
+ * nothing is currently overridden, so the router can call this unconditionally
+ * on every navigation that isn't itself applying an override. */
+async function clearLocaleOverride(): Promise<void> {
+  if (!overrideActive) return
+  overrideActive = false
+  await applyPersisted()
 }
 
 export function useI18n() {
   return { locale, dir, t, setLocale }
 }
 
-export { t, setLocale, hydrateLocale, locale, dir }
+export { t, setLocale, hydrateLocale, setLocaleOverride, clearLocaleOverride, locale, dir }

@@ -6,7 +6,8 @@ import {
 } from 'vue-router'
 import { readerEnabled } from '@/core/flags'
 import { toast } from '@/composables/useToast'
-import { t } from '@/core/i18n'
+import { t, setLocaleOverride, clearLocaleOverride } from '@/core/i18n'
+import { isLocale } from '@/core/i18n/types'
 
 // Routes are lazy-loaded (code-split) so each feature ships its own chunk
 // and never bloats the initial reader bundle. See plans/archive/redesign-2026.md §3.
@@ -205,6 +206,27 @@ router.beforeEach((to) => {
   }
   if (to.name === 'reader-disabled' && readerEnabled()) {
     return { name: 'home' }
+  }
+})
+
+// Shareable, standalone-entry surfaces — reached from outside links (an app
+// listing, a shared verse-range) rather than in-app nav — take a `?lang=`
+// override so the link opens in a chosen language for whoever follows it,
+// regardless of their own saved preference (which this never touches; see
+// core/i18n's setLocaleOverride doc comment).
+const LANG_OVERRIDE_ROUTES = new Set([
+  'download',
+  'preview-landing',
+  'preview',
+  'preview-range',
+  'preview-page',
+])
+router.afterEach((to) => {
+  const lang = to.query.lang
+  if (LANG_OVERRIDE_ROUTES.has(String(to.name)) && isLocale(lang)) {
+    void setLocaleOverride(lang)
+  } else {
+    void clearLocaleOverride()
   }
 })
 
