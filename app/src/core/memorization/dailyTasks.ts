@@ -7,7 +7,9 @@
  * `revisionCycle`), completely blind to SM-2 due dates or weakness. New
  * memorization walks the plan's front; weak pages get extra reinforcement from
  * the unified {@link ReviewSchedule}/weakness score — a separate goal from
- * revision, served by its own lane.
+ * revision, served by its own lane, and drawn from *every* memorized page (not
+ * just today's scope) so a page memorized long ago and since dropped out of
+ * scope can still be rescued once it decays.
  *
  * Pure and stateless: it says what *should* be done today. Completion state lives in
  * the day log (`DayRecord`), and finishing a task routes through the progress store's
@@ -105,11 +107,15 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
   const doneNew = input.completedToday?.newMemorization ?? []
   const doneWeak = input.completedToday?.weak ?? []
 
-  // Only memorized pages inside the scope are revisable.
-  const candidates = scopePages.filter((p) => memorized.has(p))
+  // Only memorized pages inside the scope rotate through the murajah cycle.
+  const scopedCandidates = scopePages.filter((p) => memorized.has(p))
 
+  // Weakness is scored over *every* memorized page, not just today's maintenance
+  // scope — a page memorized long ago and since dropped out of scope still decays,
+  // and the murajah rotation above will never visit it again to catch that. Weak
+  // reinforcement is its own lane precisely so a page like that isn't orphaned.
   const weakness = calculateAllWeaknesses({
-    pages: candidates,
+    pages: [...memorized],
     perfectRevisions: input.strength ?? new Map(),
     mistakesMap: input.mistakes ?? new Map(),
     pageReviewData: reviewData,
@@ -120,7 +126,7 @@ export function generateDailyTasks(input: DailyTasksInput): DailyTasks {
   // The murajah rotation: N pages a day, walking every memorized scope page in
   // mushaf order and wrapping back to the start — no due dates, no weakness.
   const cursor = input.revisionCursor ?? INITIAL_REVISION_CURSOR
-  const revision = revisionChunkForToday(candidates, cursor, pace.revisionPagesPerDay, todayStr)
+  const revision = revisionChunkForToday(scopedCandidates, cursor, pace.revisionPagesPerDay, todayStr)
 
   // The rotation can only stall (not overflow) — it's a fixed-size chunk every
   // day. Gate the new-memorization pause on the cursor going stale, and only

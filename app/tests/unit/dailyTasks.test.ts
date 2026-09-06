@@ -272,6 +272,42 @@ describe('generateDailyTasks — weak reinforcement', () => {
     })
     expect(tasks.weakReinforcement).toEqual([])
   })
+
+  it('reaches outside today\'s scope for the next-weakest page when the scope\'s own weak pages are all in today\'s revision chunk', () => {
+    // A small scope (e.g. a beginner's juz) where the revision rotation covers
+    // every scoped page today — the exact "reinforce disappeared" report: pages
+    // 19-20 are weak but already in revision, so there's nothing left *in scope*
+    // to reinforce. Pages 502/578 were memorized long ago, are still weak, and
+    // have since fallen outside the plan's scope — they must still surface.
+    const scopePages = range(1, 20)
+    const stale = (lastReviewDate: string) => sched('2026-07-16', { lastReviewDate, reviewCount: 0 })
+    const reviewData = new Map<number, ReviewSchedule>([
+      [19, stale('2026-05-01')], // weak, in scope
+      [20, stale('2026-05-01')], // weak, in scope
+      [502, stale('2026-01-01')], // weak, long ago, now outside scope
+      [578, stale('2026-01-01')], // weak, long ago, now outside scope
+    ])
+    const tasks = generateDailyTasks({
+      scopePages,
+      memorized: new Set([...scopePages, 502, 578]),
+      reviewData,
+      mistakes: new Map([
+        [19, new Set(range(1, 30))],
+        [20, new Set(range(1, 30))],
+        [502, new Set(range(1, 30))],
+        [578, new Set(range(1, 30))],
+      ]),
+      // The whole scope rotates through revision today — pages 19/20 included.
+      pace: pace({ revisionPagesPerDay: 20, weakPagesPerDay: 2 }),
+      today: TODAY,
+    })
+    expect(tasks.revision).toEqual(scopePages)
+    expect(tasks.revision).toContain(19)
+    expect(tasks.revision).toContain(20)
+    // Reinforcement doesn't vanish — it falls back to the next-weakest memorized
+    // pages, even though 502/578 are outside today's maintenance scope.
+    expect(tasks.weakReinforcement).toEqual([502, 578])
+  })
 })
 
 describe('handleMissedDays', () => {
