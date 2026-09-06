@@ -99,10 +99,10 @@ test('marking verses across two days tracks the streak, journal, and page gradua
 
   const words246 = page.locator('[data-verse="2:246"]')
   await expect(words246.first()).toBeVisible()
-  await expect(words246.first()).not.toHaveClass(/state-hl-green/)
+  await expect(words246.first()).not.toHaveClass(/state-memorized/)
 
   await wordAt(page, '2:246').click()
-  await expect(words246.first()).toHaveClass(/state-hl-green/)
+  await expect(words246.first()).toHaveClass(/state-memorized/)
   await expect(page.getByText('5 of 15 lines')).toBeVisible()
 
   await page.waitForTimeout(500) // the debounced write
@@ -141,7 +141,7 @@ test('marking verses across two days tracks the streak, journal, and page gradua
   await page.goto('/memorize')
   await expect(page.getByText('Page 40', { exact: true })).toBeVisible({ timeout: 10_000 })
   await expect(page.getByText('5 of 15 lines')).toBeVisible()
-  await expect(page.locator('[data-verse="2:246"]').first()).toHaveClass(/state-hl-green/)
+  await expect(page.locator('[data-verse="2:246"]').first()).toHaveClass(/state-memorized/)
 
   // Finish the page: the second verse, then the third graduates it.
   await wordAt(page, '2:247').click()

@@ -42,21 +42,21 @@ test('quick-jump accepts an explicit "surah N" and shows the English name for bo
   // English transliteration so the user can confirm the match before choosing.
   await openJump()
   await input.fill('surah 1')
-  await expect(page.getByRole('option')).toHaveText('Surah 1 — Al-Fatihah')
+  await expect(page.getByRole('option')).toHaveText('Surah 1: Al-Fatihah')
   await input.press('Enter')
   await expect(page).toHaveURL(/\/read\/qpc\/1(\?|$)/)
 
   await openJump()
   await input.fill('surah 114')
-  await expect(page.getByRole('option')).toHaveText('Surah 114 — An-Nas')
+  await expect(page.getByRole('option')).toHaveText('Surah 114: An-Nas')
   await input.press('Enter')
   await expect(page).toHaveURL(/\/read\/qpc\/604(\?|$)/)
 
-  // A name search resolves to the same "Surah N — Name" confirmation, not a
+  // A name search resolves to the same "Surah N: Name" confirmation, not a
   // raw echo of the typed text.
   await openJump()
   await input.fill('baqarah')
-  await expect(page.getByRole('option')).toHaveText('Surah 2 — Al-Baqarah')
+  await expect(page.getByRole('option')).toHaveText('Surah 2: Al-Baqarah')
   await input.press('Enter')
   await expect(page).toHaveURL(/\/read\/qpc\/2(\?|$)/)
 })

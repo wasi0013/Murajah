@@ -20,10 +20,20 @@ const props = defineProps<{
   /** location (`s:a:w`) → state class suffix. `hl-*` are the /preview route's
    * multi-color highlighter washes (core/navigation/previewRoute.ts); `mistake`
    * doubles as that route's default/red highlight, reusing the same class the
-   * real mistake-marking feature uses. */
+   * real mistake-marking feature uses. `memorized` is /memorize's own "this
+   * word is already marked" cue — deliberately not `hl-green` (see
+   * `.state-memorized`'s doc comment for why). */
   wordStates?: Record<
     string,
-    'mistake' | 'morphology' | 'selected' | 'hl-amber' | 'hl-blue' | 'hl-green' | 'hl-purple' | 'hl-teal'
+    | 'mistake'
+    | 'morphology'
+    | 'selected'
+    | 'hl-amber'
+    | 'hl-blue'
+    | 'hl-green'
+    | 'hl-purple'
+    | 'hl-teal'
+    | 'memorized'
   >
   /** word ids currently marked as mistakes (global, layout-independent). */
   mistakeIds?: Set<number>
@@ -383,6 +393,20 @@ watch(
 .state-playing {
   background: color-mix(in oklab, var(--color-accent) 9%, transparent);
   box-shadow: inset 0 -1.5px 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent);
+  border-radius: var(--radius-sm);
+}
+/* /memorize's "already marked as memorized" cue — same soft-wash technique as
+   `.state-playing` above (a background, not `.state-hl-green`'s colour +
+   wavy underline), for two reasons: this page forces the tajweed glyph font
+   (see useMarkPage.ts), whose ink is baked-in COLR/CPAL, so `.state-hl-green`'s
+   `color` there is a no-op and its wavy underline is left as the *only*
+   visible cue, reading as a stray scribble rather than a highlight; and even
+   where it would render, `.state-hl-green` is the /preview share feature's
+   green highlight color, a different, six-color vocabulary this page has no
+   business borrowing meaning from. A background wash stays visible under any
+   font and doesn't fight the tajweed colouring it sits behind. */
+.state-memorized {
+  background: color-mix(in oklab, var(--hl-green) 20%, transparent);
   border-radius: var(--radius-sm);
 }
 /* /preview route's multi-color highlighter washes (core/navigation/previewRoute.ts).

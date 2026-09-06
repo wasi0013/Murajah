@@ -98,7 +98,7 @@ describe('MarkPageView', () => {
 
     const words = wrapper.findAll('.word')
     expect(words).toHaveLength(4)
-    expect(words.some((w) => w.classes().includes('state-hl-green'))).toBe(false)
+    expect(words.some((w) => w.classes().includes('state-memorized'))).toBe(false)
 
     await words[0]!.trigger('pointerdown')
     await words[0]!.trigger('pointerup')
@@ -106,9 +106,9 @@ describe('MarkPageView', () => {
 
     // Tapping any word in ayah 1 marks the whole ayah (both its words).
     const after = wrapper.findAll('.word')
-    expect(after[0]!.classes()).toContain('state-hl-green')
-    expect(after[1]!.classes()).toContain('state-hl-green')
-    expect(after[2]!.classes()).not.toContain('state-hl-green')
+    expect(after[0]!.classes()).toContain('state-memorized')
+    expect(after[1]!.classes()).toContain('state-memorized')
+    expect(after[2]!.classes()).not.toContain('state-memorized')
 
     expect(wrapper.text()).toContain('1 of 2 lines')
 
@@ -162,7 +162,7 @@ describe('MarkPageView', () => {
 
     // The tap must be ignored outright, not applied-then-clobbered: nothing
     // toggled, and no line-fill/journal side effect fired.
-    expect(wrapper.findAll('.word').some((w) => w.classes().includes('state-hl-green'))).toBe(false)
+    expect(wrapper.findAll('.word').some((w) => w.classes().includes('state-memorized'))).toBe(false)
     expect(usePartialProgressStore().marks).toEqual([])
   })
 

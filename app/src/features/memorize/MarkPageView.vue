@@ -26,10 +26,12 @@ import { useI18n } from '@/core/i18n'
  * Tap gesture (pointerdown/move/up, tap-vs-drag via TAP_SLOP) mirrors
  * PreviewPageView.vue's, but resolves `data-verse` (surah:ayah) rather than
  * `data-loc` (surah:ayah:word) — MVP only ever toggles a whole ayah, never a
- * word range (see the design doc's "Not Doing"). Word-states reuse the
- * existing `hl-green` wash `ReadingSurface` already renders for `/preview`'s
- * share feature — no new CSS/state needed, just a different (store-backed,
- * not URL-driven) source of truth.
+ * word range (see the design doc's "Not Doing"). Marked words get
+ * `ReadingSurface`'s own `memorized` word state — a subtle green background
+ * wash, not the `/preview` share feature's `hl-green` (colour + wavy
+ * underline): this page forces the tajweed glyph font, whose baked-in ink
+ * makes plain `color` a no-op and would've left only a stray underline
+ * "scribble" as the visible cue (see `.state-memorized`'s doc comment).
  *
  * Once a page's marks cover every word, `useToday.markPartialProgress`
  * itself advances `plan.newFront` — this view's `pageNum` is reactive to
@@ -97,13 +99,13 @@ const lineCoverage = computed(() => {
 
 const wordStates = computed(() => {
   const c = chunk.value
-  const states: Record<string, 'hl-green'> = {}
+  const states: Record<string, 'memorized'> = {}
   if (!c || partialProgress.page !== pageNum.value) return states
   for (const w of c.words) {
     const wSurah = Number(w.surah)
     const wAyah = Number(w.ayah)
     const marked = partialProgress.marks.some((m) => m.surah === wSurah && m.ayah === wAyah)
-    if (marked) states[w.location] = 'hl-green'
+    if (marked) states[w.location] = 'memorized'
   }
   return states
 })

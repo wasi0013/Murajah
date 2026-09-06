@@ -358,8 +358,8 @@ test('the Juz and Pages tabs render the ported analytics', async ({ page }) => {
 
   // Page-by-page heatmap: 604 dots grouped into 30 juz boxes; a dot deep-links.
   await page.getByRole('radio', { name: 'Pages', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Page 1 — not started' })).toBeVisible()
-  await page.getByRole('button', { name: 'Page 42 — not started' }).click()
+  await expect(page.getByRole('button', { name: 'Page 1: not started' })).toBeVisible()
+  await page.getByRole('button', { name: 'Page 42: not started' }).click()
   await expect(page).toHaveURL(/\/page\/42$/)
 })
 
