@@ -360,7 +360,7 @@ function openJournal(): void {
               >
                 <span
                   class="line-fill-bar-inner"
-                  :style="{ width: `${frontLineCoverage.total > 0 ? (frontLineCoverage.covered / frontLineCoverage.total) * 100 : 0}%` }"
+                  :style="{ transform: `scaleX(${frontLineCoverage.total > 0 ? frontLineCoverage.covered / frontLineCoverage.total : 0})` }"
                 ></span>
               </span>
             </li>
@@ -688,11 +688,19 @@ function openJournal(): void {
   overflow: hidden;
 }
 .line-fill-bar-inner {
+  /* transform: scaleX(), not width, so the fill animates on the compositor
+     instead of triggering layout on every tick. transform-origin has to flip
+     with reading direction to still grow from the bar's start edge in RTL. */
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: var(--color-accent);
-  transition: width 0.2s ease;
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+.line-fill-bar-inner:dir(rtl) {
+  transform-origin: right;
 }
 .habit {
   display: flex;

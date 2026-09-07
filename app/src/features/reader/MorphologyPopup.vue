@@ -42,6 +42,18 @@ function place() {
   style.value = { top: `${top}px`, left: `${left}px` }
 }
 
+// Re-anchoring reads layout (getBoundingClientRect) on every scroll/resize tick,
+// which is exactly the pattern that forces a synchronous layout flush during a
+// scroll gesture. Coalesce to one read+write per frame instead of one per event.
+let placeRaf: number | null = null
+function schedulePlace() {
+  if (placeRaf !== null) return
+  placeRaf = requestAnimationFrame(() => {
+    placeRaf = null
+    place()
+  })
+}
+
 const ref_ = computed(() => {
   const [s, a, w] = props.location.split(':')
   return { surah: s, ayah: a, word: w }
@@ -63,15 +75,16 @@ onMounted(async () => {
   place()
   document.addEventListener('keydown', onKey, true)
   document.addEventListener('click', onDocPointer, true)
-  window.addEventListener('scroll', place, true)
-  window.addEventListener('resize', place)
+  window.addEventListener('scroll', schedulePlace, { capture: true, passive: true })
+  window.addEventListener('resize', schedulePlace, { passive: true })
 })
 onBeforeUnmount(() => {
   active.value = false
+  if (placeRaf !== null) cancelAnimationFrame(placeRaf)
   document.removeEventListener('keydown', onKey, true)
   document.removeEventListener('click', onDocPointer, true)
-  window.removeEventListener('scroll', place, true)
-  window.removeEventListener('resize', place)
+  window.removeEventListener('scroll', schedulePlace, true)
+  window.removeEventListener('resize', schedulePlace)
 })
 // Re-anchor when the tapped word changes without unmounting.
 watch(() => props.anchor, () => nextTick().then(place))

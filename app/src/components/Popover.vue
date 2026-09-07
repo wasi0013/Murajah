@@ -34,17 +34,32 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') open.value = false
 }
 
+// Coalesce scroll/resize re-anchoring to one read+write per frame instead of
+// one per event, so an open popover doesn't force a layout flush on every tick.
+let placeRaf: number | null = null
+function schedulePlace() {
+  if (placeRaf !== null) return
+  placeRaf = requestAnimationFrame(() => {
+    placeRaf = null
+    place()
+  })
+}
+
 function bind() {
   document.addEventListener('click', onDocPointer, true)
   document.addEventListener('keydown', onKey, true)
-  window.addEventListener('scroll', place, true)
-  window.addEventListener('resize', place)
+  window.addEventListener('scroll', schedulePlace, { capture: true, passive: true })
+  window.addEventListener('resize', schedulePlace, { passive: true })
 }
 function unbind() {
+  if (placeRaf !== null) {
+    cancelAnimationFrame(placeRaf)
+    placeRaf = null
+  }
   document.removeEventListener('click', onDocPointer, true)
   document.removeEventListener('keydown', onKey, true)
-  window.removeEventListener('scroll', place, true)
-  window.removeEventListener('resize', place)
+  window.removeEventListener('scroll', schedulePlace, true)
+  window.removeEventListener('resize', schedulePlace)
 }
 
 watch(open, async (o) => {

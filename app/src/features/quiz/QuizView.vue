@@ -480,10 +480,16 @@ function leave(): void {
   padding: 0.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
 }
 .card {
+  /* flex-start, not center: a centered flex child shifts its own top edge by
+     half of any height change (revealing the answer note, or a longer verse
+     on the next question while the DOM node is reused). That reads as layout
+     shift even outside the 500ms post-input exclusion window, e.g. on a
+     timed auto-advance. Anchoring to the top keeps the card's own height
+     changes from moving it. */
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 1rem 0;
 }
 .footer {

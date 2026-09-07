@@ -340,7 +340,7 @@ function backToReader() {
         ref="vpagerEl"
         class="vscroll"
         :class="{ 'vscroll-locked': zoom.zoomed.value }"
-        @scroll="vpagerOnScroll"
+        @scroll.passive="vpagerOnScroll"
       >
         <div v-for="slot in vpagerSlots" :key="slot.key" class="vslot">
           <div
