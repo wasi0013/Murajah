@@ -118,6 +118,31 @@ test('?lang= overrides the page content itself, not just the tab bar', async ({ 
   await expect(page.getByText('التثبيت لأندرويد')).toBeVisible()
 })
 
+// Regression: the demo clips themselves (screencasts/README.md "Localized
+// recordings") must follow `?lang=` the same way the page's own copy does —
+// DownloadView.vue's `demoAssets` picks the locale-suffixed video/poster
+// pair. Posters render eagerly (LazyLoopVideo's <img>, before the lazy <video>
+// mounts), so checking them doesn't need to scroll a card into view.
+test('?lang= swaps the demo clips to the localized recordings', async ({ page }) => {
+  await page.goto('/download')
+  await expect(page.locator('.demo-card').first().locator('img')).toHaveAttribute(
+    'src',
+    '/videos/reader-poster.webp',
+  )
+
+  await page.goto('/download?lang=bn')
+  await expect(page.locator('.demo-card').first().locator('img')).toHaveAttribute(
+    'src',
+    '/videos/reader-poster-bn.webp',
+  )
+
+  await page.goto('/download?lang=ar')
+  await expect(page.locator('.demo-card').first().locator('img')).toHaveAttribute(
+    'src',
+    '/videos/reader-poster-ar.webp',
+  )
+})
+
 test('has no serious a11y violations', async ({ page }) => {
   await page.goto('/download')
   const results = await new AxeBuilder({ page })

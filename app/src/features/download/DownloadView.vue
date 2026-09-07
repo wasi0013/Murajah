@@ -29,7 +29,12 @@ import LazyLoopVideo from '@/components/LazyLoopVideo.vue'
  * into the app itself. Its copy lives in the `download.*` catalog keys (not
  * hardcoded, despite an earlier version of this comment saying otherwise) so
  * router/index.ts's `?lang=` override (LANG_OVERRIDE_ROUTES) actually
- * changes what a visitor reads here, not just the tab bar around it.
+ * changes what a visitor reads here, not just the tab bar around it. The demo
+ * clips themselves follow the same `locale` (see `demoAssets` below): Arabic
+ * and Bangla recordings of the same six scripts live alongside the English
+ * ones in public/videos/, so `?lang=bn` (or a saved language preference)
+ * shows the app actually running in that language, not just this page's copy
+ * — see screencasts/README.md "Localized recordings" for how they're made.
  *
  * Structure is a synthesis of https://1ayah.pages.dev/ (a sibling project's
  * marketing page) rather than a copy: same shape (hero → feature bento →
@@ -59,32 +64,53 @@ import LazyLoopVideo from '@/components/LazyLoopVideo.vue'
  * isn't itself set to Arabic/Bengali if translated.
  */
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const instructionsEl = ref<HTMLElement | null>(null)
+
+/**
+ * Every published demo has a matching Arabic/Bangla recording (see
+ * screencasts/README.md "Localized recordings") — same script, same timing,
+ * just the on-screen app chrome in that language — named `<demo>-<locale>.mp4`
+ * / `<demo>-poster-<locale>.webp` alongside the English original. A demo
+ * added here without a localized pair yet should stay out of this set until
+ * one exists, so it falls back to the English clip instead of a 404.
+ */
+const LOCALIZED_DEMOS: ReadonlyArray<'ar' | 'bn'> = ['ar', 'bn']
+
+/** `demoAssets('reader')` → English `/videos/reader.mp4` + `reader-poster.webp`,
+ * or the current locale's `reader-ar.mp4` + `reader-poster-ar.webp` pair when
+ * one exists (see LOCALIZED_DEMOS above). */
+function demoAssets(base: string): { video: string; poster: string } {
+  const loc = locale.value
+  const suffix = LOCALIZED_DEMOS.includes(loc as 'ar' | 'bn') ? `-${loc}` : ''
+  return {
+    video: `/videos/${base}${suffix}.mp4`,
+    poster: `/videos/${base}-poster${suffix}.webp`,
+  }
+}
 
 const demos = computed(() => [
   {
     icon: BookOpenText,
     title: t('download.demo.wbw.title'),
     body: t('download.demo.wbw.body'),
-    video: '/videos/reader.mp4',
-    poster: '/videos/reader-poster.webp',
+    ...demoAssets('reader'),
     label: t('download.demo.wbw.label'),
+    accent: false,
   },
   {
     icon: ListChecks,
     title: t('download.demo.queue.title'),
     body: t('download.demo.queue.body'),
-    video: '/videos/today.mp4',
-    poster: '/videos/today-poster.webp',
+    ...demoAssets('today'),
     label: t('download.demo.queue.label'),
+    accent: false,
   },
   {
     icon: Brain,
     title: t('download.demo.progress.title'),
     body: t('download.demo.progress.body'),
-    video: '/videos/progress.mp4',
-    poster: '/videos/progress-poster.webp',
+    ...demoAssets('progress'),
     label: t('download.demo.progress.label'),
     accent: true,
   },
@@ -92,25 +118,25 @@ const demos = computed(() => [
     icon: Headphones,
     title: t('download.demo.audio.title'),
     body: t('download.demo.audio.body'),
-    video: '/videos/audio.mp4',
-    poster: '/videos/audio-poster.webp',
+    ...demoAssets('audio'),
     label: t('download.demo.audio.label'),
+    accent: false,
   },
   {
     icon: Highlighter,
     title: t('download.demo.highlight.title'),
     body: t('download.demo.highlight.body'),
-    video: '/videos/preview.mp4',
-    poster: '/videos/preview-poster.webp',
+    ...demoAssets('preview'),
     label: t('download.demo.highlight.label'),
+    accent: false,
   },
   {
     icon: Settings,
     title: t('download.demo.settings.title'),
     body: t('download.demo.settings.body'),
-    video: '/videos/settings.mp4',
-    poster: '/videos/settings-poster.webp',
+    ...demoAssets('settings'),
     label: t('download.demo.settings.label'),
+    accent: false,
   },
 ])
 
@@ -163,7 +189,12 @@ function scrollToIos() {
 
       <div class="demos-grid">
         <article v-for="d in demos" :key="d.title" class="demo-card" :class="{ 'demo-card-accent': d.accent }">
-          <LazyLoopVideo :src="d.video" :poster="d.poster" :label="d.label" class="demo-video" />
+          <!-- :key forces a remount on a locale change: LazyLoopVideo's own
+               <video> only mounts once it's scrolled into view (`started`),
+               and a bare :src swap on an already-mounted, already-playing
+               element isn't guaranteed to pick up a new source in every
+               browser without an explicit reload. -->
+          <LazyLoopVideo :key="locale" :src="d.video" :poster="d.poster" :label="d.label" class="demo-video" />
           <div class="demo-copy">
             <Icon :icon="d.icon" :size="18" class="demo-icon" />
             <h3 class="demo-title">{{ d.title }}</h3>
