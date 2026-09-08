@@ -10,10 +10,22 @@
  * externally-linked, static marketing/informational routes in a real headless
  * Chromium, waits for the boot placeholder to actually be gone and the
  * route's own content to be on screen, then writes the result as a real
- * static file at `dist/<route>/index.html` — served by Cloudflare Pages'
- * normal static-asset resolution *before* it ever consults `_redirects`' SPA
- * catch-all, so it reaches every visitor (human or bot) identically. No
- * user-agent sniffing, no divergent content, no separate "bot view".
+ * static file at BOTH `dist/<route>.html` and `dist/<route>/index.html` —
+ * Cloudflare Pages resolves a request in that same order (exact match →
+ * `<path>.html` → `<path>/index.html`), so both `/download` and `/download/`
+ * get a direct 200 with the real content, no redirect either way (confirmed
+ * with `wrangler pages dev`, which reproduces Pages' real asset resolution).
+ * That matters more than it sounds: this was originally *only* the directory
+ * form, which made the bare path 308 to the trailing-slash one — technically
+ * fine (curl -L follows it and lands on the right content), but 308 is a
+ * newer status code (2014) that some link-unfurl crawlers' HTTP clients
+ * don't reliably follow the way they follow 301/302. Rather than gamble on
+ * that, every route this script covers now serves its real content directly,
+ * with zero redirect hops, however it's requested. This is all served by
+ * Cloudflare Pages' normal static-asset resolution *before* it ever consults
+ * `_redirects`' SPA catch-all, so it reaches every visitor (human or bot)
+ * identically. No user-agent sniffing, no divergent content, no separate
+ * "bot view".
  *
  * Deliberately NOT included in this pass: `/`, `/contents`, `/live`,
  * `/listen` (all fetch through the IndexedDB/Web-Worker data client, which is
@@ -57,6 +69,7 @@ const SITE_ORIGIN = 'https://murajah.pages.dev'
 const OG_IMAGE = `${SITE_ORIGIN}/img/social/og-banner.jpg`
 const OG_IMAGE_WIDTH = 1200
 const OG_IMAGE_HEIGHT = 586
+const OG_IMAGE_ALT = 'The Murajah logo — a gold calligraphic "M" open-book mark — beside the wordmark on a dark navy background.'
 
 // Each `readySelector` is a selector already present in that view's template
 // root (see the view's own <template>) with no async data gate on it — i.e.
@@ -85,19 +98,23 @@ function escapeHtml(value) {
 }
 
 function injectMeta(html, route) {
-  // Cloudflare Pages resolves the directory asset this script writes
-  // (dist/download/index.html) at the trailing-slash URL — a bare
-  // `/download` 308-redirects to `/download/` (confirmed via `wrangler pages
-  // dev`, which reproduces Pages' real asset-resolution rules, unlike `vite
-  // preview`). The root README's own links already use the trailing-slash
-  // form for this reason. Canonical/OG point at the URL that actually serves
-  // 200, so a crawler that doesn't follow redirects for these tags still
-  // resolves the metadata to the real page rather than a hop away from it.
+  // The trailing-slash form, matching the root README's own links and this
+  // script's `dist/<route>/index.html` output — but see the header comment:
+  // both this and the bare-path form now serve 200 directly, so this choice
+  // is just "pick one for canonical/og:url", not "avoid a redirect".
   const canonical = `${SITE_ORIGIN}${route.path}/`
   const title = escapeHtml(route.title)
   const description = escapeHtml(route.description)
 
+  // The `prefix` attribute is the Open Graph protocol's own RDFa namespace
+  // declaration (https://ogp.me/ — "Required" per spec, `<html prefix="og:
+  // https://ogp.me/ns#">`). No crawler still enforces it — Facebook dropped
+  // requiring it years ago — but it costs nothing and it's what "the
+  // standard" actually specifies, so there's no reason not to.
   let out = html
+    .replace(/<html([^>]*)>/, (_match, attrs) =>
+      /\bprefix=/.test(attrs) ? `<html${attrs}>` : `<html${attrs} prefix="og: https://ogp.me/ns#">`,
+    )
     .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
     .replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${description}" />`)
 
@@ -105,17 +122,21 @@ function injectMeta(html, route) {
     `<link rel="canonical" href="${canonical}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Murajah" />`,
+    `<meta property="og:locale" content="en_US" />`,
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${description}" />`,
     `<meta property="og:url" content="${canonical}" />`,
     `<meta property="og:image" content="${OG_IMAGE}" />`,
+    `<meta property="og:image:secure_url" content="${OG_IMAGE}" />`,
     `<meta property="og:image:type" content="image/jpeg" />`,
     `<meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />`,
     `<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />`,
+    `<meta property="og:image:alt" content="${escapeHtml(OG_IMAGE_ALT)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
     `<meta name="twitter:image" content="${OG_IMAGE}" />`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(OG_IMAGE_ALT)}" />`,
   ]
     .map((tag) => `    ${tag}`)
     .join('\n')
@@ -205,10 +226,19 @@ async function main() {
         throw new Error('captured HTML still contains the boot placeholder text')
       }
 
-      const outDir = path.join(process.cwd(), 'dist', route.path.replace(/^\//, ''))
-      await mkdir(outDir, { recursive: true })
-      await writeFile(path.join(outDir, 'index.html'), injectMeta(html, route), 'utf8')
-      console.log(`[prerender] wrote ${route.path} -> ${path.relative(process.cwd(), outDir)}/index.html`)
+      const rendered = injectMeta(html, route)
+      const distDir = path.join(process.cwd(), 'dist')
+      const routeSlug = route.path.replace(/^\//, '')
+
+      // Both forms — see the header comment on why this isn't just belt and
+      // braces: it's what makes the bare path a direct 200 instead of a 308.
+      const flatFile = path.join(distDir, `${routeSlug}.html`)
+      const dirFile = path.join(distDir, routeSlug, 'index.html')
+      await mkdir(path.dirname(dirFile), { recursive: true })
+      await Promise.all([writeFile(flatFile, rendered, 'utf8'), writeFile(dirFile, rendered, 'utf8')])
+      console.log(
+        `[prerender] wrote ${route.path} -> ${path.relative(process.cwd(), flatFile)}, ${path.relative(process.cwd(), dirFile)}`,
+      )
       succeeded++
     } catch (error) {
       console.warn(`[prerender] skipping ${route.path}: ${error instanceof Error ? error.message : String(error)}`)
