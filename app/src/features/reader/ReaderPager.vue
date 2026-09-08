@@ -28,7 +28,7 @@ const props = defineProps<{
   /** See useReaderPages' `readyGate` doc comment — ReaderView.vue passes one
    * that resolves once the last-read page (persisted prefs) is restored, so
    * the very first page load targets the real page instead of the store's
-   * default. Every other mount point (e.g. the gallery) leaves it unset. */
+   * default. Every other mount point leaves it unset. */
   readyGate?: Promise<void>
   /** The canonical (Madani 604) page to stamp a manual "revised today" against
    * — ReaderView.vue's `useMadaniPage`. Indopak's own page count differs from

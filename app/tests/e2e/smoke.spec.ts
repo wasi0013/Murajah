@@ -9,13 +9,12 @@ test('app shell loads and the reader renders', async ({ page }) => {
   await expect(page.locator('.surface .word').first()).not.toBeEmpty({ timeout: 10_000 })
 })
 
-test('theme applies and can switch (via gallery control)', async ({ page }) => {
+test('theme applies and can switch (via settings)', async ({ page }) => {
   await page.goto('/')
   const html = page.locator('html')
   await expect(html).toHaveAttribute('data-theme', 'sepia')
 
-  // Theme switching UI lives in the gallery until the reader chrome lands (3.10).
-  await page.goto('/gallery')
-  await page.getByRole('button', { name: 'dark', exact: true }).click()
+  await page.goto('/settings')
+  await page.getByRole('radio', { name: 'Dark' }).click()
   await expect(html).toHaveAttribute('data-theme', 'dark')
 })

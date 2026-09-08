@@ -33,3 +33,7 @@ yarn-error.log*
 *.tmp
 .cache/
 screencasts/
+
+# Local state from `wrangler pages dev` (ad hoc verification against
+# Cloudflare Pages' real routing — see app/scripts/prerender.mjs)
+.wrangler/

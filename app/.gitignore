@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local state from `wrangler pages dev` (used to verify Cloudflare Pages'
+# real asset/redirect resolution against a build — see scripts/prerender.mjs).
+.wrangler
+
 # Test artifacts
 /test-results/
 /playwright-report/
@@ -29,6 +33,9 @@ dist-ssr
 # Pages deploy serve it with no build-time tooling. Keep other /public/img/* out.
 /public/img/*
 !/public/img/mushaf/
+# Link-unfurl banner for scripts/prerender.mjs's OG tags — small (~90KB),
+# hand-derived once from screenshots/title.png, not build-generated.
+!/public/img/social/
 
 # Editor directories and files
 .vscode/*

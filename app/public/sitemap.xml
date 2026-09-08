@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Deliberately limited to routes that scripts/prerender.mjs actually renders
+  as real static HTML. Listing a route here that only ever serves the
+  "Loading Murajah…" placeholder to a non-JS crawler would be actively
+  counterproductive (a thin/empty-content signal) — as more routes gain a
+  real prerendered snapshot, add them here alongside that change, not before.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://murajah.pages.dev/download/</loc>
+  </url>
+  <url>
+    <loc>https://murajah.pages.dev/preview/</loc>
+  </url>
+</urlset>

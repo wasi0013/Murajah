@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Personal, signed-in-style app state — nothing here is meaningful without a
+# visitor's own local data, and it's not reached from any outside link.
+Disallow: /today
+Disallow: /quiz
+Disallow: /memorize
+Disallow: /progress
+Disallow: /settings
+Disallow: /disabled
+
+Sitemap: https://murajah.pages.dev/sitemap.xml

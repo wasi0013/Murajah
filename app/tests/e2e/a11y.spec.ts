@@ -2,15 +2,21 @@ import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 // Accessibility baseline for the design system (2.8). Runs axe across all three
-// themes on the gallery. The mushaf reading surface (.surface) is excluded — it
-// renders authentic Quran glyphs / tajweed colours that are content, not UI.
+// themes on the real reader chrome (formerly the design gallery, a synthetic
+// kitchen-sink page that bundled every primitive onto one screen — removed as
+// a dev-only tool; this sweeps the primitives in their real usage context
+// instead: the reader-settings sheet alone covers Toggle, SegmentedControl,
+// and Popover). The mushaf reading surface (.surface) is excluded — it renders
+// authentic Quran glyphs / tajweed colours that are content, not UI.
 const themes = ['light', 'dark', 'sepia'] as const
 
 for (const theme of themes) {
-  test(`gallery has no serious a11y violations — ${theme}`, async ({ page }) => {
-    await page.goto('/gallery')
-    await page.getByRole('button', { name: theme, exact: true }).click()
+  test(`reader chrome has no serious a11y violations — ${theme}`, async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    await page.getByRole('button', { name: 'Reader settings' }).click()
+    await expect(page.getByRole('heading', { name: 'Reader settings' })).toBeVisible()
     await page.waitForTimeout(300)
 
     const results = await new AxeBuilder({ page })
@@ -27,15 +33,12 @@ for (const theme of themes) {
 }
 
 test('open dialog has no serious a11y violations', async ({ page }) => {
-  await page.goto('/gallery')
-  await page.getByRole('button', { name: 'Open modal' }).click()
-  await expect(page.getByRole('dialog', { name: 'Reset progress' })).toBeVisible()
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Reset app to brand new' }).click()
+  await expect(page.getByRole('dialog', { name: 'Reset app to brand new' })).toBeVisible()
   await page.waitForTimeout(350) // let the fade-in settle (opacity 1) before measuring
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .exclude('.surface') // authentic tajweed glyph colours are content, not UI
-    .analyze()
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
   const serious = results.violations.filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',
   )

@@ -29,6 +29,14 @@
 /fonts/manifest.json
   Cache-Control: no-cache
 
-# The shell must always be fresh so new deploys are picked up.
+# The shell must always be fresh so new deploys are picked up. Same for the
+# prerendered static snapshots scripts/prerender.mjs writes at build time
+# (dist/download/index.html, dist/preview/index.html, …, served at the
+# request paths below) — they're regular build output, regenerated on every
+# deploy, and must never be served stale from a prior one.
 /index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/download
+  Cache-Control: public, max-age=0, must-revalidate
+/preview
   Cache-Control: public, max-age=0, must-revalidate

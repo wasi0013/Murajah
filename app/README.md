@@ -77,3 +77,24 @@ Both files are emitted into `dist/` at build time. Verify after a build:
 ```bash
 npm run build && ls dist/_redirects dist/_headers
 ```
+
+**SEO prerendering:** `npm run build`'s own `postbuild` runs `scripts/prerender.mjs`,
+which renders a small, deliberately narrow set of externally-linked static
+routes (`/download`, `/preview`) in headless Chromium and writes each as a
+real `dist/<route>/index.html` — otherwise every crawler that doesn't execute
+JS (most AI-answer bots, and OG-unfurlers like Slack/Twitter) only ever sees
+`index.html`'s "Loading Murajah…" boot placeholder, on every route. Cloudflare
+Pages resolves that file at the *trailing-slash* URL (`/download` 308s to
+`/download/` — confirmed with `wrangler pages dev dist`, which reproduces
+Pages' real asset/redirect resolution; `vite preview` does not), which is why
+`robots.txt`/`sitemap.xml`/this script's own canonical tags all use the
+trailing-slash form. This step must never fail the build (Chromium hasn't
+been verified to run inside Cloudflare's own build container — see the
+script's header comment): a failure just logs a warning and ships the SPA
+shell for those routes, same as before the script existed. Verify after a
+build:
+
+```bash
+npm run build && ! grep -q "Loading Murajah" dist/download/index.html dist/preview/index.html
+npx wrangler pages dev dist  # then curl -I localhost:8788/download — expect a 308 to /download/, not a 200
+```

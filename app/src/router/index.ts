@@ -96,12 +96,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/settings/SettingsView.vue'),
   },
   {
-    // Design gallery (dev/design tool). Code-split → never in the reader bundle.
-    path: '/gallery',
-    name: 'gallery',
-    component: () => import('@/features/gallery/GalleryView.vue'),
-  },
-  {
     // Standalone install page — Android → Play Store, iOS → in-page PWA
     // "Add to Home Screen" instructions. Reached only from an outside link
     // (never linked from in-app nav). A literal path, so it always outranks
