@@ -14,3 +14,31 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/*
+ * Mobile Safari/WebView + Chrome-on-Android both ship a "double-tap to zoom"
+ * gesture recognizer that's armed by default on every element (`touch-action:
+ * auto`). Tapping fast/repeatedly reads as a possible double-tap attempt, so
+ * the browser holds the tap in an ambiguous state — rendering it as if
+ * hovered/focused (the accent-colored `:hover`/`:focus-visible` styles used
+ * throughout, e.g. ReaderPager.vue's page-nav buttons and BottomTabBar's
+ * `.tab`) — until either a follow-up tap resolves it as a "zoom" gesture or
+ * the disambiguation window times out and the deferred `click` finally
+ * fires. That's the reported "first tap highlights, second tap navigates"
+ * pattern on the reader's prev/next buttons and the shell's tab bar.
+ * `touch-action: manipulation` tells the browser this element only cares
+ * about panning + pinch-zoom, never double-tap-zoom, which removes both the
+ * gesture ambiguity and the click-dispatch delay it causes — scoped to
+ * interactive controls (not `html`/`body`) so it doesn't fight
+ * MushafView.vue's own deliberate `pan-y`/`none` touch-action on its
+ * scroll-snap pager.
+ */
+button,
+a,
+[role='button'],
+summary,
+label,
+input,
+select {
+  touch-action: manipulation;
+}

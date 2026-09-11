@@ -296,6 +296,7 @@ watch(
       :loading="study.loading.value"
       :active-verse="activeVerseKey"
       :auto-scroll="tafsirAutoScroll"
+      :revision-page="madaniPage"
       @expand="study.expandTafsir($event)"
     />
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { BookOpen, Copy } from 'lucide-vue-next'
+import { BookOpen, Brain, Copy } from 'lucide-vue-next'
 import Icon from '@/components/Icon.vue'
 import { toast } from '@/composables/useToast'
 import type { VerseStudy } from '@/composables/useVerseStudy'
@@ -8,6 +8,7 @@ import type { SurahNames } from '@/core/data/types'
 import { getDataClient } from '@/core/data'
 import { useReaderStore } from '@/stores/reader'
 import { usePagerIcons } from '@/composables/usePagerIcons'
+import { lazyComponent } from '@/composables/lazyComponent'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -27,6 +28,11 @@ const props = defineProps<{
   activeVerse?: string | null
   /** Follow the recited ayah by scrolling it into view (audio player preference). */
   autoScroll?: boolean
+  /** The canonical (Madani 604) page to stamp a manual "revised today" against —
+   * same prop ReaderView.vue feeds ReaderPager's brain button. Tafsir replaces
+   * that surface, so it needs its own copy of the button too (was missing
+   * entirely, which made it disappear when tafsir mode was toggled on). */
+  revisionPage: number
 }>()
 const emit = defineEmits<{ expand: [verse: string] }>()
 
@@ -42,6 +48,17 @@ const isTajweedFont = computed(() => props.fontFamily.startsWith('tj-'))
 const reader = useReaderStore()
 const canPrev = computed(() => reader.page > 1)
 const canNext = computed(() => reader.page < reader.pageCount)
+
+// Manual "revised today" brain button — same sheet ReaderPager.vue opens;
+// see its doc comment for the snapshot-on-open reasoning.
+const revisionSheetPage = ref<number | null>(null)
+function openRevisionSheet() {
+  revisionSheetPage.value = props.revisionPage
+}
+const PageRevisionSheet = lazyComponent(
+  () => import('@/features/progress/PageRevisionSheet.vue'),
+  () => (revisionSheetPage.value = null),
+)
 
 // Surah name + Bismillah header, shown ahead of each surah's first verse —
 // mirrors the mushaf's own surah_name/basmallah lines (ReadingSurface.vue) so
@@ -188,6 +205,14 @@ async function copy(v: VerseStudy) {
       </button>
       <button
         type="button"
+        class="page-nav-btn page-nav-btn-icon"
+        :aria-label="t('reader.revision')"
+        @click="openRevisionSheet"
+      >
+        <Icon :icon="Brain" :size="20" />
+      </button>
+      <button
+        type="button"
         class="page-nav-btn"
         :disabled="!canNext"
         @click="reader.nextPage()"
@@ -196,6 +221,12 @@ async function copy(v: VerseStudy) {
         <Icon :icon="nextIcon" :size="20" />
       </button>
     </nav>
+
+    <PageRevisionSheet
+      v-if="revisionSheetPage !== null"
+      v-model:page="revisionSheetPage"
+      :show-open-in-reader="false"
+    />
   </section>
 </template>
 
@@ -372,5 +403,10 @@ async function copy(v: VerseStudy) {
 }
 .page-nav-btn:disabled {
   opacity: 0.4;
+}
+.page-nav-btn-icon {
+  flex: 0 0 auto;
+  width: 3.25rem;
+  padding: 0.9rem;
 }
 </style>
