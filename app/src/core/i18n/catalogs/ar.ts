@@ -421,6 +421,7 @@ const ar: Messages = {
     revision: 'مراجعة الصفحة',
     jump: 'انتقل إلى صفحة أو آية أو سورة',
     backToPage: 'العودة إلى الصفحة {n}',
+    hideBack: 'إخفاء زر العودة',
     audio: 'تلاوة صوتية',
     record: 'سجّل تلاوتك',
     quickTestCountdownAria: 'سيبدأ التسجيل خلال {n}',

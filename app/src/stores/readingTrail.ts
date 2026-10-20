@@ -78,7 +78,12 @@ export const useReadingTrailStore = defineStore('readingTrail', () => {
     return trails.value[scheme].slice(1)
   }
 
-  return { trails, backTo, hydrate, settle, visit, recent }
+  /** Withdraw the "back" offer (the chip timed out or was closed); the trail keeps the spot. */
+  function dismissBack() {
+    backTo.value = null
+  }
+
+  return { trails, backTo, hydrate, settle, visit, recent, dismissBack }
 })
 
 /** Plain arrays for IndexedDB's structured clone (a reactive Proxy can fail silently). */

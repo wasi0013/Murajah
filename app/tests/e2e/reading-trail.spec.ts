@@ -75,6 +75,26 @@ test('the mushaf continues the same trail and offers the way back too', async ({
   await expect(page).toHaveURL(/\/mushaf\/50$/)
 })
 
+test('the back chip gets out of the way: hides itself after 3s, or on its close button', async ({ page }) => {
+  await page.goto('/read/qpc/50')
+  await readerReady(page)
+  await jump(page, 'page 300')
+  const chip = page.locator('.trail-chip')
+  await expect(chip).toBeVisible()
+  await page.mouse.move(0, 0) // never hover it: let the countdown run
+  await expect(chip).toHaveCount(0, { timeout: 5_000 })
+
+  await jump(page, 'page 120')
+  await expect(chip).toBeVisible()
+  await page.getByRole('button', { name: 'Hide back button' }).click()
+  await expect(chip).toHaveCount(0)
+  await expect(page).toHaveURL(/\/read\/qpc\/120(\?|$)/) // closing doesn't navigate
+
+  // The spot is still on the trail.
+  await openJump(page)
+  await expect(page.getByRole('option').first()).toContainText('Page 300')
+})
+
 test('the back chip passes an accessibility scan', async ({ page }) => {
   await page.goto('/read/qpc/50')
   await readerReady(page)

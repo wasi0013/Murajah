@@ -257,14 +257,79 @@ describe('CommandPalette recent list', () => {
 })
 
 describe('TrailBackChip', () => {
+  afterEach(() => vi.useRealTimers())
+
   it('is absent without a back target, and hops back when tapped', async () => {
     const w = mount(TrailBackChip, { props: { page: null } })
     expect(w.find('button').exists()).toBe(false)
     await w.setProps({ page: 42 })
-    const btn = w.find('button')
+    const btn = w.find('.trail-back')
     expect(btn.attributes('aria-label')).toBe('Back to page 42')
     expect(btn.text()).toBe('Page 42')
     await btn.trigger('click')
     expect(w.emitted('back')?.[0]).toEqual([42])
+  })
+
+  it('the close button dismisses it', async () => {
+    const w = mount(TrailBackChip, { props: { page: 42 } })
+    const close = w.find('.trail-close')
+    expect(close.attributes('aria-label')).toBe('Hide back button')
+    await close.trigger('click')
+    expect(w.emitted('dismiss')).toHaveLength(1)
+    expect(w.emitted('back')).toBeUndefined()
+  })
+
+  it('hides itself after 3s so it never sits on the text', () => {
+    vi.useFakeTimers()
+    const w = mount(TrailBackChip, { props: { page: 42 } })
+    vi.advanceTimersByTime(2900)
+    expect(w.emitted('dismiss')).toBeUndefined()
+    vi.advanceTimersByTime(100)
+    expect(w.emitted('dismiss')).toHaveLength(1)
+  })
+
+  it('holds still while hovered or focused, then restarts its countdown', async () => {
+    vi.useFakeTimers()
+    const w = mount(TrailBackChip, { props: { page: 42 } })
+    vi.advanceTimersByTime(2000)
+    await w.find('.trail-chip').trigger('pointerenter')
+    vi.advanceTimersByTime(10_000)
+    expect(w.emitted('dismiss')).toBeUndefined()
+    await w.find('.trail-chip').trigger('pointerleave')
+    vi.advanceTimersByTime(2900)
+    expect(w.emitted('dismiss')).toBeUndefined()
+    vi.advanceTimersByTime(100)
+    expect(w.emitted('dismiss')).toHaveLength(1)
+
+    const f = mount(TrailBackChip, { props: { page: 7 } })
+    await f.find('.trail-back').trigger('focusin')
+    vi.advanceTimersByTime(10_000)
+    expect(f.emitted('dismiss')).toBeUndefined()
+  })
+
+  it('a new hop gets the full time again', async () => {
+    vi.useFakeTimers()
+    const w = mount(TrailBackChip, { props: { page: 42 } })
+    vi.advanceTimersByTime(2500)
+    await w.setProps({ page: 300 })
+    vi.advanceTimersByTime(2500)
+    expect(w.emitted('dismiss')).toBeUndefined()
+  })
+})
+
+describe('dismissing the back offer', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    prefs.clear()
+  })
+
+  it('withdraws the chip but keeps the spot on the trail', async () => {
+    const s = useReadingTrailStore()
+    await s.hydrate()
+    s.settle('qpc', 10)
+    s.visit('qpc', 300)
+    s.dismissBack()
+    expect(s.backTo).toBeNull()
+    expect(s.recent('qpc').map((e) => e.page)).toEqual([10])
   })
 })

@@ -426,6 +426,7 @@ const en: Messages = {
     revision: 'Page revision',
     jump: 'Go to page, ayah or surah',
     backToPage: 'Back to page {n}',
+    hideBack: 'Hide back button',
     audio: 'Recitation audio',
     record: 'Record your recitation',
     quickTestCountdownAria: 'Recording starts in {n}',

@@ -66,7 +66,7 @@ export function useReadingTrail(source: ReadingTrailSource) {
     }))
   }
 
-  return { backTo, recentPages }
+  return { backTo, recentPages, dismissBack: store.dismissBack }
 }
 
 /** The (first) surah on a QPC page, by its transliterated name — offline, no fetch. */

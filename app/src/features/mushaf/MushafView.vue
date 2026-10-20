@@ -329,7 +329,7 @@ function backToReader() {
       >
         <Icon :icon="ZoomOut" :size="20" />
       </button>
-      <TrailBackChip :page="trail.backTo.value" @back="store.goToPage($event)" />
+      <TrailBackChip :page="trail.backTo.value" @back="store.goToPage($event)" @dismiss="trail.dismissBack()" />
     </header>
 
     <div

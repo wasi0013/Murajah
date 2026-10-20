@@ -294,7 +294,7 @@ watch(
       <button class="icon-btn" :aria-label="t('reader.settings')" @click="sheetOpen = true">
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
-      <TrailBackChip :page="trail.backTo.value" @back="goBackTo" />
+      <TrailBackChip :page="trail.backTo.value" @back="goBackTo" @dismiss="trail.dismissBack()" />
     </header>
 
     <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
