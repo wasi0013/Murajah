@@ -20,6 +20,8 @@ import { usePagerIcons } from '@/composables/usePagerIcons'
 import Icon from '@/components/Icon.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import TrailBackChip from '@/components/TrailBackChip.vue'
+import { useReadingTrail } from '@/composables/useReadingTrail'
 import { useI18n } from '@/core/i18n'
 
 /**
@@ -92,6 +94,11 @@ const progressPersistence = useProgressPersistence()
 useReadingReward(() => store.page, getPageHasanah)
 
 const paletteOpen = ref(false)
+
+// Reading trail (see ReaderView): the mushaf pages are the QPC scheme, so this
+// continues the reader's Uthmani trail. Waits for the saved/deep-linked page.
+const mushafSettled = ref(false)
+const trail = useReadingTrail({ scheme: () => 'qpc', page: () => store.page, ready: () => mushafSettled.value })
 
 // Indicator: "Page N" or "Pages R–L", plus juz · surah.
 const pageLabel = computed(() => {
@@ -246,6 +253,7 @@ onMounted(async () => {
   void progressPersistence.hydrate() // load hasanah before reading rewards accrue
   await nav.hydrate() // saved last page first…
   nav.applyRoute() // …then a deep-linked /mushaf/:page wins
+  mushafSettled.value = true
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
@@ -321,6 +329,7 @@ function backToReader() {
       >
         <Icon :icon="ZoomOut" :size="20" />
       </button>
+      <TrailBackChip :page="trail.backTo.value" @back="store.goToPage($event)" />
     </header>
 
     <div
@@ -412,7 +421,11 @@ function backToReader() {
       </div>
     </div>
 
-    <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
+    <CommandPalette
+      v-model:open="paletteOpen"
+      :recent="paletteOpen ? trail.recentPages() : []"
+      @select="jumpTo($event)"
+    />
 
     <AudioHost
       v-if="audio.open"

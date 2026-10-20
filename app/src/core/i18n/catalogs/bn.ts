@@ -420,6 +420,7 @@ const bn: Messages = {
     goToNextPage: 'পরের পৃষ্ঠায় যান',
     revision: 'পৃষ্ঠা মুরাজায়া',
     jump: 'পৃষ্ঠা, আয়াত বা সূরায় যান',
+    backToPage: 'পৃষ্ঠা {n}-এ ফিরে যান',
     audio: 'তিলাওয়াত অডিও',
     record: 'আপনার তিলাওয়াত রেকর্ড করুন',
     quickTestCountdownAria: '{n} সেকেন্ডে রেকর্ডিং শুরু হবে',
@@ -559,6 +560,7 @@ const bn: Messages = {
     surah: 'সূরা {n}: {name}',
     search: '"{query}" অনুসন্ধান করুন',
     noMatch: 'কোনো ফলাফল নেই। 2:255, page 50, juz 5, অথবা surah 2 লিখে দেখুন।',
+    recent: 'সাম্প্রতিক পৃষ্ঠা',
   },
   pwa: {
     updateAvailable: 'আপডেট উপলব্ধ: রিফ্রেশ করতে ট্যাপ করুন',

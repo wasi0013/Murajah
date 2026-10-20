@@ -420,6 +420,7 @@ const ar: Messages = {
     goToNextPage: 'الانتقال إلى الصفحة التالية',
     revision: 'مراجعة الصفحة',
     jump: 'انتقل إلى صفحة أو آية أو سورة',
+    backToPage: 'العودة إلى الصفحة {n}',
     audio: 'تلاوة صوتية',
     record: 'سجّل تلاوتك',
     quickTestCountdownAria: 'سيبدأ التسجيل خلال {n}',
@@ -559,6 +560,7 @@ const ar: Messages = {
     surah: 'سورة {n} — {name}',
     search: 'بحث عن «{query}»',
     noMatch: 'لا توجد نتيجة — جرّب 2:255، صفحة 50، جزء 5، أو سورة 2.',
+    recent: 'الصفحات الأخيرة',
   },
   pwa: {
     updateAvailable: 'يتوفر تحديث — اضغط للتحديث',

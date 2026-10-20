@@ -1,4 +1,4 @@
-import { watch } from 'vue'
+import { readonly, ref, watch } from 'vue'
 import type { Router, RouteLocationNormalizedLoaded } from 'vue-router'
 import type { useReaderStore } from '@/stores/reader'
 import { parseReaderRoute, readerStateToRoute, type FriendlyTarget } from '@/core/navigation/readerRoute'
@@ -45,13 +45,16 @@ export function useReaderRouteSync(
   // deep-link — e.g. opening /78 while page 50 was persisted snapped back to
   // /read/qpc/50. Gating on `applied` means the store is provably in sync with
   // the URL before the watcher can push, with no reliance on microtask ordering.
-  let applied = false
+  // Reactive (read-only to callers as `applied`): the reading trail waits on it
+  // so a friendly deep link's 'pending' window, with the store still on its
+  // default page, is never recorded as somewhere the reader was.
+  const applied = ref(false)
 
   function applyRoute(): void {
     const r = route()
     const friendly = opts.resolveFriendly?.(r)
     if (friendly === 'pending') return // nav not ready — ReaderView re-applies once it loads
-    applied = true
+    applied.value = true
     if (friendly === null) {
       void router.replace({ name: 'home' }).catch(() => {}) // named something that doesn't exist
       return
@@ -72,7 +75,7 @@ export function useReaderRouteSync(
     (curr) => {
       // Until the initial URL has been applied, the store may still hold the
       // restored last page — never push that over the URL (see `applied`).
-      if (!applied) return
+      if (!applied.value) return
       // Keep a friendly URL in the bar while it still names the current page, and
       // don't clobber it during the nav-not-ready window (9.1, decision 3).
       const friendly = opts.resolveFriendly?.(route())
@@ -98,6 +101,8 @@ export function useReaderRouteSync(
 
   return {
     applyRoute,
+    /** True once the URL has been applied to the store (never during a 'pending' resolve). */
+    applied: readonly(applied),
     dispose() {
       stopStore()
       stopRoute()

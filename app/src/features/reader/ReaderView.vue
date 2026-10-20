@@ -20,6 +20,7 @@ import { useReaderLocation } from '@/composables/useReaderLocation'
 import { useLayoutSwitch } from '@/composables/useLayoutSwitch'
 import { useVerseStudy } from '@/composables/useVerseStudy'
 import { useQuickJump } from '@/composables/useQuickJump'
+import { useReadingTrail } from '@/composables/useReadingTrail'
 import { usePagerIcons } from '@/composables/usePagerIcons'
 import ReaderPager from './ReaderPager.vue'
 import TafsirPanel from './TafsirPanel.vue'
@@ -32,6 +33,7 @@ import Popover from '@/components/Popover.vue'
 import TajweedLegend from '@/components/TajweedLegend.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
+import TrailBackChip from '@/components/TrailBackChip.vue'
 import { useI18n } from '@/core/i18n'
 
 const { t, dir } = useI18n()
@@ -173,6 +175,22 @@ let resolveReaderReady: () => void
 const readerReady = new Promise<void>((resolve) => {
   resolveReaderReady = resolve
 })
+/** Mirrors `readerReady` for synchronous checks (the reading trail's gate). */
+const readerSettled = ref(false)
+
+// Reading trail: recent reading spots, so a hop can always be retraced — listed
+// in the quick-jump palette, plus a "back" chip right after a hop. Waits until
+// the saved page has been restored *and* the URL applied (a friendly deep link
+// stays 'pending' until the nav index loads, with the store still on page 1).
+const trail = useReadingTrail({
+  scheme: () => reader.layout,
+  page: () => reader.page,
+  ready: () => readerSettled.value && sync.applied.value,
+})
+function goBackTo(page: number) {
+  reader.setFocusVerse(null)
+  reader.goToPage(page)
+}
 
 onMounted(async () => {
   void progressPersistence.hydrate() // load memorization/hasanah before rewards accrue
@@ -191,6 +209,7 @@ onMounted(async () => {
     // (getPref/setPref already swallow their own errors, so this is
     // defense-in-depth rather than a known reachable path today.)
     resolveReaderReady()
+    readerSettled.value = true
   }
 })
 onBeforeUnmount(() => {
@@ -275,6 +294,7 @@ watch(
       <button class="icon-btn" :aria-label="t('reader.settings')" @click="sheetOpen = true">
         <Icon :icon="SlidersHorizontal" :size="20" />
       </button>
+      <TrailBackChip :page="trail.backTo.value" @back="goBackTo" />
     </header>
 
     <!-- Tafsir & translations replaces the mushaf as the reading surface; turning
@@ -301,7 +321,11 @@ watch(
       @expand="study.expandTafsir($event)"
     />
 
-    <CommandPalette v-model:open="paletteOpen" @select="jumpTo($event)" />
+    <CommandPalette
+      v-model:open="paletteOpen"
+      :recent="paletteOpen ? trail.recentPages() : []"
+      @select="jumpTo($event)"
+    />
 
     <AudioHost
       v-if="audio.open"

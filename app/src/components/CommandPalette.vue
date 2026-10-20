@@ -3,21 +3,33 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Dialog from './Dialog.vue'
 import { parseJump, type Jump } from '@/core/navigation/parseJump'
 import { SURAH_NAMES, findSurahByName } from '@/core/navigation/surahNames'
+import type { RecentPage } from '@/composables/useReadingTrail'
 import { useI18n } from '@/core/i18n'
 
 // Quick-jump palette: type "2:255", "page 50", "juz 5", or a surah name.
 // Emits the chosen target; the reader performs the actual navigation.
+// With nothing typed yet, it lists the reading trail's recent spots instead, so
+// "where was I before that jump?" is answered where the reader already goes to
+// navigate — no extra control on the reading screen.
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ select: [Jump] }>()
-const props = withDefaults(defineProps<{ shortcut?: boolean }>(), { shortcut: true })
+const props = withDefaults(defineProps<{ shortcut?: boolean; recent?: RecentPage[] }>(), {
+  shortcut: true,
+  recent: () => [],
+})
 
 const { t } = useI18n()
 
 const query = ref('')
 const activeIndex = ref(0)
 const results = computed(() => parseJump(query.value))
+const showingRecent = computed(() => !query.value.trim() && props.recent.length > 0)
+/** What the arrow keys / Enter walk: the parsed results, or the recent spots. */
+const items = computed<Jump[]>(() =>
+  showingRecent.value ? props.recent.map((r) => ({ type: 'page' as const, page: r.page })) : results.value,
+)
 
-watch(results, () => (activeIndex.value = 0))
+watch(items, () => (activeIndex.value = 0))
 watch(open, (o) => {
   if (o) {
     query.value = ''
@@ -52,12 +64,12 @@ function labelFor(r: Jump): string {
 }
 
 function move(delta: number) {
-  const n = results.value.length
+  const n = items.value.length
   if (!n) return
   activeIndex.value = (activeIndex.value + delta + n) % n
 }
 function choose(i = activeIndex.value) {
-  const r = results.value[i]
+  const r = items.value[i]
   if (!r) return
   emit('select', r)
   open.value = false
@@ -99,7 +111,25 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onGlobalKey))
         autocomplete="off"
         spellcheck="false"
       />
-      <ul v-if="results.length" class="grid gap-0.5" role="listbox" :aria-label="t('palette.resultsAria')">
+      <template v-if="showingRecent">
+        <p id="palette-recent-heading" class="palette-heading">{{ t('palette.recent') }}</p>
+        <ul class="grid gap-0.5" role="listbox" aria-labelledby="palette-recent-heading">
+          <li
+            v-for="(r, i) in recent"
+            :key="r.page"
+            role="option"
+            :aria-selected="i === activeIndex"
+            class="palette-item palette-recent"
+            :class="{ 'palette-item-active': i === activeIndex }"
+            @click="choose(i)"
+            @mousemove="activeIndex = i"
+          >
+            <span>{{ r.label }}</span>
+            <span v-if="r.meta" class="palette-meta">{{ r.meta }}</span>
+          </li>
+        </ul>
+      </template>
+      <ul v-else-if="results.length" class="grid gap-0.5" role="listbox" :aria-label="t('palette.resultsAria')">
         <li
           v-for="(r, i) in results"
           :key="i"
@@ -141,6 +171,28 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onGlobalKey))
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   cursor: pointer;
+}
+.palette-heading {
+  padding: 0 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.palette-recent {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.palette-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 .palette-item-active {
   background: var(--color-elevated);

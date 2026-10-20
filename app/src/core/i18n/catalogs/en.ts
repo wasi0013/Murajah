@@ -425,6 +425,7 @@ const en: Messages = {
     goToNextPage: 'Go to next page',
     revision: 'Page revision',
     jump: 'Go to page, ayah or surah',
+    backToPage: 'Back to page {n}',
     audio: 'Recitation audio',
     record: 'Record your recitation',
     quickTestCountdownAria: 'Recording starts in {n}',
@@ -565,6 +566,7 @@ const en: Messages = {
     surah: 'Surah {n}: {name}',
     search: 'Search “{query}”',
     noMatch: 'No match. Try 2:255, page 50, juz 5, or surah 2.',
+    recent: 'Recent pages',
   },
   pwa: {
     updateAvailable: 'Update available: tap to refresh',
