@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nextOnEnd, nextOnFailure } from '@/core/audio/transport'
+import { nextOnEnd, nextOnFailure, upcomingIndex } from '@/core/audio/transport'
 
 describe('nextOnEnd', () => {
   it('advances to the next item when autoplay-next is on', () => {
@@ -36,5 +36,16 @@ describe('nextOnFailure', () => {
   })
   it('stops at the end of the list', () => {
     expect(nextOnFailure(2, 3)).toBe('stop')
+  })
+})
+
+describe('upcomingIndex (what the engine prefetches)', () => {
+  it('agrees with nextOnEnd: the next item, the wrap-around, or nothing', () => {
+    expect(upcomingIndex(0, 3, true, false)).toBe(1)
+    expect(upcomingIndex(2, 3, true, true)).toBe(0) // loop-playlist wraps
+    expect(upcomingIndex(0, 1, false, true)).toBe(0) // single-item loop replays itself
+    expect(upcomingIndex(2, 3, true, false)).toBeNull() // exhausted → the view supplies more
+    expect(upcomingIndex(0, 3, false, false)).toBeNull() // autoplay-next off → stops
+    expect(upcomingIndex(-1, 0, true, true)).toBeNull()
   })
 })

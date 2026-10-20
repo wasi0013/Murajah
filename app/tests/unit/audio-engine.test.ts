@@ -49,6 +49,9 @@ beforeEach(() => {
   setActivePinia(createPinia())
   FakeAudio.instances = []
   vi.stubGlobal('Audio', FakeAudio)
+  // The engine prefetches the next item over the network; never hit it from tests
+  // (prefetch behaviour itself is covered in audio-engine-background.test.ts).
+  vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
 })
 
 afterEach(() => {

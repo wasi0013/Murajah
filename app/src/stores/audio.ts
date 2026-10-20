@@ -65,6 +65,34 @@ export const useAudioStore = defineStore('audio', () => {
     duration.value = 0
   }
 
+  /**
+   * Extend the queue without touching the cursor or the item playing — the
+   * reader/mushaf lookahead (see `AudioHost`) appends the next page's items so
+   * the page boundary is an ordinary in-list advance, not a silent async gap.
+   */
+  function appendPlaylist(items: PlaylistItem[]) {
+    if (items.length) playlist.value = [...playlist.value, ...items]
+  }
+
+  /** Drop everything from `length` on (never the item playing — callers check). */
+  function trimPlaylist(length: number) {
+    if (length >= 1 && length < playlist.value.length && index.value < length) {
+      playlist.value = playlist.value.slice(0, length)
+    }
+  }
+
+  /**
+   * Drop the first `n` items (already played), keeping the cursor on the same
+   * item. Used once playback crosses into a lookahead page, so the queue stays
+   * one page long — bounded, and `prev` stays within the page in view.
+   */
+  function dropBefore(n: number) {
+    if (n > 0 && n <= index.value) {
+      playlist.value = playlist.value.slice(n)
+      index.value -= n
+    }
+  }
+
   function reset() {
     setPlaylist([])
     isPlaying.value = false
@@ -105,6 +133,9 @@ export const useAudioStore = defineStore('audio', () => {
     progress,
     // actions
     setPlaylist,
+    appendPlaylist,
+    trimPlaylist,
+    dropBefore,
     reset,
   }
 })

@@ -51,6 +51,48 @@ async function mockPlayableAudio(page: Page, seconds = 5): Promise<void> {
   )
 }
 
+test('crosses an ayah boundary from the prefetched in-memory copy and keeps playing (background-stop fix)', async ({ page }) => {
+  // BUG regression: with the phone locked, long sessions stopped after a few
+  // pages because every boundary needed a fresh network request at the one
+  // silent moment the OS may cut a background page off. The engine now
+  // downloads the next item while the current one plays and swaps to it as a
+  // `blob:` URL inside `ended`. Unit tests fake fetch/Blob/object URLs; this
+  // proves the real chain (CORS fetch → Blob → object URL → <audio> → play())
+  // works in a real browser. The engine's element is detached (`new Audio()`),
+  // so capture it by wrapping the constructor.
+  await page.addInitScript(() => {
+    const Native = window.Audio
+    const seen: HTMLAudioElement[] = []
+    ;(window as unknown as { __audios: HTMLAudioElement[] }).__audios = seen
+    window.Audio = function (src?: string) {
+      const el = new Native(src)
+      seen.push(el)
+      return el
+    } as unknown as typeof Audio
+  })
+  const wav = silentWav(1)
+  await page.route(/\.mp3(\?.*)?$/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'audio/wav',
+      // The prefetch is a CORS fetch(); the real hosts all send this header.
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: wav,
+    }),
+  )
+  await openReaderPlayer(page)
+  await page.getByRole('button', { name: 'Play', exact: true }).click()
+
+  const audioState = () =>
+    page.evaluate(() => {
+      const el = (window as unknown as { __audios: HTMLAudioElement[] }).__audios.at(-1)
+      return el ? { src: el.src, paused: el.paused, time: el.currentTime } : null
+    })
+  await expect.poll(async () => (await audioState())?.src ?? '', { timeout: 15_000 }).toMatch(/^blob:/)
+  await expect.poll(async () => (await audioState())?.time ?? 0, { timeout: 5_000 }).toBeGreaterThan(0.2)
+  expect((await audioState())?.paused).toBe(false)
+})
+
 test('the headphones control opens the mini-player', async ({ page }) => {
   await openReaderPlayer(page)
   await expect(page.getByRole('radio', { name: 'Verse' })).toBeVisible()

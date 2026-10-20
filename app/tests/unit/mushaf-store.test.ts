@@ -72,4 +72,16 @@ describe('mushaf store', () => {
     s.restore(snap)
     expect(s.page).toBe(123)
   })
+
+  it('nextVisible is what next() would show (the audio lookahead target), empty at the end', () => {
+    const s = useMushafStore()
+    s.goToPage(50)
+    expect(s.nextVisible).toEqual([51])
+    s.setSpread(true)
+    expect(s.nextVisible).toEqual([51, 52]) // page 50 sits in spread (49, 50)
+    s.goToPage(604)
+    expect(s.nextVisible).toEqual([])
+    s.setSpread(false)
+    expect(s.nextVisible).toEqual([])
+  })
 })

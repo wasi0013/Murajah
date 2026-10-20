@@ -24,6 +24,10 @@ export const useMushafStore = defineStore('mushaf', () => {
   const visible = computed(() => visiblePages(page.value, pageCount.value, spread.value))
   const canPrev = computed(() => pageStep(page.value, -1, pageCount.value, spread.value) !== page.value)
   const canNext = computed(() => pageStep(page.value, 1, pageCount.value, spread.value) !== page.value)
+  /** What `next()` would show — empty at the end (lets audio queue the next spread early). */
+  const nextVisible = computed(() =>
+    canNext.value ? visiblePages(pageStep(page.value, 1, pageCount.value, spread.value), pageCount.value, spread.value) : [],
+  )
 
   /** Inject the real page count from the image manifest (falls back to default). */
   function configure(count: number) {
@@ -59,6 +63,7 @@ export const useMushafStore = defineStore('mushaf', () => {
     visible,
     canPrev,
     canNext,
+    nextVisible,
     configure,
     setSpread,
     goToPage,

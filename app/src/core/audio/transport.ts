@@ -34,3 +34,13 @@ export function nextOnEnd(index: number, length: number, autoNext: boolean, loop
 export function nextOnFailure(index: number, length: number): Advance {
   return index < length - 1 ? { index: index + 1 } : 'stop'
 }
+
+/**
+ * The index that will play after `index` ends naturally, or null when nothing
+ * in-list follows (stop / exhausted). Drives next-item prefetch, so it must agree
+ * exactly with `nextOnEnd` — it's defined in terms of it.
+ */
+export function upcomingIndex(index: number, length: number, autoNext: boolean, loop: boolean): number | null {
+  const advance = nextOnEnd(index, length, autoNext, loop)
+  return typeof advance === 'object' ? advance.index : null
+}

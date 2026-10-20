@@ -13,7 +13,7 @@ import { getDataClient } from '@/core/data'
 import type { Layout } from '@/core/data/types'
 import type { AudioView } from '@/core/audio/pages'
 import { effectiveGrain } from '@/core/audio/pageMode'
-import { buildPagePlaylist, buildVersePlaylist } from '@/core/audio/playlist'
+import { buildPagePlaylist, buildVersePlaylist, type PlaylistItem } from '@/core/audio/playlist'
 import { pageReciter, verseReciter } from '@/core/audio/reciters'
 import { versesForPages } from '@/core/audio/verses'
 import { useAudioEngine } from '@/composables/useAudioEngine'
@@ -32,22 +32,24 @@ export function useQariPlayer() {
   const engine = useAudioEngine()
   const data = getDataClient()
 
+  /** The playlist `start` would play for this context, without touching playback. */
+  async function build(ctx: QariContext): Promise<PlaylistItem[]> {
+    await data.init()
+    if (effectiveGrain(store.grain, ctx.layout) === 'page') {
+      return buildPagePlaylist(ctx.pages, pageReciter(store.pageReciterId))
+    }
+    const verses = await versesForPages(ctx.layout, ctx.pages, data)
+    return buildVersePlaylist(verses, verseReciter(store.verseReciterId), {
+      repeatCount: store.repeatCount,
+      spaced: store.spaced,
+    })
+  }
+
   async function start(ctx: QariContext): Promise<void> {
     store.open = true
     store.loading = true
     try {
-      await data.init()
-      if (effectiveGrain(store.grain, ctx.layout) === 'page') {
-        engine.setPlaylistAndPlay(buildPagePlaylist(ctx.pages, pageReciter(store.pageReciterId)))
-      } else {
-        const verses = await versesForPages(ctx.layout, ctx.pages, data)
-        engine.setPlaylistAndPlay(
-          buildVersePlaylist(verses, verseReciter(store.verseReciterId), {
-            repeatCount: store.repeatCount,
-            spaced: store.spaced,
-          }),
-        )
-      }
+      engine.setPlaylistAndPlay(await build(ctx))
     } catch (error) {
       // Caller (AudioHost) fires this with `void player.start(ctx())` —
       // fire-and-forget. See `reportAudioStartError`'s doc comment for why
@@ -58,5 +60,5 @@ export function useQariPlayer() {
     }
   }
 
-  return { start }
+  return { start, build }
 }

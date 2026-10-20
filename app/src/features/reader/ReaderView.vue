@@ -97,6 +97,7 @@ const AudioHost = lazyComponent(audioHostLoader, () => {
   if (!audio.isPlaying) audio.open = false
 })
 const audioPages = computed(() => [reader.page])
+const audioNextPages = computed(() => (reader.page < reader.pageCount ? [reader.page + 1] : []))
 // The recited ayah (verse grain), or a deep-linked ayah (/2/255) — highlighted +
 // scrolled to in the tafsir surface.
 const activeVerseKey = computed(() =>
@@ -307,6 +308,7 @@ watch(
       view="text"
       :layout="reader.layout"
       :pages="audioPages"
+      :next-pages="audioNextPages"
       @need-next-page="reader.nextPage()"
     />
 

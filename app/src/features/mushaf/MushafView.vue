@@ -419,6 +419,7 @@ function backToReader() {
       view="mushaf"
       layout="qpc"
       :pages="store.visible"
+      :next-pages="store.nextVisible"
       @need-next-page="store.canNext && store.next()"
     />
 
