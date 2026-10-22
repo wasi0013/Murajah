@@ -58,6 +58,36 @@ describe('Dialog', () => {
     expect(document.body.querySelector('.dlg-handle')).not.toBeNull()
   })
 
+  // The on-screen keyboard shrinks only the visual viewport, so a full-screen
+  // fixed root would leave a dialog's content under the keys. The top placement
+  // sizes its root to the visible slice and follows it as the keyboard moves.
+  it('sizes a top-placed dialog to the visual viewport and follows its resizes', async () => {
+    const vv = Object.assign(new EventTarget(), { offsetTop: 0, height: 400 })
+    const original = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+    try {
+      openDialog({ placement: 'top' })
+      const root = document.body.querySelector('.dlg-root') as HTMLElement
+      expect(root.style.height).toBe('400px')
+      expect(root.querySelector('.dlg-top')).not.toBeNull()
+
+      vv.offsetTop = 20
+      vv.height = 300
+      vv.dispatchEvent(new Event('resize'))
+      await wrapper!.vm.$nextTick()
+      expect(root.style.top).toBe('20px')
+      expect(root.style.height).toBe('300px')
+    } finally {
+      if (original) Object.defineProperty(window, 'visualViewport', original)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+    }
+  })
+
+  it('leaves center dialogs full-screen regardless of the visual viewport', () => {
+    openDialog()
+    expect((document.body.querySelector('.dlg-root') as HTMLElement).style.height).toBe('')
+  })
+
   it('ignores Escape and scrim clicks when dismissible is false', () => {
     const updates = openDialog({ dismissible: false })
     const root = document.body.querySelector('.dlg-root')!

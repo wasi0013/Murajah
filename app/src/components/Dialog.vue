@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useScrollLock } from '@/composables/useScrollLock'
+import { useVisualViewport } from '@/composables/useVisualViewport'
 
 // Accessible overlay: teleported, scrim + escape close, scroll lock, focus trap,
-// role=dialog/aria-modal. `placement="bottom"` = mobile sheet, `center` = modal.
-type Placement = 'bottom' | 'center'
+// role=dialog/aria-modal. `placement="bottom"` = mobile sheet, `center` = modal,
+// `top` = modal pinned near the top that stays above the on-screen keyboard
+// (for dialogs that open straight into a text field).
+type Placement = 'bottom' | 'center' | 'top'
 
 const open = defineModel<boolean>('open', { default: false })
 const props = withDefaults(
@@ -32,6 +35,17 @@ const panel = ref<HTMLElement>()
 useFocusTrap(panel, open)
 useScrollLock(open)
 
+const viewport = useVisualViewport(computed(() => open.value && props.placement === 'top'))
+const rootStyle = computed(() =>
+  viewport.value ? { top: `${viewport.value.top}px`, height: `${viewport.value.height}px`, bottom: 'auto' } : undefined,
+)
+
+const rootClass: Record<Placement, string> = {
+  bottom: 'items-end',
+  center: 'items-center justify-center p-4',
+  top: 'items-start justify-center dlg-top-root',
+}
+
 function close() {
   if (!props.dismissible) return
   open.value = false
@@ -47,7 +61,8 @@ function onKeydown(e: KeyboardEvent) {
       <div
         v-if="open"
         class="dlg-root"
-        :class="placement === 'bottom' ? 'items-end' : 'items-center justify-center p-4'"
+        :class="rootClass[placement]"
+        :style="rootStyle"
         @keydown="onKeydown"
       >
         <div class="dlg-scrim" @click="close" />
@@ -59,7 +74,7 @@ function onKeydown(e: KeyboardEvent) {
           :aria-labelledby="labelledby"
           tabindex="-1"
           class="dlg-panel"
-          :class="placement === 'bottom' ? 'dlg-sheet' : 'dlg-modal'"
+          :class="placement === 'bottom' ? 'dlg-sheet' : placement === 'top' ? 'dlg-modal dlg-top' : 'dlg-modal'"
         >
           <div v-if="placement === 'bottom'" class="dlg-handle" aria-hidden="true" />
           <slot :close="close" />
@@ -101,6 +116,19 @@ function onKeydown(e: KeyboardEvent) {
   max-width: 28rem;
   border-radius: var(--radius-lg);
   padding: 1.5rem;
+}
+.dlg-top-root {
+  padding: calc(env(safe-area-inset-top) + 0.75rem) 1rem 0.75rem;
+}
+@media (min-width: 640px) {
+  .dlg-top-root {
+    padding-top: 12vh;
+  }
+}
+/* Fill at most the visible area (the root tracks the visual viewport), so a
+ * long list scrolls inside the panel instead of under the keyboard. */
+.dlg-top {
+  max-height: 100%;
 }
 .dlg-handle {
   width: 2.25rem;

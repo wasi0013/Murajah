@@ -100,7 +100,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onGlobalKey))
 </script>
 
 <template>
-  <Dialog v-model:open="open" placement="center" :label="t('palette.title')">
+  <Dialog v-model:open="open" placement="top" :label="t('palette.title')">
     <div class="grid gap-3" @keydown="onKey">
       <input
         v-model="query"
