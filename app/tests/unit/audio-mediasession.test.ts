@@ -132,6 +132,12 @@ describe('core/audio/mediaSession — with navigator.mediaSession stubbed', () =
     expect(nexttrack).toHaveBeenCalledOnce()
   })
 
+  it('setActionHandlers clears seekbackward/seekforward so iOS shows previous/next, not ±10s', () => {
+    setActionHandlers({ play: () => {}, pause: () => {}, previoustrack: () => {}, nexttrack: () => {}, seekto: () => {} })
+    expect(fake.setActionHandler).toHaveBeenCalledWith('seekbackward', null)
+    expect(fake.setActionHandler).toHaveBeenCalledWith('seekforward', null)
+  })
+
   it('setActionHandlers maps seekto details.seekTime to the callback', () => {
     const seekto = vi.fn()
     setActionHandlers({ play: () => {}, pause: () => {}, previoustrack: () => {}, nexttrack: () => {}, seekto })

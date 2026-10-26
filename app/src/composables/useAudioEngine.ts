@@ -17,8 +17,9 @@
  * support, and — more importantly for mobile background/lock-screen playback — the
  * standard signal the OS uses to treat this as a legitimate ongoing media session
  * rather than a suspendable background page. Metadata is set per item load; the
- * action handlers are registered once and simply delegate to this engine's own
- * transport, so there is exactly one implementation of play/pause/next/prev/seek.
+ * action handlers delegate to this engine's own transport, so there is exactly
+ * one implementation of play/pause/next/prev/seek (re-registered on `playing`
+ * for iOS, see `registerMediaSessionHandlers`).
  *
  * Long background sessions (the "stops after 4-5 pages with the screen locked"
  * bug). A mobile OS only keeps a hidden page alive and online while it is
@@ -146,6 +147,12 @@ function createEngine(): AudioEngine {
   let playSeq = 0
   /** True while the element's `src` is this item's in-memory (prefetched) copy. */
   let usingPrefetched = false
+  /**
+   * True once the current source has reached `playing`. `store.isPlaying` stays
+   * true across a boundary, so it can't tell the next prefetch to wait until the
+   * incoming item's own load is done.
+   */
+  let sourcePlaying = false
   /** In-place network retries spent on the current URL. */
   let networkRetries = 0
   /** Position to seek to once a reloaded source has metadata (in-place retry). */
@@ -214,6 +221,7 @@ function createEngine(): AudioEngine {
       store.isPlaying = true
       store.loading = false
       wantPlaying = true
+      sourcePlaying = true
       networkRetries = 0
       clearStall()
       // Backstop: a reload that never reported usable metadata still resumes
@@ -226,6 +234,9 @@ function createEngine(): AudioEngine {
       // no-op when the rate is already correct, so this never causes an audible
       // hiccup on an ordinary play/resume.
       if (a.playbackRate !== store.speed) a.playbackRate = store.speed
+      // iOS drops handlers registered before the element became "Now Playing"
+      // and falls back to ±10s skip buttons, so register again now that it is.
+      registerMediaSessionHandlers(a)
       // Audibly playing is when the OS lets us use the network in the
       // background — start fetching whatever plays next, now.
       syncPrefetch(true)
@@ -257,33 +268,43 @@ function createEngine(): AudioEngine {
     a.addEventListener('progress', () => {
       if (stallSince !== null) armStall(true)
     })
-    // Registered once, here, alongside the element itself — delegates to this
-    // engine's own transport (defined below) so there is exactly one
-    // implementation of each action, not a parallel copy for the lock screen.
-    if (mediaSessionSupported()) {
-      setMediaSessionActionHandlers({
-        play,
-        pause,
-        previoustrack: prev,
-        nexttrack: next,
-        seekto(seconds) {
-          if (store.duration > 0) a.currentTime = Math.max(0, Math.min(seconds, store.duration))
-        },
-      })
-    }
+    registerMediaSessionHandlers(a)
     el = a
     return a
+  }
+
+  /**
+   * Point the lock-screen/hardware actions at this engine's own transport
+   * (defined below), so there is exactly one implementation of each action, not
+   * a parallel copy for the lock screen. Runs with the element and again on
+   * every `playing` (see there).
+   */
+  function registerMediaSessionHandlers(a: HTMLAudioElement): void {
+    if (!mediaSessionSupported()) return
+    setMediaSessionActionHandlers({
+      play,
+      pause,
+      previoustrack: prev,
+      nexttrack: next,
+      seekto(seconds) {
+        if (store.duration > 0) a.currentTime = Math.max(0, Math.min(seconds, store.duration))
+      },
+    })
   }
 
   // —— Prefetch ————————————————————————————————————————————————————————————
 
   /**
    * Keep the in-memory copies to exactly {current, next} and, while audibly
-   * playing, download the next one. `force` re-runs even when nothing changed
-   * (on `playing` — the moment to start fetching); otherwise it's a cheap string
-   * compare, which is what lets every `timeupdate` pick up an autoplay-next/loop
-   * toggle or a lookahead append mid-item. `fetchNow: false` (on load) only trims
-   * the cache: the incoming item's own load shouldn't compete for bandwidth.
+   * playing, download the next one. The trim runs only when the pair changed (or
+   * `force`, on `playing`): a cheap string compare, which is what lets every
+   * `timeupdate` pick up an autoplay-next/loop toggle or a lookahead append
+   * mid-item. The download request runs on every call: `prefetch` is a no-op
+   * while the file is held, downloading or cooling down after a failure, so a
+   * download that failed (iOS can fail in-flight fetches when the screen locks) is
+   * retried while this item still plays instead of leaving its boundary to the
+   * network. `fetchNow: false` (on load) only trims the cache: the incoming
+   * item's own load shouldn't compete for bandwidth.
    */
   function syncPrefetch(force: boolean, fetchNow = true): void {
     const current = store.current
@@ -293,10 +314,13 @@ function createEngine(): AudioEngine {
         : null
     const upcoming = nextIdx !== null ? store.playlist[nextIdx] : null
     const key = `${current?.urls.primary ?? ''}|${upcoming?.urls.primary ?? ''}`
-    if (key === prefetchKey && !force) return
-    prefetchKey = key
-    prefetcher.retain([current?.urls.primary, upcoming?.urls.primary])
-    if (upcoming && fetchNow && wantPlaying && store.isPlaying) prefetcher.prefetch(upcoming.urls.primary)
+    if (key !== prefetchKey || force) {
+      prefetchKey = key
+      prefetcher.retain([current?.urls.primary, upcoming?.urls.primary])
+    }
+    if (upcoming && fetchNow && wantPlaying && store.isPlaying && sourcePlaying) {
+      prefetcher.prefetch(upcoming.urls.primary)
+    }
   }
 
   // —— Stall watchdog / in-place retry ————————————————————————————————————
@@ -391,6 +415,7 @@ function createEngine(): AudioEngine {
   function setSource(a: HTMLAudioElement, url: string): void {
     const cached = prefetcher.resolve(url)
     usingPrefetched = !!cached
+    sourcePlaying = false
     // Still downloading: we're streaming it now, so a second copy would only
     // compete for bandwidth at the boundary it was meant to protect.
     if (!cached) prefetcher.discard(url)

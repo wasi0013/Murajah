@@ -82,11 +82,17 @@ export function setPositionState(state: MediaSessionPositionState | null): void 
   }
 }
 
-/** Register the lock-screen/notification/hardware-button handlers, once. */
+/**
+ * Register the lock-screen/notification/hardware-button handlers. Idempotent, so
+ * the engine re-registers on every `playing`: iOS ignores handlers set before the
+ * element became "Now Playing". `seekbackward`/`seekforward` are explicitly
+ * cleared: when either has a handler, iOS shows ±10s skip buttons in place of
+ * previous/next. The scrubber still works via `seekto`.
+ */
 export function setActionHandlers(handlers: MediaSessionActionHandlers): void {
   const s = session()
   if (!s) return
-  const set = (action: MediaSessionAction, handler: MediaSessionActionHandler) => {
+  const set = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
     try {
       s.setActionHandler(action, handler)
     } catch {
@@ -101,4 +107,6 @@ export function setActionHandlers(handlers: MediaSessionActionHandlers): void {
   set('seekto', (details) => {
     if (typeof details.seekTime === 'number') handlers.seekto(details.seekTime)
   })
+  set('seekbackward', null)
+  set('seekforward', null)
 }

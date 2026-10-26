@@ -623,11 +623,15 @@ describe('useAudioEngine — Media Session integration', () => {
     expect(el().currentTime).toBe(30)
   })
 
-  it('action handlers are registered exactly once, not re-registered on every item load', () => {
+  it('action handlers are registered again once playback starts (iOS drops ones set earlier)', () => {
     const engine = useAudioEngine()
     engine.setPlaylistAndPlay([item('a.mp3'), item('b.mp3')])
-    const callsAfterFirstLoad = fakeSession.setActionHandler.mock.calls.length
-    engine.next()
-    expect(fakeSession.setActionHandler.mock.calls.length).toBe(callsAfterFirstLoad)
+    fakeSession.setActionHandler.mockClear()
+    el().fire('playing')
+    const actions = fakeSession.setActionHandler.mock.calls.map((c) => c[0])
+    expect(actions).toEqual(expect.arrayContaining(['previoustrack', 'nexttrack', 'seekto']))
+    // The re-registered handlers still drive the same engine.
+    fakeSession.handlers.get('nexttrack')?.(undefined)
+    expect(useAudioStore().index).toBe(1)
   })
 })

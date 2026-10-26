@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createAudioPrefetcher } from '@/core/audio/prefetch'
+import {
+  createAudioPrefetcher,
+  PREFETCH_MAX_ATTEMPTS,
+  PREFETCH_RETRY_MAX_MS,
+  PREFETCH_RETRY_MS,
+} from '@/core/audio/prefetch'
 
 interface Pending {
   url: string
@@ -60,18 +65,96 @@ describe('createAudioPrefetcher', () => {
     expect(pending).toHaveLength(1)
   })
 
-  it('an HTTP error or empty body is not cached, and can be retried later', async () => {
+  it('a server error or empty body is not cached, and is retried after the backoff', async () => {
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
     const p = createAudioPrefetcher()
     p.prefetch('a.mp3')
-    pending[0].respond({ ok: false, status: 404, blob: async () => new Blob(['x']) })
+    pending[0].respond({ ok: false, status: 503, blob: async () => new Blob(['x']) })
     await flush()
     expect(p.resolve('a.mp3')).toBeNull()
+    now += PREFETCH_RETRY_MS
     p.prefetch('a.mp3')
     pending[1].respond(ok(''))
     await flush()
     expect(p.resolve('a.mp3')).toBeNull()
+    now += PREFETCH_RETRY_MS * 2
     p.prefetch('a.mp3')
     expect(pending).toHaveLength(3)
+  })
+
+  it('a failed download is not retried during the backoff, then is (a fetch cut off at screen lock)', async () => {
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const p = createAudioPrefetcher()
+    p.prefetch('a.mp3')
+    pending[0].respond({ ok: false, status: 503, blob: async () => new Blob(['x']) })
+    await flush()
+    now += PREFETCH_RETRY_MS - 1
+    p.prefetch('a.mp3') // the engine asks on every timeupdate; must not hammer the host
+    expect(pending).toHaveLength(1)
+    now += 1
+    p.prefetch('a.mp3')
+    expect(pending).toHaveLength(2)
+    pending[1].respond(ok())
+    await flush()
+    expect(p.resolve('a.mp3')).toBe('blob:1')
+  })
+
+  it('backs off exponentially and gives up after PREFETCH_MAX_ATTEMPTS (an outage must not become a request loop)', async () => {
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const p = createAudioPrefetcher()
+    const gaps: number[] = []
+    let last = now
+    for (let i = 0; i < 20 * 60; i++) {
+      // 20 minutes of `timeupdate`s, one per second, against a host that is down.
+      const before = pending.length
+      p.prefetch('a.mp3')
+      if (pending.length > before) {
+        gaps.push(now - last)
+        last = now
+        pending.at(-1)!.respond({ ok: false, status: 503, blob: async () => new Blob(['x']) })
+        await flush()
+      }
+      now += 1000
+    }
+    expect(pending).toHaveLength(PREFETCH_MAX_ATTEMPTS)
+    expect(gaps.slice(1)).toEqual([PREFETCH_RETRY_MS, PREFETCH_RETRY_MS * 2, PREFETCH_RETRY_MS * 4])
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(PREFETCH_RETRY_MAX_MS)
+  })
+
+  it('never retries a 4xx that asking again cannot change (404)', async () => {
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const p = createAudioPrefetcher()
+    p.prefetch('a.mp3')
+    pending[0].respond({ ok: false, status: 404, blob: async () => new Blob(['x']) })
+    await flush()
+    now += PREFETCH_RETRY_MAX_MS * 10
+    p.prefetch('a.mp3')
+    expect(pending).toHaveLength(1)
+  })
+
+  it('a URL that left the {current, next} pair gets a fresh retry budget when it returns', async () => {
+    vi.spyOn(Date, 'now').mockImplementation(() => 1_000_000)
+    const p = createAudioPrefetcher()
+    p.prefetch('a.mp3')
+    pending[0].respond({ ok: false, status: 404, blob: async () => new Blob(['x']) })
+    await flush()
+    p.retain([])
+    p.prefetch('a.mp3')
+    expect(pending).toHaveLength(2)
+  })
+
+  it('an aborted download (retained away) is not treated as a failure', async () => {
+    vi.spyOn(Date, 'now').mockImplementation(() => 1_000_000)
+    const p = createAudioPrefetcher()
+    p.prefetch('a.mp3')
+    p.retain([])
+    await flush()
+    p.prefetch('a.mp3') // same instant: no cool-down applies
+    expect(pending).toHaveLength(2)
   })
 
   it('a network failure is swallowed (streaming takes over)', async () => {
@@ -134,10 +217,16 @@ describe('createAudioPrefetcher', () => {
     pending[0].respond({ ok: true, status: 200, blob: async () => new Blob(['x'], { type: 'application/octet-stream' }) })
     await flush()
     expect(made?.type).toBe('audio/mpeg')
+    // github.io serves page audio as the non-standard `audio/mp3`.
     p.prefetch('b.mp3')
-    pending[1].respond({ ok: true, status: 200, blob: async () => new Blob(['x'], { type: 'audio/wav' }) })
+    pending[1].respond({ ok: true, status: 200, blob: async () => new Blob(['x'], { type: 'audio/mp3' }) })
     await flush()
-    expect(made?.type).toBe('audio/wav') // already audio: untouched
+    expect(made?.type).toBe('audio/mpeg')
+    const typed = new Blob(['x'], { type: 'audio/mpeg' })
+    p.prefetch('c.mp3')
+    pending[2].respond({ ok: true, status: 200, blob: async () => typed })
+    await flush()
+    expect(made).toBe(typed) // already audio/mpeg: untouched
   })
 })
 

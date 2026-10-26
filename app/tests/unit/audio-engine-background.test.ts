@@ -8,6 +8,7 @@ import {
 } from '@/composables/useAudioEngine'
 import { useAudioStore } from '@/stores/audio'
 import type { PlaylistItem } from '@/core/audio/playlist'
+import { PREFETCH_RETRY_MS } from '@/core/audio/prefetch'
 
 /*
  * Bug: "after playing 4-5 pages with the phone locked, playback just stops" — in
@@ -265,6 +266,46 @@ describe('next-item prefetch (no network at a silent boundary)', () => {
     expect(store.index).toBe(1)
     expect(el().src).toBe('blob:1')
     expect(el().play).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries a failed prefetch while the current item plays, so the boundary still needs no network', async () => {
+    // The juz-24 report: a long run of new files with the screen locked. With
+    // one download attempt per item, a fetch that failed (e.g. cut off around
+    // the lock) left that boundary to the network, the suspected stop point.
+    // Today's short repeating list is far less exposed: the HTTP cache can
+    // answer the streaming fallback at once.
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const engine = useAudioEngine()
+    const store = useAudioStore()
+    engine.setPlaylistAndPlay([page('a.mp3'), page('b.mp3')])
+    fetchFor('b.mp3')!.fail()
+    await flush()
+    el().fireTime(1)
+    expect(fetches).toHaveLength(1) // cooling down: no request per timeupdate
+    now += PREFETCH_RETRY_MS
+    el().fireTime(6)
+    expect(fetches).toHaveLength(2)
+    fetchFor('b.mp3')!.resolve()
+    await flush()
+    el().finish()
+    expect(store.index).toBe(1)
+    expect(el().src).toBe('blob:1')
+  })
+
+  it('does not start the following download until the incoming item itself is playing', () => {
+    class SlowStart extends FakeAudio {
+      reachesPlaying = false
+    }
+    vi.stubGlobal('Audio', SlowStart)
+    const engine = useAudioEngine()
+    engine.setPlaylistAndPlay([page('a.mp3'), page('b.mp3'), page('c.mp3')])
+    el().fire('playing')
+    el().finish() // → b, streaming; store.isPlaying stays true across the boundary
+    el().fireTime(0) // load() resets the position and fires timeupdate
+    expect(fetchFor('c.mp3')).toBeUndefined()
+    el().fire('playing')
+    expect(fetchFor('c.mp3')).toBeTruthy()
   })
 
   it('streams from the network when the prefetch has not finished yet', () => {
