@@ -128,6 +128,12 @@ const lines = computed<RenderLine[]>(() => {
  * — no per-line size jumps (the earlier per-line scaling made some lines large
  * and others small, most visibly on phones). WBW is allowed to wrap, so it's
  * left alone.
+ *
+ * The factor is applied in `em` (relative to the inherited surface size), never
+ * as a px value read back from getComputedStyle: under Android WebView's text
+ * zoom (it follows the system font size) the computed size already includes the
+ * zoom, and a px size written back gets zoomed a second time, so every line
+ * rendered wider than its column by exactly the zoom factor and was clipped.
  */
 const surfaceEl = ref<HTMLElement>()
 
@@ -141,7 +147,7 @@ function fitLines() {
     row.style.justifyContent = 'flex-start'
   }
   // Measure every line, then take the tightest fit as the shared page factor.
-  const measured: { row: HTMLElement; base: number }[] = []
+  const measured: HTMLElement[] = []
   let factor = Infinity
   for (const row of rows) {
     const avail = row.clientWidth
@@ -159,14 +165,14 @@ function fitLines() {
     }
     const content = max - min
     if (content > 0) {
-      measured.push({ row, base: parseFloat(getComputedStyle(row).fontSize) })
+      measured.push(row)
       factor = Math.min(factor, avail / content)
     } else {
       row.style.justifyContent = ''
     }
   }
   if (!measured.length || !Number.isFinite(factor)) {
-    for (const { row } of measured) row.style.justifyContent = ''
+    for (const row of measured) row.style.justifyContent = ''
     return
   }
   factor = Math.min(Math.max(factor, 0.35), 1.6)
@@ -176,8 +182,8 @@ function fitLines() {
   // leaves `fitFactor` unset, so `applied` is just `factor` and behavior is
   // identical to before this prop existed.
   const applied = props.fitFactor != null ? Math.min(Math.max(props.fitFactor, 0.35), 1.6) : factor
-  for (const { row, base } of measured) {
-    row.style.fontSize = `${base * applied}px` // identical size on every line
+  for (const row of measured) {
+    row.style.fontSize = `${applied}em` // identical size on every line
     row.style.justifyContent = '' // restore space-between to absorb the residual
   }
 }
