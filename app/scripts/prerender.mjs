@@ -85,6 +85,18 @@ const ROUTES = [
       'Your daily companion for Quran memorization & revision: word-by-word translation, tajweed coloring, an adaptive daily practice queue, audio recitation, and mushaf reading. Free on Android, installable on iOS.',
   },
   {
+    path: '/tos',
+    readySelector: 'main.tos',
+    title: 'Terms of Service | Murajah',
+    description: 'The terms that apply to using Murajah, a free, open-source Quran memorization and revision app.',
+  },
+  {
+    path: '/privacy',
+    readySelector: 'main.privacy',
+    title: 'Privacy Policy | Murajah',
+    description: 'How Murajah handles your data: no accounts, everything stays on your device, nothing is sold or shared.',
+  },
+  {
     path: '/preview',
     readySelector: 'main.landing',
     title: 'Share Highlighted Quranic Verses — Murajah',

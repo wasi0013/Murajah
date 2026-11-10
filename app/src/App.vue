@@ -65,7 +65,7 @@ const NO_SHELL_ROUTE_NAMES = new Set(['reader-disabled', 'preview-landing', 'pre
 // right on top of the content they followed the link to see. /download keeps
 // the tab bar (it's the page's way back into the app); the /preview routes
 // have none, by design — see NO_SHELL_ROUTE_NAMES above.
-const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'preview-landing', 'preview', 'preview-range', 'preview-page'])
+const NO_ONBOARDING_ROUTE_NAMES = new Set(['download', 'tos', 'privacy', 'preview-landing', 'preview', 'preview-range', 'preview-page'])
 
 const showShellNav = computed(() => !NO_SHELL_ROUTE_NAMES.has(String(router.currentRoute.value.name)))
 const showOnboarding = computed(() => !NO_ONBOARDING_ROUTE_NAMES.has(String(router.currentRoute.value.name)))

@@ -8,4 +8,6 @@
 
 # SPA fallback: every unmatched path serves the app shell (client-side router).
 /android https://play.google.com/store/apps/details?id=com.murajah.webview 302
+# The legacy app served the policy as privacy.html; keep old links working.
+/privacy.html /privacy 301
 /*    /index.html    200

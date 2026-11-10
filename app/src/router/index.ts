@@ -107,6 +107,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/download/DownloadView.vue'),
   },
   {
+    // Terms of Service. Static path, so it outranks the `/:slug` catch-all.
+    // Linked from outside (store listings), so no onboarding gate. Code-split.
+    path: '/tos',
+    name: 'tos',
+    component: () => import('@/features/legal/TosView.vue'),
+  },
+  {
+    // Privacy Policy. The URL registered on the Google Play listing, so it must
+    // keep resolving here (and prerendering). Same treatment as /tos.
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/features/legal/PrivacyView.vue'),
+  },
+  {
     // Bare /preview — a beginner-friendly landing page: a short tutorial on
     // highlighting + sharing, plus surah/from/to dropdowns to build a link
     // below without hand-editing a URL. Static path, so it's registered

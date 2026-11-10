@@ -40,3 +40,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 /preview
   Cache-Control: public, max-age=0, must-revalidate
+/tos
+  Cache-Control: public, max-age=0, must-revalidate
+/privacy
+  Cache-Control: public, max-age=0, must-revalidate
